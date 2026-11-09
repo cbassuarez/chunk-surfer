@@ -4,7 +4,7 @@ import { SOURCE_CONTINUATION as C } from '../data/source-continuation.js';
 const finite = (v, fallback = 0) => Number.isFinite(v) ? v : fallback;
 const integer = v => Math.max(-1000000, Math.min(1000000, Math.trunc(finite(v))));
 const point = p => ({ x: finite(p?.x), z: finite(p?.z), feet: finite(p?.feet),
-  chartId: Math.max(0, integer(p?.chartId)), level: Math.max(0, integer(p?.level)), phase: 'wrong-return' });
+  chartId: Math.max(0, integer(p?.chartId)), level: Math.max(0, integer(p?.level)), phase: p?.phase==='catch'?'catch':'wrong-return' });
 const translationMatrix = ([x,y,z]) => [1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1];
 
 export function normalizeContinuationVoidLoop(value) {
@@ -39,7 +39,7 @@ export function normalizeContinuationSpaceWrap(value) {
   const translation = [tileX ? -tileX * domain.periodX : 0, domain.translationY, tileZ ? -tileZ * domain.periodZ : 0];
   return { version: 1, domainId: domain.id, tileX, tileZ, serial: Math.max(0, integer(value.serial)),
     translation, matrix: translationMatrix(translation),
-    before: point(value.before), after: point(value.after) };
+    before: point({...value.before,phase:domain.phase||value.before.phase}), after: point({...value.after,phase:domain.phase||value.after.phase}) };
 }
 
 // A deck's lower address lattice is glued to its upper receiving cell by
@@ -51,11 +51,11 @@ export function wrapContinuationVoid(fall) {
   const tileX = domain.periodX ? Math.floor((fall.x - domain.minX) / domain.periodX) : 0;
   const tileZ = domain.periodZ ? Math.floor((fall.z - domain.minZ) / domain.periodZ) : 0;
   const translation = [tileX ? -tileX * domain.periodX : 0, domain.translationY, tileZ ? -tileZ * domain.periodZ : 0];
-  const before = point({ ...fall, chartId: domain.chartId });
+  const before = point({ ...fall, phase:domain.phase||fall.fromPhase, chartId: domain.chartId });
   fall.x += translation[0]; fall.feet += translation[1]; fall.z += translation[2];
   fall.voidLoop = { ...state, wrapCount: state.wrapCount + 1 };
   return normalizeContinuationSpaceWrap({ domainId: domain.id, tileX, tileZ, translation,
-    serial: fall.voidLoop.wrapCount, before, after: point({ ...fall, chartId: domain.chartId }) });
+    serial: fall.voidLoop.wrapCount, before, after: point({ ...fall, phase:domain.phase||fall.fromPhase, chartId: domain.chartId }) });
 }
 
 // Body and eye are distinct points in the glued space. For the brief interval

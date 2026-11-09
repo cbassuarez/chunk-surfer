@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import vm from 'node:vm';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {PRESSURE_IDENTITY_GLSL,PRESSURE_INK_GLSL} from '../../src/render/pressure-composite.js';
-import {UNRAVELLING_GLSL} from '../../src/render/horizon3d.js';
+import {UNRAVELLING_GLSL} from '../../src/render/source-unravelling-shader.js';
 import {PRINTED_SURFACE_GLSL} from '../../src/render/printed-surface.js';
 
 const root=new URL('../../',import.meta.url);

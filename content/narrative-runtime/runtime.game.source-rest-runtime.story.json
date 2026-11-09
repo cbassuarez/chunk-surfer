@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.source-rest-runtime",
+  "title": "Runtime · game/source-rest-runtime.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "installSourceRest.focus",
+  "entries": [
+    "installSourceRest.focus",
+    "installSourceRest.sit.target",
+    "installSourceRest"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/source-rest-runtime.js",
+  "notes": "Generated from src/game/source-rest-runtime.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "installSourceRest.focus": {
+      "id": "installSourceRest.focus",
+      "type": "line",
+      "lines": [
+        {
+          "id": "installSourceRest.focus.l0",
+          "who": "source-rest",
+          "text": "A place to sit.",
+          "source": "src/game/source-rest-runtime.js:72"
+        }
+      ],
+      "source": "src/game/source-rest-runtime.js:72"
+    },
+    "installSourceRest.sit.target": {
+      "id": "installSourceRest.sit.target",
+      "type": "line",
+      "lines": [
+        {
+          "id": "installSourceRest.sit.target.l0",
+          "who": "source-rest",
+          "text": "A place to sit.",
+          "source": "src/game/source-rest-runtime.js:89"
+        }
+      ],
+      "source": "src/game/source-rest-runtime.js:89"
+    },
+    "installSourceRest": {
+      "id": "installSourceRest",
+      "type": "line",
+      "lines": [
+        {
+          "id": "installSourceRest.l0",
+          "who": "source-rest",
+          "text": "A place to sit.",
+          "source": "src/game/source-rest-runtime.js:125"
+        },
+        {
+          "id": "installSourceRest.l1",
+          "who": "source-rest",
+          "text": "A place to sit.",
+          "source": "src/game/source-rest-runtime.js:188"
+        }
+      ],
+      "source": "src/game/source-rest-runtime.js:125"
+    }
+  }
+}

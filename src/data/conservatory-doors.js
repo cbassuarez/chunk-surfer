@@ -176,11 +176,11 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_WIRED_PAIR, '131,33', {
     at:{x:65,y:15.5},open:true,key:'master',hinge:'left',swing:'escape',widthAxis:'x',activeLeaves:[0,1],
   }),
-  D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { at:{x:94.5,y:12.5}, key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
+  D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { at:{x:94.5,y:11.5}, key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
   // The east end of the ground spine, out to the west baths court.
   D('spine-west-court', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, null, { at:{x:74,y:23.5}, hinge:'left', swing:'escape', widthAxis:'y' }),
   D('hall-vestibule', DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR, '197,51', {
-    hinge:'right',swing:'hall-out',activeLeaves:[0],widthAxis:'y',renderGroups:['ground','hall'],
+    hinge:'right',swing:'hall-out',activeLeaves:[0,1],widthAxis:'y',renderGroups:['ground','hall'],
   }),
   D('pool-lobby', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, '168,55', {
     at:{x:84,y:15},legacyIds:['169,55'],hinge:'right',swing:'dry-out',activeLeaves:[0,1],

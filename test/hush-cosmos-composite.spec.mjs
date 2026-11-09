@@ -7,7 +7,7 @@ import {PRESSURE_FINISH_FRAG,PRESSURE_INK_GLSL} from '../src/render/pressure-com
 import {PIXEL_MESH_FRAG} from '../src/render/pixel-mesh/shader.js';
 import {pressureInstances} from '../src/render/pressure-volume.js';
 import {finishSourceDesktopPressure} from '../src/render/source-desktop-view.js';
-import {hushCosmosField,hushCosmosSignalMaterial,hushCosmosRecordedInk} from '../src/render/hush-cosmos.js';
+import {hushCosmosWorldField,hushCosmosSignalMaterial,hushCosmosRecordedInk} from '../src/render/hush-cosmos.js';
 
 const p3=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8'),
   r3d=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8'),{pressureFragment:frag}=props3dDebugShaders();
@@ -25,8 +25,8 @@ test('the actual byte writer roundtrips every five-bit payload and cosmic/core/g
     assert.equal(floor(bits/128),g);seen.add(bits);
   }
   assert.equal(seen.size,256,'no payload or flag may overlap another');
-  assert.match(frag,/hushCosmosField\(gl_FragCoord.xy,uHushViewport\).rgb/);
-  assert.doesNotMatch(frag,/hushCosmosField\(vUv|hushCosmosField\([^)]*uEye/);
+  assert.match(frag,/hushCosmosWorldField\(normalize\(vWorld-uEye\)\).a/);
+  assert.doesNotMatch(frag,/hushCosmosField\(gl_FragCoord|hushCosmosWorldField\(vUv/);
 });
 
 test('old human frames remain noncosmic regardless of captured seed while actual Hush is selected by mesh kind',()=>{
@@ -45,9 +45,11 @@ test('old human frames remain noncosmic regardless of captured seed while actual
 
 test('the composed production route replaces only covered cosmic triangles before acquisition',()=>{
   assert.match(PRESSURE_FINISH_FRAG,/cosmosMask=coreMask\*cosmos/);
-  assert.match(PRESSURE_FINISH_FRAG,/hushCosmosField\(gl_FragCoord.xy,uRes\)/);
+  assert.match(PRESSURE_FINISH_FRAG,/cosmicSignal=mod\(bits,32.0\)\/31.0/);
+  assert.match(PRESSURE_FINISH_FRAG,/hushCosmosSignalMaterial\(cosmicSignal\)/);
+  assert.doesNotMatch(PRESSURE_FINISH_FRAG,/hushCosmosField\(gl_FragCoord/);
   assert.match(PRESSURE_FINISH_FRAG,/c\*=1\.0-coreMask;[\s\S]*c\+=cosmic.rgb\*cosmosMask\/exposure/);
-  assert.match(PRESSURE_FINISH_FRAG,/oIdentity=vec4\(coreMask,step\(\.000001,glowLight\),cosmic.a,cosmosMask\)/);
+  assert.match(PRESSURE_FINISH_FRAG,/oIdentity=vec4\(coreMask,step\(\.000001,glowLight\),cosmicSignal,cosmosMask\)/);
   const consume='pressureRecordedCosmosInk(finalColor,texture(uRecordedPressureInk,fullUv))';
   assert.ok(PIXEL_MESH_FRAG.includes(consume));
   assert.ok(PIXEL_MESH_FRAG.indexOf(consume)>PIXEL_MESH_FRAG.indexOf('vec3 oneBitScene = mix(captureDark, captureLight, captureBit)'));
@@ -59,25 +61,26 @@ test('the composed production route replaces only covered cosmic triangles befor
   assert.match(PRESSURE_FINISH_FRAG,/g\.a\*step\(meshDepth\(g\),front\+\.022\)/,'world and prop occlusion remain authoritative');
 });
 
-test('transported fixed-screen signals retain their marks and never repaint a new mark at POST',()=>{
-  const viewport=[1280,800];
-  for(const pixel of[[400,250],[530,320],[640,400],[780,440]]){
-    const sample=hushCosmosField(pixel,viewport),signal=Math.max(...sample.color),packed=encode(signal,{w:1,y:1,z:0},floor),
-      material=hushCosmosSignalMaterial(mod(packed,32)/31);
+test('transported world signals retain acquisition marks without sampling another field at POST',()=>{
+  for(const direction of[[0,0,-1],[.055,.025,-1],[1,.4,.6],[-.75,.34,-.56]]){
+    const sample=hushCosmosWorldField(direction),packed=encode(sample.signal,{w:1,y:1,z:0},floor),signal=mod(packed,32)/31,
+      material=hushCosmosSignalMaterial(signal);
+    assert.ok(material.color.every(Number.isFinite));
     for(const chosen of[0,1]){
-      const acquired=chosen?[.95,.94,.86]:[.0015,.005,.0045],ink=hushCosmosRecordedInk(acquired,material.heat,pixel,viewport);
-      assert.deepEqual(hushCosmosRecordedInk(ink,material.heat,pixel,viewport),ink);
+      const acquired=chosen?[.95,.94,.86]:[.0015,.005,.0045],ink=hushCosmosRecordedInk(acquired,signal);
+      assert.deepEqual(hushCosmosRecordedInk(ink,signal),ink);
+      assert.deepEqual(hushCosmosRecordedInk(acquired,signal,[900,10],[1920,1080]),ink,'viewport changes cannot slide the recorded pigment');
       assert.equal(Math.max(...ink)>.08,chosen===1);
     }
   }
 });
 
-test('the real secondary Hush material uses the shared viewport field while the retained human remains black',()=>{
+test('the real secondary Hush material uses the same world field while the retained human remains black',()=>{
   for(const name of['hush_density_core','pressure_body']){
     const root=new THREE.Group(),mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshStandardMaterial());
     mesh.name=name;root.add(mesh);const finish=finishSourceDesktopPressure(THREE,root);
     assert.ok(finish.cores.includes(mesh.material));
-    if(name==='hush_density_core')assert.equal(mesh.material.userData.hushCosmos.space,'screen-viewport');
+    if(name==='hush_density_core')assert.equal(mesh.material.userData.hushCosmos.space,'world-direction');
     else {assert.equal(mesh.material.userData.hushCosmos,undefined);assert.deepEqual(mesh.material.color.toArray(),[0,0,0]);}
     for(const child of root.children){child.geometry?.dispose();child.material?.dispose();}
   }

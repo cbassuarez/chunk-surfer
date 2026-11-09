@@ -126,7 +126,7 @@ const TITLE_ROW_HELP = Object.freeze({
 export function titleRowHelp(item, { filed = 0 } = {}) {
   if (!item) return '';
   if (item.id === 'archive') { const progress = achievementCompletion(getMeta()); return `${progress.completed}/${progress.total} ACHIEVEMENTS · ${progress.percent.toFixed(progress.complete ? 0 : 1)}% COMPLETE. DISCOVERIES AND FILED RETURNS.`; }
-  if (item.id === 'transfer-room') return transferRoomCopy({ filed }).short;
+  if (item.id === 'transfer-room') return transferRoomCopy({ filed,unlocked:true }).short;
   if (item.id === 'continue' && item.disabled) return 'NO RUN IN PROGRESS.';
   return TITLE_ROW_HELP[item.id] || '';
 }

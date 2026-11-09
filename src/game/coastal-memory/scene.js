@@ -2,6 +2,7 @@
 import{COASTAL_MEMORY_LAYOUT as L,COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL,COASTAL_RIM_BARRIERS,COASTAL_BEACH,COASTAL_BEACH_BOULDERS,COASTAL_BEACH_DRIFTWOOD,COASTAL_WRACK_LINE,coastalWorldPoint,coastalMultiply,coastalTerrainHeight,coastalRimX,coastalBeachHeight,coastalWaterlineX}from'../../data/coastal-memory.js';
 import{COASTAL_MUSIC_BOX_MECHANISM,coastalMusicBoxMechanism}from'./mechanism.js';
 import{coastalHandsMechanism}from'./winding.js';
+import{MUSIC_BOX_CONSTRUCTION}from'../../data/music-box-construction.js';
 import{VAN_WRECK,vanWreckHeadlamp,vanWreckTwistMatrix,vanWreckFoldMatrix,vanWreckHingedMatrix}from'../../data/van-wreck.js';
 export const COASTAL_MEMORY_ASSETS=Object.freeze({geometry:'/assets/source-drive/coastal-memory/coastal-memory.glb',metrics:'/assets/source-drive/coastal-memory/metrics.json'});
 const transform=(x=0,y=0,z=0,yaw=0,scale=[1,1,1])=>{const c=Math.cos(yaw),s=Math.sin(yaw);return[c*scale[0],0,-s*scale[0],0,0,scale[1],0,0,s*scale[2],0,c*scale[2],0,x,y,z,1];};
@@ -70,11 +71,13 @@ export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=
  // Sparse fallen bedding blocks, detached from the face and resting on the toe.
  for(let i=0;i<42;i++){const z=-130+i*8.5,x=coastalRimX(z)+4.6+(i%4)*1.3;if(z>COASTAL_BEACH.zSouth-1&&z<COASTAL_BEACH.zNorth+1)continue;add('cm_limestone_block',transform(x,-2.7+(i%3)*.45,z,i*.83,[1.2+(i%4)*.3,1.1+(i%3)*.35,1.7+(i%5)*.18]),'coastal-toe-block-'+i,8);}
  const box=L.musicBox,held=hands?.handling===true&&hands?.heldLocal?.length===16&&hands.heldLocal.every(Number.isFinite)?hands.heldLocal:null;const boxMatrix=held??transform(box.x,box.y,box.z,box.yaw??(-Math.PI/2-.16)),mechanism=held?coastalHandsMechanism(hands.winding):coastalMusicBoxMechanism(musicBoxTime);
- if(!held)add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);add('cm_broken_music_box',boxMatrix,box.id,3);
- // The real box is a CLOSED cream-plastic case: the comb/cylinder live inside.
- // The mechanism is still modelled (musicBoxMechanism below) and still drives the
- // audio, but nothing of it is drawn through the shell.
- void mechanism;
+ if(!held)add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);
+ // Bringing it closer changes framing, never physical scale. Only the real
+ // external winding key is exposed; the movement stays inside the closed case.
+ add('cm_broken_music_box',boxMatrix,box.id,3);
+ const pivot=MUSIC_BOX_CONSTRUCTION.keyPivot;
+ const keyLocal=coastalMultiply(shift(pivot),coastalMultiply(rotZ(mechanism.keyAngle||0),shift(pivot.map(v=>-v))));
+ add('cm_broken_music_box_key',coastalMultiply(boxMatrix,keyLocal),'coastal-music-box-key',3);
  add('cm_damp_note',transform(...L.note.position,-.12),L.note.id,3);
  const pier=L.pier;add('cm_distant_pier',transform(...pier.position,pier.heading),pier.id,350);
  const pierFrame=coastalMultiply(worldFromLocal,transform(...pier.position,pier.heading));for(const fixture of pier.fixtures){const pierBulb=coastalWorldPoint(fixture.aperture,pierFrame),pierTarget=coastalWorldPoint(fixture.shadowTarget,pierFrame),beam=pierTarget.map((v,i)=>v-pierBulb[i]);lamps.push({id:fixture.id,x:pierBulb[0],y:pierBulb[1],z:pierBulb[2],color:fixture.color,intensity:fixture.intensity,radius:fixture.radius,penetration:1,castsShadow:false,shadowYaw:Math.atan2(beam[0],-beam[2]),shadowPitch:Math.atan2(beam[1],Math.hypot(beam[0],beam[2])),fixture:'caged pier marker',anchorMesh:'cm_distant_pier'});}

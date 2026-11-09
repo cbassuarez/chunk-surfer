@@ -5,6 +5,8 @@ import {createSourceContinuationScene} from '../src/game/source-continuation-sce
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
 import {SOURCE_CONNECTOR_CORRIDOR as CORRIDOR} from '../src/data/source-connector-corridor.js';
+import {ARCHIPELAGO_MAIN_ROUTE,ARCHIPELAGO_OPTIONAL_ROUTES,SOURCE_III_ARCHIPELAGO} from '../src/data/source-continuation-archipelago.js';
+import {SOURCE_EXIT_PASSAGE} from '../src/data/source-exit-passage.js';
 
 async function harness({dt=1/60,blocked=false,alternates=false,topologyLoop=false,stageLoop=topologyLoop}={}){
  let wall=0,scheduled=null,focused=true,recording=false,owner;const events=[];
@@ -28,9 +30,17 @@ test('the explicit guide never starts on install or an untrusted F6 event, and n
  h.f6();for(let i=0;i<10;i++)h.frame({game:false});const after=h.scene.serialize();assert.equal(after.elapsed,0);assert.equal(after.x,before.x);assert.equal(after.z,before.z);assert.equal(h.guide.status().poseWrites,0);assert.equal(h.guide.status().nativeInputs,false);h.guide.dispose();h.scene.exit();
 });
 
-test('the plan follows the declared raised return, physical doors and exactly three voluntary descents',()=>{
- const p=sourceContinuationGuidedPlan();assert.deepEqual(p.filter(s=>s.kind==='drop').map(s=>s.id),['catch-lip-0','catch-lip-1','catch-lip-2']);
- assert.deepEqual(sourceContinuationGuidedPlan({alternates:true}).filter(s=>s.kind==='drop').map(s=>s.id),['catch-lip-0-other','catch-lip-1-other','catch-lip-2-other']);
+test('the plan follows the declared raised return, physical doors and every actual archipelago stair and destination',()=>{
+ const p=sourceContinuationGuidedPlan();assert.equal(p.some(s=>s.kind==='drop'),false,'the expedition walks its real connecting flights rather than the old three-drop shortcut');
+ const islands=p.filter(s=>s.kind==='walk'&&s.phase==='catch');
+ assert.deepEqual(islands.slice(0,-1).map(s=>[s.x,s.z,s.feet,s.level]),ARCHIPELAGO_MAIN_ROUTE.map(s=>[s.x,s.z,s.feet,s.level]));
+ assert.ok(islands.every(s=>s.expectedPhase==='catch'&&s.expectedChart===0&&s.expectedLevel===s.level));
+ assert.equal(p.at(-1).x,SOURCE_EXIT_PASSAGE.completionX+1,'the public walking target crosses the passage end instead of stopping just behind the door');
+ const stairs=islands.filter(s=>s.stair);assert.ok(stairs.length>100);assert.ok(stairs.every(s=>Math.abs(s.feet-s.fromFeet)<=.3+1e-6));
+ const alternative=sourceContinuationGuidedPlan({alternates:true});
+ assert.equal(alternative.some(s=>s.kind==='drop'),false);
+ assert.deepEqual(alternative.filter(s=>SOURCE_III_ARCHIPELAGO.optionalIslandIds.includes(s.islandId)).map(s=>s.islandId),SOURCE_III_ARCHIPELAGO.optionalIslandIds);
+ for(const loop of ARCHIPELAGO_OPTIONAL_ROUTES){const branch=alternative.filter(s=>s.optionalRouteId===loop.id);assert.deepEqual(branch.map(s=>[s.x,s.z,s.feet]),loop.points.slice(1).map(s=>[s.x,s.z,s.feet]));}
  assert.deepEqual(p.filter(s=>s.kind==='door').map(s=>s.id),['wrong-false-return','wrong-onward','journey-catch-gate','catch-final']);
  assert.deepEqual(p.filter(s=>s.kind==='fold').map(s=>s.id),JOURNEY_PORTALS.slice(0,5).map(portal=>portal.id));
  assert.deepEqual(p.filter(s=>s.kind==='fold').map(s=>s.exit.chartId),[1,2,3,4,0]);
@@ -75,7 +85,7 @@ test('ordinary keys physically close the non-Euclidean loop and stop without com
 
 for(const {dt,alternates} of[{dt:1/60,alternates:false},{dt:.1,alternates:false},{dt:1/60,alternates:true}])test(`actual game-owned stepping completes the ${alternates?'alternate':'main'} guided route at ${dt}s frames without a pose or clock bypass`,async t=>{
  const h=await harness({dt,alternates});h.f6();let frames=0,gate=null;const stages=new Set();
- while(h.guide.status({includeReceipts:false}).running&&frames++<45000){h.frame();const state=h.scene.serialize();stages.add(state.level);if(!gate&&h.guide.status({includeReceipts:false}).stepLabel==='Open the physical Catch gate in this chart')gate=state;}
+ while(h.guide.status({includeReceipts:false}).running&&frames++<Math.ceil(1200/dt)+10){h.frame();const state=h.scene.serialize();stages.add(state.level);if(!gate&&h.guide.status({includeReceipts:false}).stepLabel==='Open the physical Catch gate in this chart')gate=state;}
  const final=h.scene.serialize(),actor=s=>s&&({id:s.hush.id,x:s.hush.x,z:s.hush.z,feet:s.hush.feet,chartId:s.hush.chartId,mode:s.hush.mode,foldSerial:s.hush.foldSerial,queuedHead:s.hush.trail.slice(0,5)});
  const status=h.guide.status();
  // At 0.1s frames the equal-gait Hush closes the coarse recorded trail and can
@@ -88,8 +98,13 @@ for(const {dt,alternates} of[{dt:1/60,alternates:false},{dt:.1,alternates:false}
  }
  t.diagnostic('GUIDE_CHART_PROOF '+JSON.stringify({dt,alternates,elapsed:final.elapsed,gate:{elapsed:gate?.elapsed,actor:actor(gate)},finalActor:actor(final),playerFoldIds:h.events.filter(r=>r.event.type==='fold').map(r=>r.event.id),hushFoldIds:h.events.filter(r=>r.event.type==='hush-fold').map(r=>r.event.id),captures:h.events.filter(r=>r.event.type==='capture').length}));
  assert.deepEqual(h.events.filter(r=>r.event.type==='hush-fold').map(r=>r.event.id),JOURNEY_PORTALS.slice(0,5).map(portal=>portal.id),'the same physical actor must traverse every accepted portal');
- assert.equal(gate?.hush.chartId,4);assert.equal(gate?.hush.foldSerial,4);assert.equal(final.hush.id,gate.hush.id);assert.equal(final.hush.chartId,0);assert.equal(final.hush.foldSerial,5);
- const result=status;assert.equal(result.finished,true,JSON.stringify({reason:result.reason,step:result.step,elapsed:result.elapsed,receipts:result.receipts.slice(-5)}));assert.equal(result.poseWrites,0);assert.equal(result.nativeInputs,false);assert.equal(result.cameraGuided,true);assert.equal(h.scene.serialize().completed,true);assert.equal(stages.size,4);assert.ok(h.scene.serialize().elapsed>180);assert.deepEqual(result.receipts.filter(r=>r.type==='descent-requested').map(r=>r.id),['catch-lip-0','catch-lip-1','catch-lip-2'].map(id=>alternates?id+'-other':id));assert.deepEqual(result.receipts.filter(r=>r.type==='fold-observed').map(r=>r.id),JOURNEY_PORTALS.slice(0,5).map(portal=>portal.id));assert.equal(result.receipts.filter(r=>r.type==='recognition-observed').length,8);const sight=result.receipts.find(r=>r.type==='actual-eye-look');assert.ok(sight);assert.ok(Math.abs(sight.eye.x-3.85)<.06);assert.ok(Math.abs(sight.eye.z-3)<.06);const dx=sight.target.x-sight.eye.x,dz=sight.target.z-sight.eye.z;assert.ok(Math.abs(sight.yaw-Math.atan2(dx,-dz))<1e-10);assert.ok(Math.abs(sight.pitch-Math.atan2(sight.target.y-sight.eye.y,Math.hypot(dx,dz)))<1e-10);h.guide.dispose();h.scene.exit();
+ assert.equal(final.hush.id,gate.hush.id);assert.equal(final.hush.chartId,0);assert.equal(final.hush.foldSerial,5);
+ const result=status;assert.equal(result.finished,true,JSON.stringify({reason:result.reason,step:result.step,elapsed:result.elapsed,receipts:result.receipts.slice(-5)}));assert.equal(result.poseWrites,0);assert.equal(result.nativeInputs,false);assert.equal(result.cameraGuided,true);assert.equal(h.scene.serialize().completed,true);assert.ok([0,1,2,3].every(level=>stages.has(level)));assert.ok(h.scene.serialize().elapsed>180);
+ assert.deepEqual(result.receipts.filter(r=>r.type==='descent-requested'),[]);
+ assert.ok(SOURCE_III_ARCHIPELAGO.mainIslandIds.every(id=>final.expedition.visited.includes(id)),'the final doorway is reached after physically visiting every principal island');
+ assert.deepEqual(result.receipts.filter(r=>r.type==='archipelago-island-observed'&&SOURCE_III_ARCHIPELAGO.mainIslandIds.includes(r.id)).map(r=>r.id),SOURCE_III_ARCHIPELAGO.mainIslandIds);
+ assert.deepEqual(result.receipts.filter(r=>r.type==='archipelago-island-observed'&&SOURCE_III_ARCHIPELAGO.optionalIslandIds.includes(r.id)).map(r=>r.id),alternates?SOURCE_III_ARCHIPELAGO.optionalIslandIds:[]);
+ assert.deepEqual(result.receipts.filter(r=>r.type==='fold-observed').map(r=>r.id),JOURNEY_PORTALS.slice(0,5).map(portal=>portal.id));assert.equal(result.receipts.filter(r=>r.type==='recognition-observed').length,8);const sight=result.receipts.find(r=>r.type==='actual-eye-look');assert.ok(sight);assert.ok(Math.abs(sight.eye.x-3.85)<.06);assert.ok(Math.abs(sight.eye.z-3)<.06);const dx=sight.target.x-sight.eye.x,dz=sight.target.z-sight.eye.z;assert.ok(Math.abs(sight.yaw-Math.atan2(dx,-dz))<1e-10);assert.ok(Math.abs(sight.pitch-Math.atan2(sight.target.y-sight.eye.y,Math.hypot(dx,dz)))<1e-10);h.guide.dispose();h.scene.exit();
 });
 
 for(const dt of[.2,.25])test(`coarse ${dt}s digital steering records physical rejection without claiming route completion`,async()=>{
@@ -125,20 +140,22 @@ test('a stuck review stops with an honest receipt and never stages an automatic 
 });
 
 
-test('focus loss during a requested descent resumes its observation without pressing E twice or crediting another stage',async()=>{
+test('focus loss on an actual island stair resumes the same route without a descent action or invented destination',async()=>{
  const h=await harness();h.f6();let frames=0;
- while(h.guide.status({includeReceipts:false}).running&&!h.guide.status().receipts.some(r=>r.type==='descent-requested')&&frames++<30000)h.frame();
- assert.ok(h.scene.serialize().fall);h.scene.pause();h.focus(false);h.frame();assert.equal(h.guide.status().running,false);
+ const onStair=()=>{const s=h.scene.serialize();return s.phase==='catch'&&s.feet<8.2&&s.feet>2.6;};
+ while(h.guide.status({includeReceipts:false}).running&&!onStair()&&frames++<40000)h.frame();
+ assert.ok(onStair());assert.equal(h.scene.serialize().fall,null);h.scene.pause();h.focus(false);h.frame();assert.equal(h.guide.status().running,false);
  const pause=h.scene.serialize();for(let i=0;i<5;i++)h.frame();assert.deepEqual(h.scene.serialize(),pause);
- h.scene.resume();h.focus(true);h.f6();while(h.guide.status({includeReceipts:false}).running&&frames++<45000)h.frame();
+ h.scene.resume();h.focus(true);h.f6();while(h.guide.status({includeReceipts:false}).running&&frames++<72010)h.frame();
  const result=h.guide.status();assert.equal(result.finished,true,JSON.stringify({reason:result.reason,step:result.step}));
- assert.deepEqual(result.receipts.filter(r=>r.type==='descent-requested').map(r=>r.id),['catch-lip-0','catch-lip-1','catch-lip-2']);h.guide.dispose();h.scene.exit();
+ assert.deepEqual(result.receipts.filter(r=>r.type==='descent-requested'),[]);
+ assert.deepEqual(result.receipts.filter(r=>r.type==='archipelago-island-observed'&&SOURCE_III_ARCHIPELAGO.mainIslandIds.includes(r.id)).map(r=>r.id),SOURCE_III_ARCHIPELAGO.mainIslandIds);h.guide.dispose();h.scene.exit();
 });
 
 test('an unexpected observed level stops before the guide can steer the body or camera onto another catch',async()=>{
  const h=await harness();h.f6();let frames=0;
- while(h.guide.status({includeReceipts:false}).running&&(h.scene.serialize().level!==1||h.scene.serialize().fall||h.guide.status({includeReceipts:false}).stepLabel==='Choose descent 1')&&frames++<30000)h.frame();
- assert.equal(h.scene.serialize().level,1);const before=h.scene.serialize();let commands=0;
+ while(h.guide.status({includeReceipts:false}).running&&(h.scene.serialize().phase!=='catch'||h.scene.serialize().fall)&&frames++<30000)h.frame();
+ assert.equal(h.scene.serialize().phase,'catch');const before=h.scene.serialize();let commands=0;
  h.owner({id:'source-continuation',view:()=>({...h.scene.view(),level:3}),key(){commands++;},keyup(){commands++;},setLook(){commands++;}});
  h.frame({game:false});assert.equal(h.guide.status().running,false);assert.match(h.guide.status().reason,/Unexpected phase or catch level/);assert.equal(commands,0);assert.deepEqual(h.scene.serialize(),before);assert.equal(h.guide.status().poseWrites,0);h.guide.dispose();h.scene.exit();
 });

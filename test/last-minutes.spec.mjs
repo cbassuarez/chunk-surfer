@@ -5,7 +5,7 @@ import {lastMinutesArcTarget,stepLastMinutesArc,lastMinutesFrame,lastMinutesPerc
 import {freshHypoxia,stepHypoxia,hypoxiaFrame,hypoxiaPerception} from '../src/game/hypoxia.js';
 import {MEMORY_FIELD_VISIT as V,memoryFieldForTake} from '../src/data/memory-field.js';
 import {freshMemoryField,stepMemoryField,tryMemoryField,memoryFieldTimes} from '../src/game/memory-field-scene.js';
-import {createInterruptionDirector,freshDeadDoor,pressDeadDoor,SEEP_PASTORAL,TAKEOVER_MEDIA,TAKEOVER_CLINICAL,TAKEOVER_COMFORT} from '../src/game/interruption-director.js';
+import {createInterruptionDirector,freshDeadDoor,pressDeadDoor,SEEP_PASTORAL,TAKEOVER_MEDIA,TAKEOVER_CLINICAL,TAKEOVER_COMFORT,INTERRUPTION} from '../src/game/interruption-director.js';
 import {ELLERY_FLORA_PROPS,ELLERY_FLORA_PLANTS,ROAD_FLORA,ROAD_FLORA_PLANTS} from '../src/data/ellery-flora.js';
 import {neuralFrame,neuralSeconds,NEURAL_TRANSITION,NEURAL_KINDS} from '../src/game/neural-transition.js';
 import {meaningLineFor,meaningFamilyFor,meaningRung,MEANING_SIGNS,MEANING_PROPS} from '../src/data/meaning-lines.js';
@@ -82,17 +82,21 @@ test('seeps respect what blocks them, and reduced dread never shows the carnage'
   for(let at=0;at<20000;at+=40){const s=d.seepFor('door',{at,frame,reducedDread:true});if(s){seen++;assert.ok(SEEP_PASTORAL.includes(s.id));}}
   assert.ok(seen>3);
 });
-test('every stretch of the night is owed a flash, starting with the first door',()=>{
+test('owed bands begin outside the protected opening and still observe the exposure ceiling',()=>{
   const d=createInterruptionDirector({seed:11}),arcs=[];let at=0;
   for(let arc=0;arc<=1;arc+=.01){
     const frame=lastMinutesFrame({arc});
-    for(let k=0;k<4;k++){at+=45;if(d.seepFor('door',{at,frame}))arcs.push(arc);}
+    for(let k=0;k<4;k++){at+=1200;if(d.seepFor('door',{at,frame}))arcs.push(arc);}
   }
-  assert.ok(arcs[0]<.02,'it starts at the beginning');
+  assert.ok(arcs[0]>=INTERRUPTION.earliest&&arcs[0]<.07,'the first band starts after the opening exclusion');
   for(let band=0;band<14;band++)assert.ok(arcs.some(a=>Math.floor(a/.07)===band),`band ${band}`);
   const first=createInterruptionDirector({seed:11});
-  assert.ok(first.seepFor('door',{at:0,frame:lastMinutesFrame({arc:0})}),'the first door after the get-in door gets one');
-  assert.equal(first.seepFor('door',{at:5,frame:lastMinutesFrame({arc:0})}),null,'and they do not come in a run');
+  assert.equal(first.seepFor('door',{at:0,frame:lastMinutesFrame({arc:0})}),null,'an unserved band cannot bypass earliest');
+  assert.ok(first.seepFor('door',{at:0,frame:lastMinutesFrame({arc:INTERRUPTION.earliest})}));
+  assert.equal(first.seepFor('door',{at:5,frame:lastMinutesFrame({arc:INTERRUPTION.earliest})}),null,'and they do not come in a run');
+  const rushed=createInterruptionDirector({seed:11});let count=0;
+  for(let i=0;i<8;i++)if(rushed.seepFor('door',{at:i*45,frame:{arc:.02+i*.07,deinhibition:0}}))count++;
+  assert.equal(count,INTERRUPTION.hourly.from,'changing bands does not bypass the hourly ceiling');
 });
 test('the window takes over rarely, the verbs fail lightly, and the cab comes in by degrees',()=>{
   const d=createInterruptionDirector({seed:2}),frame=lastMinutesFrame({arc:.9}),media=[];
@@ -164,7 +168,7 @@ test('the transition: the film fogs, it goes white, focus comes back last, and t
   assert.equal(at('emerge',NEURAL_TRANSITION.emergeSeconds).done,true);
   assert.equal(at('nonsense',0).done,true);
 });
-test('photosensitivity: capped white, nothing flickering, and no strobe at any setting',()=>{
+test('reduced-flash transition parameters cap white and remove stepped shimmer',()=>{
   for(const kind of NEURAL_KINDS){
     let top=0;
     for(let t=0;t<8;t+=.01){const f=neuralFrame(kind,t,{reducedFlash:true});top=Math.max(top,f.white);assert.equal(f.shimmer,0,kind);}

@@ -7,18 +7,21 @@ import {runtimeTree} from '../src/narrative/runtime-content.js';
 
 test('the Scene Dock crossing owns the title but does not spend the missing-door interaction', () => {
   const main = readFileSync('src/main.js', 'utf8');
-  const start = main.indexOf('function beginGetInArrivalTitle');
+  const start = main.indexOf('function beginGetInCrashAftermath');
   const end = main.indexOf('function noteArrivalThoughts', start);
   const body = main.slice(start, end);
   assert.match(body, /SPEECH\.clearSpeech\(\)/, 'yard chatter cannot leak across the cut');
   assert.match(body, /makeArrivalTitleScene\(/, 'the physical crossing opens the arrival adapter for the world title');
   assert.match(readFileSync('src/game/coldopen.js','utf8'), /export function makeArrivalTitleScene\(options = \{\}\)\s*\{[\s\S]*?makeWorldTitleScene\(/, 'the arrival adapter retains the actual world title');
-  assert.match(body, /restore:\(pose\)=>restoreOpeningEntryPose\(pose\)/,
-    'the title returns the head to the entered pose instead of forcing the door beat');
-  assert.match(body, /onDone:\(\)=>beginGetInDriveTeaser\(\)/,
-    'the outside-door title hands into the authored car teaser before setup');
+  assert.match(body, /makeOpeningCrashAftermathScene\(/, 'the remembered crash receives its own opaque, intimate aftermath');
+  assert.match(body, /makeArrivalTitleScene\(\{duration:12,audio:STORY,manageSoundtrack:false/,
+    'the full title arrives after the crash without restarting the released music');
+  assert.match(body, /scenes\.remove\(scene\);beginGetInDriveTeaser\(\)/,
+    'the threshold fade hands into the remembered drive');
   const teaser=main.slice(main.indexOf('function beginGetInDriveTeaser'),start);
-  assert.match(teaser,/onDone=\(\)=>TUT\.startTutorial\(\)/,'setup is the original continuation after the car cut');
+  assert.match(teaser,/onDone=\(\)=>beginGetInCrashAftermath\(\)/,'the drive completes into aftermath rather than directly into tutorial');
+  assert.match(teaser,/returnToBlack:true/,'the returned room remains unseen until the postcrash card');
+  assert.match(body,/TUT\.startTutorial\(\)/,'the title continuation reaches the existing preparation lesson');
   assert.doesNotMatch(teaser,/beginDoorSearchBeat|postDoorThought|commitSourceDrive\(/,'the short opening vision cannot spend the optional missing-door tree or actual Source trip');
   assert.doesNotMatch(body, /postDoorThought|beginDoorSearchBeat/,
     'crossing alone cannot trigger the missing-door tree');

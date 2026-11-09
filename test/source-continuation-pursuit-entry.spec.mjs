@@ -32,7 +32,8 @@ test('a first voluntary descent wakes one visible physical source with a full wa
 test('waiting after commitment observes physical return circuits while the entry bridge and refuges remain safe',()=>{
  let state=next(atLip(),{interact:true}).state;
  Object.assign(state,{...continuationRefugeAt({phase:'catch',level:0}),fall:null});const start={x:state.x,z:state.z,feet:state.feet},modes=new Set();
- for(let i=0;i<300*30;i++){const old=state.counterweight;state=next(state,{dt:1/30}).state;modes.add(state.counterweight.mode);assert.equal(state.recovery,null);assert.deepEqual({x:state.x,z:state.z,feet:state.feet},start);assert.ok(Math.hypot(state.counterweight.x-old.x,state.counterweight.y-old.y,state.counterweight.z-old.z)<.41);}
+ // Two complete circuits now visit seven shelves rather than four.
+ for(let i=0;i<360*30;i++){const old=state.counterweight;state=next(state,{dt:1/30}).state;modes.add(state.counterweight.mode);assert.equal(state.recovery,null);assert.deepEqual({x:state.x,z:state.z,feet:state.feet},start);assert.ok(Math.hypot(state.counterweight.x-old.x,state.counterweight.y-old.y,state.counterweight.z-old.z)<.41);}
  assert.ok(state.counterweight.cycle>=2);for(const mode of ['warning','walking','falling','returning','rewinding','hoisting','traversing','lowering-warning','lowering'])assert.ok(modes.has(mode),mode);
  for(let level=0;level<C.catch.levels;level++){const refuge={...state,level,...continuationRefugeAt({phase:'catch',level})},p=sourceContinuationThreatTelemetry(refuge,{horizonSeconds:180});assert.equal(p.refuge,true);assert.equal(p.timeToContact,null);}
 });

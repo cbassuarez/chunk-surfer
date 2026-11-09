@@ -55,7 +55,7 @@ export const ENDING_FAMILY = Object.freeze({
   tower: Object.freeze({
     id: 'tower',
     title: 'The tower',
-    reached: 'Walk away from the fight, then leave the Horizon tape at the tower instead of the chapel. This is the detour the bust offers, and it takes about ten minutes.',
+    reached: 'Walk away from the fight, pass the existing street, and meet the occupant at Horizon. Earn its offer, then walk toward the tower instead of onward to the chapel.',
     where: at('src/game/chunk-surf-state.js', 'export const HORIZON_EXIT'),
   }),
 });
@@ -430,9 +430,9 @@ export const ENDING_GATES = Object.freeze({
         where: at('src/game/chunk-surf-state.js', "case 'SOURCE_NORMAL_EXIT':"),
       }),
       Object.freeze({
-        label: 'Take the bust up on the tower, not the chapel',
+        label: 'Accept the occupant’s tower offer',
         kind: GATE_KIND.CHOICE,
-        detail: 'Where you get off the Horizon tape decides the road, and the decision sticks through a reload.',
+        detail: 'The occupant gives its truth freely. An earned offer and the physical departure decide the road; the decision survives a reload.',
         where: at('src/game/chunk-surf-state.js', 'export const HORIZON_EXIT'),
       }),
       Object.freeze({
@@ -456,7 +456,7 @@ export const ENDING_GATES = Object.freeze({
     ]),
     blocks: Object.freeze([
       Object.freeze({
-        label: 'Getting off the tape at the chapel',
+        label: 'Walking onward to the chapel',
         kind: GATE_KIND.ROAD,
         detail: 'That commits the chapel, and the tower is gone for the rest of the run.',
         where: at('src/game/chunk-surf-state.js', 'export const HORIZON_EXIT'),
@@ -464,7 +464,7 @@ export const ENDING_GATES = Object.freeze({
       Object.freeze({
         label: 'Losing the fight three times',
         kind: GATE_KIND.INSTEAD,
-        detail: 'Both halves lose the same way, and the first two losses are not the end: the bust sends you back in with the chapel closed. The third resolves.',
+        detail: 'Both halves lose the same way. The first two losses return to the same occupant with the chapel closed; the third resolves.',
         to: 'tower-lost',
         where: at('src/main.js', 'function resolveCathedralLoss()'),
       }),
@@ -484,7 +484,7 @@ export const ENDING_GATES = Object.freeze({
     summary: 'Take the detour and lose it. Eight bells finish the job on both bodies, one faculty at a time.',
     arrivals: Object.freeze({
       [ENDING_ARRIVAL.DEFEATED]: Object.freeze({
-        how: 'Lose either half of the cathedral fight TOWER_DEFEAT_CEILING times. The first two send you back to the bust with only its own path left.',
+        how: 'Lose either half of the cathedral fight TOWER_DEFEAT_CEILING times. The first two return to the occupant with only the tower path available.',
         where: at('src/main.js', 'function resolveCathedralLoss()'),
       }),
     }),
@@ -492,7 +492,7 @@ export const ENDING_GATES = Object.freeze({
       Object.freeze({
         label: 'You took the tower road',
         kind: GATE_KIND.ROAD,
-        detail: 'The same first half as Exit Through the Gift Shop: walk away from the fight, take the bust up, get off at the tower.',
+        detail: 'The same first half as Exit Through the Gift Shop: leave the fight, earn the occupant’s offer and walk its tower path.',
         where: at('src/game/chunk-surf-state.js', 'export const HORIZON_EXIT'),
       }),
       Object.freeze({

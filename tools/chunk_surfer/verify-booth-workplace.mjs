@@ -1,0 +1,47 @@
+import puppeteer from 'puppeteer-core';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const base=process.env.GAME_URL||'http://127.0.0.1:5589',out=process.env.OUT||'/Users/seb/Documents/Codex/2026-10-17/kin/work/arrival-repair-2026-11-08/booth';fs.mkdirSync(out,{recursive:true});
+const browser=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,protocolTimeout:90000,args:['--use-angle=metal','--autoplay-policy=no-user-gesture-required','--disable-background-timer-throttling','--disk-cache-size=1048576','--disable-gpu-shader-disk-cache']});
+const report={scope:'Isolated production renderer, actual compiled booth placement and shader. Chromium/Metal staged camera; not native route, progression or live-input acceptance.',errors:[],console:[],failedRequests:[],failedResponses:[]};
+let page;
+try{
+ page=await browser.newPage();await page.setViewport({width:1100,height:700,deviceScaleFactor:1});page.on('pageerror',e=>report.errors.push(e.message));
+ page.on('console',m=>report.console.push({type:m.type(),text:m.text()}));
+ page.on('requestfailed',r=>report.failedRequests.push({url:r.url(),failure:r.failure()?.errorText}));
+ page.on('response',r=>{if(r.status()>=400)report.failedResponses.push({url:r.url(),status:r.status()});});
+ await page.setRequestInterception(true);page.on('request',r=>r.url().includes('/@vite/client')?r.abort():r.continue());
+ await page.goto(base+'/test/booth-workplace-harness.html',{waitUntil:'domcontentloaded'});
+ const result=await page.evaluate(async()=>{
+  const rendererUrl=new URL('/src/render/r3d.js',location.href).href;
+  const response=await fetch(rendererUrl,{cache:'no-store'});if(!response.ok)throw Error(`renderer source ${response.status}`);
+  const source=await response.text(),propSpecifier=source.match(/import\s+\*\s+as\s+P3\s+from\s+["']([^"']+)["']/)?.[1];
+  if(!propSpecifier)throw Error('Cannot resolve the production renderer props module; refusing a second singleton');
+  const propUrl=new URL(propSpecifier,response.url).href;
+  const trace=window.__boothVerifyTrace={stage:'importing',baseURI:document.baseURI,rendererUrl,propUrl};
+  const [R,P,FP,PROP,C,B]=await Promise.all([import(rendererUrl),import(propUrl),import('/src/world/floorplan.js'),import('/src/game/props.js'),import('/src/data/floorplan/conservatory.js'),import('/src/game/booth-presentation.js')]);
+  trace.stage='renderer-initializing';
+  R.r3dInit(document.querySelector('#map'));R.r3dSetRenderScale(1);
+  trace.stage='base-props-loading';
+  const ready=await Promise.race([R.r3dBasePropsReady(),new Promise((_,reject)=>setTimeout(()=>reject(Error('Base props exceeded45s; inspect font/asset request diagnostics')),45000))]);
+  trace.actualStats=R.r3dPropStats();trace.importedStats=P.propPackStats();
+  if(!ready||!trace.actualStats)throw Error('The authoritative renderer has no base prop pack');
+  if(!trace.importedStats)throw Error('Props module graph mismatch: authoritative renderer is ready but imported diagnostic singleton is empty');
+  trace.stage='booth-packs-loading';
+  await P.addPropPack('/assets/booth-guard-props.glb');await P.addCharacterPack('/assets/outskirts-characters.glb');await P.addCharacterPack('/assets/guard-presentations.glb',{allowedMeshes:['outskirts_fold_guard','overworld_booth_guard']});
+  FP.compile(C.conservatory.levels,C.conservatory);PROP.propsInit(FP);const placed=PROP.renderInstances({inscriptions:false}).filter(p=>p.id.startsWith('yard-booth')&&!p.id.startsWith('yard-booth-guard-'));const raw=PROP.renderInstances({inscriptions:false}).find(p=>p.id==='yard-booth-guard-idle');placed.push(B.boothGuardRenderInstance(raw,{pose:'idle',timeSec:2,reducedMotion:true}));
+  trace.stage='rendering';R.r3dSetProps(placed);R.r3dSetDynamicProps([]);R.r3dSetLookProfile('explore',{transitionMs:0});R.r3dSetPixelMesh({debugSource:'final',reduceMotion:true,reduceFlash:true,memory:false});R.r3dSetFrontEndPlate('gameplay');R.r3dSetLightingContext({ambientIntensity:.14,ambientColor:[.78,.84,1]});R.r3dSetRainAmount(0);
+  R.r3dSetLocalLights([{x:23.1,y:2.25,z:14.2,intensity:.92,radius:12,color:[1,.82,.58]}]);
+  const plan=new Uint8Array(100*80*4);for(let i=0;i<plan.length;i+=4)plan.set([64,255,4,1],i);R.r3dSetPlan(plan,100,80);
+  const state={px:21.75/.5-.5,py:13.25/.5-.5,floorH:0,tileW:12,tileH:12,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:.12,plan:true,water:{active:false},sensoryProfile:'story'};
+  R.r3dSetLookAngles({yaw:Math.PI/2,pitch:.025,immediate:true});R.r3dSnapCameraOnNextFrame();let done=false,count=0;const loop=()=>{if(done)return;R.r3dFrame(state);count++;requestAnimationFrame(loop);};loop();
+  await new Promise(r=>setTimeout(r,5000));const a=R.r3dCaptureStageCanvas('props').toDataURL('image/png'),first=R.r3dBoothTelevisionStatus(),imageA=R.r3dCanvas().toDataURL('image/png');
+  const canvas=R.r3dCanvas(),stream=canvas.captureStream(30),chunks=[],rec=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:3000000});rec.ondataavailable=e=>chunks.push(e.data);const stopped=new Promise(r=>rec.onstop=r);rec.start();await new Promise(r=>setTimeout(r,6000));rec.stop();await stopped;stream.getTracks().forEach(t=>t.stop());
+  const last=R.r3dBoothTelevisionStatus(),b=R.r3dCaptureStageCanvas('props').toDataURL('image/png'),imageB=canvas.toDataURL('image/png');done=true;
+  const blob=new Blob(chunks,{type:'video/webm'}),video=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(blob);});
+  const gl=canvas.getContext('webgl2'),ext=gl.getExtension('WEBGL_debug_renderer_info');
+  return{first,last,frames:count,glError:gl.getError(),gpu:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):null,settings:R.r3dPixelMeshStatus(),instances:placed.map(p=>({id:p.id,mesh:p.mesh,yaw:p.yaw})),images:{'booth-west-1.png':imageA,'booth-west-2.png':imageB,'booth-props-1.png':a,'booth-props-2.png':b},video};
+ });
+ for(const [name,data]of Object.entries(result.images))fs.writeFileSync(out+'/'+name,Buffer.from(data.split(',')[1],'base64'));delete result.images;fs.writeFileSync(out+'/booth-moving-tv.webm',Buffer.from(result.video.split(',')[1],'base64'));delete result.video;Object.assign(report,result);fs.writeFileSync(out+'/renderer-report.json',JSON.stringify(report,null,2));
+ assert.equal(result.glError,0);assert.ok(result.last.uploads>result.first.uploads+15);assert.ok(result.last.decodedFrames>result.first.decodedFrames+15);assert.equal(result.settings.shaderReady,true);assert.deepEqual(report.errors,[]);console.log(JSON.stringify(report));
+}catch(e){report.failure=String(e.stack||e);report.trace=await page?.evaluate(()=>window.__boothVerifyTrace||null).catch(()=>null);fs.writeFileSync(out+'/renderer-report.json',JSON.stringify(report,null,2));throw e;}finally{await browser.close();}

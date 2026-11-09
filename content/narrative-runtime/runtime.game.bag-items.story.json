@@ -249,24 +249,18 @@
       "lines": [
         {
           "id": "bagInspectionDialogue.entries.sheet-music.l0",
-          "who": "direction",
-          "text": "{context.sheet.composer}. {context.sheet.title}. {context.sheet.detail}",
-          "source": "src/game/bag-items.js:338"
-        },
-        {
-          "id": "bagInspectionDialogue.entries.sheet-music.l1",
           "who": "you",
           "text": "{context.sheetsCarried} of them in the case now. This is the one on top.",
           "source": "src/game/bag-items.js:341"
         },
         {
-          "id": "bagInspectionDialogue.entries.sheet-music.l2",
+          "id": "bagInspectionDialogue.entries.sheet-music.l1",
           "who": "you",
           "text": "Nothing in that pocket.",
           "source": "src/game/bag-items.js:344"
         }
       ],
-      "source": "src/game/bag-items.js:338"
+      "source": "src/game/bag-items.js:341"
     },
     "bagInspectionDialogue.entries.keyring": {
       "id": "bagInspectionDialogue.entries.keyring",

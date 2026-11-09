@@ -1,6 +1,6 @@
 import { SOURCE_CONTINUATION as C, continuationSurfaces } from './source-continuation.js';
 
-// Fixed Source-II gluing charts, authored from the existing physical decks.
+// Fixed Source-II/III gluing charts, authored from the existing physical decks.
 // These are spatial addresses, not recovery destinations. The live crossing
 // never looks for support, chooses a safer point, or reads the departure X/Z.
 const surfaces = continuationSurfaces();
@@ -39,16 +39,21 @@ export const continuationVoidDomains = Object.freeze(rows.map(([surfaceId, minX,
     crossingPoint: 'body-centre', translationY: entryY - exitY });
 }));
 const byId = new Map(continuationVoidDomains.map(d => [d.id, d]));
-// Source III's cascade is non-Euclidean: dropping through its bottom wraps the
-// body back above the top crescent, where the exit door waits high up. This is
-// a vertical-only identification — no horizontal tile — so a full descent loop
-// returns to the entry height rather than sliding the deck sideways.
+// Source III identifies the whole lower address lattice with the existing
+// open case above. A vertical-only loop left an outer-edge miss outside every
+// shelf forever. This fixed receiving cell uses the same integer X/Z gluing as
+// Source II: no departure lookup, nearest safe point, rewind, or grace. It is
+// ordinary exposed crescent, so a miss costs descent progress and keeps HUSH
+// in the same continuous chase. Native images of this exact cell are rendered
+// before both body and eye cross it.
+const catchMinX=C.catch.center.x+7.5,catchMaxX=C.catch.center.x+12,
+  catchMinZ=C.catch.center.z-3,catchMaxZ=C.catch.center.z+3;
 const catchDomain = Object.freeze({
-  version: 1, id: 'source-iii-void:catch', chartId: 0, elevation: C.catch.top, surfaceId: 'catch-0-case-crescent',
-  minX: C.catch.outer.minX, maxX: C.catch.outer.maxX, minZ: C.catch.outer.minZ, maxZ: C.catch.outer.maxZ,
-  periodX: 0, periodZ: 0, exitY: -36, entryY: C.catch.top + 2.75,
-  entryFeetY: C.catch.top + 2.75 - C.bodyHeight / 2, exitFeetY: -36 - C.bodyHeight / 2,
-  crossingPoint: 'body-centre', translationY: (C.catch.top + 2.75) - (-36),
+  version: 1, id: 'source-iii-void:catch', phase:'catch', chartId: 0, elevation: C.catch.top, surfaceId: 'catch-0-case-crescent',
+  minX:catchMinX,maxX:catchMaxX,minZ:catchMinZ,maxZ:catchMaxZ,
+  periodX:catchMaxX-catchMinX,periodZ:catchMaxZ-catchMinZ,exitY:-36,entryY:C.catch.top+2.75,
+  entryFeetY:C.catch.top+2.75-C.bodyHeight/2,exitFeetY:-36-C.bodyHeight/2,
+  crossingPoint:'body-centre',translationY:(C.catch.top+2.75)-(-36),
 });
 byId.set(catchDomain.id, catchDomain);
 const byPlane = new Map(continuationVoidDomains.map(d => [key(d.chartId, d.elevation), d]));

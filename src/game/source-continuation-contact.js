@@ -50,13 +50,24 @@ function supportedReach(state,at){
  }
  return true;
 }
+// A physical interception is permission to offer a conversation, never to
+// confirm Contact. Keep this proof separate from the ordinary reach focus.
+export function sourceContinuationCapturedContactReady(state){
+ const h=state?.hush,r=state?.recovery;
+ return state?.status==='active'&&r?.reason==='hush-pressure'&&r.contact==='pending'
+  &&!state.fall&&!state.reveal&&!state.bodyTransit&&!state.cameraTransit
+  &&h?.active&&!h.fall&&!h.recovery&&!h.bodyTransit
+  &&finitePose(state)&&finitePose(h)&&chart(h)===chart(state)
+  &&Math.abs(h.feet-state.feet)<.8&&distance(state,h)<C.hush.contactDistance+.1
+  &&supported(state,state)&&supportedReach(state,h);
+}
 const faces=(state,at)=>state.phase==='catch'||distance(state,at)<.1
  ||(Math.sin(state.yaw||0)*(at.x-state.x)-Math.cos(state.yaw||0)*(at.z-state.z))/distance(state,at)>.25;
 
 export function sourceContinuationHushContactFocus(state,{status,...options}={}){
  const h=state?.hush,chapter=continuationContactChapter(state);
  if(!available(state,options)||!h?.active||!status||status.chapter!==chapter||!(status.battleAvailable||status.repeatAvailable)
-  ||status.activeBattleId||h.fall||h.recovery||h.bodyTransit||h.cameraTransit||['yield','recovering','falling'].includes(h.mode)
+  ||status.activeBattleId||h.fall||h.recovery||h.bodyTransit||h.cameraTransit||['recovering','falling'].includes(h.mode)||h.mode==='yield'&&!status.repeatAvailable
   ||!finitePose(h)||chart(h)!==chart(state)||weightNear(state,state)||weightNear(state,h))return null;
  const metres=distance(state,h);
  if(metres<SOURCE_CONTINUATION_CONTACT.minimumDistance||metres>SOURCE_CONTINUATION_CONTACT.maximumDistance||!faces(state,h)||!supportedReach(state,h))return null;

@@ -44,6 +44,8 @@ export const SOURCE_OUTSKIRTS_TOWN=freeze({
     '/assets/conservatory-props.glb','/assets/exterior-frontages.glb',
     '/assets/exterior-stationers.glb','/assets/opening-street.glb',
     '/assets/ellery-exterior-roofline.glb','/assets/vegetation.glb',
+    '/assets/source-drive/coastal-memory/van-wreck.glb',
+    '/assets/source-drive/coastal-memory/coastal-memory.glb',
   ],
 });
 

@@ -146,8 +146,8 @@ test('held objects use the body transform once and release onto supported paper 
   assert.equal(key.mesh,'booth_guard_key');assert.equal(cup.mesh,'booth_guard_cup');
   assert.ok(Math.abs(key.y-1.626)<.000001);assert.ok(Math.abs(cup.y-.058-1.55)<.000001);
   assert.ok(distance(guardPointToBooth(boothPointToGuard(STAGE.key)),STAGE.key)<1e-9);
-  assert.ok(propBytes.length<300_000);
-  assert.deepEqual(props.getRoot().listMeshes().map(m=>m.getName()).sort(),['yard_booth_interior','yard_booth_glazing','yard_booth_practicals','yard_booth_handoff','booth_guard_pen','booth_guard_key','booth_guard_cup'].sort());
+  assert.ok(propBytes.length<380_000,'complete dressed lodge remains a small optional pack');
+  assert.deepEqual(props.getRoot().listMeshes().map(m=>m.getName()).sort(),['yard_booth_interior','yard_booth_glazing','yard_booth_practicals','yard_booth_handoff','booth_guard_pen','booth_guard_key','booth_guard_cup','yard_booth_workplace','yard_booth_tv_screen'].sort());
 });
 
 test('rapid dialogue changes start from the actual interrupted hands and body instead of a canonical pose',()=>{

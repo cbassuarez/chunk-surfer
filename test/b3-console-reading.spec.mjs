@@ -20,14 +20,15 @@ test('the passive return and studio needles expose real pre/post fader gain whil
   s.key({key:'ArrowRight'});s.key({key:'ArrowRight'});s.key({key:'ArrowDown'});
   const after=b3ConsoleReadout(f.speaker.snapshot());assert.ok(Math.abs(after.sourceRatio-before.sourceRatio)<1e-9);assert.ok(after.outputRatio<before.outputRatio);
   assert.equal(after.strips[2].legend,'RETURN');assert.equal(after.strips[2].signal,after.sourceMeter);assert.equal(after.strips[1].signal,0);
-  s.key({key:'End'});assert.equal(f.speaker.snapshot().phase,'silenced');assert.equal(b3ConsoleReadout(f.speaker.snapshot()).outputMeter,0);assert.equal(b3ConsoleReadout(f.speaker.snapshot()).sourceMeter,0);s.key({key:'Escape'});
+  s.key({key:'End'});assert.equal(f.speaker.snapshot().phase,'sounding','the pre-fader return survives a closed channel');assert.ok(b3ConsoleReadout(f.speaker.snapshot()).outputMeter>0);
+  assert.equal(f.speaker.inspectReturn(),true);assert.equal(f.speaker.disconnectReturn(),true);assert.equal(f.speaker.snapshot().phase,'silenced');assert.equal(b3ConsoleReadout(f.speaker.snapshot()).outputMeter,0);assert.equal(b3ConsoleReadout(f.speaker.snapshot()).sourceMeter,0);s.key({key:'Escape'});
 });
 
 test('large and compact desk banks keep all16channels and the physical controls independently reachable',()=>{
   for(const size of [{cols:120,rows:38},{cols:70,rows:22},{cols:20,rows:8}])for(let n=1;n<=16;n++){
     const l=b3ConsoleLayout(size,n),s=l.strips.find(s=>s.channel===n);assert.ok(s);assert.ok(s.track.h>0&&s.w>0);
     assert.equal(b3ConsoleHit(l,s.x+s.w/2,s.track.y+s.track.h/2).channel,n);
-    for(const kind of ['power','look','close'])assert.equal(b3ConsoleHit(l,...Object.values(point(l[kind]))).kind,kind);
+    for(const kind of ['power','look','close','inspect'])assert.equal(b3ConsoleHit(l,...Object.values(point(l[kind]))).kind,kind);
   }
   const wide=b3ConsoleLayout({cols:120,rows:38},3);assert.equal(wide.visible,8);assert.ok(wide.worldVisibleToY>=38*.54,'the live room retains the upper screen');
   assert.equal(b3ConsoleLayout({cols:70,rows:22},3).visible,4);assert.equal(b3ConsoleLayout({cols:20,rows:8},3).visible,2);

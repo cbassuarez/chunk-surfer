@@ -50,6 +50,34 @@ test('new public wall respects the real paired entrance and W3 through-aperture'
  assert.ok(COPY.some(p=>p.lines.join(' ').includes('WEST SERVICE YARD')),'closed public entrance explains the existing service arrival');
 });
 
+test('the replacement north front has no second severed scenic crown above its cornice',()=>{
+ const box=C.hero.northCrownClip;
+ assert.deepEqual(box.physicalMin,[74,C.facade.height,0]);assert.deepEqual(box.physicalMax,[98,14,4]);
+ const clip=(poly,axis,bound,greater)=>{
+  const out=[];for(let i=0;i<poly.length;i++){
+   const a=poly[i],b=poly[(i+1)%poly.length],ia=greater?a[axis]>=bound:a[axis]<=bound,ib=greater?b[axis]>=bound:b[axis]<=bound;
+   if(ia)out.push(a);if(ia!==ib){const t=(bound-a[axis])/(b[axis]-a[axis]);out.push(a.map((v,k)=>v+(b[k]-v)*t));}
+  }return out;
+ };
+ const projectedCrownArea=mesh=>{
+  let area=0;for(const p of mesh.listPrimitives()){
+   const pos=p.getAttribute('POSITION'),ix=p.getIndices().getArray();
+   for(let i=0;i<ix.length;i+=3){let poly=[...ix.slice(i,i+3)].map(k=>pos.getElement(k,[]).map((v,a)=>v+[50,0,7.5][a]));
+    // A north-facing facade plane has actual XY area. Horizontal roofs and
+    // side returns cannot count as a duplicate front merely by their bounds.
+    if(Math.max(...poly.map(p=>p[2]))-Math.min(...poly.map(p=>p[2]))>1e-5)continue;
+    if(poly[0][2]<=box.physicalMin[2]||poly[0][2]>=box.physicalMax[2])continue;
+    for(const [axis,bound,greater]of[[0,74,true],[0,98,false],[1,9.45,true],[1,14,false]])poly=clip(poly,axis,bound,greater);
+    if(poly.length<3)continue;
+    area+=Math.abs(poly.reduce((s,a,n)=>{const b=poly[(n+1)%poly.length];return s+a[0]*b[1]-b[0]*a[1];},0))/2;
+   }
+  }return area;
+ };
+ const original=before.getRoot().listMeshes().find(m=>m.getName()===C.hero.mesh),repaired=after.getRoot().listMeshes().find(m=>m.getName()===C.hero.mesh);
+ assert.ok(projectedCrownArea(original)>10,'the source has a real conflicting north crown, not only a metadata overlap');
+ assert.ok(projectedCrownArea(repaired)<1e-5,'only the authored replacement owns the shallow north facade strip');
+});
+
 test('forecourt meets the existing footway without shifting the atrium or sealing the wall row',()=>{
  assert.deepEqual(LEVEL.physicalOrigin,{x:74,y:0});assert.equal(LEVEL.rows.length,3);assert.ok(LEVEL.rows.every(r=>r.length===24));
  assert.equal(LEVEL.physicalBounds.z1,3);assert.equal(LEVEL.connectionStrip.z0,-.5);assert.equal(LEVEL.connectionStrip.z1,0);

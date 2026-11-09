@@ -12,16 +12,16 @@
 // interruption-director.js, the door and verb state machines are their pure
 // counterparts, and every sound, plate and window arrives through the host.
 import * as scenes from './scenes.js';
-import { uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
+import { uiClear, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
 import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import * as AUDIO from '../audio/story-audio.js';
 import {
   TAKEOVER_MEDIA, TAKEOVER_CLINICAL, TAKEOVER_COMFORT,
-  SEEP_CARNAGE, SEEP_PASTORAL, CAB_BLEED, DEAD_DOOR_LINES, INTERRUPTION,
-  freshDeadDoor, pressDeadDoor,
+  SEEP_CARNAGE, SEEP_PASTORAL, CAB_BLEED,
 } from './interruption-director.js';
 import { LOG_DATE } from '../data/transfer-registry.js';
+import {MEMORY_FIELD_VISITS} from '../data/memory-field.js';
 
 const MEDIA_LABEL = Object.freeze({
   'flowers-seb': 'FLOWERS', clouds: 'CLOUDS', pollination: 'POLLINATION',
@@ -38,10 +38,18 @@ const MEDIA_LABEL = Object.freeze({
 });
 
 const TABS = Object.freeze([
-  { id: 'fields', label: 'FIELDS' },
+  { id: 'scenes', label: 'SCENES' },
   { id: 'interruptions', label: 'INTERRUPTIONS' },
+  { id: 'media', label: 'MEDIA' },
   { id: 'leave', label: 'LEAVE' },
 ]);
+
+const SCENE_LABELS=Object.freeze({first:'THE FIRST BREATH',second:'THE ANT AND THE FIELD',third:"THE DOOR THAT WON'T",fourth:'THE WEIGHT AGAINST IT',fifth:'THE LAST DOOR'});
+export function transferSceneRows(){
+  return MEMORY_FIELD_VISITS.map(visit=>({kind:'scene',id:visit.id,label:SCENE_LABELS[visit.id],
+    detail:visit.walk?'Enter the actual field. Walk, look and reach for its door. Escape returns here.':
+      'Let the first breath pass, then walk and look around its field. Escape returns here.'}));
+}
 
 // The night log's own times, read one at a time: the room's clock, failing.
 const CLOCK_TIMES = Object.freeze(Object.values(LOG_DATE));
@@ -52,9 +60,9 @@ const CLOCK_HOLD_MS = 26000;
 // becomes the picture; the interruption rows are what can break into a room.
 function fieldRows() {
   const rows = [];
-  for (const id of TAKEOVER_MEDIA) rows.push({ kind: 'field', id, label: MEDIA_LABEL[id], detail: 'The window becomes the game. It stays until it lets go.' });
-  for (const id of TAKEOVER_CLINICAL) rows.push({ kind: 'field', id, label: MEDIA_LABEL[id], detail: 'What the take-arm reaches for.' });
-  for (const id of TAKEOVER_COMFORT) rows.push({ kind: 'field', id, label: MEDIA_LABEL[id], detail: 'What the torch reaches for.' });
+  for (const id of TAKEOVER_MEDIA) rows.push({ kind: 'field', id, label: MEDIA_LABEL[id], detail: 'A moving media plate, as used by the takeover. This is a picture, not a place to walk.' });
+  for (const id of TAKEOVER_CLINICAL) rows.push({ kind: 'field', id, label: MEDIA_LABEL[id], detail: 'A media plate from the take-arm pool. The SCENES list holds the places you can enter.' });
+  for (const id of TAKEOVER_COMFORT) rows.push({ kind: 'field', id, label: MEDIA_LABEL[id], detail: 'A media plate from the torch pool. The SCENES list holds the places you can enter.' });
   return rows;
 }
 function interruptionRows() {
@@ -62,28 +70,24 @@ function interruptionRows() {
   for (const id of SEEP_CARNAGE) rows.push({ kind: 'seep', id, set: 'carnage', label: MEDIA_LABEL[id], detail: 'A seep. Printed over the room, gone before it is understood.' });
   for (const id of SEEP_PASTORAL) rows.push({ kind: 'seep', id, set: 'pastoral', label: MEDIA_LABEL[id], detail: 'A seep. Printed over the room, gone before it is understood.' });
   rows.push({ kind: 'door', id: 'dead-door', label: "THE DOOR THAT WON'T", detail: 'Press it. It answers once you stop trying.' });
-  rows.push({ kind: 'verb', id: 'take-arm', label: 'THE RECORDER', detail: 'Take-arm. It reads and clicks, and sometimes it does not take.' });
-  rows.push({ kind: 'verb', id: 'torch', label: 'THE TORCH', detail: 'The light. It reads and clicks, and sometimes it does not come.' });
+  rows.push({ kind: 'verb', id: 'take-arm', label: 'THE RECORDER', detail: 'Enter the field and reach for the recorder with R. Walk and look; Escape returns here.' });
+  rows.push({ kind: 'verb', id: 'torch', label: 'THE TORCH', detail: 'Enter the field and reach for the torch with F. Walk and look; Escape returns here.' });
   for (const bleed of CAB_BLEED) rows.push({ kind: 'bleed', id: bleed.kind, label: MEDIA_LABEL[bleed.kind], detail: 'Heard from the cab, wherever he is.' });
   return rows;
 }
 // The room's own door. Escape always works; this one is the night's.
 function leaveRow() {
-  return [{ kind: 'leave', id: 'leave', label: 'LEAVE BY THE DOOR', detail: "It answers once you stop trying. Escape always works." }];
+  return [{ kind: 'leave', id: 'leave', label: 'RETURN', detail: 'Return to the title or paused night. Nothing played here changes the night.' }];
 }
 
 export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
-  const rows = [fieldRows(), interruptionRows(), leaveRow()];
+  const rows = [transferSceneRows(), interruptionRows(), fieldRows(), leaveRow()];
 
   let tab = 0;
   let sel = 0;
   let scroll = 0;
-  let door = null;
-  let leaveDoor = null;
-  let verb = null;
   let note = null;
   let seepUntil = 0;
-  let idlePlaying = false;
   let lastActivity = Date.now();
   let clockIndex = 0;
   let clockAt = Date.now();
@@ -105,57 +109,11 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
     return CLOCK_TIMES[clockIndex];
   }
 
-  // The dead door, played with the night's own pieces. It answers exactly when
-  // the in-game one does, and the row says so.
-  function pressDoor() {
-    if (!host?.deadDoorCue || !host?.sayLine) return;
-    door = door || freshDeadDoor('extras-door');
-    const next = pressDeadDoor(door, Date.now() / 1000);
-    door = next.door;
-    host.deadDoorCue();
-    if (!next.gave) {
-      if (door.presses === 2 || door.presses === 4) host.sayLine(DEAD_DOOR_LINES[door.presses % DEAD_DOOR_LINES.length]);
-      show(door.presses === 1 ? 'The handle goes, and the door does not.' : 'It still does not. (' + door.presses + ')');
-    } else {
-      door = null;
-      show('It opens.');
-    }
-  }
-  // The dead verb's quiet window, the same constants the night uses.
-  function pressVerb(id) {
-    if (!host?.deadVerb) return;
-    const now = Date.now() / 1000;
-    if (verb?.id === id && now - verb.at < INTERRUPTION.deadVerb.quiet && verb.presses < INTERRUPTION.deadVerb.presses) {
-      verb = { id, at: now, presses: verb.presses + 1 };
-      host.deadVerb(id);
-      show("It reads and clicks. It didn't take.");
-    } else {
-      verb = { id, at: now, presses: 1 };
-      host.deadVerb(id);
-      show('It takes.');
-    }
-  }
-  // The room's own door: the dead door's rules, applied to leaving. It opens
-  // once you stop trying, exactly like the night's.
-  function pressLeave() {
-    if (!host?.deadDoorCue || !host?.sayLine) return;
-    leaveDoor = leaveDoor || freshDeadDoor('extras-leave');
-    const next = pressDeadDoor(leaveDoor, Date.now() / 1000);
-    leaveDoor = next.door;
-    host.deadDoorCue();
-    if (!next.gave) {
-      if (leaveDoor.presses === 2 || leaveDoor.presses === 4) host.sayLine(DEAD_DOOR_LINES[leaveDoor.presses % DEAD_DOOR_LINES.length]);
-      show(leaveDoor.presses === 1 ? 'The handle goes, and the door does not.' : 'It still does not. Wait, then try again.');
-    } else {
-      leaveDoor = null;
-      AUDIO.menuBack(); scenes.pop();
-    }
-  }
-
   return {
     id: 'transfer-room', blocksInput: true, blocksWorld: true, lensPreset: 'calm',
     enter() { AUDIO.startMenuHiss(); touch(); },
-    exit() { AUDIO.stopMenuHiss(); },
+    exit() { AUDIO.stopMenuHiss(); host?.dispose?.(); },
+    resume(){AUDIO.startMenuHiss();touch();},
     key(e) {
       const k = String(e.key || '').toLowerCase();
       const listRows = list();
@@ -164,7 +122,7 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
       // own long-press and hard limit end it. The idle field is the exception —
       // any key wakes the room.
       if (host?.viewing?.()) {
-        if (idlePlaying) { idlePlaying = false; host.cancelField?.(); touch(); }
+        if (e.key==='Escape'||k==='b') { host.cancelField?.(); touch(); }
         return true;
       }
       if (Date.now() < seepUntil) return true;
@@ -173,7 +131,7 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
         tab = (tab + (e.shiftKey ? TABS.length - 1 : 1)) % TABS.length;
         reset(); AUDIO.menuPage(); return true;
       }
-      if (k === '1' || k === '2' || k === '3') {
+      if (k === '1' || k === '2' || k === '3' || k==='4') {
         const next = Number(k) - 1;
         if (tab !== next) { tab = next; reset(); AUDIO.menuPage(); }
         return true;
@@ -183,27 +141,28 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
       if (e.key === 'ArrowDown' || k === 's') { sel = (sel + 1) % listRows.length; AUDIO.menuMove(); return true; }
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'e') {
         const row = current();
-        if (row?.kind === 'field') { if (host?.beginField?.(row.id)) { AUDIO.menuPage(); show('Playing. Hold E to let go.'); } }
+        if(row?.kind==='scene'){
+          if(host?.beginScene?.(row.id)){AUDIO.stopMenuHiss();show('Returned from '+row.label+'.');}
+          else show('The scene could not be opened.');
+        }
+        else if (row?.kind === 'field') { if (host?.beginField?.(row.id)) { AUDIO.menuPage(); show('Playing. Escape returns here.'); } else show('The media plate could not be opened.'); }
         else if (row?.kind === 'seep') { const ms = host?.flashSeep?.(row.id, row.set); if (ms) { seepUntil = Date.now() + ms; AUDIO.menuPage(); } }
         else if (row?.kind === 'bleed') { if (host?.playBleed?.(row.id)) AUDIO.menuPage(); }
-        else if (row?.kind === 'door') pressDoor();
-        else if (row?.kind === 'verb') pressVerb(row.id);
-        else if (row?.kind === 'leave') pressLeave();
+        else if (row?.kind === 'door') {if(host?.beginScene?.('third'))AUDIO.stopMenuHiss();}
+        else if (row?.kind === 'verb') {if(host?.beginScene?.('fourth',{kind:'verb',id:row.id}))AUDIO.stopMenuHiss();}
+        else if (row?.kind === 'leave') {AUDIO.menuBack();scenes.pop();}
         return true;
       }
       return true;
     },
     render() {
+      if(host?.sceneActive?.()){uiClear();return;}
       const { cols, rows: screenRows } = uiSize();
       // A seep owns the whole picture: the room yields it, the way the white
       // takes the room in a run, and comes back when the flash has gone.
       if (Date.now() < seepUntil) return;
       // Idle long enough and the room sinks into the empty field, the night's
       // own last image; any key wakes it.
-      if (!host?.viewing?.() && !idlePlaying && host?.beginField && Date.now() - lastActivity > 90000) {
-        idlePlaying = !!host.beginField('empty-field', { idle: true });
-        touch();
-      }
       uiFill(0, 0, cols, screenRows, UI_COLOR.glass);
       const w = Math.min(96, cols - 4), h = Math.min(38, screenRows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((screenRows - h) / 2);
@@ -213,7 +172,7 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
       withMachinePanel(x, y, w, h, {
         label: 'FIELD REPLAYS',
         source: 'EXTRAS · ' + clockNow(),
-        footer: '↑↓ ROW · TAB LIST · ENTER PLAY · ESC CLOSE',
+        footer: '↑↓ ROW · TAB LIST · ENTER OPEN · ESC BACK',
         meter: false,
       }, (body) => {
         drawVfdText(body.x, body.y, 'W. ELLERY / WORKS', { color: UI_COLOR.amber, max: body.w });

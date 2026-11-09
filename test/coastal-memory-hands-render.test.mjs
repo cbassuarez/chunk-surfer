@@ -42,11 +42,13 @@ test('the scene draws the box in hand, not on its plinth, when handling', () => 
   const body = scene.props.find((p) => p.id === 'coastal-broken-music-box');
   assert.ok(body);
   assert.deepEqual([body.x, body.y, body.z], [5, 2, 3]);
-  // The cylinder follows the winding score, not the autonomous plinth clock.
-  const cylinder = scene.props.find((p) => p.id === 'coastal-music-box-cylinder');
-  assert.ok(cylinder);
-  // With identity world frame, the box matrix equals the held transform.
-  assert.deepEqual(body.matrix, translate(5, 2, 3));
+  // Only the actual external key is visible. Hidden construction stays hidden.
+  for (const id of ['coastal-music-box-cylinder','coastal-music-box-gear','coastal-music-box-fan','coastal-music-box-live-tine'])
+    assert.equal(scene.props.some((p) => p.id === id), false, id + ' must stay inside the closed case');
+  assert.deepEqual(body.matrix, translate(5,2,3), 'pickup must preserve physical dimensions');
+  const key=scene.props.find(p=>p.id==='coastal-music-box-key');
+  assert.equal(key.mesh,'cm_broken_music_box_key');
+  assert.notDeepEqual(key.matrix,body.matrix,'winding must turn the independent external key');
 });
 
 test('without hands the scene keeps the box on its authored plinth', () => {

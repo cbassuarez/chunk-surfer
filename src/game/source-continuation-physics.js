@@ -1,10 +1,12 @@
 import {SOURCE_CONTINUATION as C,continuationChartSurfaces,continuationSurfaceContains,continuationSectorSteps,continuationChartSolids,continuationChartDoors} from '../data/source-continuation.js';
 import {continuationBodyAxis} from './source-continuation-portals.js';
 import {normalizeContinuationVoidLoop,wrapContinuationVoid} from './source-continuation-void.js';
+import {archipelagoExitReady} from './source-archipelago-progress.js';
 
 const epsilon=1e-6;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function continuationLeafFraction(state,id) {
+  if(id==='catch-final'&&!archipelagoExitReady(state))return 0;
   const m=state?.doorMotion?.[id];if(!m)return state?.doorOpen?.[id]?1:0;
   const t=m.duration>0?clamp((state.elapsed-m.startedAt)/m.duration,0,1):1;
   return m.from+(m.to-m.from)*t;

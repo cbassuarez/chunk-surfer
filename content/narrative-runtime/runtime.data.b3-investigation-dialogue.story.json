@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.b3-investigation-dialogue",
+  "title": "Runtime · data/b3-investigation-dialogue.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "buildB3FailureDialogue.start.when-repeated",
+  "entries": [
+    "buildB3FailureDialogue.start.when-repeated",
+    "buildB3FailureDialogue.start.otherwise-repeated",
+    "buildB3FailureDialogue.start",
+    "buildB3FailureDialogue.investigate",
+    "buildB3FailureDialogue.retry",
+    "buildB3ConsoleInvestigation.options",
+    "buildB3ConsoleInvestigation",
+    "B3_REMAINING_ROOMS_DIALOGUE.start"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/b3-investigation-dialogue.js",
+  "notes": "Generated from src/data/b3-investigation-dialogue.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "buildB3FailureDialogue.start.when-repeated": {
+      "id": "buildB3FailureDialogue.start.when-repeated",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildB3FailureDialogue.start.when-repeated.l0",
+          "who": "YOU",
+          "text": "Same phrase. Same speakers. A second length of tape, and exactly the same fault.",
+          "source": "src/data/b3-investigation-dialogue.js:18"
+        },
+        {
+          "id": "buildB3FailureDialogue.start.when-repeated.l1",
+          "who": "YOU",
+          "text": "It is not going to stop because I refuse to look at it.",
+          "source": "src/data/b3-investigation-dialogue.js:19"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:18"
+    },
+    "buildB3FailureDialogue.start.otherwise-repeated": {
+      "id": "buildB3FailureDialogue.start.otherwise-repeated",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildB3FailureDialogue.start.otherwise-repeated.l0",
+          "who": "YOU",
+          "text": "That is on the tape. Not outside. The studio speakers.",
+          "source": "src/data/b3-investigation-dialogue.js:21"
+        },
+        {
+          "id": "buildB3FailureDialogue.start.otherwise-repeated.l1",
+          "who": "YOU",
+          "text": "A room cannot give me room tone while somebody is feeding music into it. I need to find the feed.",
+          "source": "src/data/b3-investigation-dialogue.js:22"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:21"
+    },
+    "buildB3FailureDialogue.start": {
+      "id": "buildB3FailureDialogue.start",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "buildB3FailureDialogue.start.c0",
+          "text": "check the studio feed",
+          "source": "src/data/b3-investigation-dialogue.js:24",
+          "choiceId": "investigate",
+          "goto": "buildB3FailureDialogue.investigate"
+        },
+        {
+          "id": "buildB3FailureDialogue.start.c1",
+          "text": "try another take first",
+          "source": "src/data/b3-investigation-dialogue.js:25",
+          "choiceId": "retry",
+          "goto": "buildB3FailureDialogue.retry"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:24"
+    },
+    "buildB3FailureDialogue.investigate": {
+      "id": "buildB3FailureDialogue.investigate",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildB3FailureDialogue.investigate.l0",
+          "who": "YOU",
+          "text": "Follow the sound through the glass. Check the desk, then the return feeding those speakers. One fault at a time.",
+          "source": "src/data/b3-investigation-dialogue.js:30"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:30"
+    },
+    "buildB3FailureDialogue.retry": {
+      "id": "buildB3FailureDialogue.retry",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildB3FailureDialogue.retry.l0",
+          "who": "YOU",
+          "text": "One more. If it comes back, I go in and find out why.",
+          "source": "src/data/b3-investigation-dialogue.js:33"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:33"
+    },
+    "buildB3ConsoleInvestigation.options": {
+      "id": "buildB3ConsoleInvestigation.options",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "buildB3ConsoleInvestigation.options.c0",
+          "text": "check the disconnected rack supply / unplug the rack power unit",
+          "source": "src/data/b3-investigation-dialogue.js:46",
+          "choiceId": "unplug",
+          "targetName": "unplug{f?1:0}"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.options.c1",
+          "text": "check channel three at zero / bring channel three all the way down",
+          "source": "src/data/b3-investigation-dialogue.js:47",
+          "choiceId": "fader",
+          "targetName": "fader{p?1:0}"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.options.c2",
+          "text": "compare the source and speaker meters",
+          "source": "src/data/b3-investigation-dialogue.js:48",
+          "choiceId": "meters",
+          "targetName": "meters{p?1:0}{f?1:0}"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.options.c3",
+          "text": "follow the separate monitor return",
+          "source": "src/data/b3-investigation-dialogue.js:49",
+          "choiceId": "trace",
+          "targetName": "traced"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.options.c4",
+          "text": "take my hands off the desk",
+          "source": "src/data/b3-investigation-dialogue.js:52",
+          "choiceId": "leave"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:46"
+    },
+    "buildB3ConsoleInvestigation": {
+      "id": "buildB3ConsoleInvestigation",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildB3ConsoleInvestigation.l0",
+          "who": "YOU",
+          "text": "No mains. Channel three closed. The source meter is still moving, and the speakers have not stopped. / The music is in the live room. This desk is feeding it. Find which part of the desk.",
+          "source": "src/data/b3-investigation-dialogue.js:55"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l1",
+          "who": "YOU",
+          "text": "Channel output is down. The source meter carries on with the phrase. Two different points in the circuit. / The source meter catches each attack before the output meter follows it. Lowering the output will tell me which path the speakers use.",
+          "source": "src/data/b3-investigation-dialogue.js:59"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l2",
+          "who": "YOU",
+          "text": "A monitor return can listen before the fader. A closed channel does not necessarily close that return.",
+          "source": "src/data/b3-investigation-dialogue.js:61"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l3",
+          "who": "YOU",
+          "text": "The rack supply’s mains plug comes free. The low-voltage lead still runs to the desk. The music continues without a break.",
+          "source": "src/data/b3-investigation-dialogue.js:65"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l4",
+          "who": "YOU",
+          "text": "No. Do not put it back to make this easier to explain.",
+          "source": "src/data/b3-investigation-dialogue.js:66"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l5",
+          "who": "YOU",
+          "text": "Channel three reaches the bottom. Its output drops. The tune thins, but the speakers keep playing.",
+          "source": "src/data/b3-investigation-dialogue.js:69"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l6",
+          "who": "YOU",
+          "text": "There is a feed around the fader. Pulling the rest down will only repeat the same test.",
+          "source": "src/data/b3-investigation-dialogue.js:70"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l7",
+          "who": "YOU",
+          "text": "There. A separate monitor return, taken before the channel fader. The source meter is showing that feed.",
+          "source": "src/data/b3-investigation-dialogue.js:73"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l8",
+          "who": "YOU",
+          "text": "The mains cannot account for it. But this return still has a physical connection to the speakers.",
+          "source": "src/data/b3-investigation-dialogue.js:74"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l9",
+          "who": "YOU",
+          "text": "The return comes free. The speakers stop in the middle of the phrase.",
+          "source": "src/data/b3-investigation-dialogue.js:80"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.l10",
+          "who": "YOU",
+          "text": "Leave it out. Go back to position. A fresh B3 take, from the beginning.",
+          "source": "src/data/b3-investigation-dialogue.js:81"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildB3ConsoleInvestigation.c0",
+          "text": "unpatch the monitor return",
+          "source": "src/data/b3-investigation-dialogue.js:76",
+          "choiceId": "disconnect",
+          "targetName": "silent"
+        },
+        {
+          "id": "buildB3ConsoleInvestigation.c1",
+          "text": "leave the return connected for now",
+          "source": "src/data/b3-investigation-dialogue.js:77",
+          "choiceId": "leave"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:55"
+    },
+    "B3_REMAINING_ROOMS_DIALOGUE.start": {
+      "id": "B3_REMAINING_ROOMS_DIALOGUE.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "B3_REMAINING_ROOMS_DIALOGUE.start.l0",
+          "who": "YOU",
+          "text": "B3 is recorded. Four rooms left on the work order: the natatorium, the practice rooms, the concert hall, and the chapel.",
+          "source": "src/data/b3-investigation-dialogue.js:90"
+        },
+        {
+          "id": "B3_REMAINING_ROOMS_DIALOGUE.start.l1",
+          "who": "YOU",
+          "text": "The first three can be taken as I reach them. The chapel may take some time; I need to leave room for it in the shift.",
+          "source": "src/data/b3-investigation-dialogue.js:91"
+        },
+        {
+          "id": "B3_REMAINING_ROOMS_DIALOGUE.start.l2",
+          "who": "YOU",
+          "text": "Mark the next room. Keep the chapel on the list.",
+          "source": "src/data/b3-investigation-dialogue.js:92"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:90"
+    }
+  }
+}

@@ -58,7 +58,7 @@ function radioLeanEye(scene,amount=0){if(!(amount>0))return scene;const to=scene
 export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},initialDrive=null,timeSkips=DRIVE_TIME_SKIPS}={}){
  // Head down to the set, for as long as you hold it. The van doesn't stop for this.
  let radioLean=0,radioLeanTarget=0;
- const drive=createDrive(),weather=createDriveWeather({rain:.62,initialWetness:.38,seed:1947}),seed=openingRoadAt(OPENING_ROAD.spawn),keys=new Set();
+ const drive=createDrive(),weather=createDriveWeather({rain:.62,initialWetness:.38,seed:1947}),seed=openingRoadAt(OPENING_ROAD.spawn),keys=new Set();let steerAnalog=null;
  Object.assign(drive,{x:seed.x,z:seed.z,heading:seed.heading,roadHeight:seed.height,speed:13,throttle:.45,engineLoad:.35,station:'service',radioOn:true,volume:.65,...initialDrive});
  let started=false,disposed=false,finished=false,paused=false,hostPaused=false,timeSec=0,remainder=0,clippedSeconds=0,force=null,returned=false,notified=false,metricsCache=null,handControl=null,warningStartedAt=null;
  let look={yaw:0,pitch:-.035},settings={wipers:true,headlights:true},recordView={counter:'00:00',mode:'idle',note:'FIELD TAKE · READY'},skip=null;
@@ -144,7 +144,7 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
   }
   else{
    const before=openingRoadSurfaceAt(drive.x,drive.z);drive.paused=false;
-   stepDrive(drive,h,timeSec<.8?{}:Object.fromEntries([...keys].map(k=>[k,true])),openingDriveColliders(drive),{roadSampler:openingRoadSurfaceAt});
+   stepDrive(drive,h,timeSec<.8?{}:{...Object.fromEntries([...keys].map(k=>[k,true])),...(steerAnalog!=null?{steer:steerAnalog}:{})},openingDriveColliders(drive),{roadSampler:openingRoadSurfaceAt});
    const r=openingRoadSurfaceAt(drive.x,drive.z),support=openingCliffSupport(drive),vx=Math.sin(drive.heading)*drive.speed+Math.cos(drive.heading)*drive.lateralSpeed,vz=-Math.cos(drive.heading)*drive.speed+Math.sin(drive.heading)*drive.lateralSpeed,forwardRoadVelocity=vx*Math.sin(r.heading)-vz*Math.cos(r.heading);
    if(warningStartedAt==null&&r.distance>=288)warningStartedAt=timeSec;
    if(support.departed)commit({edge:true,support});
@@ -153,7 +153,7 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
   }
   if(handControl)handControl.elapsed+=h;
   const e=driveEvolutionFrame(drive),later=skips?.stretch()||{};stepDriveWeather(weather,{...e.weather,rain:Math.min(1,.68+.18*smooth(drive.furthest/293)+(later.rain||0)),fog:.05+.10*smooth(drive.furthest/293)+(later.fog||0),snow:0,whiteout:0,dt:h,timeSec:drive.programTime,wipers:settings.wipers,speed:drive.speed});synchronize();coveredReturn();}
- function update(dt,{paused:held=false,input:heldInput=null}={}){hostPaused=!!held;if(heldInput&&controlsEnabled())for(const[k,v]of Object.entries(heldInput))if(['forward','reverse','left','right','brake'].includes(k)){if(v)keys.add(k);else keys.delete(k);}synchronize();if(!started||disposed||finished||paused||hostPaused)return snapshot();const elapsed=Math.max(0,finite(dt));stepRadioLean(elapsed);clippedSeconds+=Math.max(0,elapsed-.25);remainder+=Math.min(.25,elapsed);while(remainder+1e-10>=STEP&&!finished){step(STEP);remainder=Math.max(0,remainder-STEP);}synchronize();return snapshot();}
+ function update(dt,{paused:held=false,input:heldInput=null}={}){hostPaused=!!held;steerAnalog=Number.isFinite(heldInput?.steer)?Math.max(-1,Math.min(1,heldInput.steer)):null;if(heldInput&&controlsEnabled())for(const[k,v]of Object.entries(heldInput))if(['forward','reverse','left','right','brake'].includes(k)){if(v)keys.add(k);else keys.delete(k);}synchronize();if(!started||disposed||finished||paused||hostPaused)return snapshot();const elapsed=Math.max(0,finite(dt));stepRadioLean(elapsed);clippedSeconds+=Math.max(0,elapsed-.25);remainder+=Math.min(.25,elapsed);while(remainder+1e-10>=STEP&&!finished){step(STEP);remainder=Math.max(0,remainder-STEP);}synchronize();return snapshot();}
  function input(action,pressed=true){if(!controlsEnabled())return false;if(!['forward','reverse','left','right','brake'].includes(action))return false;if(pressed)keys.add(action);else keys.delete(action);return true;}
  function radioLeanPose(){const k=radioLean*radioLean*(3-2*radioLean),to=cabRadioLeanAngles();return{radioLean:k,lookYawOffset:look.yaw+(to.yaw-look.yaw)*k,lookPitchOffset:look.pitch+(to.pitch-look.pitch)*k};}
  function stepRadioLean(dt){if(!controlsEnabled()&&!cut)radioLeanTarget=0;const reach=dt/CAB_RADIO_LEAN.seconds;radioLean=radioLean<radioLeanTarget?Math.min(radioLeanTarget,radioLean+reach):Math.max(radioLeanTarget,radioLean-reach);}

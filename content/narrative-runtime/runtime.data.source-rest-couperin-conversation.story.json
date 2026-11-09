@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "runtime.data.source-rest-couperin-conversation",
-  "title": "Runtime · data/source-rest-couperin-conversation.js",
+  "title": "Source III · Bench dialogue · Couperin",
   "status": "reference",
   "readOnly": true,
   "entry": "nodes.arrival",
@@ -38,7 +38,13 @@
   ],
   "tags": [
     "runtime",
-    "derived"
+    "derived",
+    "source",
+    "source iii",
+    "bench",
+    "benches",
+    "couperin",
+    "listening"
   ],
   "regions": [],
   "module": "src/data/source-rest-couperin-conversation.js",
@@ -79,7 +85,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:25"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:21"
+      "source": "src/data/source-rest-couperin-conversation.js:21",
+      "goto": "nodes.arrival-choice"
     },
     "nodes.arrival-choice": {
       "id": "nodes.arrival-choice",
@@ -151,7 +158,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:36"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:31"
+      "source": "src/data/source-rest-couperin-conversation.js:31",
+      "targetName": "questions-entry"
     },
     "nodes.a-while": {
       "id": "nodes.a-while",
@@ -194,7 +202,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:44"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:39"
+      "source": "src/data/source-rest-couperin-conversation.js:39",
+      "targetName": "questions-entry"
     },
     "nodes.guitar-etudes": {
       "id": "nodes.guitar-etudes",
@@ -243,7 +252,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:53"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:47"
+      "source": "src/data/source-rest-couperin-conversation.js:47",
+      "goto": "nodes.borrow-choice"
     },
     "nodes.borrow-choice": {
       "id": "nodes.borrow-choice",
@@ -315,7 +325,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:64"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:59"
+      "source": "src/data/source-rest-couperin-conversation.js:59",
+      "goto": "nodes.harpsichord"
     },
     "nodes.missing": {
       "id": "nodes.missing",
@@ -358,7 +369,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:72"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:67"
+      "source": "src/data/source-rest-couperin-conversation.js:67",
+      "goto": "nodes.harpsichord"
     },
     "nodes.harpsichord": {
       "id": "nodes.harpsichord",
@@ -413,7 +425,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:82"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:75"
+      "source": "src/data/source-rest-couperin-conversation.js:75",
+      "goto": "nodes.touch-choice"
     },
     "nodes.touch-choice": {
       "id": "nodes.touch-choice",
@@ -485,7 +498,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:93"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:88"
+      "source": "src/data/source-rest-couperin-conversation.js:88",
+      "goto": "nodes.recording"
     },
     "nodes.carry-attention": {
       "id": "nodes.carry-attention",
@@ -528,7 +542,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:101"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:96"
+      "source": "src/data/source-rest-couperin-conversation.js:96",
+      "goto": "nodes.recording"
     },
     "nodes.recording": {
       "id": "nodes.recording",
@@ -583,7 +598,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:111"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:104"
+      "source": "src/data/source-rest-couperin-conversation.js:104",
+      "goto": "nodes.recording-choice"
     },
     "nodes.recording-choice": {
       "id": "nodes.recording-choice",
@@ -655,7 +671,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:122"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:117"
+      "source": "src/data/source-rest-couperin-conversation.js:117",
+      "goto": "nodes.electronics"
     },
     "nodes.waiting": {
       "id": "nodes.waiting",
@@ -698,7 +715,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:130"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:125"
+      "source": "src/data/source-rest-couperin-conversation.js:125",
+      "goto": "nodes.electronics"
     },
     "nodes.electronics": {
       "id": "nodes.electronics",
@@ -753,7 +771,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:140"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:133"
+      "source": "src/data/source-rest-couperin-conversation.js:133",
+      "goto": "nodes.threshold-choice"
     },
     "nodes.threshold-choice": {
       "id": "nodes.threshold-choice",
@@ -831,24 +850,31 @@
         },
         {
           "id": "nodes.revoicing.l4",
+          "who": "you",
+          "text": "No.",
+          "source": "src/data/source-rest-couperin-conversation.js:154"
+        },
+        {
+          "id": "nodes.revoicing.l5",
           "who": "other",
           "text": "Good. I was hoping we could hear both.",
           "source": "src/data/source-rest-couperin-conversation.js:155"
         },
         {
-          "id": "nodes.revoicing.l5",
+          "id": "nodes.revoicing.l6",
           "who": "you",
           "text": "I can still find my way through it.",
           "source": "src/data/source-rest-couperin-conversation.js:156"
         },
         {
-          "id": "nodes.revoicing.l6",
+          "id": "nodes.revoicing.l7",
           "who": "other",
           "text": "Take your time.",
           "source": "src/data/source-rest-couperin-conversation.js:157"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:150"
+      "source": "src/data/source-rest-couperin-conversation.js:150",
+      "goto": "nodes.material"
     },
     "nodes.material": {
       "id": "nodes.material",
@@ -862,36 +888,43 @@
         },
         {
           "id": "nodes.material.l1",
+          "who": "other",
+          "text": "No.",
+          "source": "src/data/source-rest-couperin-conversation.js:161"
+        },
+        {
+          "id": "nodes.material.l2",
           "who": "you",
           "text": "But I know where the hands would go.",
           "source": "src/data/source-rest-couperin-conversation.js:162"
         },
         {
-          "id": "nodes.material.l2",
+          "id": "nodes.material.l3",
           "who": "other",
           "text": "You need not see them.",
           "source": "src/data/source-rest-couperin-conversation.js:163"
         },
         {
-          "id": "nodes.material.l3",
+          "id": "nodes.material.l4",
           "who": "you",
           "text": "I thought I needed a reason for every change.",
           "source": "src/data/source-rest-couperin-conversation.js:164"
         },
         {
-          "id": "nodes.material.l4",
+          "id": "nodes.material.l5",
           "who": "other",
           "text": "Would you like to tell me one?",
           "source": "src/data/source-rest-couperin-conversation.js:165"
         },
         {
-          "id": "nodes.material.l5",
+          "id": "nodes.material.l6",
           "who": "you",
           "text": "Not yet. I want to hear this.",
           "source": "src/data/source-rest-couperin-conversation.js:166"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:160"
+      "source": "src/data/source-rest-couperin-conversation.js:160",
+      "goto": "nodes.material-choice"
     },
     "nodes.material-choice": {
       "id": "nodes.material-choice",
@@ -963,7 +996,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:177"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:172"
+      "source": "src/data/source-rest-couperin-conversation.js:172",
+      "goto": "nodes.unfinished-sentence"
     },
     "nodes.space": {
       "id": "nodes.space",
@@ -1006,7 +1040,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:185"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:180"
+      "source": "src/data/source-rest-couperin-conversation.js:180",
+      "goto": "nodes.unfinished-sentence"
     },
     "nodes.unfinished-sentence": {
       "id": "nodes.unfinished-sentence",
@@ -1049,7 +1084,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:193"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:188"
+      "source": "src/data/source-rest-couperin-conversation.js:188",
+      "goto": "nodes.return"
     },
     "nodes.return": {
       "id": "nodes.return",
@@ -1098,7 +1134,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:202"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:196"
+      "source": "src/data/source-rest-couperin-conversation.js:196",
+      "targetName": "earthly"
     },
     "nodes.last-choice": {
       "id": "nodes.last-choice",
@@ -1170,7 +1207,8 @@
           "source": "src/data/source-rest-couperin-conversation.js:213"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:208"
+      "source": "src/data/source-rest-couperin-conversation.js:208",
+      "goto": "nodes.last"
     },
     "nodes.letting-go": {
       "id": "nodes.letting-go",
@@ -1196,18 +1234,25 @@
         },
         {
           "id": "nodes.letting-go.l3",
+          "who": "other",
+          "text": "No.",
+          "source": "src/data/source-rest-couperin-conversation.js:219"
+        },
+        {
+          "id": "nodes.letting-go.l4",
           "who": "you",
           "text": "A little more room, perhaps.",
           "source": "src/data/source-rest-couperin-conversation.js:220"
         },
         {
-          "id": "nodes.letting-go.l4",
+          "id": "nodes.letting-go.l5",
           "who": "other",
           "text": "Here.",
           "source": "src/data/source-rest-couperin-conversation.js:221"
         }
       ],
-      "source": "src/data/source-rest-couperin-conversation.js:216"
+      "source": "src/data/source-rest-couperin-conversation.js:216",
+      "goto": "nodes.last"
     },
     "nodes.last": {
       "id": "nodes.last",
@@ -1257,18 +1302,24 @@
         },
         {
           "id": "nodes.last.l7",
+          "who": "other",
+          "text": "No.",
+          "source": "src/data/source-rest-couperin-conversation.js:231"
+        },
+        {
+          "id": "nodes.last.l8",
           "who": "you",
           "text": "There it is.",
           "source": "src/data/source-rest-couperin-conversation.js:232"
         },
         {
-          "id": "nodes.last.l8",
+          "id": "nodes.last.l9",
           "who": "other",
           "text": "Yes.",
           "source": "src/data/source-rest-couperin-conversation.js:233"
         },
         {
-          "id": "nodes.last.l9",
+          "id": "nodes.last.l10",
           "who": "you",
           "text": "Leave it there.",
           "source": "src/data/source-rest-couperin-conversation.js:234"

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {makeOpeningVehicleScene} from '../src/game/opening-vehicle-scene.js';
-import {createOpeningArrivalDrive,openingArrivalAutoParkStart,openingArrivalSnapshot} from '../src/game/opening-arrival-drive.js';
+import {createOpeningArrivalDrive,openingArrivalAutoParkStart,openingArrivalSnapshot,stepOpeningArrivalDrive} from '../src/game/opening-arrival-drive.js';
 import {openingCabTargets} from '../src/game/opening-cab-inspection.js';
 import {OPENING_VEHICLE} from '../src/data/opening-vehicle.js';
 import {openingDriveColliders} from '../src/game/opening-arrival-world.js';
@@ -17,7 +17,7 @@ function aim(scene,id){const f=scene.view(),p=openingCabTargets(f.anchor).find(r
 test('the production default parks without any pedal through the actual compiled yard, then E completes the physical exit once',t=>{
  FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);const colliders=openingDriveColliders(FP,PROPS,target),events=[];let done=0,exit;
  const scene=ready({getDriveEnvironment:()=>({colliders}),onEvent:e=>events.push(e),onDone:frame=>{done++;exit=frame;}}),initial=scene.view();assert.ok(initial.drive.speed>0);assert.ok(initial.drive.autoPark);
- scene.lookBy(.3,-.1);const seconds=park(scene);assert.ok(seconds>=3&&seconds<=6);assert.equal(scene.view().canExit,true);assert.ok(Math.abs(scene.view().yaw-scene.view().anchor.yaw-.3)<1e-9);assert.equal(events.filter(e=>e.type==='opening-vehicle-contact').length,0);assert.equal(events.filter(e=>e.type==='opening-vehicle-parked').length,1);
+ scene.lookBy(.3,-.1);const seconds=park(scene);assert.ok(seconds>=6.5&&seconds<=9,'the physical approach has at least two more seconds than its former4.208s run');assert.equal(scene.view().canExit,true);assert.ok(Math.abs(scene.view().yaw-scene.view().anchor.yaw-.3)<1e-9);assert.equal(events.filter(e=>e.type==='opening-vehicle-contact').length,0);assert.equal(events.filter(e=>e.type==='opening-vehicle-parked').length,1);
  aimOpeningCabDoor(scene);scene.key({code:'KeyE'});assert.equal(scene.view().phase,'exiting');for(let n=0;n<400;n++)scene.update(1/120);assert.equal(done,1);assert.equal(exit.fade,1);assert.equal(exit.progress,1);scene.exit();
  t.diagnostic(`Actual compiled approach parked in ${seconds.toFixed(3)}s across ${colliders.length} real wall/prop colliders; no pose assignments after scene initialization.`);
 });
@@ -42,4 +42,23 @@ test('empty cab views and driving controls cannot become a hidden exit shortcut'
  const scene=ready();park(scene);assert.equal(scene.view().focus,null);
  for(const event of[{key:'e'},{key:'Enter'},{code:'NumpadEnter'},{code:'Space'},{controllerAction:'interact'},{controllerAction:'confirm'}]){scene.key(event);assert.equal(scene.view().phase,'parked');}
  scene.exit();
+});
+test('Lyle is introduced during the moving approach, without a modal talk or a repeated return-visit caption',()=>{
+ const scene=ready();assert.equal(scene.view().recollection,null);
+ for(let i=0;i<180;i++)scene.update(1/120);
+ assert.equal(scene.view().phase,'driving');assert.match(scene.view().recollection,/Lyle.*one of the pianists/);
+ scene.blur();const frame=scene.view();scene.update(10);assert.deepEqual(scene.view(),frame,'pause holds the thought with the physical drive');
+ scene.resume();park(scene);assert.equal(scene.view().recollection,null);scene.exit();
+ const returned=ready({driveEnabled:false});returned.update(2);assert.equal(returned.view().recollection,null);returned.exit();
+});
+
+test('a genuine old nine-metre parked checkpoint does not replay the arrival thought while stationary',()=>{
+ const x=target.x-9,z=target.z+2;
+ const old=createOpeningArrivalDrive(target,{spawn:{...target,x,z,yaw:Math.atan2(target.x-x,z-target.z)},autoPark:true,alreadyDriving:true});
+ for(let i=0;i<1200&&!old.parked;i++)stepOpeningArrivalDrive(old,1/120);
+ assert.equal(old.parked,true);assert.ok(old.elapsed>1&&old.elapsed<6.4,'the old physical approach parks inside the new caption window');
+ const scene=ready({checkpoint:{schema:1,phase:'parked',reveal:1,drive:openingArrivalSnapshot(old)}});
+ assert.equal(scene.view().phase,'parked');assert.equal(scene.view().canExit,true);
+ assert.equal(scene.view().recollection,null,'the stationary resumed cab is not the drive-in beat');
+ scene.update(.5);assert.equal(scene.view().recollection,null);scene.exit();
 });

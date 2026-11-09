@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {NodeIO} from '@gltf-transform/core';
 import {prune} from '@gltf-transform/functions';
+import {buildBoothWorkplace} from './booth-workplace-geometry.mjs';
 const root=fileURLToPath(new URL('../../../',import.meta.url)),source='public/assets/conservatory-props.glb',out=root+'public/assets/booth-guard-props.glb',io=new NodeIO(),d=await io.read(root+source),r=d.getRoot(),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const names=['yard_booth_interior','yard_booth_glazing','yard_booth_practicals','yard_booth_handoff'],kept=r.listMeshes().filter(m=>names.includes(m.getName())),materials=new Map(r.listMaterials().map(m=>[m.getName(),m]));
 if(kept.length!==names.length)throw Error('Missing source lodge mesh');
@@ -30,14 +31,19 @@ for(const m of kept){
         if(material==='painted steel')array[i+1]-=.135;
       }
       if(name==='POSITION'&&m.getName()==='yard_booth_interior')for(let i=0;i<array.length;i+=3){const[x,y,z]=array.slice(i,i+3),material=p.getMaterial().getName();
+        // Raise and enlarge the retained CRT. Its former screen was hidden
+        // completely behind the public counter, regardless of exposure.
+        if(material==='black lacquer'&&x>=-.081&&x<=.401&&y>=.799&&y<=1.161&&z>=-.851&&z<=-.509){array[i]=.62+(x-.16)*4/3;array[i+1]=1.96+(y-.98)*4/3;array[i+2]=-.62+(z+.68)*1.294117647;}
         // Leave a real standing recess: the old full carcass and 68cm top
         // intersected the approved human's abdomen at the actual window.
         if(material==='worn wood'&&y>1.40&&y<1.56&&z>.48&&z<1.18&&x> -1.32&&x<.42)array[i+2]=.62+(z-.49)/.68*.55;
         if(material==='dark wood'&&y>.82&&y<1.42&&z>.51&&z<1.01&&x> -1.25&&x<.35)array[i+2]=.88+(z-.52)/.48*.12;
-      }a.setArray(array);p.setAttribute(name,a);}
+      }
+      if(name==='POSITION'&&m.getName()==='yard_booth_practicals'&&p.getMaterial().getName()==='vfd green glass')for(let i=0;i<array.length;i+=3){const[x,y,z]=array.slice(i,i+3);array[i]=.58+(x-.16)*1.122807018;array[i+1]=1.96+(y-.98)*4/3;array[i+2]=-.62+(z+.68)*1.294117647;}
+      a.setArray(array);p.setAttribute(name,a);}
     const a=p.getIndices().clone(),array=a.getArray().slice();for(let i=0;i<array.length;i+=3)[array[i+1],array[i+2]]=[array[i+2],array[i+1]];a.setArray(array);p.setIndices(a);
   }
-  m.setExtras({...m.getExtras(),boothWorkplaceRevision:'public-window-work-v1',sourceMesh:m.getName(),publicFace:'+Z',preservation:'Source materials and UVs retained; Z reflection with corrected normals/winding; counter rear trimmed to .62m and front panel to .88m for a real standing recess; existing sliding panes parked to the right and rail lowered to the sill for a real head sightline.'});
+  m.setExtras({...m.getExtras(),boothWorkplaceRevision:'west-facing-workplace-v2',sourceMesh:m.getName(),publicFace:'+Z',preservation:'Source materials and UVs retained; Z reflection with corrected normals/winding; counter rear trimmed to .62m and front panel to .88m for a real standing recess; existing sliding panes parked to the right and rail lowered to the sill for a real head sightline.'});
   scene.addChild(d.createNode(m.getName()).setMesh(m));
 }
 const accessor=(array,type,integer=false)=>d.createAccessor().setType(type).setArray(integer?new Uint32Array(array):new Float32Array(array)).setBuffer(buffer);
@@ -62,6 +68,7 @@ function mesh(name){const m=d.createMesh(name),groups=new Map();
   // edge; the cup centre stays beside the hand, never through the palm.
   for(let j=0;j<20;j++){const a=-Math.PI*.5+j*Math.PI/20,b=-Math.PI*.5+(j+1)*Math.PI/20;const c=t=>[-.020+.025*Math.cos(t),-.001+.036*Math.sin(t),0];const p=c(a),q=c(b),delta=q.map((v,k)=>v-p[k]),l=Math.hypot(delta[0],delta[1]),n=[-delta[1]/l*.004,delta[0]/l*.004,0];g.quad([[p[0]+n[0],p[1]+n[1],-.005],[q[0]+n[0],q[1]+n[1],-.005],[q[0]-n[0],q[1]-n[1],-.005],[p[0]-n[0],p[1]-n[1],-.005]],'ivory');g.quad([[p[0]-n[0],p[1]-n[1],.005],[q[0]-n[0],q[1]-n[1],.005],[q[0]+n[0],q[1]+n[1],.005],[p[0]+n[0],p[1]+n[1],.005]],'ivory');for(const sign of[-1,1])g.quad([[p[0]+n[0]*sign,p[1]+n[1]*sign,-.005],[p[0]+n[0]*sign,p[1]+n[1]*sign,.005],[q[0]+n[0]*sign,q[1]+n[1]*sign,.005],[q[0]+n[0]*sign,q[1]+n[1]*sign,-.005]],'ivory');}g.finish();
 }
+buildBoothWorkplace({mesh,root:r,accessor});
 await d.transform(prune({keepAttributes:true}));const bytes=Buffer.from(await io.writeBinary(d));if(bytes.length>3_000_000)throw Error('Lodge work pack exceeds its bounded budget');fs.writeFileSync(out,bytes);
-const stats={revision:'public-window-work-v1',source,sourceSHA256:sha(fs.readFileSync(root+source)),sha256:sha(bytes),bytes:bytes.length,meshes:r.listMeshes().map(m=>({name:m.getName(),triangles:m.listPrimitives().reduce((n,p)=>n+p.getIndices().getCount()/3,0),primitives:m.listPrimitives().length})),originalMaterialEvidence,publicFace:'+Z',windowPassThrough:{x:[-.865,-.07],y:[1.57,2.075],z:1.30},paneParking:{centres:[[.55,1.91,1.30],[.60,1.91,1.355]],railCentreY:1.535,retainedTopology:true},newAccessories:built,pending:['Native final dither and actual animated ledger/handoff inspection']};
-fs.writeFileSync(out.replace('.glb','.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(out.replace('.glb','.credits.json'),JSON.stringify({author:'Chunk Surfer project',sourceMeshes:names,materials:'Exact existing project material records, UVs and maps copied from the current packed gate lodge.',newGeometry:'Original hand-sized pen, cut brass key and thick-walled tea cup. No external media.',sha256:stats.sha256},null,2)+'\n');console.log(JSON.stringify(stats,null,2));
+const stats={revision:'west-facing-workplace-v2',source,sourceSHA256:sha(fs.readFileSync(root+source)),sha256:sha(bytes),bytes:bytes.length,meshes:r.listMeshes().map(m=>({name:m.getName(),triangles:m.listPrimitives().reduce((n,p)=>n+p.getIndices().getCount()/3,0),primitives:m.listPrimitives().length})),originalMaterialEvidence,publicFace:'+Z',windowPassThrough:{x:[-.865,-.07],y:[1.57,2.075],z:1.30},paneParking:{centres:[[.55,1.91,1.30],[.60,1.91,1.355]],railCentreY:1.535,retainedTopology:true},newAccessories:built,pending:['Native final dither and actual animated ledger/handoff inspection']};
+fs.writeFileSync(out.replace('.glb','.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(out.replace('.glb','.credits.json'),JSON.stringify({author:'Chunk Surfer project',sourceMeshes:names,materials:'Exact existing project material records, UVs and maps copied from the current packed gate lodge.',newGeometry:'Original pen, cut brass key, thick-walled tea cup, night-office furniture, raised CRT fittings and curved television face. The separate television clip uses project-owned game footage.',sha256:stats.sha256},null,2)+'\n');console.log(JSON.stringify(stats,null,2));

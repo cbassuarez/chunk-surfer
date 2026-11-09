@@ -3,6 +3,8 @@ import {SOURCE_EARTHFALL} from './source-earthfall.js';
 import {SOURCE_JOURNEY,JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS,JOURNEY_DOORS,JOURNEY_FOLDS,JOURNEY_PROPS,JOURNEY_ARRIVAL_ANCHORS,JOURNEY_REFUGES} from './source-continuation-journey.js';
 import {SOURCE_REST_ALCOVE_SOLIDS} from './source-rest-alcove.js';
 import {corridorCollisionSolids,SOURCE_CONNECTOR_CORRIDOR} from './source-connector-corridor.js';
+import {SOURCE_EXIT_PASSAGE_SURFACES,SOURCE_EXIT_PASSAGE_SOLIDS,SOURCE_EXIT_PASSAGE_ANCHORS} from './source-exit-passage.js';
+import {SOURCE_III_ARCHIPELAGO,ARCHIPELAGO_SURFACES,ARCHIPELAGO_SOLIDS,ARCHIPELAGO_PROPS,ARCHIPELAGO_REFUGES} from './source-continuation-archipelago.js';
 
 // One persistent construction in local metres. Both Sources and their threshold
 // exist together; phase names describe the journey, not which floor is drawn.
@@ -14,16 +16,18 @@ export const CONTINUATION_CATCH_STAGES = freeze([
   { level: 2, id: 'masonry-counterarc', name: 'The counterarc', y: -4.8, innerRadius: 2.6, outerRadius: 11.5, startAngle: 2.5, endAngle: Math.PI * 1.5, material: 'cold-stone', construction: 'masonry', refugeAngle: 4.13 },
   { level: 3, id: 'binding-dish', name: 'The binding', y: -12.6, innerRadius: 1.2, outerRadius: 9.8, startAngle: -Math.PI / 2, endAngle: 2.75, material: 'case-lining', construction: 'binding', refugeAngle: .9 },
   { level: 4, id: 'silver-fan', name: 'The silver fan', y: -18.6, innerRadius: 2.2, outerRadius: 11, startAngle: .8, endAngle: Math.PI * 1.7, material: 'cold-stone', construction: 'soundboard', refugeAngle: 5.2 },
-  { level: 5, id: 'ash-arc', name: 'The ash arc', y: -24.6, innerRadius: 1.6, outerRadius: 10, startAngle: -2.2, endAngle: .9, material: 'case-lining', construction: 'masonry', refugeAngle: 2.6 },
+  { level: 5, id: 'ash-arc', name: 'The ash arc', y: -24.6, innerRadius: 1.6, outerRadius: 10, startAngle: -2.2, endAngle: .9, material: 'case-lining', construction: 'masonry', refugeAngle: -.7 },
   { level: 6, id: 'deep-binding', name: 'The deep binding', y: -30.6, innerRadius: 1.0, outerRadius: 9, startAngle: 1.8, endAngle: Math.PI * 2 - .8, material: 'piano-wood', construction: 'binding', refugeAngle: 4.6 },
 ]);
 export const SOURCE_CONTINUATION = freeze({
-  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: GAIT_SPEED.walk, place: 'interior', bodySpeedLimit: 3.2,
+  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: GAIT_SPEED.walk, place: 'interior', bodySpeedLimit: GAIT_SPEED.sprint,
   eyeHeight: 1.62, bodyRadius: .22, bodyHeight: 1.9, maximumStep: .45, gravity: 9.8,
   fixedStep: 1 / 120, jumpSpeed:4.45,doorSwingSeconds: .65, doorPassFraction: .85, doorApproachDistance: 6.5,
   recoverySeconds: 1.6, recoveryMaximumSeconds: 12, recoverySpeed: 6, recoveryRise: 3,
-  revealSeconds: 0, graceSeconds: 3, bounds: {...SOURCE_JOURNEY.bounds},
-  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.15, speed: GAIT_SPEED.jog, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
+  revealSeconds: 0, graceSeconds: 3, bounds: {
+    minX:Math.min(SOURCE_JOURNEY.bounds.minX,SOURCE_III_ARCHIPELAGO.bounds.minX),maxX:Math.max(SOURCE_JOURNEY.bounds.maxX,SOURCE_III_ARCHIPELAGO.bounds.maxX),
+    minZ:Math.min(SOURCE_JOURNEY.bounds.minZ,SOURCE_III_ARCHIPELAGO.bounds.minZ),maxZ:Math.max(SOURCE_JOURNEY.bounds.maxZ,SOURCE_III_ARCHIPELAGO.bounds.maxZ),minY:-44,maxY:SOURCE_JOURNEY.bounds.maxY},
+  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: GAIT_SPEED.walk*.9, speed: GAIT_SPEED.jog, chaseSpeed: 5.6, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
     entryDelaySeconds:6,entryOutsideMetres:1.1,thresholdArrivalDelaySeconds:3,thresholdNoticeSeconds:2.5 }),
   spawn: freeze({ x: 0, z: 2, feet: 0, yaw: 0, pitch: 0 }),
   wrongReturn: freeze({ transferX: -18, warningSeconds: 6, closureSpeed: .62,
@@ -45,8 +49,8 @@ export const SOURCE_CONTINUATION = freeze({
 });
 const C = SOURCE_CONTINUATION;
 export const CONTINUATION_SEAT_ISLAND = freeze({x:-193,z:-106,feet:-4.8,level:2,chartId:0});
-export const continuationCatchFloor = level => CONTINUATION_CATCH_STAGES[Math.min(3, Math.max(0, Math.round(level)))]?.y ?? -12.6;
-export const continuationStage = level => CONTINUATION_CATCH_STAGES[Math.min(3, Math.max(0, Math.round(Number(level) || 0)))];
+export const continuationStage = level => CONTINUATION_CATCH_STAGES[Math.min(CONTINUATION_CATCH_STAGES.length-1, Math.max(0, Math.round(Number(level) || 0)))];
+export const continuationCatchFloor = level => continuationStage(level).y;
 export function continuationRadialPoint(radius, angle) { return { x: C.catch.center.x + Math.cos(angle) * radius, z: C.catch.center.z + Math.sin(angle) * radius }; }
 const rect = (id, phase, minX, maxX, minZ, maxZ, y, extra = {}) => ({ id, phase, region: phase, kind: 'rect', minX, maxX, minZ, maxZ, y, thickness: .35, material: 'cold-stone', ...extra });
 const ii = (id, bounds, y, extra = {}) => rect(id, 'wrong-return', ...bounds, y, extra);
@@ -74,9 +78,9 @@ const wrongSurfaces = [
   ii('wrong-upper-east', [14, 18, -33, -14], 8.4, { role: 'exploration' }),
   ii('wrong-upper-east-head', [14, 26, -33, -27], 8.4, { role: 'landing' }),
   ii('wrong-upper-refuge', [-4, 4, -23, -13], 8.4, { role: 'refuge', material: 'piano-wood' }),
-  ii('wrong-overlook-arm', [5, 8, -12, 5], 8.4, { role: 'false-return', material: 'case-lining' }),
-  ii('wrong-overlook-return-arm', [3.5, 4.5, -21, 3.4], 8.4, { role: 'return', material: 'piano-wood' }),
-  ii('wrong-false-porch', [3.5, 9, 1, 6], 8.4, { role: 'false-return', material: 'case-lining' }),
+  ii('wrong-overlook-arm', [5, 10, -12, 5], 8.4, { role: 'false-return', material: 'case-lining' }),
+  ii('wrong-overlook-return-arm', [0, 4.5, -21, 3.4], 8.4, { role: 'return', material: 'piano-wood' }),
+  ii('wrong-false-porch', [0, 10, 1, 6], 8.4, { role: 'false-return', material: 'case-lining' }),
 ];
 // Real treads, rather than ramps with a staircase painted on them. Three
 // interlocked flights have separate supports and readable over/under joints.
@@ -146,6 +150,9 @@ const walls = [
   ...[-25.02, -18.98].map((z, i) => wall(`ii-mid-arch-pier-${i}`, 9.64, 10.36, z - .25, z + .25, 4.2, 7.1, { role: 'arch-pier' })),
   ...[-3.02, 3.02].map((x, i) => wall(`ii-refuge-arch-pier-${i}`, x - .25, x + .25, -19.36, -18.64, 8.4, 11.3, { role: 'arch-pier' })),
 ];
+// Keep the overlook rail on its widened west edge, rather than leaving a
+// waist-high barrier down the middle of the new return floor.
+for(const railing of walls)if(railing.role==='overlook-rail'){railing.minX-=3.5;railing.maxX-=3.5;}
 const door = (id, phase, x, y, z, yaw, role, extra = {}) => ({ id, phase, region: phase, x, y, z, yaw, role, width: 1.8, height: 2.3, ...extra });
 const doors = [
   door('wrong-entry-return', 'wrong-return', 0, 0, 3.5, 0, 'return', { width: 3, height: 3.05, normal: { x: 0, z: 1 } }),
@@ -174,13 +181,29 @@ export const CONTINUATION_EARTHFALL_BACKSIDE = freeze([
     SOURCE_EARTHFALL.catch.minZ + inheritedOffset.z, SOURCE_EARTHFALL.catch.maxZ + inheritedOffset.z, SOURCE_EARTHFALL.lowerFloor + inheritedOffset.y,
     { role: 'inherited-earthfall', construction: 'former-landing-head', thickness: SOURCE_EARTHFALL.catch.thickness, material: 'earthfall-backing' }),
 ]);
-const allSurfaces = freeze([...wrongSurfaces,...JOURNEY_SURFACES, ...catchSurfaces, ...CONTINUATION_EARTHFALL_BACKSIDE]);
+const allSurfaces = freeze([...wrongSurfaces,...JOURNEY_SURFACES, ...catchSurfaces,...ARCHIPELAGO_SURFACES, ...CONTINUATION_EARTHFALL_BACKSIDE,...SOURCE_EXIT_PASSAGE_SURFACES]);
+// The archipelago is much larger than the spindle. Fixed-step body queries
+// inspect only the authored surfaces in their local 16m cell.
+const supportCell=16,supportBuckets=new Map(),chartSurfaces=new Map();
+for(const surface of allSurfaces){
+  const chart=surface.chartId??0;
+  if(!chartSurfaces.has(chart))chartSurfaces.set(chart,[]);chartSurfaces.get(chart).push(surface);
+  for(let x=Math.floor(surface.minX/supportCell);x<=Math.floor(surface.maxX/supportCell);x++)for(let z=Math.floor(surface.minZ/supportCell);z<=Math.floor(surface.maxZ/supportCell);z++){
+    const key=`${chart}:${x}:${z}`;if(!supportBuckets.has(key))supportBuckets.set(key,[]);supportBuckets.get(key).push(surface);
+  }
+}
 
 const makeLip = (level, angle, suffix = '') => {
-  const stage = continuationStage(level), at = continuationRadialPoint(stage.innerRadius + .26, angle);
+  const stage = continuationStage(level);
+  // The binding's inner hole is narrower than the next shelf's. Its release
+  // leaves the outer edge; the two deeper fans leave their open angular edge.
+  // Each receiving footprint is visible on the actual shelf below.
+  if(level===3){const at=continuationRadialPoint(stage.outerRadius-.26,angle);return{id:`catch-lip-${level}${suffix}`,level,...at,dx:Math.cos(angle),dz:Math.sin(angle),approachAngle:angle};}
+  if(level>=4){angle=stage.startAngle+.04;const at=continuationRadialPoint((stage.innerRadius+stage.outerRadius)/2,angle);return{id:`catch-lip-${level}${suffix}`,level,...at,dx:Math.sin(angle),dz:-Math.cos(angle),approachAngle:angle};}
+  const at = continuationRadialPoint(stage.innerRadius + .26, angle);
   return { id: `catch-lip-${level}${suffix}`, level, ...at, dx: -Math.cos(angle), dz: -Math.sin(angle), approachAngle: angle };
 };
-export const CONTINUATION_DROP_LIPS = freeze([makeLip(0, 0), makeLip(1, Math.PI), makeLip(2, 2.6)]);
+export const CONTINUATION_DROP_LIPS = freeze([makeLip(0, 0), makeLip(1, Math.PI), makeLip(2, 2.6), makeLip(3,1.5), makeLip(4,.85), makeLip(5,-1.5)]);
 export const CONTINUATION_ALTERNATE_LIPS = freeze([makeLip(0, -.92, '-other'), makeLip(1, 2.1, '-other'), makeLip(2, 3.35, '-other')]);
 const props = [
   { id: 'wrong-remembered-entry', phase: 'wrong-return', kind: 'seam', x: -.9, y: 1.1, z: 3.45, role: 'remembered-entry' },
@@ -240,24 +263,28 @@ const swaySector = (s, elapsed) => {
   return { ...s, center: { x: s.center.x + sw.x, z: s.center.z + sw.z } };
 };
 const swayRows = (rows, elapsed) => (Number(elapsed) ? rows.map(s => swaySector(s, elapsed)) : rows);
-export const continuationSurfaces = value => swayRows(Number.isInteger(value?.chartId) ? allSurfaces.filter(s => (s.chartId ?? 0) === value.chartId) : allSurfaces, value?.elapsed);
+export const continuationSurfaces = value => swayRows(Number.isInteger(value?.chartId) ? chartSurfaces.get(value.chartId)||[] : allSurfaces, value?.elapsed);
 export const continuationChartId = value => Number.isInteger(value?.chartId) ? value.chartId : 0;
-export const continuationChartSurfaces = value => swayRows(allSurfaces.filter(s => (s.chartId ?? 0) === continuationChartId(value)), value?.elapsed);
+export const continuationChartSurfaces = value => swayRows(chartSurfaces.get(continuationChartId(value))||[], value?.elapsed);
 export function continuationSolids(value = {}) {
-  const result = [...walls,...JOURNEY_JOINT_SOLIDS,...SOURCE_REST_ALCOVE_SOLIDS,...corridorCollisionSolids(value)];
+  const result = [...walls,...JOURNEY_JOINT_SOLIDS,...ARCHIPELAGO_SOLIDS,...SOURCE_REST_ALCOVE_SOLIDS,...corridorCollisionSolids(value),...SOURCE_EXIT_PASSAGE_SOLIDS];
   if (value.closure?.mode === 'closing') { const x = Number(value.closure.frontX) || 0; result.push(wall('wrong-closing-front', x - .16, x + .16, -14, -10, 8.4, 11.4, { role: 'closure', material: 'dark-metal' })); }
   return Number.isInteger(value?.chartId)?result.filter(s=>(s.chartId??0)===value.chartId):result;
 }
 export const continuationDoors = () => doors;
 export const continuationChartDoors=value=>doors.filter(d=>(d.chartId??0)===continuationChartId(value));
 export const continuationChartSolids=value=>continuationSolids(value).filter(s=>(s.chartId??0)===continuationChartId(value));
-export const continuationProps = () => [...props,...JOURNEY_PROPS];
+export const continuationProps = () => [...props,...JOURNEY_PROPS,...ARCHIPELAGO_PROPS];
 export const continuationFolds=()=>JOURNEY_FOLDS;
-export const continuationArrivalAnchors=()=>[...JOURNEY_ARRIVAL_ANCHORS,SOURCE_CONNECTOR_CORRIDOR.anchor];
+export const continuationArrivalAnchors=()=>[...JOURNEY_ARRIVAL_ANCHORS,SOURCE_CONNECTOR_CORRIDOR.anchor,...ARCHIPELAGO_REFUGES.map(p=>({...p,phase:'catch',earnedBy:'supported-arrival'})),...SOURCE_EXIT_PASSAGE_ANCHORS];
 export function continuationSupportAt(x, z, value = {}, options = {}) {
   const feet = Number.isFinite(options.feet) ? options.feet : Number.isFinite(value.feet) ? value.feet : 0;
   const maxY = options.maxY ?? feet + C.maximumStep, minY = options.minY ?? feet - C.maximumStep;
-  return continuationChartSurfaces({chartId:options.chartId??continuationChartId(value)}).filter(s => continuationSurfaceContains(s, x, z, options.margin ?? 0)).map(s => ({ id: s.id, y: continuationSurfaceY(s, x, z), level: s.level ?? 0, surface: s })).filter(s => s.y <= maxY + 1e-7 && s.y >= minY - 1e-7).sort((a, b) => b.y - a.y)[0] || null;
+  const margin=options.margin??0,chart=options.chartId??continuationChartId(value);
+  // A negative margin expands a footprint; retain the full chart contract for
+  // those uncommon callers rather than dropping a neighbouring cell's floor.
+  const candidates=margin<0?chartSurfaces.get(chart)||[]:supportBuckets.get(`${chart}:${Math.floor(x/supportCell)}:${Math.floor(z/supportCell)}`)||[];
+  return candidates.filter(s => continuationSurfaceContains(s, x, z, margin)).map(s => ({ id: s.id, y: continuationSurfaceY(s, x, z), level: s.level ?? 0, surface: s })).filter(s => s.y <= maxY + 1e-7 && s.y >= minY - 1e-7).sort((a, b) => b.y - a.y)[0] || null;
 }
 export const continuationDropLip = value => CONTINUATION_DROP_LIPS.find(p => p.level === value?.level) || null;
 export const continuationDropLips = value => [...CONTINUATION_DROP_LIPS, ...CONTINUATION_ALTERNATE_LIPS].filter(p => p.level === value?.level);
@@ -268,7 +295,7 @@ export function continuationRefugeAt(value = {}) {
   }
   const stage = continuationStage(value.level), at = continuationRadialPoint(stage.outerRadius + 1.25, stage.refugeAngle);
   const pocket={ ...at, feet: stage.y, level: stage.level };
-  return stage.level===CONTINUATION_SEAT_ISLAND.level && Math.hypot(value.x-CONTINUATION_SEAT_ISLAND.x,value.z-CONTINUATION_SEAT_ISLAND.z)<Math.hypot(value.x-pocket.x,value.z-pocket.z) ? CONTINUATION_SEAT_ISLAND : pocket;
+  return [pocket,...ARCHIPELAGO_REFUGES,CONTINUATION_SEAT_ISLAND].filter(p=>Math.abs(p.feet-value.feet)<.4).sort((a,b)=>Math.hypot(value.x-a.x,value.z-a.z)-Math.hypot(value.x-b.x,value.z-b.z))[0]||pocket;
 }
 export function continuationCatchObstacles(value={}) {
   return [...continuationChartSurfaces(value).map(s => ({ ...s, minY: s.y - s.thickness, maxY: s.y })), ...continuationChartSolids(value),

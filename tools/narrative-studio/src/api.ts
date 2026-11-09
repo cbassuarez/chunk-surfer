@@ -24,7 +24,7 @@ export const saveDocument = (path: string, revision: string, data: unknown) => r
 
 export const assetUrl = (path: string) => `/project-assets/${path}?token=${encodeURIComponent(token)}`;
 
-export function subscribeToChanges(onChange: (event: { type: string; path: string; event: string }) => void) {
+export function subscribeToChanges(onChange: (event: { type: string; path?: string; event?: string; message?: string }) => void) {
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
   const socket = new WebSocket(`${protocol}://${location.host}/studio-events?token=${encodeURIComponent(token)}`);
   let disposed = false;

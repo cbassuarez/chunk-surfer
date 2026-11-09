@@ -1,6 +1,7 @@
 // The recorder and take hunter own elapsed time, STOP, noise and consequences.
 // This performance observes their actual state. A rejected STOP is a visible
 // counterforce, never a false release or a second input/transport authority.
+import {recordingScareAllowed} from './recording-scare-policy.js';
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
 const smooth=n=>{const t=clamp(n);return t*t*(3-2*t);};
 export const RECORDING_EMBODIMENT=Object.freeze({
@@ -43,7 +44,8 @@ export function createRecordingEmbodiment(){
   function update(dt=0,input={}){
     // Accessibility suppression wins even during suspension. Everything else
     // freezes on foreground simulation time, including a refused press's grip.
-    const disabled=input.effectsMode==='off'||input.enabled===false||input.tutorial||input.slating||input.lightOn;
+    const disabled=input.effectsMode==='off'||input.enabled===false||input.tutorial||input.slating||input.lightOn
+      ||!recordingScareAllowed(input,'hands');
     if(disabled)return reset();
     if(input.suspended||input.stalled)return snapshot();
     const step=clamp(dt,0,RECORDING_EMBODIMENT.maximumStepSeconds),

@@ -144,7 +144,7 @@ test('cab belongings have reachable seated targets while all preparation equipme
   for(const yaw of[0,Math.PI/2,-1.1,Math.PI])for(const fieldKit of[freshFieldKit(),{headphones:'closed',microphone:'directional',recorder:'headroom',flashlight:'throw',cosmetics:{faceplate:'olive',buttons:'signal',flashlightHousing:'ivory'}},{headphones:'open',microphone:'wide',recorder:'low-draw',flashlight:'flood',cosmetics:{faceplate:'black',buttons:'sea-glass',flashlightHousing:'olive'}}]){
     const anchor={...target,yaw},eye=openingVehiclePoint(anchor,OPENING_VEHICLE.eye),instances=openingCabInstances(anchor,{fieldKit}),meshNames=new Set(instances.map(p=>p.mesh));
     assert.deepEqual(openingCabTargets(anchor,{fieldKit}).map(object=>object.id),ids);
-    assert.equal(instances.length,8,'the job paper and seven dressing meshes are separate from the resident dashboard receiver');
+    assert.equal(instances.length,9,'the paper, six other dressing surfaces and two music-box parts exclude the resident dashboard receiver');
     assert.ok(instances.every(p=>!p.mesh.includes('field_')&&!p.mesh.includes('headphones')&&!p.mesh.includes('microphone')&&!p.mesh.includes('flashlight')),
       'moving inspection targets also removes the visible duplicate kit and case');
     for(const object of openingCabTargets(anchor,{fieldKit})){
@@ -179,9 +179,10 @@ test('each direct close-up is fixed to its world object; tabs, number keys and a
     const s=makeOpeningCabInspectionScene({id:object.id,getState:()=>state,onClose:()=>closed++,makeReader:(value,options)=>{papers++;assert.equal(value,object.id==='job-papers'?WORK_ORDER:OPENING_CAB_PAPERS.find(paper=>paper.id===object.documentId));assert.equal(typeof options.onSceneClose,'function');return{enter(){},view:()=>({reading:false}),key(){},render(){},update(){}};},makeInspection:value=>{inspections.push(value.id);return{draw(){},key(){rotations++;},dispose(){disposed++;}};}});
     s.enter();s.render();const original=copy(s.view().model);assert.equal(s.view().objectId,object.id);assert.equal(s.view().readOnly,true);assert.equal(typeof s.selectSection,'undefined');
     for(const key of['Tab','1','2','3','4','ArrowDown','ArrowLeft'])s.key({key});s.key({controllerAction:'tabNext'});s.render();assert.equal(s.view().objectId,object.id);assert.deepEqual(s.view().model,original);
-    assert.equal(papers,object.kind==='document'?1:0);assert.equal(inspections.length,object.kind==='instrument'?1:0);if(object.kind==='instrument')assert.equal(rotations,2);
+    const solidInspection=['instrument','keepsake'].includes(object.kind);
+    assert.equal(papers,object.kind==='document'?1:0);assert.equal(inspections.length,solidInspection?1:0);if(solidInspection)assert.equal(rotations,2);
     assert.deepEqual(s.view().hitRegions.map(h=>h.id),['cab-object:close']);
-    s.key({code:'KeyE',repeat:true});assert.equal(closed,0);s.key({code:'KeyE'});assert.equal(closed,1);s.key({code:'KeyE'});assert.equal(closed,1);assert.equal(disposed,object.kind==='instrument'?1:0);
+    s.key({code:'KeyE',repeat:true});assert.equal(closed,0);s.key({code:'KeyE'});assert.equal(closed,1);s.key({code:'KeyE'});assert.equal(closed,1);assert.equal(disposed,solidInspection?1:0);
   }
   assert.equal(state.flags['bag.taken'],undefined);assert.equal(state.flags['work-order.accepted'],undefined);assert.equal(state.flags['radio.work-order-read'],undefined);
 });
@@ -193,7 +194,7 @@ test('self-check lists the genuine patched techniques without medical paperwork,
 });
 
 test('the actual instrument description and live facts use readable light ink on the charcoal inspection field',()=>{
-  const source=readFileSync(new URL('../src/game/opening-cab-inspection.js',import.meta.url),'utf8'),start=source.indexOf('        const entry=m.instrument,wide='),end=source.indexOf('\n      }else{',start);
+  const source=readFileSync(new URL('../src/game/opening-cab-inspection.js',import.meta.url),'utf8'),start=source.indexOf('        const entry=m.instrument||m.musicBoxInspection,wide='),end=source.indexOf('\n      }else{',start);
   assert.ok(start>=0&&end>start,'review the instrument-render fixture when its owner changes');
   const draw=new Function('m','l','instrument','scenes','scene','uiWrap','uiInk','ink','color',source.slice(start,end)),calls=[];
   const m=openingCabInspectionModel({fieldKit:freshFieldKit(),recordist:{battery:.4}},'recorder'),l=openingCabInspectionLayout({cols:120,rows:40});
@@ -218,7 +219,23 @@ test('the close control activates only on matching press/release and its layout 
 test('the separate cab pack contains the actual declared models, bounded geometry and provenance of each canonical source',async()=>{
   const bytes=readFileSync(new URL('../public/assets/opening-cab-objects.glb',import.meta.url)),stats=JSON.parse(readFileSync(new URL('../public/assets/opening-cab-objects.stats.json',import.meta.url),'utf8')),doc=await new NodeIO().readBinary(bytes),meshes=new Map(doc.getRoot().listMeshes().map(m=>[m.getName(),m]));
   assert.equal(createHash('sha256').update(bytes).digest('hex'),OPENING_CAB_GEOMETRY.sha256);assert.equal(stats.sha256,OPENING_CAB_GEOMETRY.sha256);assert.deepEqual([...meshes.keys()].sort(),[...OPENING_CAB_REQUIRED_MESHES].sort());
-  assert.ok(bytes.length<stats.limits.maxBytes);assert.ok(stats.totalTriangles<stats.limits.maxStoredTriangles);assert.equal(doc.getRoot().listTextures().length,0);
+  assert.ok(bytes.length<stats.limits.maxBytes);assert.ok(stats.totalTriangles<stats.limits.maxStoredTriangles);
+  // The project-authored music box has wood/metal maps. It does not turn the
+  // remaining preparation equipment and handwritten paper into textured copies.
+  const textured=[],referencedTextures=new Set();
+  for(const[name,mesh]of meshes)if(mesh.listPrimitives().some(p=>{
+    const material=p.getMaterial();
+    const textures=material?[material.getBaseColorTexture(),material.getNormalTexture(),material.getMetallicRoughnessTexture()].filter(Boolean):[];
+    textures.forEach(texture=>referencedTextures.add(texture));return textures.length>0;
+  }))textured.push(name);
+  assert.deepEqual(textured.sort(),['opening_cab_music_box','opening_cab_music_box_key']);
+  // Iterate every box primitive, rather than stop at the first textured one.
+  for(const name of textured)for(const p of meshes.get(name).listPrimitives()){
+    const m=p.getMaterial();for(const t of[m.getBaseColorTexture(),m.getNormalTexture(),m.getMetallicRoughnessTexture()].filter(Boolean))referencedTextures.add(t);
+  }
+  assert.equal(doc.getRoot().listTextures().length,referencedTextures.size,'no orphan maps are packed with the music box');
+  assert.ok(referencedTextures.size>0);
+  for(const texture of doc.getRoot().listTextures()){assert.equal(texture.getMimeType(),'image/png');assert.ok(texture.getImage().length>100);}
   for(const source of stats.sources){assert.equal(createHash('sha256').update(readFileSync(new URL('../'+source.file,import.meta.url))).digest('hex'),source.sha256);}
   const selected=openingCabInstances(target),triangles=selected.reduce((sum,p)=>sum+(OPENING_CAB_GEOMETRY.meshes.find(m=>m.mesh===p.mesh)?.triangles||0),0);assert.ok(triangles<stats.limits.maxDisplayedTriangles);
   for(const record of OPENING_CAB_GEOMETRY.meshes){const mesh=meshes.get(record.mesh);assert.ok(mesh);for(const primitive of mesh.listPrimitives()){const p=primitive.getAttribute('POSITION'),idx=primitive.getIndices().getArray();assert.equal(idx.length%3,0);for(let i=0;i<p.getCount();i++){const v=p.getElement(i,[]);for(let k=0;k<3;k++)assert.ok(v[k]>=record.bounds.min[k]-1e-6&&v[k]<=record.bounds.max[k]+1e-6);}}}

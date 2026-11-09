@@ -22,9 +22,8 @@ export const INTERRUPTION=Object.freeze({
   // Stay out of the opening. It is compared state for state against the crash loop.
   earliest:.02,
   // So it runs through the whole night and doesn't bunch at the end: every stretch of
-  // the arc is owed one flash, whatever the dice said. Band 0 is the first door after
-  // the get-in door, so it starts at the beginning. The caller keeps it out of the
-  // opening and out of Source.
+  // the arc is owed one flash within the exposure ceiling, whatever the dice said.
+  // The caller protects opening/calibration and keeps seeps out of Source.
   band:.07,owedGap:40,
   takeover:Object.freeze({from:.1,gapFrom:900,gapTo:360,chanceFrom:.05,chanceTo:.2,most:5}),
   deadVerb:Object.freeze({from:.08,gapFrom:260,gapTo:70,chanceFrom:.04,chanceTo:.24,quiet:.85,presses:2}),
@@ -55,6 +54,14 @@ const clamp01=v=>Math.max(0,Math.min(1,Number(v)||0));
 const mix=(a,b,t)=>a+(b-a)*t;
 function hash(seed,salt){let h=0x811c9dc5;for(const ch of `${seed}:${salt}`){h^=ch.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0;}return(h>>>0)/4294967296;}
 
+// A counted take can owe a visit without owning the next frame. Keep the
+// promise queued until it can land without hiding a threat or stealing escape.
+export function memoryFieldDeliveryAllowed({setup=false,modal=false,checkoff=false,recording=false,listening=false,
+  paused=false,escape=false,deadline=false,loop=false,special=false,pressure=0}={}){
+  return!!setup&&!modal&&!checkoff&&!recording&&!listening&&!paused&&!escape&&!deadline&&!loop&&!special
+    &&Math.max(0,Number(pressure)||0)<=.35;
+}
+
 export function createInterruptionDirector({seed=0}={}){
   let count=0,lastAt=-Infinity,lastId=null,tried=0,lastDeadAt=-Infinity,deadCount=0,takeovers=0,lastTakeoverAt=-Infinity,lastVerbAt=-Infinity,bleeds=0,nextBleedAt=null;
   const served=new Set();
@@ -62,15 +69,17 @@ export function createInterruptionDirector({seed=0}={}){
   // `frame` is lastMinutesFrame. `blocked` is the caller's whole list of reasons: a
   // take rolling, a fight, a menu, Effects off.
   function seepFor(verb,{at=0,frame=null,regionLoss=0,blocked=false,reducedDread=false,reducedFlash=false}={}){
-    if(blocked||!frame)return null;
+    if(blocked||!frame||clamp01(frame.arc)<C.earliest)return null;
     const weight=C.verbs[verb];if(!weight)return null;
     const d=clamp01(frame.deinhibition),loss=clamp01(regionLoss),band=Math.floor(clamp01(frame.arc)/C.band);
+    while(recent.length&&at-recent[0]>3600)recent.shift();
+    // An owed band still observes the exposure ceiling. Moving through the arc
+    // quickly must not turn several owed flashes into a burst over ordinary use.
+    if(recent.length>=mix(C.hourly.from,C.hourly.to,d))return null;
     if(!served.has(band)&&verb!=='take-arm'){
       if(at-lastAt<C.owedGap)return null;
     }else{
-      if(frame.arc<C.earliest||at-lastAt<mix(C.gap.from,C.gap.to,d))return null;
-      while(recent.length&&at-recent[0]>3600)recent.shift();
-      if(recent.length>=mix(C.hourly.from,C.hourly.to,d))return null;
+      if(at-lastAt<mix(C.gap.from,C.gap.to,d))return null;
       tried+=1;
       if(hash(seed,`roll${tried}`)>weight*(.02+.52*d)*(1+loss))return null;
     }

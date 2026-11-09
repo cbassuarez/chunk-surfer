@@ -1,32 +1,30 @@
 {
   "schema": 1,
-  "revision": "b3-last-session-material-v2",
+  "revision": "b3-series-600-reference-v3",
   "asset": "assets/b3-studio-props.glb",
-  "bytes": 1845336,
-  "sha256": "8b322a9f05d673166a244e6796fe0ed6e24802f0793e6abd10e800cb90e27ff4",
-  "triangles": 34094,
-  "primitives": 29,
-  "materials": 7,
+  "bytes": 2628728,
+  "sha256": "c050ce6ddbf622e6207a4efe4723619e0eb39def2f30ee1945a3ce17fea6a094",
+  "triangles": 48716,
+  "primitives": 30,
+  "materials": 8,
   "meshes": [
     {
       "name": "b3_mixing_console",
       "bounds": {
         "min": [
-          -1.1500932331167217,
-          0.00002062792264041491,
-          -0.48100000619888306
+          -1.149999976158142,
+          1.19209286886246e-9,
+          -0.47999998927116394
         ],
         "max": [
-          1.1500932331167217,
-          1.2710000276565552,
-          0.4724999964237213
+          1.149999976158142,
+          1.3009999990463257,
+          0.47200000286102295
         ]
       },
-      "triangles": 16120,
-      "primitives": 7,
-      "sources": [
-        "console-timber"
-      ]
+      "triangles": 30742,
+      "primitives": 8,
+      "sources": []
     },
     {
       "name": "b3_fader_cap",
@@ -143,19 +141,35 @@
       "sources": []
     }
   ],
+  "reference": {
+    "maker": "Soundcraft",
+    "model": "Series 600",
+    "year": 1985,
+    "displayName": "SERIES 600 / 16",
+    "description": "1985 eight-group, sixteen-track split-monitor recording console",
+    "manualUrl": "https://helpwiki.evergreen.edu/wiki/images/7/7c/Soundcraft-500-600-User-Manual.pdf",
+    "channelDiagramUrl": "https://helpwiki.evergreen.edu/wiki/images/0/03/Soundcraft600-channel-diagram.pdf",
+    "datedAnnouncementUrl": "https://www.worldradiohistory.com/Archive-All-Audio/Archive-Studio-Sound/80s/Studio-Sound-1985-02.pdf",
+    "datedManufacturerAdUrl": "https://www.worldradiohistory.com/Archive-All-Audio/Mix-Magazine/80s/85/Mix-1985-10a.pdf",
+    "notes": "The documented 1985 console supplies the input/group/monitor topology, knob hierarchy, sixteen bar meters and twin stereo VUs. Existing B3 furniture width and larger controls remain gameplay adaptations. No manufacturer textures, logos or drawings are embedded."
+  },
   "contract": {
     "faders": 16,
-    "channelX": "-.97 + channelIndex*.112",
+    "groupModules": 8,
+    "monitorPaths": 16,
+    "barMeters": 16,
+    "stereoVuMeters": 2,
+    "channelX": "-.985 + channelIndex*.061",
     "capNominalY": 0.918,
-    "capNominalZ": 0.1225,
-    "travelMetres": 0.27,
+    "capNominalZ": 0.245,
+    "travelMetres": 0.1,
     "workingValue": 0.75,
     "window": "No glass model; unchanged B3 aperture/optical pass.",
     "collision": "Existing console, chair and route owners retained."
   },
   "limits": {
     "bytes": 4000000,
-    "triangles": 42000,
-    "primitives": 30
+    "triangles": 56000,
+    "primitives": 34
   }
 }

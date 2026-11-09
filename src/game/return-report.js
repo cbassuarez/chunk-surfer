@@ -269,7 +269,7 @@ export function makeReturnReportScene({
 
   function availableActions() {
     if(failedNight)return actions;
-    const transfer = transferRoomCopy({ filed: filedCount() });
+    const transfer = transferRoomCopy({ filed: filedCount(),unlocked:!!summary?.endingId });
     return [
       ...actions,
       ...(stage === 'details' ? [
@@ -309,7 +309,7 @@ export function makeReturnReportScene({
     if (consumed || exited) return;
     if(failedNight&&!actions.some(entry=>entry.id===actionId))return;
     if (!POST_RUN_ACTIONS.some((entry) => entry.id === actionId)) return;
-    if (actionId === 'transfer-room' && !transferRoomCopy({ filed: filedCount() }).enabled) return;
+    if (actionId === 'transfer-room' && !transferRoomCopy({ filed: filedCount(),unlocked:!!summary?.endingId }).enabled) return;
     consumed = true;
     closeAccount();
     consumeReturnReport(summary.id);
@@ -362,7 +362,7 @@ export function makeReturnReportScene({
       for (const [index, row] of (pages[page] || []).entries()) uiText(body.x, body.y + 2 + index, row.text, row.cls, 1, body.w);
       const links = [
         { id: 'account', label: 'BACK' },
-        { id: 'transfer-room', label: 'FIELD REPLAYS', disabled: !transferRoomCopy({ filed: filedCount() }).enabled },
+        { id: 'transfer-room', label: 'FIELD REPLAYS', disabled: !transferRoomCopy({ filed: filedCount(),unlocked:!!summary?.endingId }).enabled },
         { id: 'archive', label: 'RUN HISTORY' },
       ];
       let foot = body.y + body.h - footerRows - 1, cx = body.x;

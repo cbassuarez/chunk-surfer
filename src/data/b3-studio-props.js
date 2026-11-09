@@ -1,3 +1,4 @@
+import {B3_CONSOLE_REFERENCE} from './b3-console-layout.js';
 import B3_STUDIO_SOURCE_MANIFEST from '../../assets/third-party/b3-studio/sources.json' with {type:'json'};
 
 // B3-only replacement pack. Prop IDs and collision remain owned by the room.
@@ -20,10 +21,12 @@ export const B3_STUDIO_WINDOW_PLACEMENT=Object.freeze({x:18.5,z:10.5,yaw:0,
 // The small attribution manifest contains metadata only, never model bytes or
 // builder dependencies. Credits follow the same public originals as the pack.
 export function b3StudioPropCreditLines(){
-  const sources=B3_STUDIO_SOURCE_MANIFEST.sources;
+  const sources=B3_STUDIO_SOURCE_MANIFEST.sources.filter(source=>source.id!=='console-timber');
   return[
     ...new Set(sources.map(source=>`${source.creator} (${source.licence})`)),
-    'Public source parts: console timber, five-caster chair base, outboard frame and patch-panel supports.',
+    'Console: project-authored adaptation after the Soundcraft Series 600 (documented in 1985). Existing furniture dimensions and larger controls are game adaptations.',
+    B3_CONSOLE_REFERENCE.manualUrl,B3_CONSOLE_REFERENCE.datedManufacturerAdUrl,
+    'Public source parts: five-caster chair base, outboard frame and patch-panel supports.',
     'Creator reports AI-assisted procedural modeling.',
     ...sources.map(source=>source.sourceUrl),
     ...new Set(sources.map(source=>source.licenceUrl)),

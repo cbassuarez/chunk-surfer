@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { sourceShoreBounds } from '../src/data/source-hanging-shore.js';
 import { sourceStrataEntryAt } from '../src/data/source-exposed-strata.js';
-import { horizonCamera } from '../src/render/horizon3d.js';
+import { sourceViewCamera as horizonCamera } from '../src/render/source-view-camera.js';
 import { SOURCE_SHORE_RANGE,SOURCE_SHORE_AIR,SOURCE_SHORE_COMPOSITE_FRAG,SOURCE_SHORE_MATERIAL_FRAG,SOURCE_SHORE_CODE_FRAG,
   sourceShoreGeometry,sourceShoreRenderActive,sourceShoreBoundaryVisible,
   sourceShoreApertureRay } from '../src/render/source-shore3d.js';

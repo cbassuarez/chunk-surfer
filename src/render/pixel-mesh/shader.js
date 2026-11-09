@@ -556,6 +556,9 @@ vec3 sourceWaterRecordedInk(vec3 ink,vec3 worldMetres){
 vec2 printedSurfaceTexel(ivec2 pixel){
   ivec2 limit=textureSize(uMarks,0)-1;
   float tag=texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a;
+  float byte=floor(tag*255.0+.5);
+  if(byte==172.0)return vec2(2.0,0.0);
+  if(byte==173.0)return vec2(2.0,1.0);
   return vec2(printedSurfaceKind(tag),printedSurfaceCoverage(tag));
 }
 float printedSurfaceAreaTexel(ivec2 pixel){
@@ -1263,6 +1266,13 @@ void main(){
   float finishFacing=abs(dot(finishNormal,finishView));
   captureDark=sourceMaterialRecordedInk(captureDark,uSourceFinish,printed.x,printed.y,worldMetres,finishFacing,captureBlackProtect,0.0);
   captureLight=sourceMaterialRecordedInk(captureLight,uSourceFinish,printed.x,printed.y,worldMetres,finishFacing,captureBlackProtect,1.0);
+  // The opening's Ophanim retains its established silicon spectrum without
+  // assigning Source ink to the ordinary van or Ellery. Only the winning
+  // optical ring/eye tags participate; the same binary light mask still
+  // draws the lids and leaves the pupils black.
+  float openingOphanimTag=texelFetch(uMarks,clamp(ivec2(frag),ivec2(0),textureSize(uMarks,0)-1),0).a*255.0;
+  float openingOphanimInk=step(171.5,openingOphanimTag)*step(openingOphanimTag,173.5);
+  captureLight=mix(captureLight,sourcePrismaticInk(2.0,worldMetres,finishFacing,0.0,1.0),openingOphanimInk*captureBlackProtect);
   captureDark=sourceWalkwayRecordedInk(captureDark,uSourceFinish,sourceRouteMark,worldMetres,captureBlackProtect,0.0);
   captureLight=sourceWalkwayRecordedInk(captureLight,uSourceFinish,sourceRouteMark,worldMetres,captureBlackProtect,1.0);
   // Fault identity is categorical: a filtered tag could invent byte 249

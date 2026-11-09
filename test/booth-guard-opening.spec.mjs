@@ -11,7 +11,7 @@ function intersections(eye,target){
   const from=new Vector3(...eye),to=new Vector3(...target),distance=from.distanceTo(to),ray=new Ray(from,to.sub(from).normalize()),hits=[];
   for(const p of glazing.listPrimitives()){
     const positions=p.getAttribute('POSITION').getArray(),ids=p.getIndices().getArray();
-    for(let i=0;i<ids.length;i+=3){const vertices=Array.from(ids.subarray(i,i+3),id=>{const[x,y,z]=positions.subarray(id*3,id*3+3);return new Vector3(24+z,y,14-x);});
+    for(let i=0;i<ids.length;i+=3){const vertices=Array.from(ids.subarray(i,i+3),id=>{const[x,y,z]=positions.subarray(id*3,id*3+3);return new Vector3(24-z,y,14+x);});
       const hit=ray.intersectTriangle(...vertices,false,new Vector3());if(hit&&hit.distanceTo(from)<distance)hits.push({material:p.getMaterial().getName(),position:hit.toArray()});
     }
   }
@@ -22,9 +22,9 @@ test('the ordinary approach has real clear sightlines to guard face and cap',()=
   // Actual production booth/actor placement, ordinary 1.62m standing eye.
   // The old rail intersects the face ray at Y1.756, hiding his eyes; moving
   // the camera pitch could never repair an opaque surface on that ray.
-  const eye=[26.25,1.62,14.75];
-  assert.deepEqual(intersections([24.9,1.63,14.72],[25.5,1.63,14.72]),[],'the existing hand/key slot is blocked');
-  for(const target of[[24.45,1.90,14.38],[24.37,2.02,14.38],[24.40,1.82,14.38]])assert.deepEqual(intersections(eye,target),[],`glazing hides guard point ${target}`);
+  const eye=[21.75,1.62,13.25];
+  assert.deepEqual(intersections([23.1,1.63,13.28],[22.5,1.63,13.28]),[],'the existing hand/key slot is blocked');
+  for(const target of[[23.55,1.90,13.62],[23.63,2.02,13.62],[23.60,1.82,13.62]])assert.deepEqual(intersections(eye,target),[],`glazing hides guard point ${target}`);
 });
 
 test('the two original panes park aside and the complete rail rests on the sill',()=>{

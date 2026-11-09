@@ -65,7 +65,8 @@ test('the live disturbance obeys the actual console controls and not its power s
   assert.equal(speaker.snapshot().powerOn,false);assert.equal(speaker.snapshot().intensity,before.intensity,'power cut does not stop the impossible sound');
   scene.key({key:'ArrowRight'});scene.key({key:'ArrowRight'});
   scene.key({key:'ArrowDown'});assert.ok(speaker.snapshot().intensity<before.intensity,'moving the actual channel changes audible intensity');
-  scene.key({key:'End'});assert.equal(speaker.snapshot().phase,'silenced');scene.key({key:'Escape'});
+  scene.key({key:'End'});assert.equal(speaker.snapshot().phase,'sounding','pre-fader return survives a closed strip');
+  assert.equal(speaker.inspectReturn(),true);assert.equal(speaker.disconnectReturn(),true);assert.equal(speaker.snapshot().phase,'silenced');scene.key({key:'Escape'});
 });
 
 test('world fader movement follows the user’s actual value without moving its collider',async()=>{

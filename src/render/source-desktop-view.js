@@ -22,9 +22,8 @@ const intents = new Set(['broadcast', 'conceal', 'overload', 'loop', 'silence'])
 
 export const SOURCE_DESKTOP_PRESSURE_ASSET = 'assets/hush-density.glb';
 
-// HUSH's pattern is fixed in the actual acquisition target, not in CSS pixels
-// or the stage's cropped viewport. Both performers must sample the same field.
-// The transparent pass creates its scene target at floor(logical size * DPR).
+// Compatibility target metadata for both performers. The stellar material
+// samples world direction; neither this size nor a cropped viewport pins it.
 export function setSourceDesktopHushViewport(materials, width, height, dpr = 1) {
   const scale = clamp(dpr, 1, 2);
   const w = Math.max(1, Math.floor(Math.max(1, finite(width, 1)) * scale));
@@ -568,7 +567,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       dither:dither?.debug(),
       pressureAsset: SOURCE_DESKTOP_PRESSURE_ASSET,
       skinnedMeshes: bodyMeshCount, bones: bodySampler?.debug().joints || 0, animationClips, modelIds,
-      pressureFinish: { core: 'screen-fixed-torn-horizon', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
+      pressureFinish: { core: 'world-fixed-violet-stellar-field', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
         surfaceMeshes: bodySurfaces.length,
         coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
         maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },

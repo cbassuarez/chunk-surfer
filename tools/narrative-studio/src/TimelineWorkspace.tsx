@@ -1,20 +1,24 @@
 import type { DocumentEnvelope, ProjectManifest, TimelineEntry } from './types';
+import {projectStudioTimeline} from './timeline-model.js';
 
-export function TimelineWorkspace({ project, documents, selectedDocumentId, onSelect }: {
+export function TimelineWorkspace({ project, documents, selectedDocumentId, onSelect, runtimeDocumentCount=0, onBrowseRuntime }: {
   project: ProjectManifest;
   documents: DocumentEnvelope[];
   selectedDocumentId: string;
   onSelect: (id: string) => void;
+  runtimeDocumentCount?: number;
+  onBrowseRuntime?: () => void;
 }) {
   const byId = new Map(documents.map((item) => [item.document.id, item]));
-  const entries: TimelineEntry[] = project.timeline || [];
+  const entries: TimelineEntry[] = projectStudioTimeline(project,documents);
   const placed = new Set(entries.flatMap((entry) => entry.documents || []));
-  const unplaced = documents.filter((item) => !placed.has(item.document.id));
+  const unplaced = documents.filter((item) => !item.readOnly&&!placed.has(item.document.id));
 
   return <div className="timeline-workspace">
     <aside className="timeline-summary">
       <div className="panel-heading"><span>GAME TIMELINE</span><strong>{entries.length} groups</strong></div>
       <div className="timeline-stat"><b>{documents.length}</b><span>documents</span></div>
+      {runtimeDocumentCount>0&&<button className="timeline-stat timeline-stat--browse" onClick={onBrowseRuntime}><b>{runtimeDocumentCount}</b><span>Conversations from game code ↗</span></button>}
       <div className="timeline-stat"><b>{project.runtimeEntrypoints?.length || 0}</b><span>runtime entrypoints</span></div>
       <div className="timeline-stat"><b>{unplaced.length}</b><span>unplaced active docs</span></div>
     </aside>
@@ -27,7 +31,7 @@ export function TimelineWorkspace({ project, documents, selectedDocumentId, onSe
             const doc = envelope?.document;
             return <button key={documentId} className={documentId === selectedDocumentId ? 'is-active' : ''} onClick={() => doc && onSelect(documentId)} disabled={!doc}>
               <span>{doc?.title || 'Missing document'}</span>
-              <small>{documentId}{doc ? ` · ${Object.keys(doc.nodes || {}).length} nodes` : ' · missing'}</small>
+              <small>{envelope?.readOnly?'From game code · read-only · ':''}{documentId}{doc ? ` · ${Object.keys(doc.nodes || {}).length} nodes` : ' · missing'}</small>
             </button>;
           })}
         </div>

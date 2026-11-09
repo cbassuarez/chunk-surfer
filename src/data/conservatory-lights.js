@@ -336,7 +336,7 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
 
   // Window spill just inside the public glazing, in front of the guard. A
   // source at the booth's centre backlit his face into a featureless silhouette.
-  L('bay-booth-window', LIGHT_KIND.FITTING, 24.9, 14.2, 2.25, [1, .82, .58], .92, 12.0,
+  L('bay-booth-window', LIGHT_KIND.FITTING, 23.1, 14.2, 2.25, [1, .82, .58], .92, 12.0,
     { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.04, steady:.90 } }),
 
   // THE INHABITED BLOCK. Road-owned sodium, shop spill and ordinary domestic

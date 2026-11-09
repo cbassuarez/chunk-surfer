@@ -1,4 +1,4 @@
-import { PUBLIC_SANITARY_CORE, PUBLIC_SANITARY_PARTITIONS, POOL_WASH_PARTITIONS, BUILDING_AMENITY_PROPS } from '../../src/data/building-amenities.js';
+import { PUBLIC_SANITARY_SOURCE, publicSanitarySourcePoint, PUBLIC_SANITARY_PARTITIONS, POOL_WASH_PARTITIONS, BUILDING_AMENITY_PROPS } from '../../src/data/building-amenities.js';
 
 // Authored staff appliance, in metres; the separate flex retains its existing
 // landing. Reuse the counter's subdued materials and keep every curved part
@@ -155,7 +155,9 @@ export function buildBuildingAmenities({ mesh, materials, MAT, addBox, addBeam, 
   const mop = material('amenity dry mop cotton', [.28, .29, .24], 0, 1);
   const mirror = material('amenity tarnished mirror face', [.24, .29, .28], .70, .31);
   const enamel = material('amenity pale kettle enamel', [.50, .53, .43], .10, .58);
-  const ox = PUBLIC_SANITARY_CORE.anchor.x, oz = PUBLIC_SANITARY_CORE.anchor.y;
+  // Build all walls, services and ceiling in the SAME canonical room frame.
+  // One prop pose turns the whole shell; fixtures and body proxies share it.
+  const ox = PUBLIC_SANITARY_SOURCE.anchor.x, oz = PUBLIC_SANITARY_SOURCE.anchor.y;
   const wallDimensions = (p) => [p.width <= .5 ? .14 : p.width, p.depth <= .5 ? .14 : p.depth];
   const wall = (m, p, ax, az) => {
     const [w, d] = wallDimensions(p), x = p.x - ax, z = p.y - az;
@@ -167,7 +169,7 @@ export function buildBuildingAmenities({ mesh, materials, MAT, addBox, addBeam, 
   };
   {
     const m = mesh('amenity_public_core_shell');
-    for (const p of PUBLIC_SANITARY_PARTITIONS) wall(m, p, ox, oz);
+    for (const p of PUBLIC_SANITARY_PARTITIONS) wall(m, {...p,...publicSanitarySourcePoint(p.x,p.y),width:p.depth,depth:p.width}, ox, oz);
     // The shared existing steel frame ends at x79.83; this short return meets
     // the thin divider face at79.93 instead of leaving a 100mm slit beside it.
     addBox(m, [79.88 - ox, 1.70, 24.75 - oz], [.16, 3.40, .14], plaster);

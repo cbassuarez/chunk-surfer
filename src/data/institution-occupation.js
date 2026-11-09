@@ -70,11 +70,12 @@ export const INSTITUTION_OCCUPATION_PROPS=Object.freeze([
     containingProp:'atrium-umbrella-bin',roomUse:'arrival hospitality',
   }),
   prop('arrival-mat','occupation_entry_mat',78.85,4.72,0,{roomUse:'arrival hospitality'}),
-  prop('arrival-cloak-rail','occupation_cloak_rail',75.75,5.75,Math.PI/2,{roomUse:'arrival hospitality'}),
+  // The public entrance's left return, outside the complete WC footprint.
+  prop('arrival-cloak-rail','occupation_cloak_rail',76.75,4.5,0,{roomUse:'arrival hospitality'}),
   // Phones inhabit existing desks. New keys are ordinary service keys; the
   // existing C-17 cabinet, its action and its issued key rings remain singular.
   prop('box-office-phone','occupation_desk_phone',93.90,9.12,.12,{on:'box-office-desk',roomUse:'administration'}),
-  wall('box-office-post','occupation_pigeonholes',95.95,11.60,-1,0,1.06,{roomUse:'administration'}),
+  wall('box-office-post','occupation_pigeonholes',91.75,8.00,1,0,1.06,{roomUse:'administration'}),
   wall('box-office-clock','occupation_wall_clock',94.10,6.85,0,1,2.16,{roomUse:'administration'}),
   wall('plant-key-hooks','occupation_key_hooks',30.20,32.15,1,0,1.42,{roomUse:'plant maintenance'}),
   prop('academic-phone','occupation_desk_phone',12.00,273.65,Math.PI/2,{on:'academic-reception-files',roomUse:'administration'}),

@@ -611,12 +611,23 @@
     "musicBox": {
       "point": [
         -0.4,
-        0.9829032610659516,
+        0.9696943403416313,
         0.42
       ],
       "turn": 3.241592653589793,
-      "source": "tools/chunk_surfer/source-drive-study/build-coastal-memory.mjs buildIntactMusicBoxGroups",
-      "method": "Same box as the coast, before the crash: lid shut, every part whole. Settled on the sampled passenger cushion."
+      "keyPivot": [
+        -0.38700950134108647,
+        0.9949943403416313,
+        0.4358824602814792
+      ],
+      "keyAxis": [
+        -0.09983341664682811,
+        0,
+        -0.9950041652780258
+      ],
+      "dimensionsProvisional": true,
+      "source": "tools/chunk_surfer/lib/music-box-model.mjs",
+      "method": "Same closed coated case as coast and inspection, before impact. Real rear plate, fasteners, bores, seated seam and a separate oval key on the shared rear winding axis."
     }
   },
   "limitations": [
@@ -624,5 +635,5 @@
     "World paper uses physical pen strokes; close readings use dedicated baked paper assets.",
     "Witness Edition geometry is not newly granted during the prologue."
   ],
-  "sha256": "572086888dac1bb19a42436e5347becbf27bf4f72f8fc27a280dc0b6736b21a9"
+  "sha256": "808f7359fc8ae2954beb97b321c57706877f8817866e1dda16d3d787bf75ccb7"
 }

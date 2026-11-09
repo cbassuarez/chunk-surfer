@@ -27,7 +27,16 @@ test('the production host supplies the real door pose and live anchor before ord
  const block=main.slice(main.indexOf('  const vanCargoLight='),main.indexOf('  const dockHauntingLightPoint='));
  assert.match(block,/anchor:lightAnchorPosition\('yard-van-lamp'\)/);
  assert.match(block,/open:vanDoorOpenFraction\(\)/);
+ assert.match(block,/vehicleActive:!!openingVehicleScene/);
  assert.match(block,/\[\.\.\.\(vanCargoLight\?\[vanCargoLight\]:\[\]\),\.\.\.ordinaryLights/);
+});
+
+test('the stationary cargo practical yields to the borrowed cab on every approach and return visit',()=>{
+ const parked=vanRearCargoLight(view());assert.ok(parked);
+ for(const phase of['driving','parked','exiting','return']){
+  assert.equal(vanRearCargoLight({...view(),vehicleActive:true}),null,`${phase} cannot leave a world-cell lamp inside the borrowed van`);
+ }
+ assert.deepEqual(vanRearCargoLight({...view(),vehicleActive:false}),parked,'the real parked fitting resumes after the borrowed cab releases');
 });
 
 test('the physical cargo lamp is above the rear work edge, ahead of the field case',()=>{

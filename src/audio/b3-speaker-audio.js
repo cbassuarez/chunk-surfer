@@ -1,20 +1,26 @@
 import {assetUrl} from '../platform/paths.js';
 import {B3_SPEAKER_SOURCE} from '../game/b3-speaker-disturbance.js';
 
-// Reuses the game's actual recorded floorboard footsteps as a degraded,
-// repeating studio-speaker signal. A quiet deterministic tape/noise fallback
-// is audible while decoding or if the asset is unavailable; it is not a voice.
-export const B3_SPEAKER_AUDIO_URL=assetUrl('audio/game/bunch-of-footsteps-sounds.mp3');
+import {B3_SPEAKER_MUSIC,B3_SPEAKER_LEGACY_MUSIC} from '../data/b3-speaker-source.js';
+
+// A real performance, reduced to the single cabinet's mono programme. Missing
+// media stays silent; unrelated noises must never masquerade as the puzzle.
+export const B3_SPEAKER_AUDIO_URL=assetUrl(B3_SPEAKER_MUSIC.asset);
+const LEGACY_MUSIC_URL=assetUrl(B3_SPEAKER_LEGACY_MUSIC.asset);
+const LEGACY_STEPS_URL=assetUrl('audio/game/bunch-of-footsteps-sounds.mp3');
 export const B3_SPEAKER_TAPE_PREFIX='b3.speaker.';
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number.isFinite(Number(n))?Number(n):a));
 export function b3SpeakerAudioFrame({active=false,intensity=0,listener={},source=B3_SPEAKER_SOURCE,
-  muffle=0,paused=false,hidden=false,focused=true,enabled=true}={}){
+  muffle=0,occlusionDb=null,paused=false,hidden=false,focused=true,enabled=true}={}){
   if(!active||paused||hidden||!focused||!enabled||listener.group!=='basement'||Math.abs((Number(listener.floor)||0)-source.floor)>.3)
     return{audible:false,gain:0,cutoff:700,pan:0,reason:!active?'silent':paused?'paused':hidden?'hidden':!focused?'unfocused':!enabled?'disabled':'outside'};
   const dx=source.x-(Number(listener.x)||0),dz=source.z-(Number(listener.z)||0);
   const distance=Math.hypot(dx,dz),yaw=Number(listener.yaw)||0,occlusion=clamp(muffle),amount=clamp(intensity);
-  const gain=.24*amount/(1+distance/16)*(1-.55*occlusion);
-  return{audible:gain>.0001,gain,cutoff:Math.max(580,3200*(1-.75*occlusion)),
+  // Glass/soundproofing acts in decibels, rather than stopping at a shallow
+  // 55-percent volume cut. The host supplies the actual side of the window.
+  const loss=clamp(occlusionDb==null?24*occlusion:occlusionDb,0,72);
+  const gain=.52*amount/(1+distance/12)*10**(-loss/20);
+  return{audible:gain>.0001,gain,cutoff:Math.max(180,6500*10**(-loss/28)),occlusionDb:loss,
     pan:clamp((dx*Math.cos(yaw)+dz*Math.sin(yaw))/Math.max(2,distance),-.8,.8),distance,reason:'speaker'};
 }
 function fallback(ctx){
@@ -41,7 +47,7 @@ function softened(ctx,buffer){
 }
 export function createB3SpeakerAudio({getAudio=()=>null,fetchImpl=(...args)=>fetch(...args)}={}){
   let loaded=null,pending=null,voice=null,offset=0,disposed=false,error=null,frame={audible:false,gain:0,cutoff:700,pan:0,reason:'idle'};
-  let fallbackBuffer=null,kind=null,generation=0,retryAt=0,retryCtx=null;
+  let fallbackBuffer=null,legacySteps=null,legacyPending=null,legacyMusic=null,legacyMusicPending=null,kind=null,generation=0,retryAt=0,retryCtx=null;
   const position=()=>voice?.buffer?.duration?((offset+Math.max(0,voice.ctx.currentTime-voice.started))%voice.buffer.duration):offset;
   function stopVoice(){
     if(!voice)return;
@@ -69,8 +75,10 @@ export function createB3SpeakerAudio({getAudio=()=>null,fetchImpl=(...args)=>fet
       stopVoice();return state();
     }
     if(voice&&(voice.ctx!==audio.ctx||voice.destination!==audio.destination))stopVoice();
-    if(!loaded){if(!pending)void preload();if(!fallbackBuffer)fallbackBuffer=fallback(audio.ctx);}
-    const buffer=loaded||fallbackBuffer,newKind=loaded?'recorded-footsteps':'tape-noise';
+    if(!loaded){
+      if(!pending)void preload();stopVoice();frame={...frame,audible:false,gain:0,reason:error?'asset-error':'loading'};return state();
+    }
+    const buffer=loaded,newKind='chamber-music';
     if(voice&&kind!==newKind)stopVoice();
     if(!voice){
       const ctx=audio.ctx,source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain(),pan=ctx.createStereoPanner?.();
@@ -89,14 +97,14 @@ export function createB3SpeakerAudio({getAudio=()=>null,fetchImpl=(...args)=>fet
   // recorder cue. The host records one once per second while the B3 mic rolls.
   function tapeCue(){
     if(!voice||!frame.audible)return null;
-    const tag=kind==='recorded-footsteps'?'steps':'noise';
+    const tag=B3_SPEAKER_MUSIC.cueTag;
     return{cueId:`${B3_SPEAKER_TAPE_PREFIX}${tag}.${Math.max(0,Math.round(position()*10))}`,
       gain:frame.gain,pan:frame.pan,provenance:{system:'b3-speaker',cutoff:frame.cutoff}};
   }
   // Replay the same source, including the fallback actually heard. The take
   // owns cancellation; loading after a restart never creates a late burst.
   function scheduleTapeCue(cueId,when,{gain=1,pan=0,output,nodes=[],duration=1,cutoff=3200}={}){
-    const match=new RegExp(`^b3\\.speaker\\.(steps|noise)\\.(\\d+)$`).exec(String(cueId));
+    const match=new RegExp(`^b3\\.speaker\\.(biber|music|steps|noise)\\.(\\d+)$`).exec(String(cueId));
     if(!match)return false;
     const audio=getAudio(),ctx=audio?.ctx;if(!ctx||!output)return false;
     let alive=true,source=null;
@@ -107,7 +115,7 @@ export function createB3SpeakerAudio({getAudio=()=>null,fetchImpl=(...args)=>fet
       if(remaining<=.05)return;
       const start=Math.max(ctx.currentTime,when),offset=((Number(match[2])/10+late)%buffer.duration);
       const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),g=ctx.createGain(),p=ctx.createStereoPanner?.();source=src;
-      filter.type='lowpass';filter.frequency.value=clamp(cutoff,580,3200);filter.Q.value=.5;
+      filter.type='lowpass';filter.frequency.value=clamp(cutoff,180,6500);filter.Q.value=.5;
       src.buffer=buffer;src.loop=true;g.gain.setValueAtTime(0,start);
       g.gain.linearRampToValueAtTime(Math.max(0,Number(gain)||0),start+.025);
       g.gain.setValueAtTime(Math.max(0,Number(gain)||0),Math.max(start+.025,start+remaining-.025));
@@ -117,10 +125,30 @@ export function createB3SpeakerAudio({getAudio=()=>null,fetchImpl=(...args)=>fet
     };
     if(match[1]==='noise'){
       if(!fallbackBuffer)fallbackBuffer=fallback(ctx);begin(fallbackBuffer);
+    }else if(match[1]==='steps'){
+      // Existing saves retain the old captured source; only new B3 takes use
+      // Biber. This compatibility path never enters live-room playback.
+      if(legacySteps)begin(legacySteps);
+      else {
+        legacyPending||=Promise.resolve().then(()=>fetchImpl(LEGACY_STEPS_URL)).then(r=>{
+          if(!r?.ok)throw Error('legacy B3 audio unavailable');return r.arrayBuffer();
+        }).then(b=>ctx.decodeAudioData(b)).then(b=>legacySteps=b).catch(()=>null).finally(()=>legacyPending=null);
+        void legacyPending.then(begin);
+      }
+    }else if(match[1]==='music'){
+      // Unversioned music cues were Corelli. Never relabel a saved take with
+      // the newly installed programme; new cues carry the Biber identity.
+      if(legacyMusic)begin(legacyMusic);
+      else {
+        legacyMusicPending||=Promise.resolve().then(()=>fetchImpl(LEGACY_MUSIC_URL)).then(r=>{
+          if(!r?.ok)throw Error('archived B3 music unavailable');return r.arrayBuffer();
+        }).then(b=>ctx.decodeAudioData(b)).then(b=>legacyMusic=b).catch(()=>null).finally(()=>legacyMusicPending=null);
+        void legacyMusicPending.then(begin);
+      }
     }else if(loaded)begin(loaded);
     else void preload().then(begin);
     return true;
   }
   return Object.freeze({preload,update,state,snapshot:state,tapeCue,scheduleTapeCue,pause(){stopVoice();return state();},
-    stop(){stopVoice();offset=0;return state();},dispose(){stopVoice();disposed=true;generation++;loaded=null;fallbackBuffer=null;return state();}});
+    stop(){stopVoice();offset=0;return state();},dispose(){stopVoice();disposed=true;generation++;loaded=null;fallbackBuffer=null;legacySteps=null;legacyMusic=null;return state();}});
 }

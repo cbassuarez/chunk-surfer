@@ -8,7 +8,7 @@ import { ZONE,CELL } from '../data/floorplan/legend.js';
 export const GET_IN_GOODS_DOOR_ID='dock-grey-exterior';
 
 export function getInEntryHasHappened({flags={},setupComplete=false,hasRealTake=false}={}){
-  return !!(flags['title.shown']||flags['setup.levels']||flags['combat.trained']||setupComplete||hasRealTake);
+  return !!(flags['title.shown']||flags['opening.title.pending']||flags['setup.levels']||flags['combat.trained']||setupComplete||hasRealTake);
 }
 
 // Aim at the three-metre leaf surface, not a narrow cone around its centre.
@@ -50,8 +50,14 @@ export function canBeginGetInDoorEntry({
 // actual Get-In landing can resume the recorder setup or its pending memory.
 export function getInSessionAction({atGetIn=false,flags={},setupComplete=false,handoffStarted=false,hasRealTake=false}={}){
   if(!atGetIn)return 'outside';
-  if(flags['title.shown']&&flags['opening.driveTeaser.pending']&&!flags['opening.driveTeaser.consumed'])return 'drive';
   if(handoffStarted||setupComplete)return 'complete';
+  if(flags.prologueDone&&!hasRealTake){
+    // New saves commit the threshold before the memory, then complete the title
+    // only after the crash. A reload never starts the whole memory twice.
+    if(flags['opening.title.pending'])return flags['opening.driveTeaser.consumed']?'post-crash':'drive';
+    // Migration: the earlier build committed title.shown before the memory.
+    if(flags['title.shown']&&flags['opening.driveTeaser.pending']&&!flags['opening.driveTeaser.consumed'])return 'drive';
+  }
   if(flags.prologueDone&&!getInEntryHasHappened({flags,setupComplete,hasRealTake}))return 'title';
   return flags.prologueDone?'tutorial':'outside';
 }

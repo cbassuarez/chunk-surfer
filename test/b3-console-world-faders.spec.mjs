@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
+import {B3_CONSOLE_LAYOUT as L,b3ConsoleChannelX,b3ConsoleFaderZ} from '../src/data/b3-console-layout.js';
 import {syncB3FaderProps,b3FaderCapId} from '../src/game/b3-console-faders.js';
 
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,
@@ -17,15 +18,15 @@ test('all 16 caps survive production placement on their console tracks and track
     const id=b3FaderCapId(n),p=PROPS.propById(id),v=draw.get(id);
     assert.ok(p&&v,`${id} is in the live room prop pack`);
     assert.equal(p.blocks,false);assert.equal(p.interactive,false);
-    assert.ok(Math.abs(v.y-desk.y-.918)<.001,`${id} is on the console face`);
-    assert.ok(Math.abs(v.x-desk.x-.1225)<.001,`${id} starts on its working track`);
-    assert.ok(Math.abs(v.z-desk.z-(.97-(n-1)*.112))<.001,`${id} is on its own channel`);
+    assert.ok(Math.abs(v.y-desk.y-L.faderHeight)<.001,`${id} is on the console face`);
+    assert.ok(Math.abs(v.x-desk.x-L.workingFaderZ)<.001,`${id} starts on its working track`);
+    assert.ok(Math.abs(v.z-desk.z+b3ConsoleChannelX(n-1))<.001,`${id} is on its own channel`);
   }
   const vals=Array(16).fill(.75);vals[2]=0;assert.equal(syncB3FaderProps(PROPS,vals),16);draw=poses();
-  assert.ok(Math.abs(draw.get(b3FaderCapId(3)).x-desk.x-.325)<.001,'lowered channel three is at the operator end');
-  assert.ok(Math.abs(draw.get(b3FaderCapId(2)).x-desk.x-.1225)<.001,'the neighbouring channel does not move');
+  assert.ok(Math.abs(draw.get(b3FaderCapId(3)).x-desk.x-b3ConsoleFaderZ(0))<.001,'lowered channel three is at the operator end');
+  assert.ok(Math.abs(draw.get(b3FaderCapId(2)).x-desk.x-b3ConsoleFaderZ(.75))<.001,'the neighbouring channel does not move');
   vals[2]=1;syncB3FaderProps(PROPS,vals);draw=poses();
-  assert.ok(Math.abs(draw.get(b3FaderCapId(3)).x-desk.x-.055)<.001,'raised channel three is at the far end');
+  assert.ok(Math.abs(draw.get(b3FaderCapId(3)).x-desk.x-b3ConsoleFaderZ(1))<.001,'raised channel three is at the far end');
 });
 
 test('ordinary booth approaches select the operable desk while card and spares remain independently targetable',()=>{

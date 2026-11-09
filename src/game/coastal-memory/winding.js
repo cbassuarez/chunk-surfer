@@ -1,234 +1,203 @@
-// Lyle's music box, held in the hands. The same damaged cylinder/comb as the
-// plinth scene (coastal-memory/mechanism.js), but driven by the player instead
-// of an autonomous spring: the winding ratchet is broken, so the spring will
-// not hold a wind. Wind the pin and let go and the whole winding slams down —
-// the key whips back, the cylinder rakes the comb backwards, and nothing plays.
-//
-// To make it play at all you must hold the turning pin and crank it by hand.
-// Crank slowly and it plays slowly; crank hard and it plays up to the governor's
-// limit. Every turn skips against the chipped gear and wears the mechanism down,
-// so the notes the box does manage come out duller and further between.
-//
-// This module is pure and deterministic: one step function advances the box
-// given {held, turn} and returns the events an audio owner should voice. No
-// clock, no AudioContext, no DOM. Reuse it from the hands UI, the plinth scene
-// and the overture renderer so a pin meeting a tine on screen is the same note
-// that sounds.
-import { CLAIR_DE_LUNE_EVENTS, CLAIR_DE_LUNE_SCORE_SECONDS } from '../../data/clair-de-lune-music-box.js';
-import { COASTAL_MUSIC_BOX_COMB, COASTAL_MUSIC_BOX_MECHANISM } from './mechanism.js';
+// The closed, broken Sankyo keepsake. User-confirmed reference behaviour:
+// manual turning coaxes the tune forward; releasing the key lets its winding
+// slam down. Only the key recoils here: reverse cylinder motion is unobserved,
+// so neither a backwards tune nor a reset to its beginning is fabricated.
+// Bent-pin mistakes remain in the actual recording, without an invented mask
+// of missing notes or progressively deteriorating parts.
+import { CLAIR_DE_LUNE_SCORE_SECONDS } from '../../data/clair-de-lune-music-box.js';
+import { MUSIC_BOX_REFERENCE, MUSIC_BOX_REFERENCE_SECONDS } from '../../data/music-box-reference.js';
+import { COASTAL_MUSIC_BOX_EVENTS, COASTAL_MUSIC_BOX_MECHANISM } from './mechanism.js';
 
 const SCORE = CLAIR_DE_LUNE_SCORE_SECONDS;
-const freeze = (value) => Object.freeze(value);
-const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(value) ? value : lo));
+const TAU = Math.PI * 2;
+const EPSILON = 1e-9;
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
+const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, finite(value, lo)));
+const duration = value => clamp(value, .01, 3600);
 
-export const WINDING_TUNING = freeze({
-  // One full turn of the pin advances the cylinder this many score seconds.
-  scorePerTurn: 2.4,
-  // The governor caps how fast the cylinder can turn, however hard you crank.
-  // Tuned so a hard crank plays the recorded ~15 s phrase at roughly its real
-  // speed (the in-game score is 33.6 s, so the phrase runs 2.24x faster).
-  governorMax: 2.6,
-  // Cranking also winds the spring a little; this much wind per full turn.
-  windPerTurn: 0.42,
-  // On release the spring lets go: the cylinder whips backwards over this span.
-  slamSeconds: 0.85,
-  // The slam is violent at first and decays; this shapes the backward rake.
+export const WINDING_TUNING = Object.freeze({
+  referenceSeconds: MUSIC_BOX_REFERENCE_SECONDS,
+  windPerTurn: .32,
+  maxTurnRate: 4,
+  minTurnRate: .02,
+  // Authored visual recoil envelope; not a measured diagnosis of the movement.
+  slamSeconds: MUSIC_BOX_REFERENCE.releaseSeconds,
   slamSharpness: 2.4,
-  // After a slam the box rests this long before it will answer another crank.
-  restSeconds: 2.1,
-  // Wear per score second played: notes dull and the train slops.
-  wearPerScore: 0.014,
-  // The chipped gear binds here (score seconds) and lurches past the notes it
-  // could not reach, smearing them into one skip.
-  catchScore: freeze([9.6, 17.9]),
-  catchLurch: 0.38,
+  restSeconds: 0,
+  // Manual support plays the captured performance at its original pitch. These
+  // legacy score-space fields describe the proxy cylinder, not audio varispeed.
+  scorePerTurn: SCORE / MUSIC_BOX_REFERENCE_SECONDS,
+  governorMax: SCORE / MUSIC_BOX_REFERENCE_SECONDS,
+  wearPerScore: 0,
+  catchScore: Object.freeze([]),
+  catchLurch: 0,
 });
+export const WINDING_PHASE = Object.freeze({
+  REST: 'rest', CRANKING: 'cranking', HELD: 'held', SLAMMING: 'slamming',
+});
+const PHASES = new Set(Object.values(WINDING_PHASE));
 
-export const WINDING_PHASE = freeze({ REST: 'rest', CRANKING: 'cranking', HELD: 'held', SLAMMING: 'slamming' });
-
-// Pins sheared off the cylinder, by event index (mirrors mechanism.js).
-const MISSING_PINS = new Set([5, 14, 23, 31, 44, 58]);
-const tineOf = new Map(COASTAL_MUSIC_BOX_COMB.map((tine) => [tine.pitch, tine]));
-// Score positions of every live event, in order, for crossing detection.
-const EVENTS = CLAIR_DE_LUNE_EVENTS.map((event, index) => freeze({
-  index, at: event.at, pitch: event.pitch, voice: event.voice,
-  tine: tineOf.get(event.pitch) ?? null, pinMissing: MISSING_PINS.has(index),
-}));
-
-export function freshWinding() {
+export function freshWinding({ durationSeconds = MUSIC_BOX_REFERENCE_SECONDS } = {}) {
   return {
-    phase: WINDING_PHASE.REST,
-    wind: 0,          // spring tension, 0..1
-    score: 0,         // cylinder position in score seconds
-    held: false,      // is the pin being held
-    wear: 0,          // 0..1, the mechanism wearing down
-    slamElapsed: 0,   // seconds into the current slam
-    restElapsed: 0,   // seconds of rest since the last slam
-    crankSeconds: 0,  // total score seconds played since pickup
-    keyPhase: 0,      // accumulated pin rotation (radians), for ratchet clicks
+    version: 3, phase: WINDING_PHASE.REST, wind: 0, score: 0,
+    playbackSeconds: 0, durationSeconds: duration(durationSeconds), playbackRate: 0,
+    held: false, wear: 0, crankSeconds: 0, keyPhase: 0, attempts: 0,
+    playingSecondsThisStep: 0, stopReason: null,
+    slamElapsed: 0, recoilFrom: 0, recoilTo: 0, windAtRelease: 0,
   };
 }
 
-// Ratchet teeth per full key revolution (one click per tooth).
-const RATCHET_TEETH = 12;
-const KEY_TOOTH = (Math.PI * 2) / RATCHET_TEETH;
-
-// How dull a note is at this wear: full at fresh, faint and short when worn out.
-export function windingWearGain(wear = 0) {
-  return 1 - 0.72 * clamp(wear, 0, 1);
+function normalize(value = {}) {
+  const length = duration(finite(value.durationSeconds, MUSIC_BOX_REFERENCE_SECONDS));
+  const playbackSeconds = clamp(finite(value.playbackSeconds, clamp(value.score, 0, SCORE) / SCORE * length), 0, length);
+  const keyPhase = finite(value.keyPhase);
+  const wind = clamp(value.wind, 0, 1);
+  const phase = PHASES.has(value.phase) ? value.phase : WINDING_PHASE.REST;
+  return {
+    version: 3, phase, wind, score: playbackSeconds / length * SCORE,
+    playbackSeconds, durationSeconds: length,
+    playbackRate: phase === WINDING_PHASE.CRANKING && playbackSeconds < length ? 1 : 0,
+    held: value.held === true, wear: clamp(value.wear, 0, 1),
+    crankSeconds: Math.max(0, finite(value.crankSeconds)),
+    keyPhase, attempts: Math.max(0, Math.floor(finite(value.attempts))),
+    playingSecondsThisStep: 0,
+    stopReason: typeof value.stopReason === 'string' ? value.stopReason : null,
+    slamElapsed: clamp(value.slamElapsed, 0, WINDING_TUNING.slamSeconds),
+    recoilFrom: finite(value.recoilFrom, keyPhase),
+    recoilTo: finite(value.recoilTo, keyPhase - wind / WINDING_TUNING.windPerTurn * TAU),
+    windAtRelease: clamp(finite(value.windAtRelease, wind), 0, 1),
+  };
 }
 
-// Advance the cylinder from `from` to `to` (signed), emitting plucks for every
-// event crossed in that direction. Events are ordered and `at` is step-relative
-// (0 = the start of this step); the audio owner schedules them in array order.
-function collectCrossings(from, to, events) {
-  const direction = to >= from ? 1 : -1;
-  const lo = Math.min(from, to), hi = Math.max(from, to);
-  for (const event of EVENTS) {
-    if (event.at < lo || event.at > hi) continue;
-    const crossed = direction > 0 ? (from < event.at && event.at <= to) : (to <= event.at && event.at < from);
-    if (!crossed) continue;
-    if (event.pinMissing || !event.tine || event.tine.state === 'snapped') {
-      events.push({ type: 'tick', direction, at: 0, index: event.index, pitch: event.pitch, tine: event.tine ? event.tine.index : -1 });
-      continue;
-    }
-    events.push({ type: 'pluck', direction, at: 0, index: event.index, pitch: event.pitch,
-      voice: event.voice, tine: event.tine.index, state: event.tine.state, cents: event.tine.cents });
+// Ordinary attempts do not progressively destroy the instrument or lose notes.
+export function windingWearGain() { return 1; }
+
+// Hidden pinning-study events only. The audio owner uses playbackSeconds for
+// the actual recording, whose errors are not replaced by these proxy notes.
+function collectCrossings(from, to, scoreRate, events) {
+  if (!(to > from) || !(scoreRate > 0)) return;
+  for (const event of COASTAL_MUSIC_BOX_EVENTS) {
+    if (!(from < event.at && event.at <= to)) continue;
+    events.push({ type: 'pluck', direction: 1,
+      at: clamp((event.at - from) / scoreRate, 0, (to - from) / scoreRate),
+      index: event.index, pitch: event.pitch, voice: event.voice, tine: event.tine,
+      state: 'whole', cents: 0, proxy: true });
   }
 }
 
-// One deterministic step. input = { held, turn } where turn is signed pin
-// revolutions per second (positive = crank forward, negative = crank back).
-export function stepWinding(value, input = {}, dt = 0) {
-  const seconds = clamp(dt, 0, 0.25);
-  const state = { ...value, wind: clamp(value.wind, 0, 1), score: clamp(value.score, 0, SCORE),
-    wear: clamp(value.wear, 0, 1), slamElapsed: clamp(value.slamElapsed, 0, WINDING_TUNING.slamSeconds),
-    restElapsed: clamp(value.restElapsed, 0, WINDING_TUNING.restSeconds), keyPhase: finite(value.keyPhase, 0) };
+function advanceRecoil(state, seconds, events) {
+  const finishAfter = Math.max(0, WINDING_TUNING.slamSeconds - state.slamElapsed);
+  state.slamElapsed = Math.min(WINDING_TUNING.slamSeconds, state.slamElapsed + seconds);
+  const u = state.slamElapsed / WINDING_TUNING.slamSeconds;
+  const left = (1 - u) ** WINDING_TUNING.slamSharpness;
+  state.keyPhase = state.recoilTo + (state.recoilFrom - state.recoilTo) * left;
+  state.wind = state.windAtRelease * left;
+  state.playbackRate = 0;
+  if (u >= 1) {
+    state.phase = WINDING_PHASE.REST;
+    state.wind = 0;
+    events.push({ type: 'slam-end', at: Math.min(seconds, finishAfter), playbackSeconds: state.playbackSeconds });
+  }
+}
+
+// input = {held, turn}; `turn` is signed key revolutions per second. Only
+// positive manual support advances the tune. Event times are step-relative.
+export function stepWinding(value = freshWinding(), input = {}, dt = 0) {
+  const seconds = clamp(dt, 0, .25), state = normalize(value), events = [];
   const held = input.held === true;
-  const turn = finite(input.turn, 0);
-  const events = [];
+  const turn = clamp(input.turn, 0, WINDING_TUNING.maxTurnRate);
+  const wasHeld = state.held;
+  const wasCranking = state.phase === WINDING_PHASE.CRANKING;
+  state.held = held;
 
   if (state.phase === WINDING_PHASE.SLAMMING) {
-    // The spring is already letting go: finish the backward whip.
-    state.slamElapsed = Math.min(WINDING_TUNING.slamSeconds, state.slamElapsed + seconds);
-    const u = state.slamElapsed / WINDING_TUNING.slamSeconds;
-    const speed = WINDING_TUNING.governorMax * 6 * Math.pow(1 - u, WINDING_TUNING.slamSharpness);
-    const from = state.score, to = Math.max(0, state.score - speed * seconds);
-    collectCrossings(from, to, events);
-    state.score = to;
-    state.wind = Math.max(0, state.wind - (1 / WINDING_TUNING.slamSeconds) * seconds);
-    if (state.slamElapsed >= WINDING_TUNING.slamSeconds || state.score <= 0) {
-      state.phase = WINDING_PHASE.REST; state.restElapsed = 0; state.slamElapsed = 0; state.score = 0;
-      events.push({ type: 'slam-end', at: 0, score: state.score });
-    }
-    return { state, events };
-  }
-
-  if (state.phase === WINDING_PHASE.REST) {
-    if (held && turn !== 0) {
-      state.phase = WINDING_PHASE.CRANKING; state.restElapsed = 0;
-      events.push({ type: 'wind-start', at: 0 });
-    } else {
-      state.restElapsed = Math.min(WINDING_TUNING.restSeconds, state.restElapsed + seconds);
+    if (!held) {
+      advanceRecoil(state, seconds, events);
       return { state, events };
     }
-  }
-
-  if (held && turn !== 0) {
-    // Hand cranking: the pin drives the cylinder directly, the governor caps it.
-    const rate = clamp(turn * WINDING_TUNING.scorePerTurn, -WINDING_TUNING.governorMax, WINDING_TUNING.governorMax);
-    const from = state.score;
-    let to = from + rate * seconds;
-    // Forward cranking winds the spring a little; it is what slams back on release.
-    if (rate > 0) state.wind = clamp(state.wind + Math.abs(turn) * WINDING_TUNING.windPerTurn * seconds, 0, 1);
-    // The chipped gear binds at fixed score positions and lurches past them,
-    // skipping the notes between (deterministic, like the plinth mechanism).
-    for (const catchAt of WINDING_TUNING.catchScore) {
-      if (from < catchAt && catchAt <= to) {
-        to += WINDING_TUNING.catchLurch;
-        events.push({ type: 'lurch', at: 0, score: catchAt });
-      }
-    }
-    to = clamp(to, 0, SCORE);
-    collectCrossings(from, to, events);
-    state.score = to;
-    state.wear = clamp(state.wear + Math.abs(to - from) * WINDING_TUNING.wearPerScore, 0, 1);
-    state.crankSeconds += Math.max(0, to - from);
-    // Ratchet clicks follow the pin's own rotation (fast cranking clicks fast),
-    // independent of the governor, so slow and quick turning sound different.
-    const teethBefore = Math.floor(state.keyPhase / KEY_TOOTH);
-    state.keyPhase += turn * Math.PI * 2 * seconds;
-    const teethAfter = Math.floor(state.keyPhase / KEY_TOOTH);
-    for (let tooth = teethBefore + 1; tooth <= teethAfter; tooth++) {
-      events.push({ type: 'wind-click', at: 0, rate: Math.abs(turn) });
-    }
-    if (state.score >= SCORE - 1e-6) events.push({ type: 'tune-end', at: 0, score: state.score });
-    return { state, events };
-  }
-
-  if (held && turn === 0) {
-    // Holding still: the cylinder stays put. Pinched but not turning.
+    // Catching the key can arrest its recoil; recovery has no hidden input lock.
     state.phase = WINDING_PHASE.HELD;
+    events.push({ type: 'slam-end', at: 0, reason: 'caught', playbackSeconds: state.playbackSeconds });
+  }
+
+  if (held && turn > WINDING_TUNING.minTurnRate && seconds > 0) {
+    if (!wasCranking) {
+      state.attempts++;
+      events.push({ type: 'wind-start', at: 0 });
+      if (state.playbackSeconds < state.durationSeconds - EPSILON)
+        events.push({ type: 'play-start', at: 0, playbackSeconds: state.playbackSeconds });
+    }
+    state.phase = WINDING_PHASE.CRANKING;
+    state.stopReason = null;
+    state.keyPhase += turn * TAU * seconds;
+    state.wind = Math.min(1, state.wind + turn * WINDING_TUNING.windPerTurn * seconds);
+    // No guessed ratchet tooth count or synthetic clicks are emitted.
+    const played = Math.min(seconds, Math.max(0, state.durationSeconds - state.playbackSeconds));
+    const fromScore = state.score;
+    state.playbackSeconds = Math.min(state.durationSeconds, state.playbackSeconds + played);
+    state.score = state.playbackSeconds / state.durationSeconds * SCORE;
+    state.crankSeconds += played;
+    state.playingSecondsThisStep = played;
+    collectCrossings(fromScore, state.score, SCORE / state.durationSeconds, events);
+    if (state.playbackSeconds >= state.durationSeconds - EPSILON) {
+      state.playbackSeconds = state.durationSeconds;
+      state.score = SCORE;
+      state.playbackRate = 0;
+      state.stopReason = 'reference-end';
+      if (fromScore < SCORE - EPSILON) {
+        events.push({ type: 'tune-end', at: played, score: state.score, playbackSeconds: state.playbackSeconds });
+        events.push({ type: 'play-stop', at: played, playbackSeconds: state.playbackSeconds, reason: 'reference-end' });
+      }
+    } else state.playbackRate = 1;
     return { state, events };
   }
 
-  // Not held. If there is tension (or it is mid-crank), the winding slams down.
-  if (!held && (state.wind > 0.02 || state.score > 0.02 || state.phase === WINDING_PHASE.CRANKING || state.phase === WINDING_PHASE.HELD)) {
-    state.phase = WINDING_PHASE.SLAMMING; state.slamElapsed = 0;
-    events.push({ type: 'slam-start', at: 0, wind: state.wind, score: state.score });
-    const from = state.score, to = Math.max(0, state.score - WINDING_TUNING.governorMax * 2 * seconds);
-    collectCrossings(from, to, events);
-    state.score = to;
-    state.slamElapsed = Math.min(WINDING_TUNING.slamSeconds, seconds);
+  if (held) {
+    // A zero-time input edge can stop/catch the key immediately, but cannot
+    // manufacture a new manual turn or advance the recorded performance.
+    if (seconds === 0 && turn > WINDING_TUNING.minTurnRate && wasCranking) return { state, events };
+    state.phase = WINDING_PHASE.HELD;
+    state.playbackRate = 0;
+    if (wasCranking) events.push({ type: 'play-stop', at: 0,
+      playbackSeconds: state.playbackSeconds, reason: 'key-still' });
     return { state, events };
   }
 
+  state.playbackRate = 0;
+  if (wasHeld && state.wind > EPSILON) {
+    if (wasCranking) events.push({ type: 'play-stop', at: 0,
+      playbackSeconds: state.playbackSeconds, reason: 'released' });
+    state.phase = WINDING_PHASE.SLAMMING;
+    state.slamElapsed = 0;
+    state.recoilFrom = state.keyPhase;
+    state.recoilTo = state.keyPhase - state.wind / WINDING_TUNING.windPerTurn * TAU;
+    state.windAtRelease = state.wind;
+    state.stopReason = 'released';
+    events.push({ type: 'slam-start', at: 0, wind: state.wind, playbackSeconds: state.playbackSeconds });
+    advanceRecoil(state, seconds, events);
+    return { state, events };
+  }
+  state.phase = WINDING_PHASE.REST;
   return { state, events };
 }
 
-// The key's angle for the hands UI: wound forward as it cranks, slamming back
-// on release (mirrors the plinth's key angle but player-driven).
-export function windingKeyAngle(state = freshWinding()) {
-  const tooth = Math.PI * 2 / 12;
-  const teeth = Math.round(clamp(state.wind, 0, 1) * 12);
-  if (state.phase === WINDING_PHASE.SLAMMING) {
-    const u = clamp(state.slamElapsed / WINDING_TUNING.slamSeconds, 0, 1);
-    return -teeth * tooth * Math.pow(1 - u, 1.6);
-  }
-  const engaged = state.phase === WINDING_PHASE.CRANKING || state.phase === WINDING_PHASE.HELD;
-  return -teeth * tooth * (engaged ? 1 : 0.12);
-}
-
-// The cylinder angle (radians) for rendering, from score position.
-export function windingCylinderAngle(state = freshWinding()) {
-  return (Math.PI * 2) * clamp(state.score, 0, SCORE) / SCORE;
-}
-
-// A concise description for diagnostics / traces.
+export function windingKeyAngle(state = freshWinding()) { return -finite(state.keyPhase); }
+export function windingCylinderAngle(state = freshWinding()) { return TAU * normalize(state).score / SCORE; }
 export function windingSummary(state = freshWinding()) {
-  return { phase: state.phase, wind: +state.wind.toFixed(3), score: +state.score.toFixed(3),
-    wear: +state.wear.toFixed(3), held: !!state.held, crankSeconds: +state.crankSeconds.toFixed(2) };
+  const s = normalize(state);
+  return { phase: s.phase, wind: +s.wind.toFixed(3), score: +s.score.toFixed(3),
+    playbackSeconds: +s.playbackSeconds.toFixed(3), playbackRate: s.playbackRate,
+    wear: +s.wear.toFixed(3), held: s.held, crankSeconds: +s.crankSeconds.toFixed(2), attempts: s.attempts };
 }
-
-// The box's mechanism as the renderer draws it, driven by the player instead of
-// the autonomous plinth drive. Same shape as coastalMusicBoxMechanism() so the
-// scene's cylinder/gear/key/fan/tine placement is unchanged; only the angles and
-// the tine deflections come from the winding state. Tine deflection is zero here
-// (the live per-pluck animation is voiced by the event stream, not this frame).
 export function coastalHandsMechanism(winding = freshWinding()) {
-  const m = COASTAL_MUSIC_BOX_MECHANISM;
+  const m = COASTAL_MUSIC_BOX_MECHANISM, state = normalize(winding);
   const tipY = m.cylinderCenter[1] + Math.cos(m.contactAngle) * m.pinRadius;
   const tipZ = m.cylinderCenter[2] + Math.sin(m.contactAngle) * m.pinRadius;
-  const angle = windingCylinderAngle(winding);
-  const score = clamp(winding.score, 0, SCORE);
+  const angle = windingCylinderAngle(state);
   return {
-    phase: winding.phase,
-    score,
-    cylinderAngle: angle,
-    gearAngle: angle,
-    keyAngle: windingKeyAngle(winding),
-    fanAngle: Math.PI * 2 * 2.6 * score,
-    liveTines: m.liveTines.map((tine) => ({ ...tine, tipY, tipZ, length: tine.rootZ - tipZ, deflection: 0 })),
+    phase: state.phase, score: state.score, playbackSeconds: state.playbackSeconds,
+    playbackRate: state.playbackRate, cylinderAngle: angle, gearAngle: angle,
+    keyAngle: windingKeyAngle(state), fanAngle: TAU * 2.6 * state.score,
+    liveTines: m.liveTines.map(tine => ({ ...tine, tipY, tipZ, length: tine.rootZ - tipZ, deflection: 0 })),
   };
 }

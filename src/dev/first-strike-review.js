@@ -2,6 +2,7 @@
 // clearance travel uses normal movement/look inputs and production physics.
 export function createFirstStrikeReview(api){
  const panel=document.createElement('aside');panel.id='first-strike-review';panel.setAttribute('aria-label','Developer First Strike review');
+ Object.defineProperty(panel,'reviewApi',{value:api});
  panel.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:10000;display:flex;gap:6px;flex-wrap:wrap;padding:6px;background:#101b22ed;color:#e0e7df;font:12px system-ui';
  panel.dataset.busy='false';panel.dataset.recording='false';const status=document.createElement('output');status.id='first-strike-review-status';panel.append(document.createTextNode('DEV · staged initial clock / ordinary inputs'),status);
  const receipt=document.createElement('pre');receipt.id='first-strike-review-receipt';receipt.style.cssText='display:none;position:fixed;bottom:95px;left:0;right:0;z-index:10001;max-height:150px;overflow:auto;background:#101b22ed;color:#e0e7df;font:11px monospace';

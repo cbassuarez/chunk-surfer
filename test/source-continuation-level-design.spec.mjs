@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import * as layout from '../src/data/source-continuation.js';
 import * as controller from '../src/game/source-continuation.js';
 import {continuationSupportedPath,continuationWalkSegment,recordContinuationHushWalk} from '../src/game/source-continuation-hush.js';
-import {sceneWalkSpeed} from '../src/game/locomotion.js';
 
 const C=layout.SOURCE_CONTINUATION;
 const fresh=()=>controller.resumeSourceContinuation(controller.freshSourceContinuation({runId:'level-design'}));
@@ -13,17 +12,17 @@ function tick(state,input={},events=[]) {
   events.push(...result.events);
   const actor=result.state.hush;
   if(actor.active&&!actor.fall)assert.ok(layout.continuationSupportAt(actor.x,actor.z,{feet:actor.feet,chartId:actor.chartId}),`Hush needs floor at ${actor.x},${actor.z},${actor.feet}`);
-  assert.ok(Math.hypot(actor.x-state.hush.x,actor.z-state.hush.z)<=C.hush.speed*.05+.001,'no relocation or geometric shortcut');
+  const transport=result.events.some(e=>['hush-fold','hush-space-wrap','hush-recovered'].includes(e.type));
+  if(!state.hush.fall&&!actor.fall&&!state.hush.recovery&&!actor.recovery&&!transport)assert.ok(Math.hypot(actor.x-state.hush.x,actor.z-state.hush.z)<=Math.max(C.hush.speed,C.hush.chaseSpeed)*.05+.001,'a grounded pursuer cannot relocate or exceed its authored chase speed');
   return result.state;
 }
 function walk(state,x,z,events=[]) {
   // The planned walks jog: the route must arrive before the Hush's clock does.
-  const speed=sceneWalkSpeed('interior',true);
   for(let n=0;n<1600;n++) {
     const dx=x-state.x,dz=z-state.z,d=Math.hypot(dx,dz);
     if(d<.04&&!state.fall&&!state.recovery)return state;
     assert.equal(state.recovery,null,`ordinary planned walk captured at ${state.x},${state.z}: ${state.recovery?.reason}`);
-    const amount=Math.min(1,d/(speed*.05));
+    const amount=Math.min(1,d/(controller.sourceContinuationGait(state,{run:true}).speed*.05));
     state=tick(state,{forward:amount,run:true,look:{yaw:Math.atan2(dx,-dz)}},events);
   }
   assert.fail(`cannot walk to ${x},${z}; at ${state.x},${state.z},${state.feet}`);
@@ -81,7 +80,7 @@ test('each alternate receives a separate safe wrong catch and a supported longer
     const [direct,wrong]=landings,level=sourceLevel+1;
     assert.equal(layout.continuationSupportAt(direct.x,direct.z,direct).surface.role,'catch');
     assert.equal(layout.continuationSupportAt(wrong.x,wrong.z,wrong).surface.role,'wrong-catch');
-    const target=level<3?{...layout.CONTINUATION_DROP_LIPS[level],feet:layout.continuationCatchFloor(level)}:C.catch.finalApproach;
+    const target={...layout.CONTINUATION_DROP_LIPS[level],feet:layout.continuationCatchFloor(level)};
     const directPath=continuationSupportedPath(direct,target),wrongPath=continuationSupportedPath(wrong,target);
     assert.ok(directPath&&wrongPath,'both consequences have real supported routes onward');
     assert.ok(pathLength(wrongPath)>pathLength(directPath)+5,`stage ${level}: wrong catch must cost a meaningful reposition`);
@@ -158,6 +157,7 @@ test('long saved trails compact through supported paths without losing a queued 
   const target=after.at(-1);
   let state=controller.normalizeSourceContinuation({...fresh(),phase:'catch',level:1,...target,lastSafe:{...target,yaw:0,pitch:0},hush:{...fresh().hush,active:true,x:lip.x,z:lip.z,feet:8.4,armed:true,mode:'follow',elapsed:10,
     trail:[...before,{kind:'drop',x:lip.x,z:lip.z,feet:8.4,level:0,vx:-.8,vz:0},{kind:'walk',...landing},...after],lastRecorded:target}});
+  state.expedition.visited=['iii-echo-colonnade']; // Bounded active-pursuit serialization fixture.
   assert.ok(state.hush.trail.length<512);assert.equal(state.hush.trail.filter(p=>p.kind==='drop').length,1);
   assert.deepEqual(state.hush.lastRecorded,{x:target.x,z:target.z,feet:target.feet,chartId:0,level:target.level});
   close(state.hush.x,lip.x);close(state.hush.z,lip.z);close(state.hush.feet,8.4);
@@ -184,6 +184,7 @@ test('pause/reload retains actor route and gravity exactly; version two keeps it
   const lip=layout.CONTINUATION_DROP_LIPS[0];
   let state=controller.normalizeSourceContinuation({...fresh(),phase:'catch',level:0,x:lip.x,z:lip.z,feet:8.4,lastSafe:{...lip,feet:8.4,level:0},
     hush:{...fresh().hush,x:lip.x+4,z:lip.z,feet:8.4,level:0,armed:true,mode:'follow',elapsed:10,trail:[{kind:'walk',...lip,feet:8.4,level:0}],lastRecorded:{...lip,feet:8.4,level:0}}});
+  state.expedition.visited=['iii-echo-colonnade']; // Retained-drop fixture runs during actual pursuit, not exploration shelter.
   state=drop(state,lip);
   for(let n=0;n<400&&!state.hush.fall;n++)state=tick(state);
   assert.ok(state.hush.fall,'the pursuer reaches the recorded release');

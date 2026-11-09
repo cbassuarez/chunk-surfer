@@ -52,7 +52,7 @@ const groupsOf=()=>Object.fromEntries(Object.keys(GROUP_MATERIAL).map(k=>[k,{p:[
 // as much as by its gateposts: its root is the longest under the stack.
 function reachableRoots(){
   const groups=groupsOf();
-  for(const s of continuationSurfaces({phase:'catch'}).filter(s=>s.region==='catch'&&s.kind==='rect'&&REACHABLE.includes(s.role))){
+  for(const s of continuationSurfaces({phase:'catch'}).filter(s=>s.region==='catch'&&s.kind==='rect'&&REACHABLE.includes(s.role)&&!s.archipelago)){
     const hx=(s.maxX-s.minX)/2,hz=(s.maxZ-s.minZ)/2,x=(s.minX+s.maxX)/2,z=(s.minZ+s.maxZ)/2,size=Math.max(hx,hz);
     const depth=Math.max(7,s.role==='door-island'?size*3.4:s.role==='seat-island'?size*2.6:size*1.6);
     root(groups,x,s.y-(s.thickness??.35),z,hx,hz,0,depth,s.role==='island'?3:4);

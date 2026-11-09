@@ -146,7 +146,7 @@ export function tryMemoryField(current,visit){
 }
 
 export function createMemoryFieldScene({visit,renderer,audio=null,tell=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
-  paintOverlay=()=>{},onLine=()=>{},onDone=()=>{},onError=()=>{},onExit=()=>{}}={}){
+  paintOverlay=()=>{},onLine=()=>{},onEvent=()=>{},onDone=()=>{},onError=()=>{},onExit=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('The field needs its renderer.');
   let state={...freshMemoryField(visit),seed:Math.random()},ready=false,closed=false,done=false,paused=false,failed=false,initializing=null,caption=null,captionUntil=0;
   const keys=new Set(),DEAD=new Set(['r','t','f','q','tab','b','m','g','x','c','enter',' ']);
@@ -156,6 +156,7 @@ export function createMemoryFieldScene({visit,renderer,audio=null,tell=null,pres
   function fail(reason){failed=true;keys.clear();onError(reason);finish(String(reason?.message||reason));}
   function dispatch(events){
     for(const event of events){
+      onEvent(event);
       if(event.text)say(event.text);
       if(event.type==='left'){finish();return;}
       audio?.event?.(event);

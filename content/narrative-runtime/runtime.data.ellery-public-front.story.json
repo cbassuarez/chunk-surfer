@@ -26,10 +26,10 @@
           "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-name.l0",
           "who": "thought",
           "text": "ELLERY",
-          "source": "src/data/ellery-public-front.js:79"
+          "source": "src/data/ellery-public-front.js:84"
         }
       ],
-      "source": "src/data/ellery-public-front.js:79"
+      "source": "src/data/ellery-public-front.js:84"
     },
     "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-date": {
       "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-date",
@@ -39,10 +39,10 @@
           "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-date.l0",
           "who": "thought",
           "text": "1888",
-          "source": "src/data/ellery-public-front.js:82"
+          "source": "src/data/ellery-public-front.js:87"
         }
       ],
-      "source": "src/data/ellery-public-front.js:82"
+      "source": "src/data/ellery-public-front.js:87"
     },
     "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-closure": {
       "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-closure",
@@ -52,22 +52,22 @@
           "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-closure.l0",
           "who": "thought",
           "text": "PUBLIC ENTRANCE CLOSED",
-          "source": "src/data/ellery-public-front.js:84"
+          "source": "src/data/ellery-public-front.js:89"
         },
         {
           "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-closure.l1",
           "who": "thought",
           "text": "DELIVERIES & STAFF",
-          "source": "src/data/ellery-public-front.js:84"
+          "source": "src/data/ellery-public-front.js:89"
         },
         {
           "id": "ELLERY_PUBLIC_FRONT_LETTERING.ellery-public-closure.l2",
           "who": "thought",
           "text": "USE THE WEST SERVICE YARD",
-          "source": "src/data/ellery-public-front.js:84"
+          "source": "src/data/ellery-public-front.js:89"
         }
       ],
-      "source": "src/data/ellery-public-front.js:84"
+      "source": "src/data/ellery-public-front.js:89"
     }
   }
 }

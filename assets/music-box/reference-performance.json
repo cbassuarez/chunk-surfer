@@ -1,0 +1,114 @@
+{
+  "kind": "user-recorded-sankyo-reference",
+  "reference": "Long supplied voice memo in music-box.zip; personal source filenames omitted.",
+  "clip": {
+    "startSeconds": 65,
+    "endSeconds": 111.3,
+    "durationSeconds": 46.3
+  },
+  "processing": [
+    "Sample-accurate trim 65.0–111.3 s; timestamps reset before fades",
+    "80 Hz first-order highpass",
+    "Fixed 0.8 gain for decoded AAC headroom; no loudness riding",
+    "5 ms leading edge fade",
+    "120 ms trailing edge fade",
+    "48 kHz stereo 16-bit PCM"
+  ],
+  "pitch": "Unchanged; playbackRate always 1",
+  "timing": "Unchanged within the clip. Approximately one repeated melodic pass; full-cylinder boundary has not been confirmed by listening.",
+  "operation": "The user confirms manual winding-pin turning produces the phrases; releasing the broken winding slams/slips. Both supplied memos demonstrate the broken mechanism. There is no healthy release-start playback.",
+  "faults": "The continuous performance retains its recorded irregularities. The release is an explicitly authored arrangement of recorded comb attacks over a quiet recorded whirr; no reverse transport, invented missing-tine mask, synthesized substitute melody or digital degradation.",
+  "mechanicalContact": {
+    "reference": "Short supplied 15.59-second memo retained as failure reference",
+    "use": "Not used for individual key contacts: it includes phone placement, and those contacts have not been correlated confidently with the mechanism."
+  },
+  "releaseCandidate": {
+    "reference": "Recorded comb attacks from the long memo’s validated Clair de lune performance, with its earlier winding whirr underneath",
+    "file": "release-tonal-slip.wav",
+    "seconds": 0.62,
+    "playbackRate": 1,
+    "combGrains": [
+      {
+        "sourceStartSeconds": 67.2027,
+        "seconds": 0.28,
+        "atSeconds": 0,
+        "dominantHz": 1862.5
+      },
+      {
+        "sourceStartSeconds": 70.5677,
+        "seconds": 0.28,
+        "atSeconds": 0.018,
+        "dominantHz": 1564.5
+      },
+      {
+        "sourceStartSeconds": 73.3977,
+        "seconds": 0.28,
+        "atSeconds": 0.041,
+        "dominantHz": 1398.2
+      },
+      {
+        "sourceStartSeconds": 77.3427,
+        "seconds": 0.28,
+        "atSeconds": 0.066,
+        "dominantHz": 1246.6
+      },
+      {
+        "sourceStartSeconds": 79.1527,
+        "seconds": 0.3,
+        "atSeconds": 0.092,
+        "dominantHz": 1108.9
+      },
+      {
+        "sourceStartSeconds": 80.3477,
+        "seconds": 0.3,
+        "atSeconds": 0.122,
+        "dominantHz": 1037.8
+      },
+      {
+        "sourceStartSeconds": 75.0177,
+        "seconds": 0.32,
+        "atSeconds": 0.156,
+        "dominantHz": 830.6
+      },
+      {
+        "sourceStartSeconds": 73.6727,
+        "seconds": 0.36,
+        "atSeconds": 0.194,
+        "dominantHz": 790.3
+      }
+    ],
+    "underlay": {
+      "sourceStartSeconds": 6.04,
+      "sourceEndSeconds": 6.66,
+      "relativeGain": 0.12
+    },
+    "processing": [
+      "350 Hz highpass and 10 kHz lowpass on recorded comb",
+      "1.5 ms attack / 55 ms release grain envelopes",
+      "Overlapping attacks at fixed original pitch",
+      "Comb dominates; recorded whirr mixed underneath at 0.12 gain",
+      "Static peak headroom at 0.88; 48 kHz mono 16-bit PCM"
+    ],
+    "interpretation": "Every slip has pitched comb sound. This rake is deliberately authored from real notes, not claimed as a measured release or literal reverse-pin transcription. The cylinder keeps its forward source position. No phone-counter impact is used."
+  },
+  "handlingCandidate": {
+    "reference": "Long supplied memo mechanical section",
+    "startSeconds": 12.6,
+    "endSeconds": 13.2,
+    "seconds": 0.6,
+    "processing": [
+      "350 Hz highpass",
+      "10 kHz lowpass",
+      "3 ms / 50 ms edge fades",
+      "48 kHz mono 16-bit PCM"
+    ],
+    "interpretation": "A recorded mechanical rattle candidate for moving the held object. This is not a new diagnosis of its broken part. Short-memo counter impacts are excluded."
+  },
+  "acceptance": "Offline waveform, spectral and packaged-PCM checks only. Listening, exact cycle boundary and release acceptance remain pending.",
+  "sha256": {
+    "clair-de-lune-worn.wav": "47e946d224b5d4b8de3886bfc5b26ca2144379f7401443c5f68e8734845ae404",
+    "release-slip.wav": "65b37cc0682cf5194d871c2089838ab990200d11410b770a044efca2be6aa41b",
+    "handling-rattle.wav": "a6928ab9aedaeb03882379485020431089e13008237da6cb942e12f36c971312",
+    "release-tonal-slip.wav": "d79604c759dca2e004770e8d907c4eeb441bf0cd7408268e010f409b79f8f4fe"
+  }
+}

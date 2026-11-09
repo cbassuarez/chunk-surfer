@@ -5,7 +5,7 @@ import { freshStandingTear } from '../src/game/standing-tear.js';
 import { STANDING_TEAR_MEMORIES } from '../src/data/standing-tear-pressure.js';
 import { createSourceContinuationScene } from '../src/game/source-continuation-scene.js';
 import { freshSourceContinuation } from '../src/game/source-continuation.js';
-import { continuationRefugeAt } from '../src/data/source-continuation.js';
+import { continuationRefugeAt, SOURCE_CONTINUATION } from '../src/data/source-continuation.js';
 import { createWindowMediaEncounterPresentation } from '../src/platform/window-media-encounter-presentation.js';
 import { STUDY_EVENTS } from '../src/platform/window-media-studies.js';
 
@@ -131,11 +131,24 @@ test('real Catch counterweight and refuge telemetry stage Weight, then ordinary 
     assert.ok(f.observed.some(value => value.type === 'event' && value.event.type === 'counterweight-release'));
     const pose = f.observed.find(value => value.type === 'pose');
     assert.equal(pose.phase, 'catch'); assert.equal(pose.threat.refuge, true);
-    assert.equal(Object.hasOwn(pose, 'fall'), false, 'this is the actual trace shape; current view supplies authoritative safety');
+    assert.equal(Object.hasOwn(pose, 'fall'), true, 'the current pose trace explicitly records fall state');
+    assert.equal(pose.fall, null, 'the protected refuge pose is not airborne; live-frame safety remains independently authoritative');
     assert.equal(f.shown[0].plan.compositionId, 'study:weight');
     assert.equal(f.presenter.snapshot().model.inRefuge, true);
-    scene.setLook({ yaw: .92 - Math.PI / 2, pitch: 0 }); scene.key({ key: 'w', repeat: false });
-    for (let frame = 0; frame < 6; frame++) await f.step(scene, 'source-continuation');
+    // Walk radially in along this actual refuge's joining arm. Six tenths of
+    // a second now covers only1.2m, still inside the real1.28m refuge radius;
+    // wait for the ordinary body's observed departure within a finite bound.
+    const start=scene.stillnessPose(),centre=SOURCE_CONTINUATION.catch.center;
+    scene.setLook({ yaw: Math.atan2(centre.x-start.x,-(centre.z-start.z)), pitch: 0 });
+    scene.key({ key: 'w', repeat: false });
+    let leftRefuge=false;
+    for(let frame=0;frame<12;frame++){
+      const before=scene.stillnessPose();await f.step(scene,'source-continuation');const after=scene.stillnessPose();
+      assert.ok(Math.hypot(after.x-before.x,after.z-before.z)>0,'each input advances the actual supported body');
+      assert.equal(after.transitioning,false,'leaving the refuge must be ordinary walking, not a fall or recovery');
+      if(f.observed.findLast(value=>value.type==='pose')?.threat.refuge===false){leftRefuge=true;break;}
+    }
+    scene.keyup({key:'w'});assert.equal(leftRefuge,true,'ordinary input leaves the actual current refuge');
     assert.ok(f.observed.some(value => value.type === 'pose' && value.threat.refuge === false));
     assert.equal(f.presenter.snapshot().presentation, null, 'precision traversal has no lingering peripheral presentation');
     assert.equal(f.presenter.snapshot().model.active, null);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {horizonCamera} from '../src/render/horizon3d.js';
+import {sourceViewCamera as horizonCamera} from '../src/render/source-view-camera.js';
 import {sourceDemolitionMediumUniforms as uniforms,sourceDemolitionMediumRay as ray,
   sourceDemolitionMediumInterval as interval,sourceDemolitionMediumTransmittance as transmission} from '../src/render/source-demolition-medium.js';
 

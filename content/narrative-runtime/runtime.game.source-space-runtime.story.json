@@ -7,6 +7,7 @@
   "entry": "createSourceSpaceRuntime.inspectFocused.line",
   "entries": [
     "createSourceSpaceRuntime.inspectFocused.line",
+    "createSourceSpaceRuntime.runHorizonTransport.result",
     "OUTSKIRT_SHUT_LINES"
   ],
   "tags": [
@@ -25,10 +26,23 @@
           "id": "createSourceSpaceRuntime.inspectFocused.line.l0",
           "who": "bust",
           "text": "The path is open. There. Walk it. / The chapel is still ahead.",
-          "source": "src/game/source-space-runtime.js:3848"
+          "source": "src/game/source-space-runtime.js:3864"
         }
       ],
-      "source": "src/game/source-space-runtime.js:3848"
+      "source": "src/game/source-space-runtime.js:3864"
+    },
+    "createSourceSpaceRuntime.runHorizonTransport.result": {
+      "id": "createSourceSpaceRuntime.runHorizonTransport.result",
+      "type": "line",
+      "lines": [
+        {
+          "id": "createSourceSpaceRuntime.runHorizonTransport.result.l0",
+          "who": "threadHorizonTransport",
+          "text": "The reels take up. Somewhere past the last of the field, the dark stops being empty and starts being a picture.",
+          "source": "src/game/source-space-runtime.js:8671"
+        }
+      ],
+      "source": "src/game/source-space-runtime.js:8671"
     },
     "OUTSKIRT_SHUT_LINES": {
       "id": "OUTSKIRT_SHUT_LINES",

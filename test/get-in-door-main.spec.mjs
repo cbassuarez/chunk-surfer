@@ -19,7 +19,7 @@ const bodies=[
 FP.compile(conservatory.levels,conservatory);
 function host(position,{keys=['master'],flags={prologueDone:true}}={}){
   FP.resetDoors();
-  const save={flags},stack=[],events=[];
+  const save={flags},stack=[],events=[];let tagActive=false;
   const context={FP,ZONE,CELL,Math,Number,GET_IN_DOOR_ENTRY,canBeginGetInDoorEntry,getInGoodsDoorAim,getInDoorEntryFrame,getInDoorEntryPose,
     GREY_DOOR_ID:GET_IN_GOODS_DOOR_ID,storyMode:true,px:position.x,py:position.y,playerKeys:new Set(keys),
     getInDoorEntryScene:null,facilityMapCache:{},trail:[],renderMove:null,motionRig:null,lastStepDx:0,lastStepDy:0,stepCount:0,
@@ -34,16 +34,19 @@ function host(position,{keys=['master'],flags={prologueDone:true}}={}){
     lockedDoorThought:()=> 'locked',syncDoorDynamicProps:()=>{},resetMotionInput:()=>{},revealAround:()=>{},
     noteDockTransitStep:()=>events.push('body crossed'),
     R3:{r3dLookAngles:()=>({yaw:Math.PI/2,pitch:0}),r3dSetLookAngles:()=>{},r3dFacing:()=>1,r3dLook:()=>{}},
-    STORY:{},fireCue:()=>{},restoreOpeningEntryPose:()=>{},setGameplayPaused:()=>{},
+    STORY:{commitOpeningOvertureToTag:()=>{tagActive=true;events.push('tag');},openingThresholdTagState:()=>({active:tagActive})},
+    ensureCtx:()=>{},paused:false,document:{hidden:false},gameplayInputLifecycleActive:()=>true,
+    uiPhysicalSize:()=>({cols:80,rows:30}),uiFill:()=>{},openPauseMenu:()=>{},
+    fireCue:()=>{},restoreOpeningEntryPose:()=>{},setGameplayPaused:()=>{},
     makeArrivalTitleScene:options=>({id:'world-title',...options}),
     beginGetInDriveTeaser:()=>events.push('drive'),
     scenes:{push:s=>{stack.push(s);events.push(s.id);s.enter?.();},remove:s=>{stack.splice(stack.indexOf(s),1);s.exit?.();}},
   };
   vm.createContext(context);vm.runInContext(bodies,context);
-  return{context,save,stack,events};
+  return{context,save,stack,events,endTag:()=>{tagActive=false;}};
 }
 
-test('real main input owns both goods leaves, including unzoned threshold handles, then title before drive',()=>{
+test('real main input owns both goods leaves, including unzoned threshold handles, then cadence before drive',()=>{
   for(const x of[110.5,114,114.5])for(const y of[19.4,21.6]){
     const h=host({x,y}),focus=h.context.aimedWorldDoor([1,0],5);
     assert.equal(focus?.portal.id,GET_IN_GOODS_DOOR_ID,`real main focus resolves leaf at ${x},${y}`);
@@ -52,10 +55,12 @@ test('real main input owns both goods leaves, including unzoned threshold handle
     assert.equal(FP.doorState().find(d=>d.id===GET_IN_GOODS_DOOR_ID).state,'opening');
     h.stack[0].update(GET_IN_DOOR_ENTRY.duration);
     assert.equal(h.context.px,118.5);assert.equal(h.context.py,20.5);
-    assert.equal(h.stack[0]?.id,'world-title');
+    assert.equal(h.stack[0]?.id,'get-in-score-tag');
     assert.equal(h.save.flags['opening.driveTeaser.pending'],true);
-    assert.equal(h.events.includes('drive'),false,'no drive precedes the actual world title');
-    h.stack[0].onDone();assert.equal(h.events.at(-1),'drive');
+    assert.equal(h.save.flags['opening.title.pending'],true);assert.equal(h.save.flags['title.shown'],undefined);
+    assert.equal(h.events.includes('drive'),false,'the actual recorded final bar and decay get their completion');
+    for(let i=0;i<12;i++)h.stack[0]?.update(.1);assert.equal(h.events.includes('drive'),false,'the fade never truncates an active tag');
+    h.endTag();h.stack[0].update(.1);assert.equal(h.events.at(-1),'drive');assert.equal(h.stack.length,0);
   }
 });
 
@@ -71,7 +76,7 @@ test('the first actual title clears only the stale pre-entry departure inference
   h.context.beginGetInArrivalTitle();
   assert.equal(h.save.flags['dock.departed'],false);
   assert.equal(h.save.flags['unrelated.flag'],true);
-  assert.equal(h.stack[0]?.id,'world-title');
+  assert.equal(h.stack[0]?.id,'get-in-score-tag');
 });
 
 test('the later inside reach and already shown title never re-enter the arrival scene',()=>{

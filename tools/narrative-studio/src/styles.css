@@ -259,6 +259,8 @@ kbd { color: var(--cs-vfd-silkscreen); font-size: 10px; margin-left: 7px; }
 .timeline-stat { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: baseline; gap: 8px; padding: 13px 14px; border-bottom: 1px solid color-mix(in srgb, var(--cs-vfd-silkscreen) 24%, transparent); }
 .timeline-stat b { color: var(--cs-vfd-counter); font-size: 22px; }
 .timeline-stat span { color: var(--cs-vfd-silkscreen); font: 9px/1 var(--cs-mono); text-transform: uppercase; letter-spacing: .12em; }
+.timeline-stat--browse { width: 100%; text-align: left; border-radius: 0; }
+.timeline-stat--browse span { line-height: 1.4; }
 .timeline-map { min-width: 0; overflow: auto; padding: 14px; display: grid; grid-auto-rows: max-content; gap: 12px; align-content: start; }
 .timeline-group { min-width: 0; border: 1px solid color-mix(in srgb, var(--cs-vfd-silkscreen) 42%, transparent); background: var(--cs-glass); overflow: hidden; }
 .timeline-group header { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 13px 15px; border-bottom: 1px solid color-mix(in srgb, var(--cs-vfd-silkscreen) 24%, transparent); background: var(--cs-glass-soft); }

@@ -1,17 +1,7 @@
 import assert from 'node:assert/strict';
 import { buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
-import { horizonEntryDiffusion } from '../src/render/horizon3d.js';
 import { CELL } from '../src/data/floorplan/legend.js';
-
-// The player should walk into the recording without seeing a complete image
-// plane at its head. The reveal is measured from the physical seam, not from
-// elapsed time or a teleport into the tape.
-assert.equal(horizonEntryDiffusion(-12), 0);
-assert.ok(horizonEntryDiffusion(0) < .03, 'the seam exposes the whole recording');
-assert.ok(horizonEntryDiffusion(60) < .40, 'the first vapor has already resolved into a screen');
-assert.ok(horizonEntryDiffusion(120) > horizonEntryDiffusion(60));
-assert.equal(horizonEntryDiffusion(160), 1);
 
 // After the happy recording, one real lamp remains near the head. It dies as
 // the body passes, and that blackout survives a reload rather than repeating.

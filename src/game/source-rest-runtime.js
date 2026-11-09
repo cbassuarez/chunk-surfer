@@ -49,7 +49,8 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
     timing:overlay?.view?.()?.restTiming||null,nodeId:overlay?.view?.()?.nodeId||null,memory:memory?{...memory}:null,
     presentation:presentation(),weather:weatherCue?{...weatherCue,particles:undefined}:null,affliction:{...affliction}});
   const musicState=()=>{try{return conversationOptions.getMusicState?.()||{};}catch{return{};}};
-  function refreshWeather(value=scene.view()){
+  const sceneStatus=()=>scene.statusView?.({focus:true})??scene.view();
+  function refreshWeather(value=sceneStatus()){
     const music=musicState(),place=SOURCE_REST_SEATS.find(item=>item.phase===value.phase),
       near=!!place&&value.chartId===place.chartId&&Math.abs(value.feet-place.feet)<1&&Math.hypot(value.x-place.x,value.z-place.z)<16,
       sensory=mode==='standing'?narrativeProgress*progress:mode==='idle'?0:narrativeProgress;
@@ -65,7 +66,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   const notifyLock=()=>{if(!lockNotified&&locked()){lockNotified=true;changed();}};
   function focus(){
     if(disposed||restMode())return null;
-    const s=scene.view();
+    const s=sceneStatus();
     // The normal Source handle/drop interaction always wins.
     if(!s?.ready||s.paused||s.closed||s.leaving||s.error||s.focus)return null;
     return sourceRestFocus(s);
@@ -110,7 +111,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   // replayed, no ordinary rest interaction is interpreted as a commitment.
   function restoreCommitted(){
     if(disposed||restMode())return false;
-    const s=scene.view(),selected=sourceRestSeatForState(s);
+    const s=sceneStatus(),selected=sourceRestSeatForState(s);
     if(!s?.ready||s.paused||s.closed||s.leaving||s.error||!selected||!sourceRestPositionProtected(s)
       ||Math.hypot(selected.x-s.x,selected.z-s.z)>SOURCE_REST_FOCUS_DISTANCE)return false;
     clearMotion();seat=selected;look={...seat.view};progress=1;narrativeProgress=1;mode='committed';committed=true;lockNotified=true;
@@ -130,7 +131,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
     scene.anchor?.(mode!=='idle');
     const result=original.update.call(scene,dt);
     if(disposed)return result;
-    if(mode==='idle'){refreshWeather();conversationOptions.onRestProgress?.(0,false,weatherCue,scene.view()?.phase);return result;}
+    if(mode==='idle'){const s=sceneStatus();refreshWeather(s);conversationOptions.onRestProgress?.(0,false,weatherCue,s?.phase);return result;}
     notifyLock();
     if(seat&&overlay?.restProgress){
       narrativeProgress=Math.max(narrativeProgress,clamp(overlay.restProgress(),0,1));
@@ -146,7 +147,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
     refreshWeather();
     conversationOptions.onRestProgress?.(narrativeProgress,!!seat&&mode!=='standing',weatherCue,seat?.phase);
     if(mode!=='committed'){
-      const s=scene.view();
+      const s=sceneStatus();
       if(!s?.ready||s.closed||s.leaving||s.error||!sourceRestPositionProtected(s)){
         if(overlay){const old=overlay;overlay=null;stack.remove(old);}
         if(mode!=='standing')stand();

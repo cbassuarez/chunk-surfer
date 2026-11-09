@@ -3,7 +3,7 @@
 import {GLASS_COURT_SIGHTLINES} from './glass-court-sightlines.js';
 import {F,ZONE,MATERIAL} from './floorplan/legend.js';
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
-export const ELLERY_PUBLIC_FRONT_REVISION='endowed-school-yard-clearance-4';
+export const ELLERY_PUBLIC_FRONT_REVISION='endowed-school-yard-clearance-5';
 export const ELLERY_PUBLIC_FRONT_PACK='/assets/ellery-public-front.glb';
 export const ELLERY_PUBLIC_FRONT=freeze({
   anchor:{x:86,z:1.25},
@@ -29,11 +29,16 @@ export const ELLERY_PUBLIC_FRONT=freeze({
     // new public forecourt, then clear the existing greenhouse air from a
     // second scenic wall at z30. Source art outside both boxes is retained.
     clip:{physicalMin:[74,0,0],physicalMax:[98,9.45,28],min:[24,0,-7.5],max:[48,9.45,20.5]},
-    greenhouseClip:{physicalMin:[71,0,28],physicalMax:[92,5.5,32],min:[21,0,20.5],max:[42,5.5,24.5]}},
+    greenhouseClip:{physicalMin:[71,0,28],physicalMax:[92,5.5,32],min:[21,0,20.5],max:[42,5.5,24.5]},
+    // The original scenic north front continues above the first trim's9.45m
+    // ceiling. Those severed crowns stood ahead of the replacement cornice,
+    // making two incompatible facades. Clear only this shallow upper strip;
+    // the real academic roof is a separate, untouched mesh.
+    northCrownClip:{physicalMin:[74,9.44,0],physicalMax:[98,14,4],min:[24,9.44,-7.5],max:[48,14,-3.5]}},
   fanlight:{mesh:'ellery_baths_fanlight',...GLASS_COURT_SIGHTLINES.fanlight},
   maximumAddedTriangles:4500,maximumAddedBytes:1000000,
 });
-export const ELLERY_PUBLIC_FRONT_HERO_CLIPS=freeze([ELLERY_PUBLIC_FRONT.hero.clip,ELLERY_PUBLIC_FRONT.hero.greenhouseClip]);
+export const ELLERY_PUBLIC_FRONT_HERO_CLIPS=freeze([ELLERY_PUBLIC_FRONT.hero.clip,ELLERY_PUBLIC_FRONT.hero.greenhouseClip,ELLERY_PUBLIC_FRONT.hero.northCrownClip]);
 // The scenic backstage range was accidentally built into the public yard.
 // Move its closed parts behind Ellery's actual wall rather than slicing them
 // open. Pipe heads follow their own service/academic roof datums.

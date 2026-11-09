@@ -26,7 +26,8 @@
     "buildPubTrayDialogue.start",
     "buildPubTrayDialogue.taken",
     "buildPubServiceDialogue.start",
-    "buildPubServiceDialogue.pub-service-thanks",
+    "buildPubServiceDialogue.pub-service-thanks.when-serving",
+    "buildPubServiceDialogue.pub-service-thanks.otherwise-serving",
     "buildPubFavorDialogue.start",
     "buildPubFavorDialogue.taken"
   ],
@@ -1120,30 +1121,37 @@
       ],
       "source": "src/data/pub-dialogue.js:189"
     },
-    "buildPubServiceDialogue.pub-service-thanks": {
-      "id": "buildPubServiceDialogue.pub-service-thanks",
+    "buildPubServiceDialogue.pub-service-thanks.when-serving": {
+      "id": "buildPubServiceDialogue.pub-service-thanks.when-serving",
       "type": "line",
       "lines": [
         {
-          "id": "buildPubServiceDialogue.pub-service-thanks.l0",
+          "id": "buildPubServiceDialogue.pub-service-thanks.when-serving.l0",
           "who": "direction",
           "text": "You put the waters down. Mavis lifts hers in thanks; Ed gives you a quiet nod. The tray is empty.",
           "source": "src/data/pub-dialogue.js:190"
-        },
+        }
+      ],
+      "source": "src/data/pub-dialogue.js:190"
+    },
+    "buildPubServiceDialogue.pub-service-thanks.otherwise-serving": {
+      "id": "buildPubServiceDialogue.pub-service-thanks.otherwise-serving",
+      "type": "line",
+      "lines": [
         {
-          "id": "buildPubServiceDialogue.pub-service-thanks.l1",
+          "id": "buildPubServiceDialogue.pub-service-thanks.otherwise-serving.l0",
           "who": "direction",
           "text": "You gather the glasses onto the tray. Farah catches a rolling domino before it can join them.",
           "source": "src/data/pub-dialogue.js:191"
         },
         {
-          "id": "buildPubServiceDialogue.pub-service-thanks.l2",
+          "id": "buildPubServiceDialogue.pub-service-thanks.otherwise-serving.l1",
           "who": "direction",
           "text": "Iona is waiting behind the bar. There is a clear space on the counter for the tray.",
           "source": "src/data/pub-dialogue.js:191"
         }
       ],
-      "source": "src/data/pub-dialogue.js:190"
+      "source": "src/data/pub-dialogue.js:191"
     },
     "buildPubFavorDialogue.start": {
       "id": "buildPubFavorDialogue.start",

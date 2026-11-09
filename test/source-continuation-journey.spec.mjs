@@ -4,7 +4,7 @@ import {JOURNEY_PORTALS,JOURNEY_ROUTES,JOURNEY_SURFACES,JOURNEY_SIGHTLINES,JOURN
 import {SOURCE_CONTINUATION as C,SOURCE_CONTINUATION_ROUTES,continuationSupportAt} from '../src/data/source-continuation.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {continuationCameraBasis,continuationCameraEye,continuationBodyBasis,portalEdge,transferContinuationPortal} from '../src/game/source-continuation-portals.js';
-import {sourceContinuationGeometry,sourceContinuationMeshPayload,sourceContinuationRenderFrame,sourceContinuationPresentation,sourceContinuationAcousticFrame,SOURCE_CONTINUATION_BACKDROP_ATLAS} from '../src/render/source-continuation-renderer.js';
+import {sourceContinuationGeometry,sourceContinuationMeshPayload,sourceContinuationRenderFrame,sourceContinuationPresentation,sourceContinuationAcousticFrame,SOURCE_CONTINUATION_BACKDROP_ATLAS,SOURCE_CONTINUATION_ARCHITECTURE} from '../src/render/source-continuation-renderer.js';
 import {portalIdentity,portalMultiply,portalTransformPoint,portalTransformVector,portalInverse,portalClipPlanes} from '../src/render/source-mesh-portals.js';
 import {encodeSourceSurroundingsPressure,sampleSourceSurroundingsPressure} from '../src/render/source-surroundings-pressure.js';
 import {pressureSurfaceInstances} from '../src/render/pressure-volume.js';
@@ -33,7 +33,7 @@ test('the sustained main spine, both cross-link branches and refuge necks have a
  assert.ok(metres>400&&metres<500,'finite outward terrain, measured independently from duration');
  for(const p of JOURNEY_PORTALS.slice(5))for(const e of[p.a,p.b]){const a={...e,x:e.x+e.normal[0]*3,z:e.z+e.normal[2]*3};segment(a,e,p.id+' actual branch');}
  segment({x:-107,z:-18,feet:16.8,chartId:1},JOURNEY_REFUGES[0],'upper refuge neck');segment({x:-156,z:-45,feet:0,chartId:3},JOURNEY_REFUGES[1],'lower refuge neck');
- assert.ok(JOURNEY_SURFACES.some(s=>s.chartId===2&&s.maxX-s.minX<1),'the thin return is a physical risk, rather than more corridor padding');
+ for(const surface of JOURNEY_SURFACES.filter(s=>s.lane==='main'))assert.ok(Math.min(surface.maxX-surface.minX,surface.maxZ-surface.minZ)>=4.4-1e-6,'the primary folded routes leave room for the faster standing body');
 });
 
 test('two supported closed walks have nonidentity holonomy rather than a global Euclidean embedding',()=>{
@@ -91,7 +91,7 @@ test('acoustic aperture paths survive looking away and carry chart0 ensembles th
 
 
 test('only two one-bounce actual neighborhoods are submitted and their source floors receive complementary holes',()=>{
- for(const portal of JOURNEY_PORTALS){const s=pose({...portal.a.approach}),f=sourceContinuationRenderFrame(s);assert.ok(f.portals.length<=2);assert.ok(f.props.length<=760);const active=new Set(f.portals.map(p=>p.id));for(const p of f.props.filter(p=>p.portalDestination&&!p.voidImage)){assert.ok(active.has(p.portalClipId));assert.equal(p.id.split(':through:').length,2,'there is no recursively copied third world');assert.ok(p.canonicalId);assert.equal(p.portalExcludePlanes,null);}
+ for(const portal of JOURNEY_PORTALS){const s=pose({...portal.a.approach}),f=sourceContinuationRenderFrame(s);assert.ok(f.portals.length<=2);assert.ok(f.props.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);const active=new Set(f.portals.map(p=>p.id));for(const p of f.props.filter(p=>p.portalDestination&&!p.voidImage)){assert.ok(active.has(p.portalClipId));assert.equal(p.id.split(':through:').length,2,'there is no recursively copied third world');assert.ok(p.canonicalId);assert.equal(p.portalExcludePlanes,null);}
   const own=f.props.find(p=>!p.portalDestination&&p.physicalKind==='surface'),e=portal.a,q=e.center.map((v,k)=>v-e.normal[k]*2);assert.ok(own.portalExcludePlanes?.length);assert.equal(kept(own,q),false,'source deck cannot occlude the actual connected floor');
   for(const p of f.props.filter(p=>p.surroundings))assert.ok(p.sourceWorldMatrix?.length===16,'printed sky/pressure is evaluated in the same original world after full transforms');
  }
@@ -103,7 +103,7 @@ test('every outward chart retains exactly the same five Fall bodies and two nati
  for(const atlas of SOURCE_CONTINUATION_BACKDROP_ATLAS.slice(1)){
   const approach=JOURNEY_PORTALS[atlas.chartId-1].b.approach,s=pose({...approach,elapsed}),f=sourceContinuationRenderFrame(s),sky=f.canonicalProps.filter(p=>p.backdropAtlas&&!p.portalDestination);assert.equal(sky.length,22);assert.deepEqual(sky.map(p=>p.canonicalId).sort(),ids);assert.equal(new Set(sky.filter(p=>p.materialRole!=='source-surroundings-emitter').map(p=>p.bodyId)).size,5);assert.equal(new Set(sky.filter(p=>p.materialRole==='source-surroundings-emitter').map(p=>p.bodyId)).size,2);assert.ok(sky.every(p=>p.chartId===atlas.chartId&&p.world==='fall'&&p.canonicalChartId===0&&p.sourceSurroundingsSide===0));assert.equal(f.props.some(p=>!p.portalDestination&&p.world==='centre'),false);
   for(const p of sky){const original=canonical.find(q=>q.id===p.canonicalId),expected=portalMultiply(atlas.matrix,original.matrix);expected.forEach((v,k)=>close(v,p.matrix[k],'one canonical body through the fixed tree'));close3(portalTransformPoint(portalInverse(p.sourceWorldMatrix),[p.x,p.y,p.z]),[original.x,original.y,original.z]);assert.equal(p.noCollision,true);assert.equal(p.walkable,false);assert.equal(p.decorative,true);assert.equal(p.physicalKind,undefined);assert.ok(!f.geometry.surfaces.some(q=>q.id===p.id)&&!f.geometry.solids.some(q=>q.id===p.id),'the sky cannot manufacture an unsupported roof or new collision');}
-  assert.equal(f.surroundings.clock,elapsed);assert.ok(f.props.length<=760);const allImages=f.canonicalProps.filter(p=>p.surroundings&&p.world==='fall');assert.equal(new Set(allImages.map(p=>p.canonicalId||p.id)).size,22,'portal images do not create another cosmos');
+  assert.equal(f.surroundings.clock,elapsed);assert.ok(f.props.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);const allImages=f.canonicalProps.filter(p=>p.surroundings&&p.world==='fall');assert.equal(new Set(allImages.map(p=>p.canonicalId||p.id)).size,22,'portal images do not create another cosmos');
  }
 });
 

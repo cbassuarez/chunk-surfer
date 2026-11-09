@@ -6,5 +6,5 @@
   "download": "https://www.ibiblio.org/mutopia/ftp/DebussyC/L75/debussy_Ste_Bergamesq_Clair/debussy_Ste_Bergamesq_Clair.mid",
   "license": "Public Domain (Mutopia; the typesetter placed the edition in the public domain, Creative Commons Public Domain Dedication). The composition is public domain (Debussy d. 1918).",
   "retrieved": "2026-11-05",
-  "use": "Bars 1-8 are arranged for the coastal memory's broken music box by tools/chunk_surfer/build-music-box-arrangement.mjs into src/data/clair-de-lune-music-box.js. No recording is used; the box is synthesized."
+  "use": "Legacy score reduction retained for hidden geometric pinning study and diagnostics. Runtime melody now uses the supplied Sankyo voice memo in reference-performance.json, at unchanged pitch; the MIDI reduction does not replace or repair that recording."
 }

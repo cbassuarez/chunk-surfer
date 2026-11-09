@@ -332,7 +332,5 @@ export function sourceFocusActionLabel(focus) {
   if (focus.kind === 'outskirt-piece') return 'LOOK';
   // Without this the prompt fell through to main.js's raw fallback and printed
   // the internal id: INSPECT HORIZON-BUST.
-  if (focus.kind === 'horizon-bust-seal') return 'CONSIDER THE SEAL';
-  if (focus.kind === 'horizon-bust') return 'LISTEN TO THE BUST';
   return null;
 }

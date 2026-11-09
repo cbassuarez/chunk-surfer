@@ -1,23 +1,37 @@
 {
   "schemaVersion": 1,
   "id": "runtime.data.source-rest-earthly",
-  "title": "Runtime · data/source-rest-earthly.js",
+  "title": "Source II / III · Bench final questions",
   "status": "reference",
   "readOnly": true,
   "entry": "LEADS.wrong-return",
   "entries": [
     "LEADS.wrong-return",
     "LEADS.catch",
+    "QUESTIONS.lyle",
     "QUESTIONS.lyle.answer",
+    "QUESTIONS.sarah",
     "QUESTIONS.sarah.answer",
+    "QUESTIONS.ellery",
     "QUESTIONS.ellery.answer",
+    "QUESTIONS.rain",
     "QUESTIONS.rain.answer",
+    "QUESTIONS.listen",
+    "QUESTIONS.listen.answer",
+    "CHUNK_SURFER_QUESTION.chunk-surfer",
     "CHUNK_SURFER_QUESTION.chunk-surfer.answer",
     "sourceRestEarthlyNodes.nodes.earthly-choice"
   ],
   "tags": [
     "runtime",
-    "derived"
+    "derived",
+    "source",
+    "source ii",
+    "source iii",
+    "bench",
+    "benches",
+    "questions",
+    "last minutes"
   ],
   "regions": [],
   "module": "src/data/source-rest-earthly.js",
@@ -78,30 +92,50 @@
         },
         {
           "id": "LEADS.catch.l1",
+          "who": "other",
+          "text": "No.",
+          "source": "src/data/source-rest-earthly.js:37"
+        },
+        {
+          "id": "LEADS.catch.l2",
           "who": "you",
           "text": "Other people have sat where I am.",
           "source": "src/data/source-rest-earthly.js:38"
         },
         {
-          "id": "LEADS.catch.l2",
+          "id": "LEADS.catch.l3",
           "who": "other",
           "text": "Some have.",
           "source": "src/data/source-rest-earthly.js:39"
         },
         {
-          "id": "LEADS.catch.l3",
+          "id": "LEADS.catch.l4",
           "who": "you",
           "text": "And you know what became of what they left.",
           "source": "src/data/source-rest-earthly.js:40"
         },
         {
-          "id": "LEADS.catch.l4",
+          "id": "LEADS.catch.l5",
           "who": "other",
           "text": "Some of it.",
           "source": "src/data/source-rest-earthly.js:41"
         }
       ],
       "source": "src/data/source-rest-earthly.js:36"
+    },
+    "QUESTIONS.lyle": {
+      "id": "QUESTIONS.lyle",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "QUESTIONS.lyle.c0",
+          "text": "What happens to Lyle?",
+          "source": "src/data/source-rest-earthly.js:47",
+          "choiceId": "lyle"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:47"
     },
     "QUESTIONS.lyle.answer": {
       "id": "QUESTIONS.lyle.answer",
@@ -146,6 +180,20 @@
       ],
       "source": "src/data/source-rest-earthly.js:48"
     },
+    "QUESTIONS.sarah": {
+      "id": "QUESTIONS.sarah",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "QUESTIONS.sarah.c0",
+          "text": "What happens to Sarah? / What happens to her?",
+          "source": "src/data/source-rest-earthly.js:55",
+          "choiceId": "sarah"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:55"
+    },
     "QUESTIONS.sarah.answer": {
       "id": "QUESTIONS.sarah.answer",
       "type": "line",
@@ -182,6 +230,20 @@
         }
       ],
       "source": "src/data/source-rest-earthly.js:56"
+    },
+    "QUESTIONS.ellery": {
+      "id": "QUESTIONS.ellery",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "QUESTIONS.ellery.c0",
+          "text": "What happens to Ellery?",
+          "source": "src/data/source-rest-earthly.js:62",
+          "choiceId": "ellery"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:62"
     },
     "QUESTIONS.ellery.answer": {
       "id": "QUESTIONS.ellery.answer",
@@ -238,6 +300,20 @@
       ],
       "source": "src/data/source-rest-earthly.js:63"
     },
+    "QUESTIONS.rain": {
+      "id": "QUESTIONS.rain",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "QUESTIONS.rain.c0",
+          "text": "Does the rain stop?",
+          "source": "src/data/source-rest-earthly.js:72",
+          "choiceId": "rain"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:72"
+    },
     "QUESTIONS.rain.answer": {
       "id": "QUESTIONS.rain.answer",
       "type": "line",
@@ -275,6 +351,47 @@
       ],
       "source": "src/data/source-rest-earthly.js:73"
     },
+    "QUESTIONS.listen": {
+      "id": "QUESTIONS.listen",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "QUESTIONS.listen.c0",
+          "text": "Nothing. I would rather listen.",
+          "source": "src/data/source-rest-earthly.js:79",
+          "choiceId": "listen"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:79"
+    },
+    "QUESTIONS.listen.answer": {
+      "id": "QUESTIONS.listen.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "QUESTIONS.listen.answer.l0",
+          "who": "other",
+          "text": "So would I.",
+          "source": "src/data/source-rest-earthly.js:80"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:80"
+    },
+    "CHUNK_SURFER_QUESTION.chunk-surfer": {
+      "id": "CHUNK_SURFER_QUESTION.chunk-surfer",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.c0",
+          "text": "The chunk-surfer. Is any of that real?",
+          "source": "src/data/source-rest-earthly.js:86",
+          "choiceId": "chunk-surfer"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:86"
+    },
     "CHUNK_SURFER_QUESTION.chunk-surfer.answer": {
       "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer",
       "type": "line",
@@ -287,24 +404,30 @@
         },
         {
           "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l1",
+          "who": "other",
+          "text": "No.",
+          "source": "src/data/source-rest-earthly.js:88"
+        },
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l2",
           "who": "you",
           "text": "None of it?",
           "source": "src/data/source-rest-earthly.js:89"
         },
         {
-          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l2",
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l3",
           "who": "other",
           "text": "It is a story you made up. You have been on the way out for a long while, and it was the best thing you had.",
           "source": "src/data/source-rest-earthly.js:90"
         },
         {
-          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l3",
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l4",
           "who": "you",
           "text": "So I am not really getting out of this.",
           "source": "src/data/source-rest-earthly.js:91"
         },
         {
-          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l4",
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l5",
           "who": "other",
           "text": "No. You are not.",
           "source": "src/data/source-rest-earthly.js:92"

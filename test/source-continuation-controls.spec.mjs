@@ -4,9 +4,11 @@ import {createSourceContinuationScene} from '../src/game/source-continuation-sce
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {SOURCE_CONTINUATION as C, CONTINUATION_DROP_LIPS} from '../src/data/source-continuation.js';
 import {SOURCE_JOURNEY,JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
+import {SOURCE_III_ARCHIPELAGO} from '../src/data/source-continuation-archipelago.js';
 
 const renderer=()=>({initialize:async()=>true,render:()=>true,ready:()=>true,dispose(){}});
 const checkpoint=()=>({...freshSourceContinuation({runId:'controls',returnPose:{x:1,y:2}}),status:'active'});
+const expedition=()=>({version:1,visited:[...SOURCE_III_ARCHIPELAGO.mainIslandIds],activeSeconds:0,travelMetres:0,chases:[]});
 
 test('ordinary look deltas belong to the scene and pause clears movement without changing the view',async()=>{
   const scene=createSourceContinuationScene({checkpoint:checkpoint(),renderer:renderer()});
@@ -73,9 +75,9 @@ test('a rotated study keeps first-person input in the same body basis as its rot
 });
 
 test('the final latch has a finite audible handoff, freezes on pause and dispatches once',async()=>{
-  let calls=0,stops=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1},renderer:renderer(),audio:{stop(){stops++;}},onComplete(){calls++;return true;}});
+  let calls=0,stops=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:0,expedition:expedition()},renderer:renderer(),audio:{stop(){stops++;}},onComplete(){calls++;return true;}});
   await scene.initialize();scene.key({key:'e'});scene.key({key:'w'});
-  for(let i=0;i<50&&!scene.serialize().completed;i++)scene.update(.05);
+  for(let i=0;i<160&&!scene.serialize().completed;i++)scene.update(.05);
   assert.equal(scene.serialize().completed,true);assert.equal(calls,0);assert.equal(stops,0);
   scene.pause();scene.update(1);assert.equal(calls,0);scene.resume();
   scene.update(.2);scene.update(.2);assert.equal(calls,1);scene.update(1);assert.equal(calls,1);scene.exit();
@@ -83,9 +85,9 @@ test('the final latch has a finite audible handoff, freezes on pause and dispatc
 
 test('a rejected host handoff retains the frame and lets a fresh interaction retry',async()=>{
   for(const failure of [false,Error('host unavailable')]){
-    let calls=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1},renderer:renderer(),onComplete(){calls++;if(calls===1){if(failure===false)return false;throw failure;}return true;}});
+    let calls=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:0,expedition:expedition()},renderer:renderer(),onComplete(){calls++;if(calls===1){if(failure===false)return false;throw failure;}return true;}});
     await scene.initialize();scene.key({key:'e'});scene.key({key:'w'});
-    for(let i=0;i<50&&!scene.serialize().completed;i++)scene.update(.05);
+    for(let i=0;i<160&&!scene.serialize().completed;i++)scene.update(.05);
     scene.update(.2);scene.update(.2);await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls,1);assert.equal(scene.view().ready,false);assert.ok(scene.view().error);
     const before=scene.serialize();scene.key({key:'w'});scene.update(1);

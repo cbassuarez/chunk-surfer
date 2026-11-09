@@ -8,6 +8,7 @@
 import {F,ZONE,MATERIAL} from './floorplan/legend.js';
 import {streetCrossingFloorAt} from './street-crossings.js';
 import {STREET_PARKING_BAYS} from './exterior-street-fabric.js';
+import {FLORA_PARTS} from './ellery-flora.js';
 const freeze=value=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 
 export const ELLERY_SQUARE=freeze({
@@ -112,6 +113,15 @@ function railings(){
   return out;
 }
 const TREES=['opening_street_tree_small','opening_street_tree_small_b','opening_street_tree_small_c'];
+// Planted borders within the four lawn quarters. The taller autumn mums sit
+// behind low daisies; all four gates, the cross paths and benches stay clear.
+export const ELLERY_SQUARE_PLANTINGS=freeze([
+  ...[[81,-45],[81,-41],[91,-45],[91,-41],[81,-31],[81,-27],[91,-31],[91,-27]].map(([x,z],i)=>
+    ({id:`ellery-square-chrysanthemums-${i}`,species:'chrysanthemum',mesh:'vegetation_chrysanthemum_clump',x,z,yaw:i*.73,scale:i%3===0?1.08:1})),
+  ...[[69,-40.3],[76,-40.2],[96,-40.2],[103,-40.3],[69,-31.8],[76,-31.7],[96,-31.7],[103,-31.8],
+    [64,-44],[108,-28]].map(([x,z],i)=>
+    ({id:`ellery-square-daisies-${i}`,species:'daisy',mesh:'vegetation_daisy_drift',x,z,yaw:i*.91,scale:i%3===0?1.10:.95})),
+]);
 export const ELLERY_SQUARE_PROPS=freeze([
   ...S.terraces.map(t=>{
     // The east face lies exactly on the square's exclusive outer boundary.
@@ -126,6 +136,11 @@ export const ELLERY_SQUARE_PROPS=freeze([
   // Two trees to each lawn quarter, set back from every path.
   ...[[65,-47],[77,-45],[65,-29],[77,-26],[95,-45],[107,-47],[95,-26],[107,-29]].map(([x,z],i)=>
     P(`ellery-square-tree-${i}`,TREES[i%3],x,z,i*.83,{scale:1.15+(i%3)*.08})),
+  ...ELLERY_SQUARE_PLANTINGS.flatMap(plant=>[
+    P(plant.id,plant.mesh,plant.x,plant.z,plant.yaw,{scale:plant.scale}),
+    ...(FLORA_PARTS[plant.mesh]||[]).map((part,k)=>P(`${plant.id}-flower-${k}`,part.mesh,plant.x,plant.z,plant.yaw,
+      {scale:plant.scale,emissive:[...part.emissive.slice(0,3),Math.min(.55,part.emissive[3])]})),
+  ]),
   // Benches face the monument from the four paths, and Ellery from the esplanade.
   ...[[80,-36,Math.PI/2],[92,-36,-Math.PI/2],[86,-43,0],[86,-29,Math.PI]].map(([x,z,yaw],i)=>
     P(`ellery-square-bench-${i}`,'district_bench',x,z,yaw)),

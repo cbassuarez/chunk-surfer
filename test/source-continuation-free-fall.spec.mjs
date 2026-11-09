@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SOURCE_CONTINUATION as C,continuationSupportAt} from '../src/data/source-continuation.js';
-import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation,sourceContinuationFrame} from '../src/game/source-continuation.js';
+import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation,sourceContinuationFrame,sourceContinuationGait} from '../src/game/source-continuation.js';
 import {continuationBallisticStep,continuationFreeBody} from '../src/game/source-continuation-physics.js';
+import {SOURCE_III_ARCHIPELAGO} from '../src/data/source-continuation-archipelago.js';
+import {SOURCE_EXIT_PASSAGE} from '../src/data/source-exit-passage.js';
 
 function at(x,z,feet,phase='wrong-return',level=0,chartId=0) {
   const fresh=freshSourceContinuation({runId:'free-fall'});
@@ -42,8 +44,9 @@ test('the half-metre split is an authorized jump shortcut with no knowledge lock
 
 test('unmarked Catch edges can skip a receiving stage and use the actual lower landing',()=>{
   let state=at(C.catch.center.x+4.23,C.catch.center.z,2.4,'catch',1),events=[];
+  const vx=-sourceContinuationGait(state,{}).speed*.2;
   for(let k=0;k<100&&!state.fall;k++)state=tick(state,{side:-.2},events);
-  assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx+.4)<1e-12);
+  assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx-vx)<1e-12);
   state=until(state,s=>!s.fall,events);
   assert.equal(state.recovery,null);assert.equal(state.phase,'catch');assert.equal(state.level,3);assert.equal(state.feet,-12.6);
   assert.match(events.find(e=>e.type==='land').surface,/catch-3/);
@@ -68,7 +71,11 @@ test('actual full-body airborne crossings dispatch return, onward phase and fina
   state=at(gate.x+.04,gate.z,gate.y,'wrong-return',0,4);events=[];state.doorOpen[gate.doorId]=true;
   state=tick(state,{dt:0,jump:true,forward:1,run:true,look:{yaw:-Math.PI/2}},events);
   state=until(state,s=>s.phase==='catch',events);assert.ok(events.some(e=>e.type==='fold'),'the threshold crossing dispatches while airborne');
-  state=at(C.catch.finalDoor.x-.04,C.catch.finalDoor.z,C.catch.finalDoor.y,'catch',0);events=[];state.doorOpen['catch-final']=true;
+  state=at(SOURCE_EXIT_PASSAGE.completionX-.04,C.catch.finalDoor.z,C.catch.finalDoor.y,'catch',0);events=[];state.doorOpen['catch-final']=true;
+  // This bounded airborne-threshold fixture represents an already explored
+  // expedition; the independent ordinary route earns every spatial arrival.
+  state.expedition.visited=[...SOURCE_III_ARCHIPELAGO.mainIslandIds];
+  state.exitPassage={...state.exitPassage,phase:'entered',enteredReason:'door',enteredAt:0,entryPose:{x:C.catch.finalDoor.x+C.bodyRadius+.01,z:C.catch.finalDoor.z,feet:C.catch.finalDoor.y,chartId:0},furthest:SOURCE_EXIT_PASSAGE.length-.04};
   state=tick(state,{dt:0,jump:true,side:1,run:true},events);state=until(state,s=>s.completed,events);
   assert.equal(events.filter(e=>e.type==='complete').length,1);assert.equal(events.find(e=>e.type==='complete').airborne,true);
   assert.equal(stepSourceContinuation(state,{dt:.25,jump:true,side:1}).events.length,0);
@@ -114,8 +121,11 @@ test('free jump latches, arbitrary fall metadata and motion survive pause and re
 test('Hush repeats arbitrary jump momentum and obeys the same Source-II spatial loop',()=>{
   let state=at(0,-22.95,8.4),events=[];
   state.hush={...state.hush,active:true,x:0,z:-21,feet:8.4,phase:'wrong-return',mode:'follow',elapsed:10,armed:true,trail:[{kind:'walk',x:0,z:-22.95,feet:8.4,phase:'wrong-return',level:0}],lastRecorded:{x:0,z:-22.95,feet:8.4,phase:'wrong-return',level:0}};
-  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward:1,run:true},events);
-  const edge=state.hush.trail.find(p=>p.kind==='drop');assert.ok(edge);assert.equal(edge.trigger,'step-off');assert.equal(edge.vz,-2.6);
+  // At the new sprint speed this same edge reaches the middle floor. The
+  // walking trajectory deliberately misses it to isolate the void gluing.
+  const departureSpeed=sourceContinuationGait(state,{run:false}).speed;
+  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward:1,run:false},events);
+  const edge=state.hush.trail.find(p=>p.kind==='drop');assert.ok(edge);assert.equal(edge.trigger,'step-off');assert.equal(edge.vz,-departureSpeed);
   for(let k=0;k<2200&&!events.some(e=>e.type==='hush-space-wrap');k++)state=tick(state,{},events);
   assert.ok(events.some(e=>e.type==='hush-space-wrap'));
   assert.equal(events.some(e=>e.type==='hush-recovery'&&e.reason==='void-fall'),false);

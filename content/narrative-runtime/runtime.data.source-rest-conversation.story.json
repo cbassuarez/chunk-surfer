@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "runtime.data.source-rest-conversation",
-  "title": "Runtime · data/source-rest-conversation.js",
+  "title": "Source II · Bench dialogue · Bach Chaconne",
   "status": "reference",
   "readOnly": true,
-  "entry": "shared.who-asked",
+  "entry": "phaseOpenings.wrong-return.arrival",
   "entries": [
     "shared.who-asked",
     "shared.other-part",
@@ -69,7 +69,14 @@
   ],
   "tags": [
     "runtime",
-    "derived"
+    "derived",
+    "source",
+    "source ii",
+    "bench",
+    "benches",
+    "bach",
+    "chaconne",
+    "listening"
   ],
   "regions": [],
   "module": "src/data/source-rest-conversation.js",
@@ -1103,30 +1110,37 @@
       "lines": [
         {
           "id": "phaseOpenings.wrong-return.arrival.l0",
+          "who": "other",
+          "text": "There you are.",
+          "source": "src/data/source-rest-conversation.js:176"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.arrival.l1",
           "who": "you",
           "text": "Have you been waiting?",
           "source": "src/data/source-rest-conversation.js:177"
         },
         {
-          "id": "phaseOpenings.wrong-return.arrival.l1",
+          "id": "phaseOpenings.wrong-return.arrival.l2",
           "who": "other",
           "text": "Listening. I thought you might find your way here.",
           "source": "src/data/source-rest-conversation.js:178"
         },
         {
-          "id": "phaseOpenings.wrong-return.arrival.l2",
+          "id": "phaseOpenings.wrong-return.arrival.l3",
           "who": "you",
           "text": "You could have started without me.",
           "source": "src/data/source-rest-conversation.js:179"
         },
         {
-          "id": "phaseOpenings.wrong-return.arrival.l3",
+          "id": "phaseOpenings.wrong-return.arrival.l4",
           "who": "other",
           "text": "I did. You are just in time for the next bit.",
           "source": "src/data/source-rest-conversation.js:180"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:177"
+      "source": "src/data/source-rest-conversation.js:176",
+      "goto": "phaseOpenings.wrong-return.first-choice"
     },
     "phaseOpenings.wrong-return.first-choice": {
       "id": "phaseOpenings.wrong-return.first-choice",
@@ -1192,7 +1206,8 @@
           "source": "src/data/source-rest-conversation.js:190"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:187"
+      "source": "src/data/source-rest-conversation.js:187",
+      "goto": "phaseOpenings.wrong-return.first-listen"
     },
     "phaseOpenings.wrong-return.hear": {
       "id": "phaseOpenings.wrong-return.hear",
@@ -1223,7 +1238,8 @@
           "source": "src/data/source-rest-conversation.js:196"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:193"
+      "source": "src/data/source-rest-conversation.js:193",
+      "goto": "phaseOpenings.wrong-return.first-listen"
     },
     "phaseOpenings.wrong-return.first-listen": {
       "id": "phaseOpenings.wrong-return.first-listen",
@@ -1248,7 +1264,8 @@
           "source": "src/data/source-rest-conversation.js:201"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:199"
+      "source": "src/data/source-rest-conversation.js:199",
+      "goto": "phaseOpenings.wrong-return.interruption"
     },
     "phaseOpenings.wrong-return.interruption": {
       "id": "phaseOpenings.wrong-return.interruption",
@@ -1337,7 +1354,8 @@
           "source": "src/data/source-rest-conversation.js:215"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:210"
+      "source": "src/data/source-rest-conversation.js:210",
+      "targetName": "questions-entry"
     },
     "phaseOpenings.wrong-return.ornaments": {
       "id": "phaseOpenings.wrong-return.ornaments",
@@ -1386,7 +1404,8 @@
           "source": "src/data/source-rest-conversation.js:224"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:218"
+      "source": "src/data/source-rest-conversation.js:218",
+      "goto": "phaseOpenings.wrong-return.ornament-choice"
     },
     "phaseOpenings.wrong-return.ornament-choice": {
       "id": "phaseOpenings.wrong-return.ornament-choice",
@@ -1452,7 +1471,8 @@
           "source": "src/data/source-rest-conversation.js:234"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:230"
+      "source": "src/data/source-rest-conversation.js:230",
+      "goto": "phaseOpenings.wrong-return.organ"
     },
     "phaseOpenings.wrong-return.keep": {
       "id": "phaseOpenings.wrong-return.keep",
@@ -1483,7 +1503,8 @@
           "source": "src/data/source-rest-conversation.js:240"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:237"
+      "source": "src/data/source-rest-conversation.js:237",
+      "goto": "phaseOpenings.wrong-return.organ"
     },
     "phaseOpenings.wrong-return.organ": {
       "id": "phaseOpenings.wrong-return.organ",
@@ -1532,7 +1553,8 @@
           "source": "src/data/source-rest-conversation.js:249"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:243"
+      "source": "src/data/source-rest-conversation.js:243",
+      "goto": "phaseOpenings.wrong-return.mistakes"
     },
     "phaseOpenings.wrong-return.mistakes": {
       "id": "phaseOpenings.wrong-return.mistakes",
@@ -1593,7 +1615,8 @@
           "source": "src/data/source-rest-conversation.js:260"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:252"
+      "source": "src/data/source-rest-conversation.js:252",
+      "goto": "phaseOpenings.wrong-return.mistake-choice"
     },
     "phaseOpenings.wrong-return.mistake-choice": {
       "id": "phaseOpenings.wrong-return.mistake-choice",
@@ -1653,7 +1676,8 @@
           "source": "src/data/source-rest-conversation.js:269"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:266"
+      "source": "src/data/source-rest-conversation.js:266",
+      "goto": "phaseOpenings.wrong-return.voice"
     },
     "phaseOpenings.wrong-return.more": {
       "id": "phaseOpenings.wrong-return.more",
@@ -1684,7 +1708,8 @@
           "source": "src/data/source-rest-conversation.js:275"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:272"
+      "source": "src/data/source-rest-conversation.js:272",
+      "goto": "phaseOpenings.wrong-return.voice"
     },
     "phaseOpenings.wrong-return.voice": {
       "id": "phaseOpenings.wrong-return.voice",
@@ -1733,7 +1758,8 @@
           "source": "src/data/source-rest-conversation.js:284"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:278"
+      "source": "src/data/source-rest-conversation.js:278",
+      "goto": "phaseOpenings.wrong-return.caid"
     },
     "phaseOpenings.wrong-return.caid": {
       "id": "phaseOpenings.wrong-return.caid",
@@ -1788,7 +1814,8 @@
           "source": "src/data/source-rest-conversation.js:294"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:287"
+      "source": "src/data/source-rest-conversation.js:287",
+      "goto": "phaseOpenings.wrong-return.distance"
     },
     "phaseOpenings.wrong-return.distance": {
       "id": "phaseOpenings.wrong-return.distance",
@@ -1855,7 +1882,8 @@
           "source": "src/data/source-rest-conversation.js:306"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:297"
+      "source": "src/data/source-rest-conversation.js:297",
+      "goto": "phaseOpenings.wrong-return.distance-choice"
     },
     "phaseOpenings.wrong-return.distance-choice": {
       "id": "phaseOpenings.wrong-return.distance-choice",
@@ -1915,7 +1943,8 @@
           "source": "src/data/source-rest-conversation.js:315"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:312"
+      "source": "src/data/source-rest-conversation.js:312",
+      "goto": "phaseOpenings.wrong-return.pressure"
     },
     "phaseOpenings.wrong-return.strangers": {
       "id": "phaseOpenings.wrong-return.strangers",
@@ -1946,7 +1975,8 @@
           "source": "src/data/source-rest-conversation.js:321"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:318"
+      "source": "src/data/source-rest-conversation.js:318",
+      "goto": "phaseOpenings.wrong-return.pressure"
     },
     "phaseOpenings.wrong-return.pressure": {
       "id": "phaseOpenings.wrong-return.pressure",
@@ -2007,7 +2037,8 @@
           "source": "src/data/source-rest-conversation.js:332"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:324"
+      "source": "src/data/source-rest-conversation.js:324",
+      "goto": "phaseOpenings.wrong-return.pressure-choice"
     },
     "phaseOpenings.wrong-return.pressure-choice": {
       "id": "phaseOpenings.wrong-return.pressure-choice",
@@ -2067,7 +2098,8 @@
           "source": "src/data/source-rest-conversation.js:341"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:338"
+      "source": "src/data/source-rest-conversation.js:338",
+      "goto": "phaseOpenings.wrong-return.breakdown"
     },
     "phaseOpenings.wrong-return.hold": {
       "id": "phaseOpenings.wrong-return.hold",
@@ -2098,7 +2130,8 @@
           "source": "src/data/source-rest-conversation.js:347"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:344"
+      "source": "src/data/source-rest-conversation.js:344",
+      "goto": "phaseOpenings.wrong-return.breakdown"
     },
     "phaseOpenings.wrong-return.breakdown": {
       "id": "phaseOpenings.wrong-return.breakdown",
@@ -2153,7 +2186,8 @@
           "source": "src/data/source-rest-conversation.js:357"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:350"
+      "source": "src/data/source-rest-conversation.js:350",
+      "goto": "phaseOpenings.wrong-return.return"
     },
     "phaseOpenings.wrong-return.return": {
       "id": "phaseOpenings.wrong-return.return",
@@ -2196,7 +2230,8 @@
           "source": "src/data/source-rest-conversation.js:365"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:360"
+      "source": "src/data/source-rest-conversation.js:360",
+      "targetName": "earthly"
     },
     "phaseOpenings.wrong-return.last-choice": {
       "id": "phaseOpenings.wrong-return.last-choice",
@@ -2256,7 +2291,8 @@
           "source": "src/data/source-rest-conversation.js:374"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:371"
+      "source": "src/data/source-rest-conversation.js:371",
+      "goto": "phaseOpenings.wrong-return.last"
     },
     "phaseOpenings.wrong-return.last-again": {
       "id": "phaseOpenings.wrong-return.last-again",
@@ -2287,7 +2323,8 @@
           "source": "src/data/source-rest-conversation.js:380"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:377"
+      "source": "src/data/source-rest-conversation.js:377",
+      "goto": "phaseOpenings.wrong-return.last"
     },
     "phaseOpenings.wrong-return.last": {
       "id": "phaseOpenings.wrong-return.last",
@@ -2361,6 +2398,12 @@
         },
         {
           "id": "phaseOpenings.wrong-return.last.l11",
+          "who": "you",
+          "text": "Not yet.",
+          "source": "src/data/source-rest-conversation.js:394"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l12",
           "who": "other",
           "text": "All right.",
           "source": "src/data/source-rest-conversation.js:395"
@@ -2400,6 +2443,13 @@
       "choices": [
         {
           "id": "phaseOpenings.catch.arrival.c0",
+          "text": "Who are you?",
+          "source": "src/data/source-rest-conversation.js:404",
+          "choiceId": "ask",
+          "targetName": "who-asked"
+        },
+        {
+          "id": "phaseOpenings.catch.arrival.c1",
           "text": "I hear it.",
           "source": "src/data/source-rest-conversation.js:404",
           "choiceId": "hear",

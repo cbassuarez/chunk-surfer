@@ -6,8 +6,8 @@
       "id": "runtime.data.academic-bouncer-society",
       "path": "narrative-runtime/runtime.data.academic-bouncer-society.story.json",
       "module": "src/data/academic-bouncer-society.js",
-      "nodes": 2,
-      "lines": 2,
+      "nodes": 17,
+      "lines": 97,
       "choices": 5,
       "sourceSha256": "c049afe5d0cab26771f5f2e006a6ed633a0ed06c5828531abec2093256f4a3b6"
     },
@@ -57,6 +57,15 @@
       "sourceSha256": "f950307e34b1db39847794f405490dd6ba7bd5ecafa6c4fe06f6fdae20a30c19"
     },
     {
+      "id": "runtime.data.b3-investigation-dialogue",
+      "path": "narrative-runtime/runtime.data.b3-investigation-dialogue.story.json",
+      "module": "src/data/b3-investigation-dialogue.js",
+      "nodes": 8,
+      "lines": 20,
+      "choices": 9,
+      "sourceSha256": "178a3bded1d86f8d7d49648c847d8cf32639ce2ea537a50cde5f81353e72a1ff"
+    },
+    {
       "id": "runtime.data.battles",
       "path": "narrative-runtime/runtime.data.battles.story.json",
       "module": "src/data/battles.js",
@@ -99,14 +108,14 @@
       "nodes": 5,
       "lines": 371,
       "choices": 0,
-      "sourceSha256": "66f0d8ba8f11dd3d6b00516d9b7eb75059ec5fdc91a31a1e280145016d171b9a"
+      "sourceSha256": "70b76b9dc3807f49a9d518856707cd0c11124c150afefc1b686a7708f771ce0b"
     },
     {
       "id": "runtime.data.conservatory-script",
       "path": "narrative-runtime/runtime.data.conservatory-script.story.json",
       "module": "src/data/conservatory-script.js",
       "nodes": 81,
-      "lines": 141,
+      "lines": 140,
       "choices": 14,
       "sourceSha256": "0f919f1541a33892b855c2104b8f4d29c5d655b035cf55335e530333110a6fe0"
     },
@@ -120,13 +129,22 @@
       "sourceSha256": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d"
     },
     {
+      "id": "runtime.data.credits",
+      "path": "narrative-runtime/runtime.data.credits.story.json",
+      "module": "src/data/credits.js",
+      "nodes": 1,
+      "lines": 48,
+      "choices": 0,
+      "sourceSha256": "4342a3d2d40d66854b1fcda80b4c0d892f8ec6105bf1dc1e1f350db99b60fd2b"
+    },
+    {
       "id": "runtime.data.ellery-public-front",
       "path": "narrative-runtime/runtime.data.ellery-public-front.story.json",
       "module": "src/data/ellery-public-front.js",
       "nodes": 3,
       "lines": 5,
       "choices": 0,
-      "sourceSha256": "5c2208e8f029acef81950885eb7aba4f2488c24a96d22578f817e59171bce5ed"
+      "sourceSha256": "696471d8780f7a17d9dd8810227e9875d69b5fa475f47920d46535e8974fca25"
     },
     {
       "id": "runtime.data.endings",
@@ -198,16 +216,16 @@
       "nodes": 2,
       "lines": 6,
       "choices": 0,
-      "sourceSha256": "1adb3b7a0e7f982ff670145c4be39fad704427aaba24b98ac36f843876cda002"
+      "sourceSha256": "83819cb984108376b7eb8b5086dc97a57086190c6841af9161289d083eab6c0b"
     },
     {
       "id": "runtime.data.opening-prologue",
       "path": "narrative-runtime/runtime.data.opening-prologue.story.json",
       "module": "src/data/opening-prologue.js",
-      "nodes": 61,
-      "lines": 158,
-      "choices": 38,
-      "sourceSha256": "e12084f096a9cbcfe0a8d719d3df403b9779656c6c4007126df9d5c4e0fee99d"
+      "nodes": 64,
+      "lines": 173,
+      "choices": 47,
+      "sourceSha256": "627df500933e094820d5d620ff2352b0f66acefdebb6451066b7d163d935de7b"
     },
     {
       "id": "runtime.data.plaza-shopfronts",
@@ -222,7 +240,7 @@
       "id": "runtime.data.pub-dialogue",
       "path": "narrative-runtime/runtime.data.pub-dialogue.story.json",
       "module": "src/data/pub-dialogue.js",
-      "nodes": 23,
+      "nodes": 24,
       "lines": 82,
       "choices": 67,
       "sourceSha256": "b4c34a09e4e72fc36a293ed4089ddce4c72df66baa7083c92935d1385168fbff"
@@ -232,9 +250,18 @@
       "path": "narrative-runtime/runtime.data.pub-patrons.story.json",
       "module": "src/data/pub-patrons.js",
       "nodes": 8,
-      "lines": 32,
-      "choices": 0,
+      "lines": 31,
+      "choices": 1,
       "sourceSha256": "8c0d3be7b193d0d1c5be7f713b433c3038f454d4d585279bf6c5e9685b7b6879"
+    },
+    {
+      "id": "runtime.data.road-cast",
+      "path": "narrative-runtime/runtime.data.road-cast.story.json",
+      "module": "src/data/road-cast.js",
+      "nodes": 9,
+      "lines": 19,
+      "choices": 0,
+      "sourceSha256": "64612f8e726cf5c595861a76345b51b20a2a66ccbca267300d4061bc43272786"
     },
     {
       "id": "runtime.data.roof-ren-dialogue",
@@ -277,8 +304,8 @@
       "path": "narrative-runtime/runtime.data.source-rest-conversation.story.json",
       "module": "src/data/source-rest-conversation.js",
       "nodes": 60,
-      "lines": 276,
-      "choices": 50,
+      "lines": 278,
+      "choices": 51,
       "sourceSha256": "b9f2fba36aee64ec1411f99e842981ff8f6b80eaaf9046e1f1d9e0d97a80b33e"
     },
     {
@@ -286,7 +313,7 @@
       "path": "narrative-runtime/runtime.data.source-rest-couperin-conversation.story.json",
       "module": "src/data/source-rest-couperin-conversation.js",
       "nodes": 29,
-      "lines": 154,
+      "lines": 158,
       "choices": 13,
       "sourceSha256": "63bd59114225ce5acde98c7a4deb1e61603578af5deb802c0660c9160404a9db"
     },
@@ -294,18 +321,18 @@
       "id": "runtime.data.source-rest-earthly",
       "path": "narrative-runtime/runtime.data.source-rest-earthly.story.json",
       "module": "src/data/source-rest-earthly.js",
-      "nodes": 8,
-      "lines": 41,
-      "choices": 0,
+      "nodes": 15,
+      "lines": 44,
+      "choices": 6,
       "sourceSha256": "c15a3ea4067fe218ee31c8815fd26116799ac3b434741c4f325c39785e098ce7"
     },
     {
       "id": "runtime.data.source-rest-questions",
       "path": "narrative-runtime/runtime.data.source-rest-questions.story.json",
       "module": "src/data/source-rest-questions.js",
-      "nodes": 34,
-      "lines": 129,
-      "choices": 1,
+      "nodes": 50,
+      "lines": 130,
+      "choices": 17,
       "sourceSha256": "df3399f7bfafcf90fd7116c33e4211851a416e6fa548ef9c1ee6bb4faa843ba1"
     },
     {
@@ -385,7 +412,7 @@
       "path": "narrative-runtime/runtime.game.bag-items.story.json",
       "module": "src/game/bag-items.js",
       "nodes": 13,
-      "lines": 28,
+      "lines": 27,
       "choices": 0,
       "sourceSha256": "9e8e93383b894e45192382d9ef84a86253db756e2ca8a3b5d76442dae811ac5e"
     },
@@ -393,9 +420,9 @@
       "id": "runtime.game.cathedral-descent",
       "path": "narrative-runtime/runtime.game.cathedral-descent.story.json",
       "module": "src/game/cathedral-descent.js",
-      "nodes": 2,
+      "nodes": 5,
       "lines": 2,
-      "choices": 1,
+      "choices": 4,
       "sourceSha256": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b"
     },
     {
@@ -406,6 +433,15 @@
       "lines": 2,
       "choices": 0,
       "sourceSha256": "c3db8f52c3ed6e90949f76b16814b0ee155cf53ca7b3a8659ce5e26025fb4f33"
+    },
+    {
+      "id": "runtime.game.controller-ui",
+      "path": "narrative-runtime/runtime.game.controller-ui.story.json",
+      "module": "src/game/controller-ui.js",
+      "nodes": 1,
+      "lines": 0,
+      "choices": 1,
+      "sourceSha256": "21e552b60241e251dbba8665b8a99b43ce55bdb84c8d6e2628971a03ba5cbefb"
     },
     {
       "id": "runtime.game.credits",
@@ -426,38 +462,20 @@
       "sourceSha256": "2ea3858103057594f59cb2b2874a6fc8fa912ccda3035b620ef1205451bbdfbd"
     },
     {
-      "id": "runtime.game.horizon-bust",
-      "path": "narrative-runtime/runtime.game.horizon-bust.story.json",
-      "module": "src/game/horizon-bust.js",
-      "nodes": 22,
-      "lines": 84,
-      "choices": 9,
-      "sourceSha256": "231775e7c2e9ff7cec908fe526694fdd73bf8c8c87f1afe9938e9eb0d4320a82"
-    },
-    {
       "id": "runtime.game.interruption-director",
       "path": "narrative-runtime/runtime.game.interruption-director.story.json",
       "module": "src/game/interruption-director.js",
       "nodes": 1,
       "lines": 4,
       "choices": 0,
-      "sourceSha256": "889c77acb39dd6f69f4309482947f17168a3c1534876911a93680d7b2eba6a9f"
-    },
-    {
-      "id": "runtime.game.opening-cab-inspection",
-      "path": "narrative-runtime/runtime.game.opening-cab-inspection.story.json",
-      "module": "src/game/opening-cab-inspection.js",
-      "nodes": 1,
-      "lines": 1,
-      "choices": 0,
-      "sourceSha256": "5f8e776d66a6563be0506163ac5d16292e9cb1ccad278d49ae5e0bffe828a899"
+      "sourceSha256": "283ab94c66e8bb5da5f7741aebcd153d886cfb59ac88c14b06e0208b223836e7"
     },
     {
       "id": "runtime.game.opening-credits",
       "path": "narrative-runtime/runtime.game.opening-credits.story.json",
       "module": "src/game/opening-credits.js",
-      "nodes": 1,
-      "lines": 6,
+      "nodes": 2,
+      "lines": 8,
       "choices": 0,
       "sourceSha256": "127ad7f8b21d9c402161f5f9643aa15524c5afe160fb590a00390cdd2638b2aa"
     },
@@ -475,9 +493,9 @@
       "path": "narrative-runtime/runtime.game.quest-journal.story.json",
       "module": "src/game/quest-journal.js",
       "nodes": 4,
-      "lines": 34,
+      "lines": 37,
       "choices": 0,
-      "sourceSha256": "7975e1c8eca000ec189ea4c7346311a83c4c8a714f46272bdd62bac7dd7e509e"
+      "sourceSha256": "b8a696961236955b5bb3f448245755a223a20f0cc6999272c0d965db820c65e4"
     },
     {
       "id": "runtime.game.source-contact",
@@ -507,6 +525,15 @@
       "sourceSha256": "43b9064944bf1d6ba06f10cbe8fea802179b5c9145e8afec69cf2e932cc54f2f"
     },
     {
+      "id": "runtime.game.source-rest-runtime",
+      "path": "narrative-runtime/runtime.game.source-rest-runtime.story.json",
+      "module": "src/game/source-rest-runtime.js",
+      "nodes": 3,
+      "lines": 4,
+      "choices": 0,
+      "sourceSha256": "67aa2e4506bff4258c058994dd62b130b152afca05622c802ec2ecc963fc2009"
+    },
+    {
       "id": "runtime.game.source-rig-bridge",
       "path": "narrative-runtime/runtime.game.source-rig-bridge.story.json",
       "module": "src/game/source-rig-bridge.js",
@@ -519,10 +546,10 @@
       "id": "runtime.game.source-space-runtime",
       "path": "narrative-runtime/runtime.game.source-space-runtime.story.json",
       "module": "src/game/source-space-runtime.js",
-      "nodes": 2,
-      "lines": 4,
+      "nodes": 3,
+      "lines": 5,
       "choices": 0,
-      "sourceSha256": "aff1f746a23cc14c7da529416082463ee3ea1dd98a03151add1c347bbbdf5ee8"
+      "sourceSha256": "940560674cfd859dcaba43b36f6188acfc8bfbe6c936e99de59f29f72e24a28b"
     },
     {
       "id": "runtime.game.threshold-gag-inspection",
@@ -552,6 +579,15 @@
       "sourceSha256": "bfff22fd11662577ed5eb8fde4402aeabdb027b47b9c5baa810001a358a5bd2a"
     },
     {
+      "id": "runtime.game.van-return",
+      "path": "narrative-runtime/runtime.game.van-return.story.json",
+      "module": "src/game/van-return.js",
+      "nodes": 3,
+      "lines": 3,
+      "choices": 2,
+      "sourceSha256": "77139a61a9e5957b8b8ab1d6316d63f329b84c5fa3c3e0b8a3a7f1406ba6c3c0"
+    },
+    {
       "id": "runtime.game.van-workbench-preparation",
       "path": "narrative-runtime/runtime.game.van-workbench-preparation.story.json",
       "module": "src/game/van-workbench-preparation.js",
@@ -564,10 +600,19 @@
       "id": "runtime.main",
       "path": "narrative-runtime/runtime.main.story.json",
       "module": "src/main.js",
-      "nodes": 135,
-      "lines": 269,
+      "nodes": 138,
+      "lines": 273,
       "choices": 21,
-      "sourceSha256": "b3a939fe21ce30610fde1dcd6c79b2b70316e5a325337b84a2f647b84457742a"
+      "sourceSha256": "b9ebc6e25cff4c6096c4723267d31a1747eacd8c6c654e48867c823ac859300a"
+    },
+    {
+      "id": "runtime.render.arrival-title-options",
+      "path": "narrative-runtime/runtime.render.arrival-title-options.story.json",
+      "module": "src/render/arrival-title-options.js",
+      "nodes": 1,
+      "lines": 9,
+      "choices": 0,
+      "sourceSha256": "f8722a5f0e26c3d7035ffa8019f98c7a76bfce7998d3908fe4b869bc64393cd7"
     },
     {
       "id": "runtime.render.bag-view",
@@ -577,15 +622,6 @@
       "lines": 1,
       "choices": 0,
       "sourceSha256": "7f3c9e86fba17eb844cab48bd48d3f02ecfb40d7cf70e7b8df7603c454e40e80"
-    },
-    {
-      "id": "runtime.render.navigator-clock",
-      "path": "narrative-runtime/runtime.render.navigator-clock.story.json",
-      "module": "src/render/navigator-clock.js",
-      "nodes": 2,
-      "lines": 2,
-      "choices": 0,
-      "sourceSha256": "1e27163669471f0d7fd6f79525f7bc6e20488917862d9c9cec73bcb00a6dc439"
     },
     {
       "id": "runtime.world.corridor-dressing",

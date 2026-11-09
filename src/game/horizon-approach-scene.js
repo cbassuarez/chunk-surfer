@@ -11,15 +11,28 @@ const PITCH=1.45,TAU=Math.PI*2;
 const wrapAngle=a=>a-TAU*Math.floor(a/TAU+.5);
 export const HORIZON_APPROACH_EVENT=Object.freeze({
   ARRIVED:'horizon-approach-arrived',PLUCKED:'horizon-approach-petal',OPENED:'horizon-approach-offer-open',
-  ACCEPTED:'horizon-approach-accepted',DECLINED:'horizon-approach-declined',
+  ACCEPTED:'horizon-approach-accepted',DECLINED:'horizon-approach-declined',RETURNED:'horizon-approach-returned',
 });
 // The bearing St Brendan's lies on, from the object. Anywhere else out is the chapel.
 export const HORIZON_TOWER_BEARING=Math.PI*.5,HORIZON_TOWER_SECTOR=.42;
 
-export function freshHorizonApproach({variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,phi=0}={}){
-  const id=horizonApproachVariantId(variant),V=C.variants[id],start=V.startMetres;
-  return{schema:1,variant:id,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:!!condition,lyleBox,
-    frame:spaceAtMap(V.sign,V.radius,start,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,petalsPlucked:0,decided:null};
+export function freshHorizonApproach({variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,phi=0,returning=false,defeats=0}={}){
+  const id=horizonApproachVariantId(variant),V=C.variants[id],losses=Math.max(0,Math.floor(finite(defeats))),again=!!returning||losses>0,start=again?C.station.reach-.6:V.startMetres;
+  return{schema:1,variant:id,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:again||!!condition,lyleBox,
+    frame:spaceAtMap(V.sign,V.radius,start,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,
+    petalsPlucked:again&&occupant==='daisy'?C.daisy.petals:0,decided:null,returning:again,defeats:losses};
+}
+export function restoreHorizonApproach(value,fallback={}){
+  if(!value||typeof value!=='object'||!Array.isArray(value.frame)||value.frame.length!==16||!value.frame.every(Number.isFinite))return freshHorizonApproach(fallback);
+  if(finite(fallback.defeats)>finite(value.defeats))return freshHorizonApproach(fallback);
+  const variant=Object.hasOwn(C.variants,value.variant)?value.variant:fallback.variant,
+    occupant=C.occupants.includes(value.occupant)?value.occupant:fallback.occupant,
+    state=freshHorizonApproach({...fallback,variant,occupant,condition:value.condition,lyleBox:['broken','whole'].includes(value.lyleBox)?value.lyleBox:null,
+      returning:value.returning,defeats:finite(value.defeats)});
+  return{...state,frame:value.frame.slice(),yaw:finite(value.yaw,state.yaw),pitch:Math.max(-PITCH,Math.min(PITCH,finite(value.pitch))),
+    elapsed:Math.max(0,finite(value.elapsed)),arrived:value.arrived===true,offerOpen:value.offerOpen===true,
+    petalsPlucked:state.returning&&occupant==='daisy'?C.daisy.petals:Math.max(0,Math.min(C.daisy.petals,Math.floor(finite(value.petalsPlucked)))),
+    decided:value.decided==='accepted'?'accepted':value.decided==='declined'&&!state.returning?'declined':null};
 }
 export const horizonApproachMap=state=>{const V=C.variants[state.variant];return spaceMapOf(V.sign,V.radius,state.frame);};
 export function horizonApproachDistance(state){
@@ -43,7 +56,7 @@ export function horizonApproachOnGround(variant,frame){
 }
 function openOffer(state,events){
   if(state.offerOpen)return;
-  state.offerOpen=true;events.push({type:HORIZON_APPROACH_EVENT.OPENED,occupant:state.occupant,lyleBox:state.lyleBox||null});
+  state.offerOpen=true;events.push({type:HORIZON_APPROACH_EVENT.OPENED,occupant:state.occupant,lyleBox:state.lyleBox||null,returning:!!state.returning,defeats:state.defeats||0});
 }
 // A petal, at the object. The last one opens the offer: it is the only occupant
 // whose condition is met here and now.
@@ -64,35 +77,37 @@ function move(state,forward,strafe,distance){
   }
   return false;
 }
-export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=false}={}){
+export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=false,decisionsEnabled=true}={}){
   const state={...current},events=[];
   if(paused||state.decided)return{state,events};
   const step=Math.max(0,Math.min(C.maxFrameDelta,finite(dt)));
   state.elapsed+=step;
   const length=Math.hypot(forward,strafe);
-  if(length>0)move(state,forward/Math.max(1,length),strafe/Math.max(1,length),C.walk*step*Math.min(1,length));
+  const moved=length>0&&step>0&&move(state,forward/Math.max(1,length),strafe/Math.max(1,length),C.walk*step*Math.min(1,length));
   const near=horizonApproachNear(state);
   if(!state.arrived&&near){
     // The truth is given here, whoever it is, whatever he brought.
-    state.arrived=true;events.push({type:HORIZON_APPROACH_EVENT.ARRIVED,occupant:state.occupant,lyleBox:state.lyleBox||null,condition:state.condition});
-    if(state.condition&&state.occupant!=='daisy')openOffer(state,events);
+    state.arrived=true;events.push({type:state.returning?HORIZON_APPROACH_EVENT.RETURNED:HORIZON_APPROACH_EVENT.ARRIVED,occupant:state.occupant,lyleBox:state.lyleBox||null,condition:state.condition,defeats:state.defeats||0});
+    if(state.condition&&(state.returning||state.occupant!=='daisy'))openOffer(state,events);
   }
   // Standing there decides nothing. Walking on is the only thing that does.
-  if(state.arrived&&horizonApproachDistance(state)>C.commit){
+  if(state.arrived&&moved&&decisionsEnabled&&horizonApproachDistance(state)>C.commit){
     const{phi}=horizonApproachMap(state),tower=state.offerOpen&&Math.abs(wrapAngle(phi-HORIZON_TOWER_BEARING))<HORIZON_TOWER_SECTOR;
+    if(state.returning&&!tower)return{state,events};
     state.decided=tower?'accepted':'declined';
     events.push({type:tower?HORIZON_APPROACH_EVENT.ACCEPTED:HORIZON_APPROACH_EVENT.DECLINED,occupant:state.occupant,exit:tower?'tower':'chapel'});
   }
   return{state,events};
 }
 
-export function createHorizonApproachScene({renderer,variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
-  onEvent=()=>{},onError=()=>{},onExit=()=>{}}={}){
+export function createHorizonApproachScene({renderer,variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,returning=false,defeats=0,snapshot=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
+  decisionsEnabled=()=>true,onEvent=()=>{},onInspect=()=>false,paintOverlay=()=>{},onError=()=>{},onExit=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('The approach needs its renderer.');
-  let state=freshHorizonApproach({variant,occupant,condition,lyleBox}),ready=false,closed=false,paused=false,failed=false,initializing=null;
+  let state=restoreHorizonApproach(snapshot,{variant,occupant,condition,lyleBox,returning,defeats}),ready=false,closed=false,paused=false,failed=false,initializing=null;
   const keys=new Set();
   const p=()=>presentation()||{},stopped=()=>{const v=p();return!!(paused||v.paused||v.hidden||v.focused===false);},
-    live=()=>ready&&!closed&&!failed&&renderer.ready?.()!==false;
+    live=()=>ready&&!closed&&!failed&&renderer.ready?.()!==false,
+    decisionReady=()=>typeof decisionsEnabled==='function'?decisionsEnabled(state)!==false:decisionsEnabled!==false;
   function fail(reason){failed=true;keys.clear();onError(reason);}
   const emit=events=>{for(const e of events)onEvent(e);};
   const scene={id:'horizon-approach',blocksWorld:true,blocksInput:true,suppressesHud:true,worldPresentation:'hidden',handlesEscape:false,lookProfile:'explore',faceplate:false,
@@ -108,7 +123,7 @@ export function createHorizonApproachScene({renderer,variant=C.defaultVariant,oc
       if(!live()||stopped()){keys.clear();return;}
       const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         strafe=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
-      const result=stepHorizonApproach(state,{dt:Math.max(0,finite(dt)),forward,strafe});
+      const result=stepHorizonApproach(state,{dt:Math.max(0,finite(dt)),forward,strafe,decisionsEnabled:decisionReady()});
       state=result.state;emit(result.events);
     },
     view:()=>({ready:live(),paused,closed,failed,near:horizonApproachNear(state),distance:horizonApproachDistance(state),map:horizonApproachMap(state),state:{...state,frame:undefined}}),
@@ -125,14 +140,15 @@ export function createHorizonApproachScene({renderer,variant=C.defaultVariant,oc
     },
     walk(seconds,{forward=1,strafe=0,dt=1/30}={}){
       const events=[];
-      for(let t=0;t<seconds;t+=dt){const r=stepHorizonApproach(state,{dt,forward,strafe});state=r.state;events.push(...r.events);}
+      for(let t=0;t<seconds;t+=dt){const r=stepHorizonApproach(state,{dt,forward,strafe,decisionsEnabled:decisionReady()});state=r.state;events.push(...r.events);}
       emit(events);return events;
     },
-    setOccupant(id,{condition=state.condition,lyleBox=state.lyleBox}={}){if(C.occupants.includes(id))state={...state,occupant:id,condition:!!condition,lyleBox,petalsPlucked:0,offerOpen:false,arrived:false};return state.occupant;},
+    setOccupant(id,{condition=state.condition,lyleBox=state.lyleBox}={}){if(C.occupants.includes(id))state={...state,occupant:id,condition:state.returning||!!condition,lyleBox,petalsPlucked:state.returning&&id==='daisy'?C.daisy.petals:0,offerOpen:false,arrived:false};return state.occupant;},
     interact(){
       if(!live()||stopped())return false;
-      const next=pluckHorizonApproachPetal(state);if(!next)return false;
-      state=next.state;emit(next.events);return true;
+      const next=pluckHorizonApproachPetal(state);
+      if(next){state=next.state;emit(next.events);return true;}
+      return horizonApproachNear(state)&&state.arrived&&(state.occupant!=='daisy'||state.offerOpen)?onInspect({...state,frame:state.frame.slice()})!==false:false;
     },
     key(e={}){
       const k=keyOf(e);
@@ -149,7 +165,7 @@ export function createHorizonApproachScene({renderer,variant=C.defaultVariant,oc
     },
     render(){
       if(closed||!ready)return;
-      try{if(renderer.render(state,p())===false)throw Error('The approach view was interrupted.');}catch(reason){fail(reason);}
+      try{const presentation=p();if(renderer.render(state,presentation)===false)throw Error('The approach view was interrupted.');paintOverlay(state,presentation);}catch(reason){fail(reason);}
     },
     exit(){if(closed)return;closed=true;keys.clear();renderer.dispose?.();onExit();},
   };

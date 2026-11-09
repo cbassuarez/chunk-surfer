@@ -22,7 +22,6 @@ assert.equal(physicalFor(() => true, sourceShoreOutside, runtime(CHUNK_SURF_PHAS
   'the first nothingness must reach its physical shore renderer');
 assert.equal(physicalFor(() => true, sourceShoreOutside, runtime(CHUNK_SURF_PHASE.LANDSCAPE), CHUNK_SURF_PHASE), false,
   'Source proper must keep its own text-space renderer');
-assert.ok(frame.indexOf('if (horizonState.active)') < frame.indexOf('if(sourceVoidPhysicalActive)'), 'on-tape rendering still owns its video');
 assert.ok(frame.indexOf('if(sourceVoidPhysicalActive)') < frame.indexOf('if (textSpaceActive)'), 'physical void is not reinterpreted as glowing text');
 assert.match(frame, /if\(sourceVoidPhysicalActive\)\{[\s\S]*?drawSourceVoidPhysical\([^;]+;\s*return;/,
   'the raymarch must not process physical void props');
@@ -43,31 +42,5 @@ assert.match(shader, /texture\(uDepth,uv\)/, 'far fade uses real prop depth');
 assert.match(shader, /displayColour\(clamp\(body\.rgb/, 'preserve all material colour channels');
 // The drive's drystone walls tile on world position, behind uDriveLand; see source-elsewhere.
 assert.doesNotMatch(shader.replace(/vec3 driveLandShade\(vec3 dir,vec3 sky\)\{[\s\S]*?\r?\n\}\r?\n/, ''), /halftone|bayer|fract\(|uSourceEmergency|uSourceTorchMode/);
-
-// Execute the actual ground pass with a stateful GL double. The revealed path
-// is drawn after the video/bust pass, so leaking its blend or depth-write state
-// breaks both the next frame's depth clear and the next physical prop pass.
-const horizon = readFileSync(new URL('../src/render/horizon3d.js', import.meta.url), 'utf8');
-const groundSource = horizon.slice(horizon.indexOf('export function horizonGround('), horizon.indexOf('export function horizonRender(')).replace('export ', '');
-for (const pathOnly of [false, true]) {
-  const state = { writes: false, depth: true, blend: true }, draws = [];
-  const gl = new Proxy({
-    DEPTH_TEST: 'depth', BLEND: 'blend', LEQUAL: 'lequal',
-    enable(key) { state[key] = true; },
-    disable(key) { state[key] = false; },
-    depthMask(value) { state.writes = value; },
-    depthFunc(value) { state.func = value; },
-    drawArrays() { draws.push({ ...state }); },
-  }, { get: (target, key) => key in target ? target[key] : () => {} });
-  const ground = new Function('gl', 'groundProgram', 'vao', 'manifest', 'GU', `${groundSource}\nreturn horizonGround;`)(gl, {}, {}, {}, name => name);
-  assert.equal(ground({ view: new Float32Array(16), projection: new Float32Array(16), pathOnly }), true);
-  assert.equal(draws.length, 1);
-  assert.equal(draws[0].depth, pathOnly, 'only the overlaid path is occluded by the bust');
-  assert.equal(draws[0].writes, false, 'transparent ground does not overwrite real geometry depth');
-  assert.equal(draws[0].blend, true);
-  assert.equal(state.writes, true, 'next frame can clear and write depth');
-  assert.equal(state.blend, false, 'next prop pass cannot inherit premultiplied blending');
-  assert.equal(state.depth, false, 'fullscreen presentation remains unoccluded');
-}
 
 console.log('source physical void compositor specs passed');

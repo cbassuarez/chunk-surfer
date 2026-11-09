@@ -239,7 +239,8 @@
           "source": "src/data/exterior-lore.js:70"
         }
       ],
-      "source": "src/data/exterior-lore.js:70"
+      "source": "src/data/exterior-lore.js:70",
+      "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.start"
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.stop-last": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.stop-last",
@@ -271,7 +272,8 @@
           "source": "src/data/exterior-lore.js:79"
         }
       ],
-      "source": "src/data/exterior-lore.js:79"
+      "source": "src/data/exterior-lore.js:79",
+      "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.start"
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.baths": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.baths",
@@ -347,7 +349,8 @@
           "source": "src/data/exterior-lore.js:100"
         }
       ],
-      "source": "src/data/exterior-lore.js:100"
+      "source": "src/data/exterior-lore.js:100",
+      "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.start"
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.baths-closure": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.baths-closure",
@@ -379,7 +382,8 @@
           "source": "src/data/exterior-lore.js:109"
         }
       ],
-      "source": "src/data/exterior-lore.js:109"
+      "source": "src/data/exterior-lore.js:109",
+      "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.start"
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.noise": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.noise",
@@ -455,7 +459,8 @@
           "source": "src/data/exterior-lore.js:130"
         }
       ],
-      "source": "src/data/exterior-lore.js:130"
+      "source": "src/data/exterior-lore.js:130",
+      "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.start"
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.noise-tape": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.noise-tape",
@@ -487,7 +492,8 @@
           "source": "src/data/exterior-lore.js:139"
         }
       ],
-      "source": "src/data/exterior-lore.js:139"
+      "source": "src/data/exterior-lore.js:139",
+      "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.start"
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.return": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.return",
@@ -758,7 +764,8 @@
           "source": "src/data/exterior-lore.js:213"
         }
       ],
-      "source": "src/data/exterior-lore.js:213"
+      "source": "src/data/exterior-lore.js:213",
+      "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.start"
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.stables-laundry": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.stables-laundry",
@@ -790,7 +797,8 @@
           "source": "src/data/exterior-lore.js:222"
         }
       ],
-      "source": "src/data/exterior-lore.js:222"
+      "source": "src/data/exterior-lore.js:222",
+      "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.start"
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.bells": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.bells",
@@ -866,7 +874,8 @@
           "source": "src/data/exterior-lore.js:243"
         }
       ],
-      "source": "src/data/exterior-lore.js:243"
+      "source": "src/data/exterior-lore.js:243",
+      "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.start"
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.bells-stopped": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.bells-stopped",
@@ -898,7 +907,8 @@
           "source": "src/data/exterior-lore.js:252"
         }
       ],
-      "source": "src/data/exterior-lore.js:252"
+      "source": "src/data/exterior-lore.js:252",
+      "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.start"
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.closure": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.closure",
@@ -974,7 +984,8 @@
           "source": "src/data/exterior-lore.js:273"
         }
       ],
-      "source": "src/data/exterior-lore.js:273"
+      "source": "src/data/exterior-lore.js:273",
+      "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.start"
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.closure-first": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.closure-first",
@@ -1006,7 +1017,8 @@
           "source": "src/data/exterior-lore.js:282"
         }
       ],
-      "source": "src/data/exterior-lore.js:282"
+      "source": "src/data/exterior-lore.js:282",
+      "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.start"
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.return": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.return",
@@ -1277,7 +1289,8 @@
           "source": "src/data/exterior-lore.js:356"
         }
       ],
-      "source": "src/data/exterior-lore.js:356"
+      "source": "src/data/exterior-lore.js:356",
+      "goto": "EXTERIOR_LORE.district-pub-driver.tree.start"
     },
     "EXTERIOR_LORE.district-pub-driver.tree.contractor-guard": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.contractor-guard",
@@ -1309,7 +1322,8 @@
           "source": "src/data/exterior-lore.js:365"
         }
       ],
-      "source": "src/data/exterior-lore.js:365"
+      "source": "src/data/exterior-lore.js:365",
+      "goto": "EXTERIOR_LORE.district-pub-driver.tree.start"
     },
     "EXTERIOR_LORE.district-pub-driver.tree.vehicle": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.vehicle",
@@ -1385,7 +1399,8 @@
           "source": "src/data/exterior-lore.js:386"
         }
       ],
-      "source": "src/data/exterior-lore.js:386"
+      "source": "src/data/exterior-lore.js:386",
+      "goto": "EXTERIOR_LORE.district-pub-driver.tree.start"
     },
     "EXTERIOR_LORE.district-pub-driver.tree.vehicle-kit": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.vehicle-kit",
@@ -1417,7 +1432,8 @@
           "source": "src/data/exterior-lore.js:395"
         }
       ],
-      "source": "src/data/exterior-lore.js:395"
+      "source": "src/data/exterior-lore.js:395",
+      "goto": "EXTERIOR_LORE.district-pub-driver.tree.start"
     },
     "EXTERIOR_LORE.district-pub-driver.tree.gate": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.gate",
@@ -1493,7 +1509,8 @@
           "source": "src/data/exterior-lore.js:416"
         }
       ],
-      "source": "src/data/exterior-lore.js:416"
+      "source": "src/data/exterior-lore.js:416",
+      "goto": "EXTERIOR_LORE.district-pub-driver.tree.start"
     },
     "EXTERIOR_LORE.district-pub-driver.tree.gate-lock": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.gate-lock",
@@ -1525,7 +1542,8 @@
           "source": "src/data/exterior-lore.js:425"
         }
       ],
-      "source": "src/data/exterior-lore.js:425"
+      "source": "src/data/exterior-lore.js:425",
+      "goto": "EXTERIOR_LORE.district-pub-driver.tree.start"
     },
     "EXTERIOR_LORE.district-pub-driver.tree.return": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.return",

@@ -71,3 +71,41 @@ test('suspended context readiness settles false without loading, playing or bloc
 test('a missing title asset settles readiness false and records the failure without an automatic retry loop',async()=>fixture(async f=>{
   const preparing=f.audio.prepareOpeningOvertureScore();f.requests[0].resolve({ok:false,status:404});assert.equal(await preparing,false);assert.equal(f.sources.length,0);assert.equal(f.requests.length,1);assert.match(f.audio.openingOvertureScoreState().error,/unavailable/);assert.match(f.audio.openingOvertureScoreState().provenance,/title_song/);
 }));
+
+test('the accepted door replaces the loop with the source recording final bar and natural tail exactly once',async()=>fixture(async f=>{
+  const preparing=f.audio.prepareOpeningOvertureScore();await f.load();await preparing;
+  f.audio.startOpeningOvertureScore();const loop=f.sources[0];
+  f.ctx.currentTime=21;
+  const state=f.audio.commitOpeningOvertureToTag(),tag=f.sources.at(-1);
+  assert.equal(loop.loop,true);assert.ok(loop.stops[0][0]>21&&loop.stops[0][0]<21.1);
+  assert.equal(tag.loop,false);assert.deepEqual(tag.starts,[[21,95.98,104-95.98]]);
+  assert.equal(state.active,true);assert.equal(state.positionSeconds,0);
+  f.ctx.currentTime=23.85;assert.ok(Math.abs(f.audio.openingThresholdTagState().positionSeconds-2.85)<1e-9);
+  f.audio.commitOpeningOvertureToTag();f.audio.startSoundtrack();f.audio.startOpeningSceneBed();
+  assert.equal(f.audio.commitOpeningSceneBedToColdOpenTitle().reason,'door-cadence-committed');
+  assert.equal(f.sources.length,2,'same door and room callbacks cannot start another tag, opening bed or looping title');
+  tag.onended();assert.equal(f.audio.openingThresholdTagState().active,false);
+}));
+
+test('door cadence pause and resume preserve source position and ignore an old retired onended',async()=>fixture(async f=>{
+  const preparing=f.audio.prepareOpeningOvertureScore();await f.load();await preparing;
+  f.audio.commitOpeningOvertureToTag();const first=f.sources.at(-1);f.ctx.currentTime=12;
+  f.audio.pauseOpeningOvertureScore();assert.equal(f.audio.openingThresholdTagState().positionSeconds,2);
+  f.ctx.currentTime=50;f.audio.resumeOpeningOvertureScore();const second=f.sources.at(-1);
+  assert.notEqual(first,second);assert.equal(second.starts[0][1],97.98);
+  first.onended();assert.equal(f.audio.openingThresholdTagState().active,true);
+  assert.equal(f.audio.openingThresholdTagState().playing,true);
+  f.audio.stopAll();assert.equal(f.audio.openingThresholdTagState().active,false);
+}));
+
+test('a pending cadence decode is cancelled with the run and cannot arrive in the drive',async()=>fixture(async f=>{
+  assert.equal(f.audio.commitOpeningOvertureToTag().pending,true);f.audio.stopAll();await f.load();
+  assert.equal(f.sources.length,0);assert.equal(f.audio.openingThresholdTagState().active,false);
+}));
+
+test('pending decode does not consume the recorded bar before it can be heard',async()=>fixture(async f=>{
+  f.audio.commitOpeningOvertureToTag();f.ctx.currentTime=16;
+  assert.equal(f.audio.openingThresholdTagState().positionSeconds,0);
+  await f.load();assert.equal(f.sources.length,1);assert.equal(f.sources[0].starts[0][1],95.98);
+  f.ctx.currentTime=17;assert.equal(f.audio.openingThresholdTagState().positionSeconds,1);
+}));

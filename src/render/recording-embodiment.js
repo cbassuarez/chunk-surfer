@@ -110,15 +110,24 @@ export function recordingEmbodimentInstances(frame,camera, {zone=0}={}){
       // prevents near-plane slicing for any intervening morph/rotation, rather
       // than accepting a clean screenshot that hides a clipped finger.
       minimumLocalDepth=axes.reduce((sum,axis,j)=>sum+axis[2]*contact.bounds[j][axis[2]>=0?0:1],0),
-      depth=Math.max(lerp(1.10,.170,approach),.065-minimumLocalDepth)+release*.78,
+      targetDepth=Math.max(lerp(1.10,.170,approach),.065-minimumLocalDepth),
+      // Start behind the eye, travel outside the temple, then curl into the
+      // peripheral view. A frontal glove shrinking toward us would imply an
+      // attacker standing in the room ahead. Release reverses this rear path.
+      rearApproach=frame.reducedMotion?1:clamp(approach/dread),
+      depth=lerp(lerp(-.65,targetDepth,rearApproach),-.65,release),
       padDepth=depth+local[2],
       entrance=smooth((score-(left?.10:.18))/(left?.28:.30)),
       anchor=[lerp(left?.17:.83,left?.25:.76,frame.reducedMotion?1:entrance)
         +(left?-.035:.045)*traction+(left?.006:-.004)*recoil+side*release*.52,
         lerp(left?-.20:-.15,left?.30:.29,frame.reducedMotion?1:entrance)
           +(left?-.025:-.045)*traction-recoil*.004-release*.30],
-      lateral=(anchor[0]*2-1)*padDepth*tan*aspect-local[0],
-      vertical=(1-anchor[1]*2)*padDepth*tan-local[1],position=point(lateral,vertical,depth),
+      // Keep the complete retained envelope outside the frustum as it passes
+      // the near plane. It enters only once every vertex has cleared .05m.
+      enterView=smooth((depth+minimumLocalDepth-.05)/.015)*smooth((rearApproach-.60)/.40),
+      rearLateral=side*((Math.max(0,depth)+.24)*tan*aspect+.24),
+      lateral=lerp(rearLateral,(anchor[0]*2-1)*padDepth*tan*aspect-local[0],enterView),
+      vertical=lerp(.20,(1-anchor[1]*2)*padDepth*tan-local[1],enterView),position=point(lateral,vertical,depth),
       worldAxis=axis=>basis.eye.map((_,n)=>basis.right[n]*axis[0]+basis.up[n]*axis[1]+basis.forward[n]*axis[2]),
       [x,y,z]=axes.map(worldAxis),matrix=new Float32Array([...x,0,...y,0,...z,0,...position,1]);
     return{id:`recording-pressure-face:${frame.takeId}:${side}`,mesh:RECORDING_EMBODIMENT_MESHES[k],
@@ -129,6 +138,7 @@ export function recordingEmbodimentInstances(frame,camera, {zone=0}={}){
       diagnostics:{phase,depth,lateral,vertical,proximity:frame.proximity,release,
         side:contact.side,seat,traction,recoil,roll,tilt,contactVertex:contact.vertex,contactLocal:pad,
         contactAnchor:anchor,minimumLocalDepth,
+        rearApproach,enterView,origin:'behind-temples',
         attachment:'resolved-current-eye',additionalLight:false,noiseEvent:false}};
   });
 }

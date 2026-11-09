@@ -12,7 +12,7 @@ import {OPENING_CAB_ASSET,OPENING_CAB_PLACEMENT,OPENING_CAB_OBJECTS,OPENING_CAB_
 import {OPENING_CAB_GEOMETRY} from '../data/opening-cab-object-geometry.js';
 import {workOrderAccepted} from './work-order-state.js';
 import {registerBakedPaper} from './paper-assets.js';
-import {COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE} from '../data/coastal-memory-note.js';
+import {musicBoxInspectionMatrix,rotateMusicBoxInspection,freshMusicBoxInspectionRotation} from './music-box-inspection.js';
 
 export {OPENING_CAB_ASSET};
 export const OPENING_CAB_REQUIRED_MESHES=Object.freeze(OPENING_CAB_GEOMETRY.meshes.map(row=>row.mesh));
@@ -45,14 +45,37 @@ const middle=b=>b.min.map((n,k)=>(n+b.max[k])/2);
 
 // Every dynamic object passes through the ordinary world prop render and final
 // dither. Mesh vertices and focus bounds use the same cab-local metre space.
-export function openingCabInstances(anchor,{paperIndex=-1,fieldKit}={}){
+// The inspect brings the object forward into the player's own view and turns it
+// there. The camera never moves; the object does.
+function inspectMatrix(matrix,objectId,inspect,anchor){
+  if(!inspect||inspect.id!==objectId||!inspect.eye||!anchor)return matrix;
+  const rotation=inspect.rotation||rotateMusicBoxInspection(freshMusicBoxInspectionRotation(),{yaw:inspect.yaw||0,pitch:inspect.pitch||0,roll:inspect.roll||0});
+  return musicBoxInspectionMatrix({eye:inspect.eye,yaw:inspect.cameraYaw??anchor.yaw,pitch:inspect.cameraPitch||0,
+    rotation,distance:inspect.distance||.14,center:inspect.center||[0,0,0],sourceYaw:OPENING_CAB_PLACEMENT.musicBox.turn});
+}
+// The winding pin turns about its own back-normal, at the pin's pivot, by the
+// crank angle the inspect reports. Nothing else about the object moves.
+function keyMatrix(matrix,inspect,keyPivot,keyAxis=[0,0,1]){
+  if(!inspect||inspect.id!=='music-box'||!inspect.crankAngle)return matrix;
+  if(!Array.isArray(keyPivot)||keyPivot.length!==3)return matrix;
+  const a=Number(inspect.crankAngle)||0,c=Math.cos(a),s=Math.sin(a);
+  // The asset is already placed/turned in cab space. Rotate on its measured
+  // arbor, then apply the SAME inspection transform as the shell.
+  const norm=Math.hypot(...keyAxis)||1,[x,y,z]=keyAxis.map(v=>v/norm),t=1-c;
+  const rot=[t*x*x+c,t*x*y+s*z,t*x*z-s*y,0,t*x*y-s*z,t*y*y+c,t*y*z+s*x,0,t*x*z+s*y,t*y*z-s*x,t*z*z+c,0,0,0,0,1];
+  const [px,py,pz]=keyPivot;
+  const to=[1,0,0,0,0,1,0,0,0,0,1,0,-px,-py,-pz,1],from=[1,0,0,0,0,1,0,0,0,0,1,0,px,py,pz,1];
+  const mul=(a2,b2)=>{const o=new Array(16).fill(0);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let n=0;for(let k2=0;k2<4;k2++)n+=a2[k2*4+j]*b2[i*4+k2];o[i*4+j]=n;}return o;};
+  return mul(matrix,mul(from,mul(rot,to)));
+}
+export function openingCabInstances(anchor,{paperIndex=-1,fieldKit,inspect=null}={}){
   if(!anchor)return[];
   const paper=openingVehiclePoint(anchor,PAPER.point),yaw=anchor.yaw+PAPER.yaw,c=Math.cos(yaw)*PAPER.scale,s=Math.sin(yaw)*PAPER.scale;
   const rows=[{id:'opening:job-paper',mesh:'loose_note',x:paper.x,y:paper.y,z:paper.z,
     matrix:[c,0,s,0,0,PAPER.scale,0,0,-s,0,c,0,paper.x,paper.y,paper.z,1],paperIndex,zone:anchor.zone,structural:false,cullRadius:.7}];
   const origin=openingVehiclePoint(anchor,[0,0,0]),ca=Math.cos(anchor.yaw),sa=Math.sin(anchor.yaw),matrix=[ca,0,sa,0,0,1,0,0,-sa,0,ca,0,origin.x,origin.y,origin.z,1];
-  for(const row of selectedRows(fieldKit))rows.push({id:'opening:cab:'+row.mesh,mesh:row.mesh,matrix:[...matrix],x:origin.x,y:origin.y,z:origin.z,
-    zone:anchor.zone,structural:false,cullRadius:2,objectId:row.objectId});
+  for(const row of selectedRows(fieldKit)){const isKey=row.mesh==='opening_cab_music_box_key',base=inspectMatrix(matrix,row.objectId,inspect,anchor),fit=OPENING_CAB_GEOMETRY.registration?.musicBox;const m=isKey?keyMatrix(base,inspect,fit?.keyPivot||inspect?.keyPivot,fit?.keyAxis):base;rows.push({id:'opening:cab:'+row.mesh,mesh:row.mesh,matrix:[...m],x:m[12],y:m[13],z:m[14],
+    zone:anchor.zone,structural:false,cullRadius:2,objectId:row.objectId});}
   return rows;
 }
 
@@ -67,7 +90,8 @@ export function openingCabTargets(anchor,{fieldKit}={}){
     }else if(object.id==='self-check')({bounds,point}=OPENING_CAB_GEOMETRY.targets['self-check']);
     else if(object.id==='radio'){bounds=OPENING_CAB_PLACEMENT.radio.bounds;point=OPENING_CAB_PLACEMENT.radio.point;}
     else{const parts=selected.filter(row=>row.objectId===object.id);bounds=boundsFor(parts);point=parts.find(row=>!row.selection?.part||row.selection.part==='body')?.focusPoint||middle(bounds);}
-    return{...object,position:openingVehiclePoint(anchor,point),localPoint:[...point],bounds:copy(bounds),meshIds:object.id==='radio'?['opening_drive_radio']:selected.filter(row=>row.objectId===object.id).map(row=>row.mesh)};
+    const inspectionCenter=object.id==='music-box'?middle(boundsFor(selected.filter(row=>row.mesh==='opening_cab_music_box'))):null;
+    return{...object,position:openingVehiclePoint(anchor,point),localPoint:[...point],bounds:copy(bounds),inspectionCenter,meshIds:object.id==='radio'?['opening_drive_radio']:selected.filter(row=>row.objectId===object.id).map(row=>row.mesh)};
   });
 }
 export function openingCabDoorTarget(anchor){
@@ -137,7 +161,11 @@ export function openingCabInspectionModel(value={},id='job-papers'){
     // The shift is ticked on sheet 1 of the work order, here, before anything else.
     shiftPending:object.id==='job-papers'&&state.shiftPending===true,
     accepted:workOrderAccepted(flags),instrument,facts:object.kind==='status'?facts:[],techniques:object.kind==='status'?techniques:[],
-    keepsake:object.kind==='keepsake'?{title:'LYLE’S MUSIC BOX',lines:[...OPENING_CAB_MUSIC_BOX_LINES,`Under the lid, in his hand: ${COASTAL_NOTE_COPY} ${COASTAL_NOTE_SIGNATURE}`]}:null,
+    keepsake:object.kind==='keepsake'?{title:'LYLE’S MUSIC BOX',lines:[...OPENING_CAB_MUSIC_BOX_LINES]}:null,
+    // The keepsake is a real object, not a card: it is inspected in 3D like the
+    // field kit, and the card's copy becomes the object's description.
+    musicBoxInspection:object.kind==='keepsake'?{id:'music-box',sourceId:'music-box',title:'LYLE’S MUSIC BOX',facts:[],
+      description:OPENING_CAB_MUSIC_BOX_LINES.join(' ')}:null,
     notes:object.kind==='notes'?notes:[],rehearsalNotes:object.kind==='notes'?[...OPENING_CAB_REHEARSAL_NOTES]:[],destination:object.kind==='notes'?text(state.guidance?.label):'',
     radio:radio?{on:typeof radio.on==='boolean'?radio.on:null,playing:radio.playing===true,station:text(radio.station),programme:text(radio.programme),
       volume:finite(radio.volume)?Math.round(Math.max(0,Math.min(1,radio.volume))*100):null,
@@ -183,7 +211,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',radioLean=null,ge
   const radioProject=(x,y,z=0)=>{const seen=radioLean?.amount?.()>=1?radioLean.project?.(x,y,z):null;return seen&&seen.visible!==false&&Number.isFinite(seen.x)&&Number.isFinite(seen.y)?seen:cabRadioLeanProject(x,y,z);};
   function close(){if(closed)return;closed=true;radioLean?.set?.(false);cancelControlScope('cab-radio:');inspection?.dispose?.();inspection=null;scenes.remove(scene);onClose();}
   function paper(m){const doc=m.document||m.workOrder;if(!doc)return null;if(readerId!==doc.id){reader=makeReader(doc,{id:'opening-cab-'+doc.id+'-preview',reservedTopRows:2,onRequestClose:close,onSceneClose:()=>{},onSceneTurn:()=>{}});readerId=doc.id;reader?.enter?.();}return reader;}
-  function instrument(m){const entry=m.instrument,key=JSON.stringify(entry);if(entry&&inspectionKey!==key){inspection?.dispose?.();inspection=makeInspection(entry);inspectionKey=key;}return inspection;}
+  function instrument(m){const entry=m.instrument||m.musicBoxInspection,key=JSON.stringify(entry);if(entry&&inspectionKey!==key){inspection?.dispose?.();inspection=makeInspection(entry);inspectionKey=key;}return inspection;}
   function radioAction(action,controlId=null){
     if(closed||object.kind!=='radio'||typeof onCabRadioAction!=='function')return false;
     if(controlId)pressControl(controlId,{held:false});
@@ -233,7 +261,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',radioLean=null,ge
       if(object.id==='job-papers'&&m.shiftPending&&typeof onChooseShift==='function'&&k==='t'&&!e.repeat){onChooseShift();return true;}
       if(object.kind==='keepsake'&&typeof onWindMusicBox==='function'&&([' ','space','w'].includes(k)||action==='confirm')&&!e.repeat){onWindMusicBox();return true;}
       if(object.kind==='document'){paper(m)?.key?.(e);return true;}
-      if(object.kind==='instrument'){instrument(m)?.key?.(e);return true;}
+      if(object.kind==='instrument'||object.kind==='keepsake'){instrument(m)?.key?.(e);return true;}
       const down=k==='arrowdown'||k==='s'||action==='selectDown',up=k==='arrowup'||k==='w'||action==='selectUp';
       if(down)scroll++;else if(up)scroll=Math.max(0,scroll-1);else if(k==='pagedown')scroll+=6;else if(k==='pageup')scroll=Math.max(0,scroll-6);return true;
     },
@@ -263,9 +291,9 @@ export function makeOpeningCabInspectionScene({id='job-papers',radioLean=null,ge
         ctx.restore();
       });
       const color=m.kind==='notes'?'#463d2d':'#c5c9b9';
-      ink(l.x+2,l.y+.5,m.kind==='notes'?'NOTEBOOK':m.kind==='status'?'CHECK YOURSELF':m.kind==='keepsake'?m.keepsake.title:m.instrument?.title||'INSTRUMENT',l.w-4,{color,weight:'bold'});
-      if(m.kind==='instrument'){
-        const entry=m.instrument,wide=l.body.w>=50,portrait={x:l.body.x,y:l.body.y,w:wide?Math.floor(l.body.w*.49):l.body.w,h:Math.max(2,wide?l.body.h:Math.min(7,l.body.h*.45))};
+      ink(l.x+2,l.y+.5,m.kind==='notes'?'NOTEBOOK':m.kind==='status'?'CHECK YOURSELF':m.kind==='keepsake'?(m.musicBoxInspection?.title||m.keepsake.title):m.instrument?.title||'INSTRUMENT',l.w-4,{color,weight:'bold'});
+      if(m.kind==='instrument'||m.kind==='keepsake'){
+        const entry=m.instrument||m.musicBoxInspection,wide=l.body.w>=50,portrait={x:l.body.x,y:l.body.y,w:wide?Math.floor(l.body.w*.49):l.body.w,h:Math.max(2,wide?l.body.h:Math.min(7,l.body.h*.45))};
         instrument(m)?.draw?.(portrait,{active:!scenes.isFrozen(scene)});
         let y=wide?l.body.y:portrait.y+portrait.h+.5,x=wide?portrait.x+portrait.w+2:l.body.x,w=wide?l.body.w-portrait.w-2:l.body.w;
         for(const line of[entry?.description,...(entry?.facts||[]).map(f=>f.join(' / '))].filter(Boolean))for(const row of uiWrap(line,w))if(y<l.body.y+l.body.h)uiInk(x,y++,row,{color});

@@ -125,7 +125,8 @@
           "source": "src/data/get-in-investigation.js:24"
         }
       ],
-      "source": "src/data/get-in-investigation.js:21"
+      "source": "src/data/get-in-investigation.js:21",
+      "goto": "PRE.dock-desk-1.hub"
     },
     "PRE.dock-desk-1.hub": {
       "id": "PRE.dock-desk-1.hub",
@@ -233,7 +234,8 @@
           "source": "src/data/get-in-investigation.js:56"
         }
       ],
-      "source": "src/data/get-in-investigation.js:53"
+      "source": "src/data/get-in-investigation.js:53",
+      "goto": "PRE.dock-work-order-clipboard.hub"
     },
     "PRE.dock-work-order-clipboard.hub": {
       "id": "PRE.dock-work-order-clipboard.hub",
@@ -347,7 +349,8 @@
           "source": "src/data/get-in-investigation.js:87"
         }
       ],
-      "source": "src/data/get-in-investigation.js:87"
+      "source": "src/data/get-in-investigation.js:87",
+      "goto": "PRE.dock-crew-board.hub"
     },
     "PRE.dock-crew-board.hub": {
       "id": "PRE.dock-crew-board.hub",
@@ -461,7 +464,8 @@
           "source": "src/data/get-in-investigation.js:123"
         }
       ],
-      "source": "src/data/get-in-investigation.js:120"
+      "source": "src/data/get-in-investigation.js:120",
+      "goto": "PRE.acq-maintenance-searchlight-dock.hub"
     },
     "PRE.acq-maintenance-searchlight-dock.hub": {
       "id": "PRE.acq-maintenance-searchlight-dock.hub",
@@ -563,7 +567,8 @@
           "source": "src/data/get-in-investigation.js:152"
         }
       ],
-      "source": "src/data/get-in-investigation.js:152"
+      "source": "src/data/get-in-investigation.js:152",
+      "goto": "PRE.dock-hand-truck.hub"
     },
     "PRE.dock-hand-truck.hub": {
       "id": "PRE.dock-hand-truck.hub",
@@ -665,7 +670,8 @@
           "source": "src/data/get-in-investigation.js:185"
         }
       ],
-      "source": "src/data/get-in-investigation.js:182"
+      "source": "src/data/get-in-investigation.js:182",
+      "goto": "PRE.dock-freight-crates.hub"
     },
     "PRE.dock-freight-crates.hub": {
       "id": "PRE.dock-freight-crates.hub",
@@ -779,7 +785,8 @@
           "source": "src/data/get-in-investigation.js:218"
         }
       ],
-      "source": "src/data/get-in-investigation.js:215"
+      "source": "src/data/get-in-investigation.js:215",
+      "goto": "PRE.dock-road-case.hub"
     },
     "PRE.dock-road-case.hub": {
       "id": "PRE.dock-road-case.hub",
@@ -893,7 +900,8 @@
           "source": "src/data/get-in-investigation.js:251"
         }
       ],
-      "source": "src/data/get-in-investigation.js:248"
+      "source": "src/data/get-in-investigation.js:248",
+      "goto": "PRE.dock-cable-reel.hub"
     },
     "PRE.dock-cable-reel.hub": {
       "id": "PRE.dock-cable-reel.hub",
@@ -1001,7 +1009,8 @@
           "source": "src/data/get-in-investigation.js:283"
         }
       ],
-      "source": "src/data/get-in-investigation.js:280"
+      "source": "src/data/get-in-investigation.js:280",
+      "goto": "PRE.dock-shutter-bar.hub"
     },
     "PRE.dock-shutter-bar.hub": {
       "id": "PRE.dock-shutter-bar.hub",
@@ -1109,7 +1118,8 @@
           "source": "src/data/get-in-investigation.js:315"
         }
       ],
-      "source": "src/data/get-in-investigation.js:312"
+      "source": "src/data/get-in-investigation.js:312",
+      "goto": "PRE.dock-chandelier-frame.hub"
     },
     "PRE.dock-chandelier-frame.hub": {
       "id": "PRE.dock-chandelier-frame.hub",
@@ -1279,7 +1289,8 @@
           "source": "src/data/get-in-investigation.js:359"
         }
       ],
-      "source": "src/data/get-in-investigation.js:359"
+      "source": "src/data/get-in-investigation.js:359",
+      "goto": "AFTER.acq-maintenance-searchlight-dock.hub"
     },
     "AFTER.acq-maintenance-searchlight-dock.hub": {
       "id": "AFTER.acq-maintenance-searchlight-dock.hub",
@@ -1387,7 +1398,8 @@
           "source": "src/data/get-in-investigation.js:382"
         }
       ],
-      "source": "src/data/get-in-investigation.js:381"
+      "source": "src/data/get-in-investigation.js:381",
+      "goto": "AFTER.dock-road-case.hub"
     },
     "AFTER.dock-road-case.hub": {
       "id": "AFTER.dock-road-case.hub",
@@ -1513,7 +1525,8 @@
           "source": "src/data/get-in-investigation.js:411"
         }
       ],
-      "source": "src/data/get-in-investigation.js:410"
+      "source": "src/data/get-in-investigation.js:410",
+      "goto": "AFTER.dock-cable-reel.hub"
     },
     "AFTER.dock-cable-reel.hub": {
       "id": "AFTER.dock-cable-reel.hub",
@@ -1621,7 +1634,8 @@
           "source": "src/data/get-in-investigation.js:435"
         }
       ],
-      "source": "src/data/get-in-investigation.js:434"
+      "source": "src/data/get-in-investigation.js:434",
+      "goto": "AFTER.dock-shutter-bar.hub"
     },
     "AFTER.dock-shutter-bar.hub": {
       "id": "AFTER.dock-shutter-bar.hub",
@@ -1741,7 +1755,8 @@
           "source": "src/data/get-in-investigation.js:459"
         }
       ],
-      "source": "src/data/get-in-investigation.js:458"
+      "source": "src/data/get-in-investigation.js:458",
+      "goto": "AFTER.dock-chandelier-frame.hub"
     },
     "AFTER.dock-chandelier-frame.hub": {
       "id": "AFTER.dock-chandelier-frame.hub",

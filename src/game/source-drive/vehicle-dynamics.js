@@ -29,7 +29,7 @@ export function stepVehicle(s,h,input={},roadSampler=roadSurfaceAt){
  s.throttle=approach(s.throttle,throttleTarget,throttleTarget>s.throttle?2.5:7,h);
  // Finger input commands a real wheel angle. Slower wheel travel and a smaller
  // angle at speed give the player correction time, without steering the view.
- const steerInput=clamp((input.right?1:0)-(input.left?1:0),-1,1);
+ const steerInput=Number.isFinite(input.steer)?clamp(input.steer,-1,1):clamp((input.right?1:0)-(input.left?1:0),-1,1);
  const maxAngle=p.maxWheelAngle/(1+Math.pow(abs/7,1.6));
  const returnRate=.2+.02*abs,turnRate=.64/(1+abs/30);
  s.wheelAngle=approach(s.wheelAngle,steerInput*maxAngle,steerInput?turnRate:returnRate,h);

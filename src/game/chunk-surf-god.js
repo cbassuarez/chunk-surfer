@@ -266,7 +266,7 @@ export const PRE_TAPE_GOD_STOPS = Object.freeze([
 
 // THE BELL PASSAGE, addressed by depth like the tape it hangs off.
 //
-// Getting here in play is horizon -> recognise the bust -> accept it -> take the
+// Getting here in play is Horizon -> earn the offer -> accept it -> take the
 // tower. Three reducer steps, and without them there is no way to review four
 // hundred metres of walk without playing an hour to reach it.
 export function buildBellsGodPreset(depth = 0, options = {}) {
@@ -318,7 +318,5 @@ export const CHAPEL_OUTSKIRTS_GOD_STOPS = Object.freeze([
 ]);
 
 export const HORIZON_GOD_STOPS = Object.freeze([
-  { id: 'horizon-head', label: 'HORIZON — HEAD OF TAPE', depth: SOURCE_HORIZON.entryStandoff },
-  { id: 'horizon-bust', label: 'HORIZON — THE BUST', depth: 168 },
-  { id: 'horizon-tail', label: 'HORIZON — COLLAPSE', depth: SOURCE_HORIZON.length * 0.94 },
+  {id:'horizon-entry',label:'HORIZON — WALK TO THE OBJECT',depth:0},
 ]);

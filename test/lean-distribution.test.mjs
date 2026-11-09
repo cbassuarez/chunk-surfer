@@ -60,7 +60,7 @@ test('lean package tree validator rejects model weights, lens processes and mode
 test('lean validation catches Python and diffusion runtimes without rejecting authored binary assets', () => {
   const dir=mkdtempSync(path.join(tmpdir(),'chunk-runtime-free-'));
   try {
-    for(const name of ['horizon-tape.bin','model.bin','grand-piano.glb','models.json'])writeFileSync(path.join(dir,name),'authored');
+    for(const name of ['authored-capture.bin','model.bin','grand-piano.glb','models.json'])writeFileSync(path.join(dir,name),'authored');
     assert.deepEqual(findForbiddenLensFiles(dir),[]);
     for(const name of ['python.exe','python312.dll','python3.12','Python','python312.zip',
       'libpython3.12.dylib','libpython3.12.so.1.0','libtorch_cpu.so','torch_cuda.dll','c10.dll',

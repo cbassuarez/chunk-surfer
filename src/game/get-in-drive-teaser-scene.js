@@ -19,12 +19,14 @@ export function makeGetInDriveTeaserScene({
   getPresentation=()=>({}),
   createRecording=null,onTapeChanged=()=>{},paintOverlay=()=>{},getViewport=()=>null,
   isHeld=()=>false,paintCover=()=>{},onPause=()=>{},
+  returnToBlack=false,crashFadeSeconds=2.4,
   onRestore=()=>{},onDoorsClose=()=>{},onReturnTick=()=>{},onDone=()=>{},onError=()=>{},onExit=()=>{},
 }={}){
   let disposed=false,restored=false,completed=false,ready=false,preparing=false;
   let prelude=0,prepareSeconds=0,error=null,current=null,doorsClosed=false,wasHeld=true,impact=false;
   const renderer=createRenderer(),controller=createController(),intrusion=createIntrusion();
   let intrusionAudio=null,intrusionQuietUntil=0,lastPresentationTime=null;
+  let crashDissolve=null,lastPresentedFrame=null;
   let audio=null,metrics=null,pending=null,audioDisposed=false,recording=null,transport=Promise.resolve(),finishing=false,drag=null,dialSerial=0;
   // Each time skip turns the radio dial: clicks, static, and the new station.
   function soundTheDial(frame){
@@ -51,13 +53,13 @@ export function makeGetInDriveTeaserScene({
     lastPresentationTime=null;
     // Never freeze a collision image in a menu, or deliver its slam on return.
     if(held&&intrusion.snapshot().triggered)intrusion.cancel();
-    audio?.setPaused(held||restored);intrusionAudio?.setPaused(held||restored);recording?.setPaused?.(held||restored);controller.setPaused(held);wasHeld=held;drag=null;pressedKeys.clear();if(held)controller.setRadioLean?.(false);
+    audio?.setPaused(held||restored||!!crashDissolve);intrusionAudio?.setPaused(held||restored||!!crashDissolve);recording?.setPaused?.(held||restored||!!crashDissolve);controller.setPaused(held);wasHeld=held;drag=null;pressedKeys.clear();if(held)controller.setRadioLean?.(false);
     if(ready)refreshFrame();
   }
   function disposeAudio(){intrusionAudio?.dispose();if(!audio||audioDisposed)return;audioDisposed=true;audio.dispose();}
   function restore(){
     if(restored)return;restored=true;
-    intrusion.cancel();intrusionAudio?.dispose();audio?.setPaused(true);renderer.dispose();onRestore();
+    intrusion.cancel();intrusionAudio?.dispose();audio?.setPaused(true);renderer.dispose();lastPresentedFrame=null;onRestore();
   }
   function finish(){
     if(completed||disposed||finishing)return;finishing=true;restore();
@@ -100,6 +102,7 @@ export function makeGetInDriveTeaserScene({
     controller.setRecordingView?.({...readout,recording:!!status.recording,level});renderer.setRecorderReadout?.(readout);
     const shown=renderer.render({...f,cinematicLook:!current.controlsEnabled});
     if(shown===false){intrusion.presented(false);fail(Error('The opening drive frame could not be presented.'));return;}
+    lastPresentedFrame=f;
     const contact=intrusion.presented(!wasHeld&&!isHeld());
     if(contact)intrusionAudio?.play({...contact,reducedMotion:contact.mode==='still'});
   }
@@ -147,7 +150,7 @@ export function makeGetInDriveTeaserScene({
     },
     // The world-title card hands us an already black image. Keep that cover
     // continuous while acquiring the car; revealing the room here is a flash.
-    get worldPresentation(){return restored?'visible':'hidden';},
+    get worldPresentation(){return restored&&!returnToBlack?'visible':'hidden';},
     enter(){},
     update(dt){
       if(disposed||completed)return;
@@ -156,11 +159,31 @@ export function makeGetInDriveTeaserScene({
       if(held)return;
       if(prelude<.28){prelude+=step;if(prelude>=.28)void prepare();return;}
       if(!ready){prepareSeconds+=step;if(prepareSeconds>25)fail(Error('The opening vehicle did not become ready.'));return;}
+      if(crashDissolve&&!restored){
+        // The controller has already reached its covered return. Retain its
+        // final actually presented wreck frame, rather than revealing the room
+        // or inventing another camera, while a slow scene-local fade closes it.
+        crashDissolve.elapsed=Math.min(crashDissolve.seconds,crashDissolve.elapsed+step);
+        if(crashDissolve.elapsed<crashDissolve.seconds){
+          // Re-present the real last pose through the same world renderer. Do
+          // not depend on a WebGL drawing buffer surviving a compositor swap.
+          if(renderer.render({...lastPresentedFrame,cinematicLook:true})===false)fail(Error('The remembered wreck could not remain visible during its fade.'));
+          return;
+        }
+        restore();
+      }
       if(!restored)audio?.setPaused(false);
       // A dial cut clears the pedals, but the foot is still down: what's held comes back with the picture.
       controller.update(step,{input:Object.fromEntries([...pressedKeys].map(action=>[action,true]))});refreshFrame(step);
       if(current.phase==='impact-black'&&!impact){impact=true;audio?.joint({strength:1});}
-      if(current.worldOwner==='return'&&!restored)restore();
+      if(current.worldOwner==='return'&&!restored){
+        if(returnToBlack&&lastPresentedFrame&&crashFadeSeconds>0&&!crashDissolve){
+          crashDissolve={elapsed:0,seconds:Math.max(.1,Math.min(6,Number(crashFadeSeconds)||2.4))};
+          audio?.setPaused(true);intrusionAudio?.setPaused(true);recording?.setPaused?.(true);
+          return;
+        }
+        restore();
+      }
       if(restored&&!doorsClosed){doorsClosed=true;onDoorsClose();}
       if(restored)onReturnTick(step);
       renderFrame();
@@ -170,7 +193,14 @@ export function makeGetInDriveTeaserScene({
       // Run-level pause freezes update() below its scene. Audio and the
       // diagnostic snapshot must still follow that lifecycle immediately.
       setHeld(!!isHeld());
-      const alpha=prelude<.28||!ready?1:clamp(current?.coverAlpha??1);
+      let alpha=prelude<.28||!ready||(returnToBlack&&restored)?1:clamp(current?.coverAlpha??1);
+      if(returnToBlack&&!restored){
+        if(crashDissolve){const u=clamp(crashDissolve.elapsed/crashDissolve.seconds);alpha=u*u*(3-2*u);}
+        // The original controller's safety black rises in .14 seconds. Its
+        // return remains unchanged; only this opt-in presenter supplies the
+        // longer visible closing fade before relinquishing the world renderer.
+        else if(current?.worldOwner==='drive'&&current?.cliffCommitted)alpha=0;
+      }
       if(ready&&!restored)paintOverlay({frame:current,radio:audio?.programmeFrame?.()||current?.renderFrame?.radio,tape:recording?.status?.()||null,error});
       if(alpha>.001)paintCover(alpha);
     },
@@ -210,7 +240,7 @@ export function makeGetInDriveTeaserScene({
       if(disposed)return;disposed=true;restore();controller.dispose();
       if(recording)Promise.resolve(recording.dispose?.()).catch(onError).finally(disposeAudio);else disposeAudio();onExit();
     },
-    view(){return{prelude,preparing,ready,restored,completed,disposed,error,...(current||{}),bumperIntrusion:intrusion.snapshot()};},
+    view(){return{prelude,preparing,ready,restored,completed,disposed,error,...(current||{}),crashDissolve:crashDissolve?{...crashDissolve}:null,bumperIntrusion:intrusion.snapshot()};},
     audioDiagnostics(){return audio?{...audio.diagnostics?.(),bumperIntrusion:intrusionAudio?.diagnostics()||null}:null;},
     tapeDiagnostics(){return recording?.status?.()||null;},
     pending:()=>pending,

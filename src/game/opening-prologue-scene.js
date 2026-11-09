@@ -4,6 +4,7 @@ import {promptLine} from './bindings.js';
 import {makeColdOpenScene} from './coldopen.js';
 import {OPENING_PROLOGUE,OPENING_PROLOGUE_SET,createOpeningPrologueStage} from '../data/opening-prologue.js';
 import {openingHorizonFrame,openingOmenProps} from '../render/opening-omen.js';
+import {createOpeningPrologueDirection} from './opening-prologue-direction.js';
 
 const SKIP_HOLD=1.1,ECHO_DWELL=.55,COLUMN=.38,PAD=2.6,SCALE=1.14,STEP=1.22,GAP=.75,BAR=.028;
 // The hole sits in the middle of what the column leaves, not behind the column.
@@ -20,32 +21,43 @@ export function openingPrologueWrap(text,width){
   return rows;
 }
 const spoken=(who,text)=>who==='me'?`"${text}"`:text;
+const skipEvent=event=>event.controllerAction?event.controllerAction==='tabNext'
+  :String(event.code||event.key||'').toLowerCase()==='keye'||String(event.key||'').toLowerCase()==='e';
+const openingPrologueVoice=v=>v.who==='unknown'&&typeof v.voice==='number'&&v.voice>=0&&v.voice<1;
+export function openingPrologueActFrame(frame,act){return{...frame,shut:Math.max(frame.shut,act?1:0)};}
+// Keep the selected answer whole when text scale leaves too few rows for the
+// eight-question board. Up/down moves this window with the actual selection.
+export function openingPrologueChoiceWindow(options,chars,maxRows,selected=0){
+  const blocks=(options||[]).map((option,k)=>({k,rows:openingPrologueWrap(`${k+1}. ${option.text}`,Math.max(8,chars-2))}));
+  if(!blocks.length)return{blocks:[],before:0,after:0};
+  const cost=block=>block.rows.length*STEP+.2,budget=Math.max(6,maxRows);
+  const at=Math.max(0,Math.min(blocks.length-1,selected));
+  let start=at,end=at+1,used=cost(blocks[at]);
+  while(start>0||end<blocks.length){
+    const canBefore=start>0&&used+cost(blocks[start-1])<=budget;
+    const canAfter=end<blocks.length&&used+cost(blocks[end])<=budget;
+    if(!canBefore&&!canAfter)break;
+    if(canBefore&&(!canAfter||at-start<=end-at-1)){start--;used+=cost(blocks[start]);}
+    else{used+=cost(blocks[end]);end++;}
+  }
+  return{blocks:blocks.slice(start,end),before:start,after:blocks.length-end};
+}
 // The talk is the game's own conversation machine: nothing advances by itself, a hub
 // says its piece once, and you choose when to open your mouth. This only draws it, as
 // a running column beside the picture, and moves the picture in its own time.
 export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady=()=>true,toWorldView=frame=>frame,setOmen=()=>{},reducedMotion=false,audio,getAudio,replay=null,onStart=()=>{},onDone=()=>{},onExit=()=>{},onUnavailable=()=>{},setMusic=()=>{},
   drive=null,driveMetrics=null,driveLive=()=>true,onDriveFrame=()=>{},onBeat=()=>{}}={}){
-  let phase='loading',paused=false,exited=false,finished=false,skip=0,held=false,posed=null,cardAt=0,lastNode=null,fates=0,pictured=0,lastSerial=0,lastLine=null,beat='omen',beatVeil=0;
+  let phase='loading',paused=false,exited=false,finished=false,skip=0,held=false,posed=null,cardAt=0,lastNode=null,fates=0,pictured=0,lastSerial=0,lastLine=null,beat=drive?'drive':'omen',openingAct=null;
+  let lastFrame=null,reviewStage=null,reviewSnap=false,hasSpoken=false,bodyCue='neutral',bodyCueStarted=false,started=false,lastPresented=false,presentationHeld=false;
+  const direction=drive?createOpeningPrologueDirection({reducedMotion}):null;
   const stage=createOpeningPrologueStage({reducedMotion}),nodes=OPENING_PROLOGUE.nodes,log=[];
   const metrics=()=>typeof driveMetrics==='function'?driveMetrics():driveMetrics;
   const clear=()=>setOmen({props:[],horizon:null,rain:null});
-  // The drive beats: the road itself at the start, at the margin ("you are
-  // still driving"), and when the wipers come back across. 'woken' carries the
-  // omen through the windshield, over the road, before the pure omen resumes.
-  const DRIVE_BEATS=new Set(['dark','margin','gone']);
-  const beatFor=id=>drive&&metrics()&&driveLive()?DRIVE_BEATS.has(id)?'drive':id==='woken'?'drive-omen':'omen':'omen';
-  function driveOmen(s,eye,heading){
-    const fx=Math.sin(heading),fz=-Math.cos(heading),centre=[eye[0]+fx*90,eye[1]+42,eye[2]+fz*90];
-    const away=Math.hypot(centre[0]-eye[0],centre[1]-eye[1],centre[2]-eye[2])||1,
-      view=[(centre[0]-eye[0])/away,(centre[1]-eye[1])/away,(centre[2]-eye[2])/away];
-    setOmen({rain:s.rain,props:openingOmenProps({eye,centre,radius:s.radius,moon:s.veil>=1?0:s.moon,time:s.time,stream:s.stream,reducedMotion,view}),
-      horizon:openingHorizonFrame({centre,radius:s.radius,clock:s.time,wheels:s.wheels,falls:s.falls,open:s.open,shut:s.shut,reducedMotion})});
-  }
-  function observed(){const s=stage.view();if(!posed)return s;const m={...s,...posed},d=m.target.map((n,k)=>n-m.eye[k]);return{...m,yaw:Math.atan2(d[0],-d[2]),pitch:Math.atan2(d[1],Math.hypot(d[0],d[2]))};}
+  function observed(){const s=openingPrologueActFrame(stage.view(),openingAct);if(!posed)return s;const m={...s,...posed},d=m.target.map((n,k)=>n-m.eye[k]);return{...m,yaw:Math.atan2(d[0],-d[2]),pitch:Math.atan2(d[1],Math.hypot(d[0],d[2]))};}
   function picture(){
     const s=observed(),centre=s.hole,time=s.time;pictured++;
     setOmen({rain:s.rain,props:openingOmenProps({eye:s.eye,centre,radius:s.radius,moon:s.veil>=1?0:s.moon,time,stream:s.stream,reducedMotion}),
-      horizon:s.veil>=1?null:openingHorizonFrame({centre,radius:s.radius,clock:time,wheels:s.wheels,falls:s.falls,open:s.open,shut:s.shut,reducedMotion})});
+      horizon:s.veil>=1?null:openingHorizonFrame({centre,radius:s.radius,clock:time,wheels:s.wheels,falls:s.falls,open:s.open,shut:s.shut,reducedMotion,eyePresentation:s.eyePresentation})});
     const yaw=s.yaw+FRAME_SHIFT,reach=Math.hypot(s.target[0]-s.eye[0],s.target[2]-s.eye[2]),target=[s.eye[0]+Math.sin(yaw)*reach,s.target[1],s.eye[2]-Math.cos(yaw)*reach];
     return toWorldView({...OPENING_PROLOGUE_SET,time,eye:s.eye,target,yaw,pitch:s.pitch,veil:s.veil,
       observer:{x:s.eye[0],z:s.eye[2],feet:OPENING_PROLOGUE_SET.floorH,renderGroup:OPENING_PROLOGUE_SET.renderGroup,spaceId:OPENING_PROLOGUE_SET.observerSpace},openingOverture:true});
@@ -57,9 +69,37 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
   Object.assign(scene,{handlesEscape:false,worldPresentation:'visible',lookProfile:'calm'});
   // The world frame carries the omen; a drive beat owns the picture itself
   // and hides the world exactly the way the door teaser does.
-  Object.defineProperty(scene,'worldPresentation',{configurable:true,get:()=>beat==='omen'?'visible':'hidden'});
+  Object.defineProperty(scene,'worldPresentation',{configurable:true,get:()=>drive?'hidden':'visible'});
+  // The actual prologue never lends its camera or lighting to another owner.
+  // A no-drive host remains available for the text-only/headless fallback.
+  scene.worldView=()=>drive?null:picture();
+  Object.defineProperty(scene,'allowsLook',{configurable:true,get:()=>phase==='film'&&!paused
+    &&driveLive()&&typeof drive?.lookBy==='function'});
+  scene.lookAngles=()=>direction?.view()?{yaw:direction.view().yaw,pitch:direction.view().pitch}:drive?.lookAngles?.()||{yaw:0,pitch:-.035};
+  scene.lookBy=(yaw,pitch)=>scene.allowsLook?!!drive.lookBy(yaw,pitch):false;
   // The talk starts on the first shown frame of the picture, not when it is pushed.
   scene.enter=()=>{};
+  function semantic(){
+    if(reviewStage){if(reviewStage==='dark')return'road';if(reviewStage==='gone')return'return';if(reviewStage.startsWith('fate')||reviewStage==='last'||reviewStage==='margin')return'personal';if(['ellery','school','boy','notice','roll'].includes(reviewStage))return'ellery';return'recognition';}
+    return nodes[baseView().nodeId]?.semanticPhase||'road';
+  }
+  function present(step=0){
+    if(!drive||!driveLive())return false;
+    const raw=drive.frame(metrics());if(!raw)return false;
+    const v=baseView(),s=observed(),frame=direction.compose(raw,{dt:step,stage:s,stageId:stage.id(),nodeId:reviewStage?'':v.nodeId,semanticPhase:semantic(),snap:reviewSnap,override:posed});reviewSnap=false;
+    if(!frame)return false;
+    const j=frame.journey,active=j.radius>.01&&semantic()!=='road',view=[0,.08,-1];
+    const horizon=active?openingHorizonFrame({centre:j.hole,radius:j.radius,clock:s.time,view,wheels:s.wheels,falls:s.falls,open:s.open,shut:s.shut,reducedMotion,eyePresentation:s.eyePresentation}):null;
+    // Source's optical family, with the normal scene's material encoding.
+    // A global Source ink finish must not acquire the driver's ordinary cab.
+    setOmen({rain:s.rain,props:active?openingOmenProps({eye:j.eye,centre:j.hole,radius:j.radius,moon:s.moon,time:s.time,stream:s.stream,reducedMotion,view}):[],horizon:horizon?{...horizon,finish:null}:null});
+    const accepted=onDriveFrame(frame)!==false;lastPresented=accepted;
+    if(!accepted&&!presentationHeld){presentationHeld=true;scene.presentationPause?.();}
+    else if(accepted&&presentationHeld){presentationHeld=false;scene.presentationResume?.();}
+    if(accepted)lastFrame=frame;return accepted;
+  }
+  function established(){return!drive||direction.view()?.established===true;}
+  function bodyComplete(){return bodyCue==='neutral'||!bodyCueStarted||(drive?.snapshot()?.embodiment?.progress??1)>=1;}
   scene.update=dt=>{
     if(exited||finished||paused)return;
     if(phase==='loading'){
@@ -68,60 +108,72 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
       if(ready===true||ready?.ready===true)phase='awaiting-frame';
       return;
     }
-    if(phase==='awaiting-frame'){if(!getPresentationReady())return;if(beatFor(stage.id())==='omen'&&pictured<2)return;phase='film';drive?.start();onStart();baseEnter();}
-    if(phase!=='film'||!getPresentationReady())return;
-    const step=Math.max(0,Math.min(.1,Number(dt)||0));
-    stage.advance(step);baseUpdate(step);
-    // The drive runs under the talk. It only steps while its picture is up:
-    // an omen beat leaves the van where the road had it, and the next drive
-    // beat resumes the same journey. The cut between pictures carries a short
-    // veil, so neither picture arrives by a hard switch.
-    const nextBeat=beatFor(stage.id());
-    if(nextBeat!==beat){beat=nextBeat;beatVeil=1;onBeat(beat);}
-    if(beatVeil>0)beatVeil=Math.max(0,beatVeil-step/.45);
-    if(beat!=='omen'){
-      if(driveLive())drive?.update(step);
-      const f=driveLive()?drive?.frame(metrics()):null;
-      if(f){onDriveFrame({...f,cinematicLook:true});
-        if(beat==='drive-omen'&&f.scene?.eye){const s=stage.view(),heading=drive.snapshot()?.driveState?.heading||0;driveOmen(s,f.scene.eye,heading);}
-      }
+    if(phase==='awaiting-frame'){
+      if(!getPresentationReady())return;
+      if(drive){if(!driveLive())return;if(!started){drive.start();started=true;}if(!present(0))return;}
+      else if(pictured<2)return;
+      phase='film';onStart();onBeat(beat);baseEnter();
     }
+    if(phase!=='film')return;
+    const step=Math.max(0,Math.min(.1,Number(dt)||0));
+    skip=held?skip+step:0;if(skip>=SKIP_HOLD){finish();return;}
+    if(!getPresentationReady()){lastPresented=false;if(!presentationHeld){presentationHeld=true;scene.presentationPause?.();}return;}
+    if(drive&&!lastPresented&&!present(0))return;
+    stage.advance(step);baseUpdate(step);
     const v=baseView(),node=nodes[v.nodeId];
     if(v.lineSerial!==lastSerial){if(lastLine?.text)log.push(lastLine);lastSerial=v.lineSerial;}
     lastLine=v.line?{who:v.who,text:String(v.line.text||'')}:lastLine;
     if(v.nodeId!==lastNode){
-      lastNode=v.nodeId;if(node?.fate)fates++;
+      lastNode=v.nodeId;reviewStage=null;if(node?.fate)fates++;
+      if(node?.openingAct&&!openingAct)openingAct={id:node.openingAct,node:v.nodeId,at:stage.time()};
       if(node?.stage)stage.to(node.stage==='fate'?`fate${Math.min(6,fates)}`:node.stage);
+      const cue=v.nodeId==='interval-wheel'?'seam':v.nodeId==='interval-hold'?'grip':v.nodeId==='interval-release'?'release':null;
+      if(cue){bodyCue=cue;bodyCueStarted=false;}
     }
-    setMusic(stage.view().music);
+    if(openingPrologueVoice(v))hasSpoken=true;
+    if(drive){
+      if(bodyCue!=='neutral'&&!bodyCueStarted&&direction.view()?.intent==='body'&&established()){drive.setEmbodiment?.({cue:bodyCue});bodyCueStarted=true;}
+      const returning=v.nodeId==='wipers'||v.nodeId==='card';
+      drive.setEmbodiment?.({holdWiper:hasSpoken&&!returning});
+      drive.update(step);present(step);
+    }
+    setMusic(semantic()==='road'?.6:semantic()==='ellery'?.78:semantic()==='return'||v.nodeId==='off'?.42:.62);
     // You chose to say it. It does not then need a second press to have been said.
-    if(v.who==='me'&&!v.typing&&!v.pending&&v.lineAge>ECHO_DWELL)baseKey({key:' '});
+    if(v.who==='me'&&!v.typing&&!v.pending&&v.lineAge>ECHO_DWELL&&established()&&bodyComplete())baseKey({key:' '});
     if(node?.card){cardAt+=step;if(cardAt>=node.seconds){finish();return;}}
-    skip=held?skip+step:0;
-    if(skip>=SKIP_HOLD)finish();
   };
   scene.key=(event={})=>{
     const code=String(event.code||event.key||'').toLowerCase();
     if(code==='escape'||event.controllerAction==='back')return false;
     if(event.ctrlKey||event.metaKey||event.altKey)return true;
-    held=true;
+    if(skipEvent(event)){
+      event.preventDefault?.();
+      if(phase==='film'&&!event.repeat)held=true;
+      return true;
+    }
     if(event.repeat||phase!=='film'||nodes[baseView().nodeId]?.card)return true;
+    if(presentationHeld)return true;
+    const v=baseView(),progressKey=[' ','enter','z'].includes(code)||/^[1-9]$/.test(code);
+    if(progressKey&&!v.typing&&(!established()||!bodyComplete()))return true;
     return baseKey(event);
   };
-  scene.keyup=(event={})=>{held=false;skip=0;baseKeyup(event);return true;};
-  scene.pause=()=>{paused=true;held=false;skip=0;};scene.resume=()=>{paused=false;};scene.blur=()=>scene.pause();scene.focus=()=>scene.resume();
+  scene.keyup=(event={})=>{if(skipEvent(event)){held=false;skip=0;}baseKeyup(event);return true;};
+  scene.pause=()=>{if(paused)return;paused=true;held=false;skip=0;drive?.setPaused?.(true);scene.presentationPause?.();};scene.resume=()=>{if(!paused)return;paused=false;drive?.setPaused?.(false);scene.presentationResume?.();};scene.blur=()=>scene.pause();scene.focus=()=>scene.resume();
   scene.exit=()=>{if(exited)return;exited=true;clear();baseExit();onExit({finished});};
-  scene.view=()=>({...baseView(),phase,paused,finished,skip,fates,stageId:stage.id(),stage:observed(),log:[...log],beat,beatVeil,drive:drive?.snapshot()||null});
+  scene.view=()=>{const j=direction?.view(),s=observed();return{...baseView(),phase,paused,finished,skip,fates,spoken:hasSpoken,presentationReady:!drive||lastPresented,openingAct:openingAct?{...openingAct}:null,stageId:stage.id(),semanticPhase:semantic(),stage:j?{...s,eye:j.eye,target:j.target,hole:j.hole,radius:j.radius,yaw:j.yaw,pitch:j.pitch}:s,log:[...log],beat,beatVeil:0,journey:j,drive:drive?.snapshot()||null};};
+  scene.physicalFrame=()=>lastFrame;
   // For review stills: the picture at a named point with its move finished, or an exact stage.
-  scene.seekStage=key=>{stage.to(key);stage.snap();};
-  scene.pose=value=>{posed=value;};
+  scene.seekStage=key=>{stage.to(key);stage.snap();reviewStage=key;reviewSnap=true;};
+  scene.pose=value=>{posed=value;reviewSnap=true;if(phase==='film'&&drive)present(0);};
   scene.render=()=>{
     const {cols,rows}=uiSize(),s=observed(),v=baseView(),node=nodes[v.nodeId];
+    if(paused&&phase==='film'&&drive)present(0);
     if(phase!=='film'){uiFill(0,0,cols,rows,'#000');return;}
     uiDraw(({ctx})=>{
       const W=ctx.canvas.width,H=ctx.canvas.height,bar=Math.round(H*BAR);
       ctx.save();ctx.setTransform?.(1,0,0,1,0,0);ctx.fillStyle='#000';
-      if(s.veil>0){ctx.globalAlpha=Math.min(1,s.veil);ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+      const veil=Math.max(s.veil||0,direction?.view()?.opticalVeil||0);
+      if(veil>0){ctx.globalAlpha=Math.min(1,veil);ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
       ctx.fillRect(0,0,W,bar);ctx.fillRect(0,H-bar,W,bar);ctx.restore();
     });
     if(node?.card){
@@ -133,16 +185,19 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     uiFill(x,0,w,rows,'#000');
     // From the bottom: the prompt, the replies, and then the talk stacked upward.
     let y=rows-1.6;
-    const prompt=v.pending?.options?.length?promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'REPLY'}]):v.typing?'':promptLine([{action:'continue',label:'CONTINUE'}]);
+    const prompt=!established()||!bodyComplete()?'':v.pending?.options?.length?promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'REPLY'}]):v.typing?'':promptLine([{action:'continue',label:'CONTINUE'}]);
     if(prompt)drawVfdText(inner,y,String(prompt).slice(0,Math.floor((w-PAD*2)/.8)),{scale:.8,color:DIM,alpha:.8});
     y-=STEP+GAP;
     if(v.pending?.options?.length){
-      const blocks=v.pending.options.map((option,k)=>({k,rows:openingPrologueWrap(`${k+1}. ${option.text}`,chars-2)}));
+      const {blocks,before,after}=openingPrologueChoiceWindow(v.pending.options,chars,rows*.62,v.pending.index);
+      if(after)drawVfdText(inner,y,'MORE REPLIES BELOW',{scale:.75,color:DIM,alpha:.8});
+      y-=after?STEP:0;
       for(const block of[...blocks].reverse()){
         const on=block.k===v.pending.index;y-=(block.rows.length-1)*STEP;
         block.rows.forEach((text,n)=>drawVfdText(inner+(on?0:SCALE*2),y+n*STEP,(on&&n===0?'> ':on?'  ':'')+text,{scale:SCALE,color:on?LIT:INK,alpha:on?1:.72}));
         y-=STEP+.2;
       }
+      if(before){drawVfdText(inner,y,'MORE REPLIES ABOVE',{scale:.75,color:DIM,alpha:.8});y-=STEP;}
       y-=GAP;
     }
     // The line being said types out in place, so its wrapping does not jump.
@@ -159,9 +214,8 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
       });
       y-=STEP+GAP;
     }
-    if(skip>.12)centred(x*2+w-cols,1,'HOLD TO SKIP',.8,DIM,Math.min(1,skip/SKIP_HOLD));
-    // The short veil between pictures: drive to omen, and back.
-    if(beatVeil>.001)uiFill(0,0,cols,rows,`rgba(4,5,7,${(beatVeil*beatVeil).toFixed(3)})`);
+    const skipPrompt=promptLine([{action:'tabNext',label:'HOLD TO SKIP'}]);
+    if(skip>.12||s.time<8)centred(x,1,skipPrompt,.8,DIM,skip>.12?Math.min(1,skip/SKIP_HOLD):.65);
   };
   return scene;
 }

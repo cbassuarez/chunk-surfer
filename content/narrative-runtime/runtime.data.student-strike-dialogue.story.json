@@ -122,7 +122,8 @@
           "source": "src/data/student-strike-dialogue.js:47"
         }
       ],
-      "source": "src/data/student-strike-dialogue.js:47"
+      "source": "src/data/student-strike-dialogue.js:47",
+      "goto": "odetteStrikeDialogue.nodes.strike-questions"
     },
     "odetteStrikeDialogue.nodes.strike-preservation": {
       "id": "odetteStrikeDialogue.nodes.strike-preservation",
@@ -135,7 +136,8 @@
           "source": "src/data/student-strike-dialogue.js:52"
         }
       ],
-      "source": "src/data/student-strike-dialogue.js:52"
+      "source": "src/data/student-strike-dialogue.js:52",
+      "goto": "odetteStrikeDialogue.nodes.strike-questions"
     },
     "odetteStrikeDialogue.nodes.strike-leave": {
       "id": "odetteStrikeDialogue.nodes.strike-leave",

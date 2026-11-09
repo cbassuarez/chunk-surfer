@@ -132,7 +132,7 @@ function contactDocument() {
   return document;
 }
 
-export function sourceContactDialogue(value = null, { context = null, live = null, victories = 0, chapter = 'I', repeatContact = false } = {}) {
+export function sourceContactDialogue(value = null, { context = null, live = null, victories = 0, chapter = 'I', repeatContact = false,captured=false } = {}) {
   const state = normalizeSourceContactState(value);
   const facts = context?.lead ? context : sourceHushContext(context || {});
   const now = live?.now instanceof Set ? live.now : new Set();
@@ -184,6 +184,15 @@ export function sourceContactDialogue(value = null, { context = null, live = nul
       if (line.id === 'approach.line.3') line.text = '-18 on the needle, and steady. Nothing in that outline is making a sound.';
     }
   }
+  if(captured&&!repeatContact){
+    nodes.approach.lines=[
+      {id:'capture.pressure',who:'direction',signalRole:'unattributed',text:'The pressure reaches you. The floor is still beneath your feet. There is nowhere left between you and it.',body:'still'},
+      {id:'capture.hands',who:'hands',signalRole:'human',text:'It has reached you. You have not reached for it. Those are different things.'},
+      {id:'capture.choice',who:'you',signalRole:'human',text:'I can let it carry me back. Or I can put my hand out and fight.'},
+    ];
+    nodes.ask.choices=nodes.ask.choices.map(choice=>choice.id==='contact.leave'?{...choice,text:'Let it carry me back.'}:choice);
+    nodes.leave.lines=[{id:'capture.withdraw',who:'direction',signalRole:'unattributed',text:'You keep your hand against your own chest. The pressure takes your weight.',body:'still'}];
+  }
   if (repeatContact) {
     nodes.warning.lines = [{ id: 'warning.repeat', who: 'you', signalRole: 'human',
       text: 'I already broke free of it here. This will not be another fight. If I touch it again, it will take one available recording. I will have to find that recording here or in the next Source to hear it again. If none remain, it has nothing to take. I can still lower my hand.' }];
@@ -197,19 +206,20 @@ export function sourceContactDialogue(value = null, { context = null, live = nul
   return nodes;
 }
 
-export function nextSourceContact(value = null, { context = null, victories = 0, chapter = 'I', repeatContact = false } = {}) {
+export function nextSourceContact(value = null, { context = null, victories = 0, chapter = 'I', repeatContact = false,captured=false } = {}) {
   const state = normalizeSourceContactState(value);
   const facts = context?.lead ? context : sourceHushContext(context || {});
   const live = { now: new Set() };
   chapter = sourceContactChapter(chapter) || 'I';
-  const nodes = sourceContactDialogue(state, { context: facts, live, victories, chapter, repeatContact });
-  const startAt = state.met ? 'return' : 'approach';
+  const nodes = sourceContactDialogue(state, { context: facts, live, victories, chapter, repeatContact,captured });
+  const startAt = captured?'approach':state.met ? 'return' : 'approach';
   const node = nodes[startAt];
   return {
     id: startAt,
     contactCycle: Math.min(3, whole(victories) + 1),
     chapter,
     repeatContact: !!repeatContact,
+    captured:!!captured,
     startAt,
     speaker: node.speaker,
     lines: node.lines,

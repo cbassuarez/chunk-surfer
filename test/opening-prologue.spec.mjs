@@ -26,7 +26,7 @@ test('it is a tree: real questions, several answers, and silence where silence i
   for(const id of questions)assert.ok(nodes[id].choices.length>=2,id+' is a real choice');
   assert.ok(questions.filter(id=>nodes[id].choices.some(row=>row.text.startsWith('(say nothing)'))).length>=3);
   // Different answers go different ways, and come back together.
-  for(const id of['there','look','last-one','notice','tower'])assert.ok(new Set(nodes[id].choices.map(row=>row.goto)).size>=2,id);
+  for(const id of['there','look','file','notice','tower'])assert.ok(new Set(nodes[id].choices.map(row=>row.goto)).size>=2,id);
 });
 
 const question=(convo,id)=>{
@@ -45,43 +45,38 @@ const answer=(convo,to)=>{
   assert.ok(index>=0,'no visible answer to '+to);convo.selectChoice(index,{sound:false});convo.key({key:'Enter'});
 };
 
-test('the interval remembers exact spent questions, keeps silence playable and always leaves the job available',()=>{
+test('the opening requires a chosen act, including refusal, before the work is discussed',()=>{
   const before=JSON.stringify(OPENING_PROLOGUE),convo=createConversation({nodes,startAt:'look',sceneId:'opening-interval-test',voiceEnabled:false});
-  convo.start();let board=question(convo,'look');
+  convo.start();const board=question(convo,'look');
   assert.equal(board.pending.options.length,5);
-  const routes=[['interval-eyes','interval-first'],['interval-wheel','interval-release'],['interval-avert','interval-wait'],['interval-silent',null]];
-  for(const[entry,reply]of routes){
-    answer(convo,entry);
-    if(reply){question(convo,entry);answer(convo,reply);}
-    board=question(convo,'look');
-    assert.ok(!board.pending.options.some(row=>row.goto===entry),'only the exact asked question is spent');
-    assert.ok(board.pending.options.some(row=>row.goto==='job'),'the interval can always be left');
-    assert.equal(convo.view().line.sourceId,'opening-prologue:look:return:1','the hub speaks its authored return, not its first greeting');
-  }
-  assert.deepEqual(board.pending.options.map(row=>row.goto),['job']);
-  answer(convo,'job');assert.equal(question(convo,'job').pending.options.length,3);
+  assert.ok(!board.pending.options.some(row=>row.goto==='job'),'the significant act has no carry-on bypass');
+  answer(convo,'interval-silent');
+  assert.equal(question(convo,'job').pending.options.length,3,'silence changes the image and still reaches the work');
   convo.stop();
-  const fresh=createConversation({nodes,startAt:'look',sceneId:'opening-interval-next-run',voiceEnabled:false});
-  fresh.start();assert.equal(question(fresh,'look').pending.options.length,5);fresh.stop();
-  assert.equal(JSON.stringify(OPENING_PROLOGUE),before,'asked state never mutates or persists in the authored opening');
+  assert.equal(JSON.stringify(OPENING_PROLOGUE),before,'the first act never writes a game flag or mutates authored state');
 });
 
-test('every new encounter answer rejoins the question board without a locked or empty picker',()=>{
-  for(const[entry,replies]of[['interval-eyes',['interval-first','interval-meet']],['interval-wheel',['interval-hold','interval-release']],['interval-avert',['interval-wait','interval-return']],['interval-silent',[null]]]){
+test('every act reaches the work without a locked or empty picker',()=>{
+  for(const[entry,replies]of[['interval-eyes',['interval-first','interval-meet']],['interval-wheel',['interval-hold','interval-release']],['interval-avert',['interval-wait','interval-return']],['interval-silent',[null]],['interval-refuse',[null]]]){
     for(const reply of replies){
       const convo=createConversation({nodes,startAt:'look',sceneId:'opening-branch-'+(reply||entry),voiceEnabled:false});
       convo.start();question(convo,'look');answer(convo,entry);
       if(reply){question(convo,entry);answer(convo,reply);}
-      const board=question(convo,'look');assert.ok(board.pending.options.length>=1);assert.ok(board.pending.options.some(row=>row.goto==='job'));convo.stop();
+      const board=question(convo,'job');assert.equal(board.pending.options.length,3);convo.stop();
     }
   }
 });
 
-test('optional interval and road questions cannot bypass the filed evidence or create a second exit',()=>{
-  for(const required of['job-sheet','last-one','ellery','school-told','boy-told','notice','tower','margin','fate','off','wipers']){
+test('the chosen act, work terms and essential school stakes remain required; the complete file is optional',()=>{
+  for(const required of['look','kept','job-sheet','last-one','ellery','school-told','coverup','notice','margin','fate','off','wipers']){
     const seen=new Set(),queue=[OPENING_PROLOGUE.entry];
     while(queue.length){const id=queue.shift();if(id===required||seen.has(id))continue;seen.add(id);queue.push(...next(nodes[id]));}
     assert.equal(seen.has('card'),false,'the '+required+' evidence cannot be bypassed');
+  }
+  for(const optional of['file','client','fifth','boy-name','boy-told','tower']){
+    const seen=new Set(),queue=[OPENING_PROLOGUE.entry];
+    while(queue.length){const id=queue.shift();if(id===optional||seen.has(id))continue;seen.add(id);queue.push(...next(nodes[id]));}
+    assert.equal(seen.has('card'),true,optional+' belongs to a deliberate deeper inquiry');
   }
   assert.deepEqual(ids.filter(id=>next(nodes[id]).length===0),['card']);
   for(const node of Object.values(nodes)){
@@ -91,6 +86,83 @@ test('optional interval and road questions cannot bypass the filed evidence or c
   let done=0;const convo=createConversation({nodes,startAt:'wipers',voiceEnabled:false,onDone:()=>done++});convo.start();
   for(let i=0;i<30;i++){convo.update(20);convo.key({key:'Enter'});}
   assert.equal(done,1);assert.equal(convo.view().finished,true);convo.stop();
+});
+
+test('every optional file inquiry rejoins without repeating the compulsory account or stranding the reader',()=>{
+  const before=JSON.stringify(OPENING_PROLOGUE);
+  const inquiries=[['client'],['fifth'],['him'],['boy'],['boy-name'],
+    ['tower','did'],['tower','why'],['tower','tower-quiet'],['no-ask'],['not-mine']];
+  for(const[entry,reply]of inquiries){
+    const presented=[];
+    const convo=createConversation({nodes,startAt:'file',sceneId:`opening-file-${entry}-${reply||'answer'}`,
+      voiceEnabled:false,onLine:line=>presented.push(line.sourceId)});
+    try{
+      convo.start();const initial=question(convo,'file');
+      assert.equal(initial.pending.options.length,9,'the complete file has one stable nine-answer board');
+      presented.length=0;answer(convo,entry);
+      if(reply){question(convo,entry);answer(convo,reply);}
+      const returned=question(convo,'file');
+      assert.ok(!returned.pending.options.some(row=>row.goto===entry),'only the exact spent inquiry is hidden');
+      assert.ok(returned.pending.options.some(row=>row.goto==='hearing'),'the ordinary departure stays available');
+      assert.ok(presented.some(id=>id==='opening-prologue:file:return:0'),'the file gives its brief return');
+      assert.ok(!presented.some(id=>/^opening-prologue:(ellery|school-told|coverup|notice|last-one|job):/.test(id)),
+        entry+' must not replay the compulsory history');
+      if(entry==='boy-name')assert.ok(!presented.some(id=>id.startsWith('opening-prologue:boy-told:')),
+        'asking the withheld name does not recite the full recovery account again');
+      answer(convo,'hearing');question(convo,'margin');
+    }finally{convo.stop();}
+  }
+  assert.equal(JSON.stringify(OPENING_PROLOGUE),before,'optional questions never mutate the source or write progress');
+});
+
+test('the whole file can be read in one visit and only the deliberate departure remains',()=>{
+  const convo=createConversation({nodes,startAt:'file',sceneId:'opening-file-all-inquiries',voiceEnabled:false});
+  try{
+    convo.start();question(convo,'file');
+    for(const entry of['client','fifth','him','boy','boy-name','tower','no-ask','not-mine']){
+      answer(convo,entry);
+      if(entry==='tower'){question(convo,'tower');answer(convo,'did');}
+      question(convo,'file');
+    }
+    assert.deepEqual(convo.view().pending.options.map(row=>row.goto),['hearing']);
+    answer(convo,'hearing');question(convo,'margin');
+  }finally{convo.stop();}
+});
+
+test('semantic phases keep optional file answers in the school and never restart an earlier visual chapter',()=>{
+  const order=['road','recognition','ellery','personal','return'];
+  for(const[id,node]of Object.entries(nodes)){
+    assert.ok(order.includes(node.semanticPhase),id+' has an explicit presentation meaning');
+    for(const to of next(node))assert.ok(order.indexOf(nodes[to].semanticPhase)>=order.indexOf(node.semanticPhase),
+      `${id} -> ${to} cannot send the connected presentation backwards`);
+  }
+  for(const id of['client','no-ask','fifth','him','not-mine','boy-name','boy-told','did','why','tower-quiet']){
+    assert.equal(nodes[id].semanticPhase,'ellery');assert.equal(nodes[id].goto,'file');
+  }
+  for(const node of Object.values(nodes).filter(node=>node.openingAct)){
+    assert.equal(node.semanticPhase,'recognition');assert.equal(node.goto,'kept');
+  }
+  assert.equal(nodes.wipers.semanticPhase,'return');assert.equal(nodes.card.semanticPhase,'return');
+});
+
+test('all six conditional fates remain without the seal procedure or a premature coffee explanation',()=>{
+  const six=['f-home','f-seal','f-help','f-door','f-carry','f-bench'];
+  const convo=createConversation({nodes,startAt:'fate',sceneId:'opening-fates-all',voiceEnabled:false});
+  try{
+    convo.start();question(convo,'fate');
+    for(const id of six){answer(convo,id);question(convo,'fate');}
+    assert.deepEqual(convo.view().pending.options.map(row=>row.goto),['f-none','f-enough']);
+    answer(convo,'f-enough');
+    for(let n=0;n<50&&!convo.view().finished;n++){convo.update(20);convo.key({key:'Enter'});}
+    assert.equal(convo.view().finished,true);
+  }finally{convo.stop();}
+  const seal=nodes['f-seal'].lines.map(row=>row.text).join(' '),home=nodes['f-home'].lines.map(row=>row.text).join(' ');
+  assert.match(seal,/Suppose it closes\. Suppose it works/);assert.match(seal,/inside/);assert.match(seal,/own torch would/);
+  assert.doesNotMatch(seal,/chapel|screen|put your hand|keep your hand/i);
+  assert.match(home,/Morning/);assert.match(home,/coffee.*gone cold/);assert.match(home,/Perhaps/);
+  assert.doesNotMatch(home,/somebody in an office|tells you it was the coffee|slept through all of it/i);
+  assert.doesNotMatch(nodes['f-carry'].lines.map(row=>row.text).join(' '),/On your back/);
+  assert.doesNotMatch(nodes['f-bench'].lines.map(row=>row.text).join(' '),/You are hearing it now/);
 });
 
 test('it is a mix of narration and speech, in prose',()=>{
@@ -107,7 +179,7 @@ test('it is a mix of narration and speech, in prose',()=>{
 
 test('it covers the job, the school and you, in the words on file',()=>{
   const all=words.map(row=>row.text).join('\n'),has=text=>assert.ok(all.includes(text),text);
-  for(const text of['One clean minute of each, with nothing in it. No handling noise, no clothing, no breath.','If you can hear yourself on the take, the take is not the room, and we will not accept it.','The account remains open.','Demolition begins 06:00 Thursday.'])has(text);
+  for(const text of['One clean minute of each, with nothing in it. No handling noise, no clothing, no breath.','If you can hear yourself on the take, the take is not the room, and we will not accept it.','The account remains open.','Demolition begins 06:00 Thursday.','W. Ellery Holdings'])has(text);
   for(const text of['MISSING','We will not play over what happened.','NO REPLY FILED','Cause of death: not entered on this copy.','Refusal to rehearse is not a medical finding.'])has(text);
   // Every ending's way in is there, and asking about each is optional.
   for(const id of['f-home','f-seal','f-help','f-door','f-carry','f-bench']){assert.ok(nodes.fate.choices.some(row=>row.goto===id&&row.hideWhenAsked),id);assert.equal(nodes[id].goto,'fate');assert.equal(nodes[id].fate,true);}
@@ -136,6 +208,7 @@ test('the picture: the void first, the school while the school is spoken of, the
   for(const id of['ellery','school','boy','notice','roll'])assert.ok(k[id].eye[1]<3,id+' is at eye level');
   for(const id of['fate3','fate4','fate5','fate6','last','gone'])assert.ok(k[id].eye[1]>55,id);
   assert.equal(nodes.ellery.stage,'ellery');assert.equal(k.ellery.rain,1);assert.equal(k.dark.rain,0);
+  assert.ok(Object.values(k).every(pose=>pose.moon===0),'the opening reserves its image for the creature; the competing moon belongs to Source III');
   assert.ok(k.ellery.seconds>=20,'it goes to look: it does not drop');
   for(const id of ids)if(nodes[id].stage&&nodes[id].stage!=='fate')assert.ok(k[nodes[id].stage],id);
   assert.equal(k.last.shut,24);assert.equal(k.gone.veil,1);assert.equal(k.gone.music,0);
@@ -222,7 +295,7 @@ test('wiring: first run only, never in the loop, and no lens in the ordinary nig
   for(const condition of['owed&&','!options.god','!sixLoopActive()',"!params().has('noprologue')",'!getSave().openingArrival?.drive','openingVehiclePending('])assert.ok(gate.includes(condition),condition);
   assert.ok(main.includes('R3.r3dSetSourceRestHorizon?.(horizon)'));
   assert.ok(scene.includes('makeColdOpenScene('),'the game\'s own conversation and picker');
-  assert.equal((r3d.match(/runSourceRestHorizonPass\(\);/g)||[]).length,2,'Source, and the one world call that does nothing unless a frame is set');
+  assert.equal((r3d.match(/runSourceRestHorizonPass\(\);/g)||[]).length,3,'Source, physical drive, and the world call; each does nothing unless a frame is set');
   assert.ok(/function runSourceRestHorizonPass\(\)\{\s*sourceRestHorizonStatus\.drawn=false;\s*if\(!sourceRestHorizon\|\|/.test(r3d));
   // Spectral print stays Source's, but for a horizon that names its stock, and the real one does not.
   assert.ok(r3d.includes("if(!blueprintRecording&&sourceRestHorizon?.finish)gl.uniform1f(pixelMeshU('uSourceFinish')"));

@@ -17,7 +17,7 @@ test('every existing Source-II support plane owns a fixed address, including int
   for(const surface of continuationSurfaces()){
     const at={chartId:surface.chartId??0,feet:surface.y,phase:surface.region};
     const loop=captureContinuationVoidLoop(at);
-    if(surface.region==='catch')assert.equal(loop,null,surface.id);
+    if(surface.region==='catch')assert.equal(loop?.domainId,'source-iii-void:catch',surface.id);
     else {
       const domain=continuationVoidDomain(loop);
       assert.ok(domain,`unmapped floor: ${surface.id}`);
@@ -173,9 +173,75 @@ test('real receiving support wins and a long-lived dimensional fall never become
   assert.equal(continuationBallisticStep(airborne,.01,{chartId:0}).void,false);
 });
 
-test('Catch remains its authored receiving fall and has no Source-II address law',()=>{
-  assert.equal(captureContinuationVoidLoop({chartId:0,feet:8.4,phase:'catch'}),null);
-  const fall={x:-190,z:-110,feet:-30,vx:0,vz:0,vy:-8,elapsed:20,unsupported:true,fromPhase:'catch',voidLoop:null};
+test('Catch uses the same fixed address law over its real exposed top crescent',()=>{
+  const loop=captureContinuationVoidLoop({chartId:0,feet:-30.6,phase:'catch'}),d=continuationVoidDomain(loop);
+  assert.equal(d.id,'source-iii-void:catch');assert.ok(d.periodX>0&&d.periodZ>0);
+  for(let i=0;i<=6;i++)for(let j=0;j<=6;j++){
+    const x=d.minX+d.periodX*i/6,z=d.minZ+d.periodZ*j/6;
+    assert.match(continuationSupportAt(x,z,{chartId:0,feet:d.elevation}).id,/catch-0-case-crescent/);
+    for(let y=0;y<=8;y++)assert.ok(continuationFreeBody({x,z,feet:d.elevation+1.8*y/8},{chartId:0,elapsed:0,doorOpen:{},doorMotion:{}}));
+  }
+  const fall={x:-190,z:-112,feet:d.exitFeetY-.01,vx:3.2,vz:-2.1,vy:-28,elapsed:20,chartId:0,fromPhase:'catch',voidLoop:loop};
   const r=continuationBallisticStep(fall,.01,{chartId:0});
-  assert.equal(r.wraps.length,0);assert.equal(r.void,true);
+  assert.equal(r.wraps.length,1);assert.equal(r.void,false);assert.equal(fall.vx,3.2);assert.equal(fall.vz,-2.1);
+  assert.equal(r.wraps[0].after.phase,'catch');assert.equal(r.wraps[0].before.phase,'catch');
+});
+
+test('Source III arbitrary missed catches return through real top support without capture, grace or surrendering momentum',()=>{
+  const d=continuationVoidDomain('source-iii-void:catch');
+  for(const [x,z,vx,vz] of [[-190,-112,3.2,-2.1],[-143,-72,-3,1.7],[-210,-92,0,3.2],[-172,-120,-2,0]]){
+    const fresh=freshSourceContinuation({runId:'iii-physical-gluing'}),fall={x,z,feet:d.exitFeetY+.04,chartId:0,level:5,vx,vz,vy:-27,
+      elapsed:6,fromPhase:'catch',fromLevel:5,trigger:'step-off',unsupported:true,groundedExit:true,
+      lastSupport:{x:-170,z:-95,feet:-24.6,phase:'catch',level:5,chartId:0},voidLoop:captureContinuationVoidLoop({phase:'catch'})};
+    let state=normalizeSourceContinuation({...fresh,status:'active',phase:'catch',...fall,fall,grace:0,hush:{...fresh.hush,active:false}}),wrapped=null;
+    const events=[];
+    for(let n=0;n<300&&(!wrapped||state.fall);n++){
+      const result=tick(state);state=result.state;events.push(...result.events);
+      if(result.events.some(e=>e.type==='space-wrap'))wrapped=clone(state);
+    }
+    assert.ok(wrapped);assert.equal(state.fall,null);assert.equal(state.phase,'catch');assert.equal(state.level,0);close(state.feet,d.elevation);
+    close(wrapped.fall.vx,vx);close(wrapped.fall.vz,vz);assert.equal(state.recovery,null);assert.equal(state.grace,0);
+    assert.equal(events.some(e=>['capture','recovered','contact','return'].includes(e.type)),false);
+    assert.equal(sourceContinuationFrame(state).blackoutAlpha,0);
+    assert.deepEqual(normalizeSourceContinuation(clone(wrapped)),wrapped,'mid-seam save preserves the same III trajectory');
+    assert.deepEqual(tick(normalizeSourceContinuation(clone(wrapped))),tick(wrapped));
+    for(const gate of [{paused:true},{renderReady:false}])assert.deepEqual(tick(wrapped,{...gate,dt:.25}).state,wrapped);
+  }
+});
+
+test('Source III HUSH inherits the same fixed address and cannot be stranded outside the cascade',()=>{
+  const d=continuationVoidDomain('source-iii-void:catch'),at={x:-190,z:-112,feet:d.exitFeetY+.01,chartId:0,phase:'catch',level:5},
+    loop=captureContinuationVoidLoop({phase:'catch'}),fall={...at,vx:3.2,vz:-2.1,vy:-27,elapsed:6,unsupported:true,fromPhase:'catch',
+      trigger:'step-off',lastSupport:{x:-170,z:-95,feet:-24.6,chartId:0,phase:'catch'},voidLoop:loop},
+    actor=normalizeContinuationHush({...freshContinuationHush(at),mode:'falling',armed:true,warningAnnounced:true,trail:[],fall}),
+    expected={...fall},events=[];
+  continuationBallisticStep(expected,C.fixedStep,{chartId:0});
+  advanceContinuationHush(actor,{dt:C.fixedStep,player:{x:-162,z:-92,feet:8.4,chartId:0,phase:'catch',elapsed:20,doorOpen:{},doorMotion:{}},events});
+  assert.equal(actor.lastSpaceWrap.domainId,d.id);close(actor.x,expected.x);close(actor.z,expected.z);close(actor.feet,expected.feet);
+  assert.equal(actor.lastSpaceWrap.after.phase,'catch');assert.equal(actor.recovery,null);
+  for(let n=0;n<120&&actor.fall;n++)advanceContinuationHush(actor,{dt:C.fixedStep,
+    player:{x:-162,z:-92,feet:8.4,chartId:0,phase:'catch',elapsed:20,doorOpen:{},doorMotion:{}},events});
+  assert.equal(actor.fall,null);assert.equal(actor.phase,'catch');close(actor.feet,d.elevation);assert.equal(actor.active,true);
+  assert.ok(events.some(e=>e.type==='hush-land'));assert.equal(events.some(e=>e.type==='hush-recovery'),false);
+});
+
+test('a normal unmarked outer-edge miss and its pursuing HUSH both complete the III loop on their own routes',()=>{
+  const a=.45,r=12.47,x=C.catch.center.x+Math.cos(a)*r,z=C.catch.center.z+Math.sin(a)*r;
+  let state=freshSourceContinuation({runId:'iii-shared-pursuit'});
+  state=normalizeSourceContinuation({...state,status:'active',phase:'catch',x,z,feet:2.4,level:1,grace:0,
+    lastSafe:{x,z,feet:2.4,phase:'catch',level:1,chartId:0,yaw:0,pitch:0},
+    hush:{...state.hush,active:true,armed:true,warningAnnounced:true,notice:0,phase:'catch',level:1,
+      x:x-Math.cos(a)*2,z:z-Math.sin(a)*2,feet:2.4,mode:'follow',trail:[],arrival:{stage:'seen',elapsed:20}}});
+  const events=[];let dropped=false,followed=false;
+  for(let n=0;n<2200&&!followed;n++){
+    const result=tick(state,!dropped?{side:Math.cos(a),forward:-Math.sin(a)}:{});state=result.state;events.push(...result.events);
+    if(state.fall)dropped=true;
+    followed=events.some(e=>e.type==='hush-space-wrap')&&!state.hush.fall;
+  }
+  assert.ok(dropped&&followed);assert.equal(state.fall,null);assert.equal(state.hush.fall,null);
+  assert.equal(state.level,0);assert.equal(state.hush.level,0);assert.equal(state.feet,8.4);assert.equal(state.hush.feet,8.4);
+  for(const type of ['drop','hush-drop','space-wrap','hush-space-wrap','land','hush-land'])assert.equal(events.filter(e=>e.type===type).length,1,type);
+  assert.equal(state.hush.mode,'follow');assert.equal(state.hush.active,true);assert.equal(state.grace,0);
+  assert.equal(state.completed,false);assert.equal(state.handoff,false);assert.equal(state.status,'active');
+  assert.equal(events.some(e=>['capture','hush-recovery','recovered','contact','return','handoff'].includes(e.type)),false);
 });

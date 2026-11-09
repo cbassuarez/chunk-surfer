@@ -100,7 +100,7 @@ const inspectionFrom = (route,id) => {
   const ledger=PROPS.allProps().find(p=>p.id==='box-office-ledger');
   assert.equal(FP.floorAt(ledger.rx,ledger.ry),0,'the ledger is supported on its own room floor');
   assert.deepEqual([ledger.wallContact?.nx,ledger.wallContact?.ny],[0,-1],'the ledger mounts on the south wall inward face');
-  assert.ok(Math.abs(ledger.interactionY-11.95)<.00001,'the mounted ledger sits against the south wall instead of inside masonry');
+  assert.ok(Math.abs(ledger.interactionY-10.95)<.00001,'the mounted ledger sits against the south wall instead of inside masonry');
   FP.setDoorOpen('foh-office',false);
 }
 

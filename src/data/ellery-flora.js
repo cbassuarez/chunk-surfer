@@ -11,12 +11,14 @@ const freeze=Object.freeze;
 
 const footprint=(w,d,h)=>freeze({w,d,h,blocks:false});
 export const ELLERY_FLORA_MESHES=freeze({
+  vegetation_chrysanthemum_clump:footprint(1.15,1.05,.50),vegetation_chrysanthemum_clump_flowers:footprint(1.15,1.05,.50),
   vegetation_daisy_drift:footprint(1.3,1.0,.26),vegetation_daisy_drift_petals:footprint(1.3,1.0,.26),vegetation_daisy_drift_eyes:footprint(1.3,1.0,.26),
   vegetation_dandelions:footprint(.9,.8,.24),vegetation_dandelions_heads:footprint(.9,.8,.24),
   vegetation_clover_mat:footprint(1.2,1.0,.12),vegetation_clover_mat_flowers:footprint(1.2,1.0,.12),
 });
 // A plant's leaves, and whichever parts of it flower. Only the flowers get any light.
 export const FLORA_PARTS=freeze({
+  vegetation_chrysanthemum_clump:freeze([freeze({mesh:'vegetation_chrysanthemum_clump_flowers',emissive:freeze([1,.82,.48,.48])})]),
   vegetation_daisy_drift:freeze([freeze({mesh:'vegetation_daisy_drift_petals',emissive:freeze([1,.98,.92,1.05])}),freeze({mesh:'vegetation_daisy_drift_eyes',emissive:freeze([1,.68,.06,1])})]),
   vegetation_dandelions:freeze([freeze({mesh:'vegetation_dandelions_heads',emissive:freeze([1,.68,.05,.9])})]),
   vegetation_clover_mat:freeze([freeze({mesh:'vegetation_clover_mat_flowers',emissive:freeze([.9,.72,.8,.6])})]),

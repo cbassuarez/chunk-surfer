@@ -265,11 +265,26 @@ test('F near the box asks the host to pick the keepsake up', async () => {
   let picked = 0;
   const { scene, overlays } = await make({ checkpoint: checkpoint({ pose: { ...layout.spawn, z: 1 } }), onPickUp: () => { picked++; return true; } });
   scene.render();
-  assert.equal(overlays.at(-1).ui.pickup, 'F · PICK UP THE BOX');
+  assert.equal(overlays.at(-1).ui.pickup, null, 'pickup remains physical without explanatory Source HUD text');
   scene.key({ key: 'f' });
   assert.equal(picked, 1);
   // E still reads the note, untouched by the pickup seam.
   scene.key({ key: 'e' }); assert.equal(scene.view().noteOpen, true);
   scene.key({ key: 'f' }); assert.equal(picked, 1, 'pickup is blocked while the note is open');
   scene.exit();
+});
+
+test('handled melody retains the existing receipt while untouched wind, rattle and unmonitored handling cannot earn it',async()=>{
+ const receipts=[],{scene}=await make({checkpoint:checkpoint({pose:{...layout.spawn,z:1}}),onRecording:value=>{receipts.push(value);return true;}});
+ const melody={audibleSeconds:.25,recordingOffset:1,sourceReady:true,audioRunning:true,recorderHeld:true};
+ assert.equal(scene.hearHandledBox(melody),false,'ordinary world play cannot inject a handling receipt');
+ scene.pause();
+ for(let i=0;i<40;i++)scene.hearHandledBox({...melody,recorderHeld:false});
+ assert.equal(scene.serialize().listenedSeconds,0);
+ for(let i=0;i<40;i++)scene.hearHandledBox({...melody,audioRunning:false});
+ assert.equal(scene.serialize().listenedSeconds,0,'rattle and recoil are not melodic evidence');
+ for(let i=0;i<36;i++)scene.hearHandledBox({...melody,recordingOffset:(i+1)*.25});
+ assert.equal(scene.serialize().listenedSeconds,9);assert.equal(scene.serialize().recordingHeard,true);assert.equal(receipts.length,1);
+ assert.equal(scene.serialize().recordingReceipt.delivered,true);assert.deepEqual(scene.serialize().returnPose,returnPose);
+ scene.resume();assert.equal(scene.view().recorderHeld,true);scene.exit();
 });

@@ -55,13 +55,13 @@
         {
           "id": "OPENING_CAB_MUSIC_BOX_LINES.l0",
           "who": "text",
-          "text": "Dark wood, a brass key in the side, the lid shut. Clair de lune: the first eight bars, then the spring runs out.",
+          "text": "Cream case, a little rubbed at the corners. Debussy on the front; a brass winding key on the dark back plate. Clair de lune.",
           "source": "src/data/opening-cab-objects.js:35"
         },
         {
           "id": "OPENING_CAB_MUSIC_BOX_LINES.l1",
           "who": "text",
-          "text": "Lyle gave it to you before his big piano break. So you’d have something to remember him by.",
+          "text": "Lyle — one of the pianists — gave it to you before his big break. So you’d have something to remember him by.",
           "source": "src/data/opening-cab-objects.js:35"
         }
       ],

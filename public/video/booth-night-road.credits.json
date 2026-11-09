@@ -1,0 +1,35 @@
+{
+  "id": "booth-night-road",
+  "creator": "Chunk Surfer project",
+  "rights": "Project-owned rendered gameplay footage; no external broadcast or football recording used",
+  "source": "artifacts/source-drive-study/evolution/native/landscape-and-reverse.webm",
+  "sourceSHA256": "10677629758edcd98232c7a064324103b5299fa817119e6e2a553326c72eb25d",
+  "path": "public/video/booth-night-road.mp4",
+  "sha256": "1843af71e14fab889cda8fcd6e2301f6ebf6a051b60eb7135d90b0a4da15fce4",
+  "bytes": 926319,
+  "excerpt": {
+    "startSeconds": 6,
+    "durationSeconds": 18,
+    "crop": [
+      180,
+      160,
+      640,
+      480
+    ]
+  },
+  "output": {
+    "width": 320,
+    "height": 240,
+    "fps": 15,
+    "audio": false,
+    "loop": "hard source boundary, ordinary television programme"
+  },
+  "modifications": [
+    "Remove all audio",
+    "Tight windshield crop removes steering wheel, dashboard readouts and external UI",
+    "Area reduction with0.5px average prevents source dither becoming isolated dashboard-like sparks",
+    "Gentle midtone lift gamma1.25 brightness0.035 contrast0.95 for tiny real-world CRT readability",
+    "Resize to320x24015fps; bounded400kbit/s programme encode",
+    "Runtime phosphor tint and scanlines; existing world dither/depth apply"
+  ]
+}

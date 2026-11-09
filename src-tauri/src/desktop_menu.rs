@@ -22,6 +22,11 @@ fn reset_window(app: &AppHandle) {
 }
 
 pub fn install(app: &mut App) -> tauri::Result<()> {
+    // Games do not carry a window menu. macOS puts this in the system menu bar
+    // at the top of the screen, which is invisible in the frame; Windows and
+    // Linux draw an app menu *inside* the window, over the game. Only macOS
+    // installs it. The same actions are on the in-game menu and shortcuts.
+    if !cfg!(target_os = "macos") { return Ok(()); }
     let about = MenuItemBuilder::with_id("about", "About Chunk Surfer").build(app)?;
     let preferences = MenuItemBuilder::with_id("preferences", "Preferences…")
         .accelerator("CmdOrCtrl+,")

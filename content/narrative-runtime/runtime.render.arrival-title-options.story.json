@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.render.arrival-title-options",
+  "title": "Runtime · render/arrival-title-options.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "arrivalTitleOptionFrame",
+  "entries": [
+    "arrivalTitleOptionFrame"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/render/arrival-title-options.js",
+  "notes": "Generated from src/render/arrival-title-options.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "arrivalTitleOptionFrame": {
+      "id": "arrivalTitleOptionFrame",
+      "type": "line",
+      "lines": [
+        {
+          "id": "arrivalTitleOptionFrame.l0",
+          "who": "label",
+          "text": "01",
+          "source": "src/render/arrival-title-options.js:24"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l1",
+          "who": "label",
+          "text": "CHUNK",
+          "source": "src/render/arrival-title-options.js:25"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l2",
+          "who": "label",
+          "text": "SURFER",
+          "source": "src/render/arrival-title-options.js:26"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l3",
+          "who": "label",
+          "text": "ELLERY / NIGHT ONE",
+          "source": "src/render/arrival-title-options.js:27"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l4",
+          "who": "label",
+          "text": "CHUNK SURFER",
+          "source": "src/render/arrival-title-options.js:33"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l5",
+          "who": "label",
+          "text": "ELLERY",
+          "source": "src/render/arrival-title-options.js:34"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l6",
+          "who": "label",
+          "text": "4417-C",
+          "source": "src/render/arrival-title-options.js:35"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l7",
+          "who": "label",
+          "text": "CHUNK SURFER",
+          "source": "src/render/arrival-title-options.js:56"
+        },
+        {
+          "id": "arrivalTitleOptionFrame.l8",
+          "who": "label",
+          "text": "01   /   4417-C",
+          "source": "src/render/arrival-title-options.js:59"
+        }
+      ],
+      "source": "src/render/arrival-title-options.js:24"
+    }
+  }
+}

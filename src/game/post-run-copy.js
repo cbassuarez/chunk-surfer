@@ -121,8 +121,8 @@ export const HUSH_COPY = Object.freeze({
 
 export const TRANSFER_ROOM_COPY = Object.freeze({
   open: Object.freeze({
-    short: 'THE FILE IS OPEN.',
-    body: 'Read what you carried out, beside what the company already had on it.',
+    short: 'WALK THE FIELDS AGAIN.',
+    body: 'Enter the night’s fields, reach for their doors, and return without changing the night. Media plates are listed separately.',
   }),
   empty: Object.freeze({
     short: 'NOTHING FILED YET.',
@@ -130,9 +130,10 @@ export const TRANSFER_ROOM_COPY = Object.freeze({
   }),
 });
 
-export function transferRoomCopy({ filed = 0 } = {}) {
-  const entry = filed > 0 ? TRANSFER_ROOM_COPY.open : TRANSFER_ROOM_COPY.empty;
-  return { ...entry, enabled: filed > 0 };
+export function transferRoomCopy({ filed = 0, unlocked = false } = {}) {
+  const enabled=filed>0||unlocked;
+  const entry = enabled ? TRANSFER_ROOM_COPY.open : TRANSFER_ROOM_COPY.empty;
+  return { ...entry, enabled };
 }
 
 export function endingHintForEnding(endingId) {

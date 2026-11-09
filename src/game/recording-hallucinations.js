@@ -1,4 +1,5 @@
 import { APPARITION_POSE_IDS } from './apparition-director.js';
+import {recordingScareAllowed} from './recording-scare-policy.js';
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 const HALLUCINATION_KINDS = Object.freeze(['peripheral', 'doorway', 'apparition-return', 'hard']);
@@ -169,7 +170,11 @@ export function recordingHallucinationEligibility({
   hushPressure = 0,
   effectiveMicRms = 0,
   spoilThreshold = 0.06,
+  roomId = null,
+  inB3 = false,
+  scareFamily = null,
 } = {}) {
+  if (!recordingScareAllowed({roomId,inB3,scareFamily},'hallucinations')) return {eligible:false,reason:'take-family'};
   if (!recording || stalled || tutorial) return { eligible: false, reason: 'inactive' };
   // Reduce Dread damps spikes, never bodies. FLASH / STROBE off is what removes
   // these, because their reveal is a glitch.

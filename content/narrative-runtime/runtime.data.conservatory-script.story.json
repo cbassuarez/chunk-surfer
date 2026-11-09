@@ -931,72 +931,66 @@
       "lines": [
         {
           "id": "guestLines.l0",
-          "who": "surfer",
-          "text": "...{value}?",
-          "source": "src/data/conservatory-script.js:1517"
-        },
-        {
-          "id": "guestLines.l1",
           "who": "you",
           "text": "I said that name in a room with nobody in it.",
           "source": "src/data/conservatory-script.js:1518"
         },
         {
-          "id": "guestLines.l2",
+          "id": "guestLines.l1",
           "who": "surfer",
           "text": "Nobody is expecting you.",
           "source": "src/data/conservatory-script.js:1525"
         },
         {
-          "id": "guestLines.l3",
+          "id": "guestLines.l2",
           "who": "you",
           "text": "That is my sentence. That is my sentence with the ends taken off.",
           "source": "src/data/conservatory-script.js:1526"
         },
         {
-          "id": "guestLines.l4",
+          "id": "guestLines.l3",
           "who": "surfer",
           "text": "You finish, and you thank it.",
           "source": "src/data/conservatory-script.js:1533"
         },
         {
-          "id": "guestLines.l5",
+          "id": "guestLines.l4",
           "who": "direction",
           "text": "And again, four seconds later, at exactly the same level.",
           "source": "src/data/conservatory-script.js:1534"
         },
         {
-          "id": "guestLines.l6",
+          "id": "guestLines.l5",
           "who": "you",
           "text": "A voice in a room is never the same twice.",
           "source": "src/data/conservatory-script.js:1535"
         },
         {
-          "id": "guestLines.l7",
+          "id": "guestLines.l6",
           "who": "recordist",
           "text": "Take four. Clean.",
           "source": "src/data/conservatory-script.js:1542"
         },
         {
-          "id": "guestLines.l8",
+          "id": "guestLines.l7",
           "who": "recordist",
           "text": "Take four. Clean.",
           "source": "src/data/conservatory-script.js:1543"
         },
         {
-          "id": "guestLines.l9",
+          "id": "guestLines.l8",
           "who": "recordist",
           "text": "Take four. Clean.",
           "source": "src/data/conservatory-script.js:1544"
         },
         {
-          "id": "guestLines.l10",
+          "id": "guestLines.l9",
           "who": "you",
           "text": "Minus forty-one. Three times. Not one decibel between them.",
           "source": "src/data/conservatory-script.js:1545"
         }
       ],
-      "source": "src/data/conservatory-script.js:1517"
+      "source": "src/data/conservatory-script.js:1518"
     },
     "LOST_LINE.recorder": {
       "id": "LOST_LINE.recorder",
@@ -1355,7 +1349,8 @@
           "source": "src/data/conservatory-script.js:1777"
         }
       ],
-      "source": "src/data/conservatory-script.js:1776"
+      "source": "src/data/conservatory-script.js:1776",
+      "targetName": "start"
     },
     "rigCheckNodes.count": {
       "id": "rigCheckNodes.count",
@@ -1380,7 +1375,8 @@
           "source": "src/data/conservatory-script.js:1786"
         }
       ],
-      "source": "src/data/conservatory-script.js:1784"
+      "source": "src/data/conservatory-script.js:1784",
+      "targetName": "start"
     },
     "rigCheckNodes.crew": {
       "id": "rigCheckNodes.crew",
@@ -1399,7 +1395,8 @@
           "source": "src/data/conservatory-script.js:1794"
         }
       ],
-      "source": "src/data/conservatory-script.js:1793"
+      "source": "src/data/conservatory-script.js:1793",
+      "targetName": "start"
     },
     "rigCheckNodes.machine": {
       "id": "rigCheckNodes.machine",
@@ -1424,7 +1421,8 @@
           "source": "src/data/conservatory-script.js:1805"
         }
       ],
-      "source": "src/data/conservatory-script.js:1803"
+      "source": "src/data/conservatory-script.js:1803",
+      "targetName": "start"
     },
     "rigCheckNodes.ears": {
       "id": "rigCheckNodes.ears",
@@ -1449,7 +1447,8 @@
           "source": "src/data/conservatory-script.js:1814"
         }
       ],
-      "source": "src/data/conservatory-script.js:1812"
+      "source": "src/data/conservatory-script.js:1812",
+      "targetName": "start"
     },
     "rigCheckNodes.power": {
       "id": "rigCheckNodes.power",
@@ -1474,7 +1473,8 @@
           "source": "src/data/conservatory-script.js:1823"
         }
       ],
-      "source": "src/data/conservatory-script.js:1821"
+      "source": "src/data/conservatory-script.js:1821",
+      "targetName": "start"
     },
     "rigCheckNodes.fork": {
       "id": "rigCheckNodes.fork",
@@ -1493,7 +1493,8 @@
           "source": "src/data/conservatory-script.js:1832"
         }
       ],
-      "source": "src/data/conservatory-script.js:1831"
+      "source": "src/data/conservatory-script.js:1831",
+      "targetName": "start"
     },
     "rigCheckNodes.bent": {
       "id": "rigCheckNodes.bent",
@@ -1512,7 +1513,8 @@
           "source": "src/data/conservatory-script.js:1840"
         }
       ],
-      "source": "src/data/conservatory-script.js:1839"
+      "source": "src/data/conservatory-script.js:1839",
+      "targetName": "start"
     },
     "rigCheckNodes.radio": {
       "id": "rigCheckNodes.radio",
@@ -1531,7 +1533,8 @@
           "source": "src/data/conservatory-script.js:1848"
         }
       ],
-      "source": "src/data/conservatory-script.js:1847"
+      "source": "src/data/conservatory-script.js:1847",
+      "targetName": "start"
     },
     "rigCheckNodes.voice": {
       "id": "rigCheckNodes.voice",
@@ -1562,7 +1565,8 @@
           "source": "src/data/conservatory-script.js:1861"
         }
       ],
-      "source": "src/data/conservatory-script.js:1859"
+      "source": "src/data/conservatory-script.js:1859",
+      "goto": "rigCheckNodes.voice.back"
     },
     "rigCheckNodes.voice.back": {
       "id": "rigCheckNodes.voice.back",
@@ -1593,7 +1597,8 @@
           "source": "src/data/conservatory-script.js:1873"
         }
       ],
-      "source": "src/data/conservatory-script.js:1868"
+      "source": "src/data/conservatory-script.js:1868",
+      "targetName": "start"
     }
   }
 }

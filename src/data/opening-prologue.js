@@ -22,7 +22,7 @@ const steps=[
   ['woken',{seconds:4,wheels:[.3,0,0],open:2}],
   ['inner',{seconds:7,wheels:[1,0,0],open:8,eye:[88.3,61.8,-7.7]}],
   ['middle',{seconds:7,wheels:[1,.8,0],open:16,eye:[88.8,61.5,-7.2]}],
-  ['whole',{seconds:9,wheels:[1,1,1],open:24,moon:1,eye:[90,61,-6]}],
+  ['whole',{seconds:9,wheels:[1,1,1],open:24,moon:0,eye:[90,61,-6]}],
   ['ellery',{seconds:26,hole:[80,10,-16],eye:[64,1.4,-40],target:[80,8,-6],rain:1,music:.8}],
   ['school',{seconds:14,eye:[63,1.4,-42]}],
   ['boy',{seconds:9,shut:1,eye:[64,1.6,-39],target:[80,8,-7]}],
@@ -40,8 +40,8 @@ const steps=[
 ];
 const keyed={};let running=null;
 for(const[id,change]of steps){running={...running,...change};keyed[id]=running;}
-// The optional interval has its own poses. It can return to the same question
-// without advancing the filed history's eye-count or inheriting a later fall.
+// The first chosen act, including refusal, has its own poses. None borrows the
+// filed history's eye-count or inherits a later fall.
 Object.assign(keyed,{
   interval:{...keyed.whole,seconds:7,eye:[90,62,-6],target:[80,70.5,-16],radius:1.15},
   counted:{...keyed.whole,seconds:5,eye:[89,63,-7],radius:1.2,shut:23},
@@ -52,6 +52,8 @@ Object.assign(keyed,{
   released:{...keyed.whole,seconds:5,eye:[91,62,-5],radius:1.1,shut:0},
   averted:{...keyed.whole,seconds:6,eye:[90,62,-6],target:[103,61,5],radius:1.15},
   margin:{...keyed.roll,seconds:8,eye:[69,2.3,-31],target:[80,9,-10],radius:1.15},
+  kept:{...keyed.whole,seconds:7,eye:[86,65,-10],target:[80,70.5,-16],radius:1.2,shut:1},
+  refused:{...keyed.whole,seconds:4,shut:1},
 });
 
 const line=(who,text,extra={})=>({who,text,voice:false,say:false,...extra});
@@ -91,11 +93,11 @@ const nodes={
   ],goto:'look'},
   quiet:{stage:'inner',lines:[
     d('You say nothing. You are good at it. It is on your invoice.'),
-    o('Oh, you are the new one. Good. Do not start talking now, you would only have to stop again at the door.'),
+    o('Good. Do not start talking now. You would only have to stop again at the door.'),
   ],goto:'look'},
   // ── the interval ─────────────────────────────────────────────────────────────
   look:{stage:'interval',lines:[
-    d('You can see it now, or it has let you. A hole in nothing, and round it three wheels that have torn away from one another and gone on turning. The wheels are full of eyes.'),
+    d('Three wheels have torn away from one another and gone on turning, round a hole in nothing. The wheels are full of eyes.'),
     o('Before the job. Shall we see what you can keep still?'),
   ],revisitLines:[
     d('Your hands have not moved. The eyes have.'),
@@ -105,54 +107,64 @@ const nodes={
     ask('I\'m keeping my hands on the wheel.','interval-wheel'),
     action('(look away)','interval-avert'),
     {...mum('interval-silent'),hideWhenAsked:true},
-    say('Ask me about the job.','job'),
+    action('(refuse the test)','interval-refuse'),
   ]},
+  'interval-refuse':{stage:'refused',openingAct:'refuse',lines:[
+    y('No. I am not doing a test for you.'),
+    o('Of course not. Keep your hands where you want them. I will keep mine.'),
+    d('One eye shuts. The wheels go on turning.'),
+    o('There. That is an answer too.'),
+  ],goto:'kept'},
   'interval-eyes':{stage:'counted',lines:[
     y('What am I looking at?'),
     o('I do not think I am on your side of that question.'),
     d('You count twenty-four eyes. Twenty-three close. The last seems nearer than the wheel that carries it.'),
     o('There. One each. I will not look away if you do not.'),
   ],choices:[say('You first.','interval-first'),mum('interval-meet','(hold its gaze)')]},
-  'interval-first':{stage:'unseen',lines:[
+  'interval-first':{stage:'unseen',openingAct:'refuse',lines:[
     y('You first.'),
     o('Oh, I can.'),
     d('The last eye goes dark. You still feel watched from exactly there.'),
     o('Now what were you going to do about the job?'),
-  ],goto:'look'},
-  'interval-meet':{stage:'near',lines:[
+  ],goto:'kept'},
+  'interval-meet':{stage:'near',openingAct:'gaze',lines:[
     d('For a moment there is no room to look beside it. Your own eye begins to water.'),
     o('You can hold a look. Good. A minute is longer than that.'),
-  ],goto:'look'},
+  ],goto:'kept'},
   'interval-wheel':{stage:'grip',lines:[
     y('I\'m keeping my hands on the wheel.'),
     d('You can still feel the seam under your thumb. The thumb is steady. The seam makes one complete turn.'),
     o('Keep the hands. They are yours. The position is the doubtful part.'),
   ],choices:[mum('interval-hold','(tighten your grip)'),mum('interval-release','(open your hands)')]},
-  'interval-hold':{stage:'held',lines:[
+  'interval-hold':{stage:'held',openingAct:'grip',lines:[
     d('Three eyes close, one after another. The seam stops moving. You have not moved your hands.'),
     o('That will do. You can keep a position. They will like that about you.'),
-  ],goto:'look'},
-  'interval-release':{stage:'released',lines:[
+  ],goto:'kept'},
+  'interval-release':{stage:'released',openingAct:'release',lines:[
     d('You spread your fingers. The seam stays against your thumb anyway.'),
     o('Excellent. You are not doing it, then.'),
-  ],goto:'look'},
+  ],goto:'kept'},
   'interval-avert':{stage:'averted',lines:[
     d('You turn from the wheels. The dark is exactly as deep on this side.'),
     o('Better? I can wait. The road cannot.'),
   ],choices:[mum('interval-wait','(keep looking away)'),mum('interval-return','(look back)')]},
-  'interval-wait':{stage:'averted',lines:[
+  'interval-wait':{stage:'averted',openingAct:'avert',lines:[
     d('You wait for something to arrive at the edge of your sight. Nothing does.'),
     o('You are remarkably good at this. Are you sure this is your first night?'),
-  ],goto:'look'},
-  'interval-return':{stage:'interval',lines:[
+  ],goto:'kept'},
+  'interval-return':{stage:'interval',openingAct:'return',lines:[
     d('The wheels are where you left them. You have the unpleasant thought that you have come back on a different side.'),
-  ],goto:'look'},
-  'interval-silent':{stage:'unseen',lines:[
+  ],goto:'kept'},
+  'interval-silent':{stage:'unseen',openingAct:'silence',lines:[
     d('You give it no answer. The eyes shut in order, as though a name is being read against each one.'),
     o('No. That was not empty. You were waiting for me to fill it.'),
     d('You stop waiting. You cannot tell whether that is different.'),
     o('Keep that one. You may need it in a room.'),
-  ],goto:'look'},
+  ],goto:'kept'},
+  kept:{stage:'kept',lines:[
+    d('The wheels go on turning. One eye has stayed shut. It does not open when you stop looking.'),
+    o('There. You have changed the view. You can do that. The job will require rather more of you.'),
+  ],goto:'job'},
   // ── the job ──────────────────────────────────────────────────────────────────
   job:{stage:'whole',lines:[
     y('Ask me about the job.'),
@@ -172,37 +184,37 @@ const nodes={
     o('It is a lovely job. They ring a man who does not ask, and he does not ask. That is why they have your number.'),
   ],goto:'job-sheet'},
   'job-sheet':{stage:'whole',lines:[
-    d('The sheet is on the passenger seat, or it was. Ellery Conservatoire of Music, condemned. One night. Demolition begins 06:00 Thursday. Bring a light.'),
+    d('The sheet is on the passenger seat. Ellery Conservatoire of Music, condemned. Demolition begins 06:00 Thursday. Bring a light.'),
     d('One clean minute of each, with nothing in it. No handling noise, no clothing, no breath.'),
     o('No breath! Read me the next bit. I could hear it all night. I do.'),
     d('If you can hear yourself on the take, the take is not the room, and we will not accept it.'),
     o('Who wants a minute of an empty room, do you suppose?'),
-  ],choices:[say('The client. W. Ellery Holdings.','client'),say('I don\'t ask.','no-ask')]},
+  ],goto:'last-one'},
   client:{stage:'whole',lines:[
-    y('The client. W. Ellery Holdings.'),
-    o('And who signed for them?'),
+    y('Who signed for W. Ellery Holdings?'),
+    o('A good question.'),
     d('The signature is illegible. The authorising officer\'s field is blank under every carbon.'),
     o('There. Now you have asked, and it cost you nothing. It is a very old firm.'),
-  ],goto:'last-one'},
+  ],goto:'file'},
   'no-ask':{stage:'whole',lines:[
     y('I don\'t ask.'),
     o('No. Neither did the last one.'),
-  ],goto:'last-one'},
+  ],goto:'file'},
   'last-one':{stage:'whole',lines:[
     d('The prior contractor delivered four accepted room tones. The packet was settled for four. The account remains open.'),
-  ],choices:[say('What happened to the fifth?','fifth'),say('What happened to him?','him'),say('Not my problem.','not-mine')]},
+  ],goto:'ellery'},
   fifth:{stage:'whole',lines:[
     y('What happened to the fifth?'),
     o('It is still undelivered. It is a very patient invoice. "When five clean minutes are received, the account is satisfied." That is the one sentence on the sheet I would call sincere.'),
-  ],goto:'ellery'},
+  ],goto:'file'},
   him:{stage:'whole',lines:[
     y('What happened to him?'),
     o('He is nearly finished. Ask him. He has been nearly finished for some time.'),
-  ],goto:'ellery'},
+  ],goto:'file'},
   'not-mine':{stage:'whole',lines:[
     y('Not my problem.'),
     o('No. It is your job. There is a difference, and you have about eight hours to find out what it is.'),
-  ],goto:'ellery'},
+  ],goto:'file'},
   // ── the school ───────────────────────────────────────────────────────────────
   ellery:{stage:'ellery',lines:[
     o('You have not asked what it was. They never do. Have a look.'),
@@ -210,6 +222,25 @@ const nodes={
     o('Public baths, to begin with. 1912, blue tile, people went in to get clean. Then a school bought the baths, and the pub, and half the street.'),
     o('It never stopped being about getting clean.'),
   ],choices:[say('What kind of school?','school'),say('Did you go there?','attended'),mum('school-quiet')]},
+  // The short account belongs to the encounter. Details remain a voluntary
+  // inquiry, and every answer comes back here without reciting that account.
+  file:{stage:'school',lines:[
+    o('There is more on the file. You can ask, or leave it there.'),
+  ],revisitLines:[o('What else?')],choices:[
+    ask('Who signed for the client?','client'),ask('What happened to the fifth room?','fifth'),
+    ask('What happened to the last recordist?','him'),ask('What happened to the boy?','boy'),
+    ask('What was his name?','boy-name'),ask('What happened in the tower?','tower'),
+    ask('I don\'t ask.','no-ask'),ask('Not my problem.','not-mine'),
+    say('What does that leave me to hear?','hearing'),
+  ]},
+  hearing:{stage:'notice',lines:[
+    y('What does that leave me to hear?'),
+    o('By midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of.'),
+  ],goto:'margin'},
+  'hearing-quiet':{stage:'notice',lines:[
+    d('You say nothing. The notice has not been answered. Your work order has.'),
+    o('Five clean minutes. You see the difficulty.'),
+  ],goto:'margin'},
   school:{stage:'school',lines:[y('What kind of school?')],goto:'school-told'},
   attended:{stage:'school',lines:[
     y('Did you go there?'),
@@ -217,36 +248,42 @@ const nodes={
   ],goto:'school-told'},
   'school-quiet':{stage:'school',lines:[d('You keep quiet. It tells you anyway.')],goto:'school-told'},
   'school-told':{stage:'school',lines:[
-    o('They take a child who can hear, and they correct it. Reference listening. The same bar, the same recording, the same small fault. Again. Again.'),
+    o('They take a child who can hear, and correct it. Reference listening. The same bar, the same small fault. Again. Again.'),
     o('Until you can hear a wrong note through a wall, in your sleep, in your mother saying your name.'),
     d('You have worked with people who came out of Ellery. They flinch at fridges.'),
-    o('One of them got very good. That is how it starts. He could hear everything. And one term he stopped coming down to lessons.'),
-  ],choices:[say('What happened to him?','boy'),say('What was his name?','boy-name')]},
+    o('One got very good. He could hear everything. Then he stopped coming down to lessons.'),
+  ],goto:'coverup'},
+  coverup:{stage:'boy',lines:[
+    o('The boy was recovered from a chamber room upstairs. The public register still calls him missing.'),
+    d('Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: not attached.'),
+    o('The others knew. They would not play over it.'),
+  ],goto:'notice'},
   'boy-name':{stage:'school',lines:[
     y('What was his name?'),
     o('Now that is a question. Nobody asks it. It is the only thing in that building still correctly filed, and you will not get it from me.'),
-  ],goto:'boy-told'},
-  boy:{stage:'school',lines:[y('What happened to him?')],goto:'boy-told'},
+  ],goto:'file'},
+  boy:{stage:'school',lines:[y('What happened to the boy?')],goto:'boy-told'},
   'boy-told':{stage:'boy',lines:[
     o('He is missing. Look, it says so.'),
     d('The public register says MISSING, in a clean hand.'),
     o('The body is a separate matter. They took that out of a chamber room on the third floor.'),
     d('Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: not attached.'),
     o('And the others knew. They are musicians. You cannot hide a missing boy from people who can hear which floor he is not on.'),
-  ],goto:'notice'},
+  ],goto:'file'},
   notice:{stage:'notice',lines:[
     d('A notice went up. It is the one clear thing anybody there ever wrote down.'),
     d('Acknowledge that his body was recovered here. Until that acknowledgment is made, we will not rehearse or perform. We will not play over what happened.'),
-  ],choices:[say('Good for them.','good'),say('What did the school say?','office')]},
+    d('RECEIVED BY THE OFFICE. NO REPLY FILED.'),
+  ],choices:[say('Good for them.','good'),say('What did the school say?','office'),
+    say('What else is in the file?','file'),say('What does that leave me to hear?','hearing'),mum('hearing-quiet')]},
   good:{stage:'notice',lines:[
     y('Good for them.'),
     o('Is it not? Every room in the place silent, for the first time since it opened. You have no idea how lovely that was.'),
-  ],goto:'tower'},
+  ],goto:'file'},
   office:{stage:'notice',lines:[
     y('What did the school say?'),
-    d('RECEIVED BY THE OFFICE. NO REPLY FILED.'),
     o('They are still not answering. It is the longest piece anyone has ever performed there.'),
-  ],goto:'tower'},
+  ],goto:'file'},
   tower:{stage:'roll',lines:[
     o('So nobody played. Some stopped eating. And some went up the tower, to the ringing room, where it is quiet.'),
     d('Transfer receipts. Students\' bodies, removed from the ringing room. The names checked against the register.'),
@@ -258,17 +295,17 @@ const nodes={
     o('Look at me. I am a hole. I have never so much as lifted a bow.'),
     y('That isn\'t a no.'),
     o('No, it is not. They told me you were cheap. They did not say you were quick.'),
-  ],goto:'margin'},
+  ],goto:'file'},
   why:{stage:'roll',lines:[
     y('Why are you telling me?'),
     o('Because by midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of.'),
-  ],goto:'margin'},
+  ],goto:'file'},
   'tower-quiet':{stage:'roll',lines:[
     d('You say nothing. You have a professional reason.'),
     o('That is it. That is exactly what they all did. You will fit right in.'),
-  ],goto:'margin'},
+  ],goto:'file'},
   margin:{stage:'margin',lines:[
-    d('The school tips by a few degrees. Your hands have corrected for a bend you cannot see.'),
+    d('The school tips. Your hands have corrected for a bend you cannot see.'),
     o('Good. You are still driving.'),
     o('Do you want me to put the next bit back where it was?'),
   ],choices:[say('What next bit?','margin-next'),say('Leave the road alone.','margin-road'),mum('margin-quiet')]},
@@ -303,13 +340,13 @@ const nodes={
   'f-home':{...back,lines:[
     y('I\'ll finish the job and go home.'),
     o('You might! A car park. Morning. Nothing wrong with the light at all. A cup of coffee the guard gave you, gone cold.'),
-    o('Then you listen back to your five clean minutes, and you hear what is on them, and somebody in an office tells you it was the coffee.'),
-    o('Believe them, if you like. Say you slept through all of it. I would let you.'),
+    o('You might listen back. Five clean minutes. Perhaps there is something on them. Perhaps you have just learned to hear it.'),
+    o('A perfectly ordinary morning. I would hate to be the one who made you doubt it.'),
   ]},
   'f-seal':{...back,lines:[
     y('Then I stop whatever this is.'),
-    o('You can. There is a screen in the chapel. You put your hand on it, you finish what he could not say, and you keep your hand there.'),
-    o('It closes. It works, even. You are on the inside of it when it does, and the last thing to go out is your own torch.'),
+    o('You might. Suppose it closes. Suppose it works, even. People do like a job that stays done.'),
+    o('You would be on the inside, mind. Your own torch would be the last thing to go out.'),
   ]},
   'f-help':{...back,lines:[
     y('Somebody will help me.'),
@@ -323,12 +360,12 @@ const nodes={
   ]},
   'f-carry':{...back,lines:[
     y('I could get the last one out.'),
-    o('You would, too. On your back, down the service road, into the morning, the two of you.'),
+    o('You would, too. Down the service road, into the morning, the two of you.'),
     o('He will thank you. Do listen to who is doing the thanking.'),
   ]},
   'f-bench':{...back,lines:[
     y('I could just stop, and listen.'),
-    o('There is a bench. I would like that. There is a piece I want you to hear. You are hearing it now, and you have not asked.'),
+    o('There is a bench. I would like that. There is a piece I want you to hear.'),
     o('You sit. It holds your weight. There is no waking up farther along the corridor, and you will not mind as much as you should.'),
   ]},
   'f-none':{stage:'last',lines:[
@@ -342,9 +379,9 @@ const nodes={
     o('It is. You have a bend coming up.'),
   ],goto:'off'},
   off:{stage:'last',lines:[
-    o('Last thing. When you are in there, with the red light on and the needle sat at nothing: hold your breath.'),
+    o('Last thing. In there, with the red light on and the needle at nothing: hold your breath.'),
     o('You will want the practice.'),
-    d('With all the eyes shut, the hole is the only thing that still seems to be looking.'),
+    d('All the eyes shut. The hole still seems to be looking.'),
     o('When it gets quiet, do not hurry to be the next thing in it.'),
   ],goto:'wipers'},
   wipers:{stage:'gone',lines:[
@@ -354,10 +391,25 @@ const nodes={
   ],goto:'card'},
   card:{stage:'gone',card:['21:38','DEMOLITION 06:00','8 HOURS REMAIN'],seconds:6.5,lines:[line('direction','',{signalRole:'unattributed'})]},
 };
+// Meaning and legacy pose names are separate. The connected camera/score can
+// follow the conversation's intent without an optional file answer at 'whole'
+// sending the observer back above the building. All existing pose keys remain
+// available to independent tools and reduced-motion presentation.
+const semanticPhases={
+  road:['start'],
+  recognition:['there','who','driving','quiet','look','interval-refuse','interval-eyes','interval-first','interval-meet',
+    'interval-wheel','interval-hold','interval-release','interval-avert','interval-wait','interval-return','interval-silent',
+    'kept','job','job-rooms','job-money','job-just','job-sheet','last-one'],
+  ellery:['client','no-ask','fifth','him','not-mine','ellery','file','hearing','hearing-quiet','school','attended',
+    'school-quiet','school-told','coverup','boy-name','boy','boy-told','notice','good','office','tower','did','why','tower-quiet'],
+  personal:['margin','margin-next','margin-road','margin-quiet','fate','f-home','f-seal','f-help','f-door','f-carry','f-bench','f-none','f-enough','off'],
+  return:['wipers','card'],
+};
+for(const[semanticPhase,ids]of Object.entries(semanticPhases))for(const id of ids)nodes[id].semanticPhase=semanticPhase;
 // The text-review and replay systems know a line by its source id.
 for(const[id,node]of Object.entries(nodes))for(const[collection,rows]of[['line',node.lines],['return',node.revisitLines||[]]])rows.forEach((row,k)=>{row.sourceId=`opening-prologue:${id}:${collection}:${k}`;});
 
-export const OPENING_PROLOGUE=freeze({version:4,propRange:320,entry:'start',signalRole:'unattributed',keys:keyed,nodes});
+export const OPENING_PROLOGUE=freeze({version:6,propRange:320,entry:'start',signalRole:'unattributed',keys:keyed,nodes});
 
 const POSITIONS=new Set(['eye','target','hole']),SKIP=new Set(['seconds']);
 function between(from,to,t,reducedMotion){

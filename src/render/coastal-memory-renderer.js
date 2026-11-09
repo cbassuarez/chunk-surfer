@@ -16,7 +16,7 @@ import {stepWindLeaves,windLeafProps} from '../world/wind-leaves.js';
 import {VAN_WRECK,VAN_WRECK_ASSET} from '../data/van-wreck.js';
 import {windVector} from '../world/wind.js';
 
-const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_shingle_beach','cm_beach_boulder_0','cm_beach_boulder_1','cm_beach_boulder_2','cm_beach_boulder_3','cm_driftwood','cm_wrack_strand','cm_van_hubcap','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_damp_note','cm_distant_pier','cm_music_box_cylinder','cm_music_box_gear','cm_music_box_live_tine','cm_music_box_key','cm_music_box_fan','cm_van_bumper','cm_van_headlamp','cm_van_panel_shard_0','cm_van_panel_shard_1','cm_van_panel_shard_2'];
+const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_shingle_beach','cm_beach_boulder_0','cm_beach_boulder_1','cm_beach_boulder_2','cm_beach_boulder_3','cm_driftwood','cm_wrack_strand','cm_van_hubcap','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_broken_music_box_key','cm_damp_note','cm_distant_pier','cm_van_bumper','cm_van_headlamp','cm_van_panel_shard_0','cm_van_panel_shard_1','cm_van_panel_shard_2'];
 const vanMeshes=['drive_vehicle_body','drive_cabin'];
 const vanBrandMeshes=[VAN_BRAND_FITS.drive.mesh];
 const wreckMeshes=Object.values(VAN_WRECK.meshes);
@@ -27,7 +27,7 @@ export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotio
  const pose=frame.localPose||frame.pose||L.spawn,time=finite(frame.elapsed),eye=coastalWorldPoint([pose.x,pose.feet+1.62,pose.z]);
  const yaw=finite(pose.yaw)+Math.atan2(COASTAL_WORLD_FROM_LOCAL[2],COASTAL_WORLD_FROM_LOCAL[0]),pitch=finite(pose.pitch);
  const hands=frame.hands?.handling?{handling:true,winding:frame.hands.winding,
-   heldLocal:coastalHandsHeldLocal({eye,yaw,pitch,boxPose:frame.hands.boxPose,shake:frame.hands.shakeLevel,worldFromLocal:COASTAL_WORLD_FROM_LOCAL})}:null;
+   heldLocal:frame.hands.heldLocal?.length===16&&frame.hands.heldLocal.every(Number.isFinite)?frame.hands.heldLocal:coastalHandsHeldLocal({eye,yaw,pitch,boxPose:frame.hands.boxPose,shake:frame.hands.shakeLevel,worldFromLocal:COASTAL_WORLD_FROM_LOCAL})}:null;
  const scene=makeCoastalMemoryScene({timeSec:reducedMotion?0:time,musicBoxTime:finite(frame.recordingOffset,time),includeWreck:true,mode:'foot',vehicleMetrics,hands});
  const level=clamp(frame.wreckLightLevel??0),lights=[],pierShadow=pose.z>=68;
  for(const prop of scene.props)if(prop.id==='coastal-sunken-same-van')prop.fixturePower=level;

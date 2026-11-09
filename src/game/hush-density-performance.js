@@ -23,7 +23,7 @@ export function normalizeHushDensityPose(value) {
   if (!value || value.version !== HUSH_DENSITY_VERSION) return null;
   return { version: HUSH_DENSITY_VERSION, phase: clamp(value.phase, 0, HUSH_DENSITY_LIMITS.maxPhase),
     rate: clamp(value.rate, 0, HUSH_DENSITY_LIMITS.maxCyclesPerSecond),
-    traction: clamp(value.traction), compression: clamp(value.compression), retained: clamp(value.retained),
+    traction: clamp(value.traction), drive: clamp(value.drive), compression: clamp(value.compression), retained: clamp(value.retained),
     attention: clamp(value.attention, -HUSH_DENSITY_LIMITS.attentionRadians, HUSH_DENSITY_LIMITS.attentionRadians, 0),
     event: events.includes(value.event) ? value.event : 'still', eventTime: clamp(value.eventTime, 0, 30),
     listening: value.listening === true, blocked: value.blocked === true,
@@ -52,6 +52,10 @@ export function stepHushDensityPose(previous, {
   next.rate = reducedMotion ? 0 : represented / elapsed;
   next.residualDragMps = Math.max(0, speed - next.rate * HUSH_DENSITY_LIMITS.cycleMetres);
   next.traction = reducedMotion ? old.traction : follow(old.traction, moving ? 1 : 0, elapsed, moving ? .12 : .28);
+  // Chase posture follows accepted speed with finite loading/release. It does
+  // not spend a new travel phase or snap back when the collider stops.
+  next.drive = reducedMotion ? old.drive : follow(old.drive, moving ? smooth((speed - .65) / 1.65) : 0,
+    elapsed, moving ? .16 : .24);
   next.retained = blocked ? Math.max(.86, old.retained) : moving
     ? Math.max(.22, old.retained * Math.exp(-travel / .55)) : old.retained;
   const compressionTarget = blocked ? .98 : loading ? .45 + clamp(loadProgress) * .43
@@ -84,7 +88,7 @@ export function interpolateHushDensityPose(first, second, amount) {
   if (!a || !b || a.seed !== b.seed || a.event !== b.event || a.listening !== b.listening || a.blocked !== b.blocked
     || b.phase < a.phase || b.eventTime < a.eventTime) return copy(t < .5 ? a : b);
   const out = copy(a);
-  for (const key of ['phase', 'rate', 'traction', 'compression', 'retained', 'attention', 'eventTime', 'residualDragMps']) {
+  for (const key of ['phase', 'rate', 'traction', 'drive', 'compression', 'retained', 'attention', 'eventTime', 'residualDragMps']) {
     out[key] = a[key] + (b[key] - a[key]) * t;
   }
   return normalizeHushDensityPose(out);
@@ -109,22 +113,41 @@ function rotation(x, y, z) {
     cx * cy * sz + sx * sy * cz, cx * cy * cz - sx * sy * sz];
 }
 
+// A travelling capture, finite hold and unpeeling release. A wrapped phase
+// supplies continuity across a cycle; this is not perpetual time-based sway.
+export function hushDensityTravelPacket(phase, offset = 0, duration = .56) {
+  const u = ((finite(phase) - finite(offset)) % 1 + 1) % 1;
+  const length = clamp(duration, .01, .99);
+  if (u >= length) return 0;
+  const t = u / length;
+  return t < .24 ? smooth(t / .24) : t < .54 ? 1 : 1 - smooth((t - .54) / .46);
+}
+
 export function hushDensityCharacter(performance = {}, { reducedMotion = performance.reducedMotion === true } = {}) {
-  const d = hushDensityFromCaptured(performance), phase = d.phase * Math.PI * 2;
+  const d = hushDensityFromCaptured(performance);
   const character = { clip: 'pressure_approach', time: d.phase * 2.4, loop: true };
-  if (!reducedMotion && ['notice', 'blocked', 'settle'].includes(d.event)) {
+  if (!reducedMotion && d.drive > .000001) character.blend = {
+    clip: 'density_chase', time: d.phase * 2.4, loop: true, weight: d.drive * .78,
+  };
+  // The renderer supports two clip layers. Release the captured chase load
+  // before admitting the finite response, rather than replacing a large chase
+  // weight with an unrelated settling pose on the first stopped frame.
+  if (!reducedMotion && d.drive < .05 && ['notice', 'blocked', 'settle'].includes(d.event)) {
     const length = d.event === 'notice' ? 4.8 : 6.4, age = clamp(d.eventTime, 0, length);
-    const weight = smooth(age / .24) * smooth((length - age) / .36) * (d.event === 'notice' ? .72 : .48);
+    const weight = smooth(age / .24) * smooth((length - age) / .36)
+      * smooth((.05 - d.drive) / .05) * (d.event === 'notice' ? .72 : .48);
     if (weight > .000001) character.blend = { clip: d.event === 'notice' ? 'density_listen' : 'density_idle',
       time: age, loop: false, weight };
   }
   const joints = {};
-  for (const [fold, offset, side] of [['A', .7, -1], ['B', 2.4, 0], ['C', 4.6, 1]]) for (let station = 1; station <= 5; station++) {
+  for (const [fold, offset, side] of [['A', .22, -1], ['B', 0, 0], ['C', .48, 1]]) for (let station = 1; station <= 5; station++) {
     const distal = (station / 5) ** 2;
     // Travelling articulation rides the accepted-displacement wave. Distal
     // folds curl before their heavier attachment catches up; the unequal
     // residue is material motion, never another root or a footstep cycle.
-    const curl = reducedMotion ? 0 : Math.sin(phase - station * .84 + offset + (d.seed % 31) * .013) * d.traction * .80;
+    const arrival = offset + (1 - station / 5) * .27;
+    const curl = reducedMotion ? 0 : (hushDensityTravelPacket(d.phase, arrival)
+      - .25 * hushDensityTravelPacket(d.phase, arrival + .30, .40)) * d.traction * .42;
     joints[`fold_${fold}_${station}`] = {
       rotation: rotation(curl * .20 * distal, d.attention * .12 * distal,
         (side * d.compression * .10 + curl * .08) * distal),

@@ -38,6 +38,34 @@ export function floraGeometry(){
   if(library)return library;
   const rows=[];
   {
+    // Compact autumn border mums: branching leafy stems and dense, nested
+    // incurved petals. Their domed heads read differently from the low daisies.
+    const random=rng(67),green=group(),flower=group();
+    for(let k=0;k<7;k++){
+      const a=k/7*TAU+.2,d=k===0?0:.19+random()*.19,x=Math.cos(a)*d,z=Math.sin(a)*d*.85,h=.28+random()*.15;
+      stem(green,x,z,h,.012);rosette(green,x,z,.17,7,random);
+      for(const t of[.36,.62]){
+        const sign=k%2?1:-1;
+        quad(green,[x,h*t,z],[x+sign*.075,h*t+.065,z-.03],
+          [x+sign*.14,h*t+.045,z+.015],[x+sign*.055,h*t-.012,z+.035]);
+      }
+      const r=.085+random()*.025,turn=random()*TAU;
+      for(let layer=0;layer<3;layer++){
+        const count=16-layer*3,radius=r*(1-layer*.24),rise=layer*.020;
+        const at=(angle,distance,lift)=>[x+.012+Math.cos(angle)*distance,
+          h+rise-Math.sin(angle)*distance*.45+lift,z+Math.sin(angle)*distance];
+        for(let p=0;p<count;p++){
+          const angle=turn+p/count*TAU+layer*.27,w=TAU/count*.37;
+          quad(flower,at(angle-w,radius*.16,.004),at(angle+w,radius*.16,.004),
+            at(angle+w,radius*.68,.018),at(angle-w,radius*.68,.018));
+          tri(flower,at(angle-w,radius*.68,.018),at(angle+w,radius*.68,.018),at(angle,radius,.006));
+        }
+      }
+    }
+    rows.push(row('vegetation_chrysanthemum_clump',green,[.09,.16,.065],[.006,.011,.004]),
+      row('vegetation_chrysanthemum_clump_flowers',flower,[.78,.64,.34],[.44,.33,.12]));
+  }
+  {
     const random=rng(21),petal=group(),disc=group(),green=group();
     for(let k=0;k<9;k++){
       const a=random()*TAU,d=Math.sqrt(random())*.6,x=Math.cos(a)*d,z=Math.sin(a)*d*.8,h=.08+random()*.16;
@@ -68,7 +96,7 @@ export function floraGeometry(){
   }
   library=Object.freeze(rows);return library;
 }
-export const FLORA_MESH_NAMES=Object.freeze(['vegetation_daisy_drift','vegetation_daisy_drift_petals','vegetation_daisy_drift_eyes','vegetation_dandelions','vegetation_dandelions_heads','vegetation_clover_mat','vegetation_clover_mat_flowers']);
+export const FLORA_MESH_NAMES=Object.freeze(['vegetation_daisy_drift','vegetation_daisy_drift_petals','vegetation_daisy_drift_eyes','vegetation_dandelions','vegetation_dandelions_heads','vegetation_clover_mat','vegetation_clover_mat_flowers','vegetation_chrysanthemum_clump','vegetation_chrysanthemum_clump_flowers']);
 function payload(item){
   const count=item.i.length,positions=new Float32Array(count*3),normals=new Float32Array(count*3),uvs=new Float32Array(count*2);
   for(let k=0;k<count;k+=3){

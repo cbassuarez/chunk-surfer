@@ -1,6 +1,8 @@
 import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { loadProject, saveDocument, subscribeToChanges } from './api';
+import { mergeRuntimeDocuments } from './runtime-refresh.js';
+import {storyMatchesSearch,storySearchNode} from './story-search.js';
 import { StoryComposer } from './StoryComposer';
 import { StoryInspector } from './StoryInspector';
 import { StoryPreview } from './StoryPreview';
@@ -86,9 +88,25 @@ export function App() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
-  useEffect(() => subscribeToChanges((event) => {
-    setExternalChanges((current) => new Set(current).add(event.path));
-  }), []);
+  useEffect(() => {
+    let disposed=false,refresh=0;
+    const unsubscribe=subscribeToChanges((event) => {
+      if(event.type==='runtime-export-failed'){
+        setStatus(`Dialogue refresh failed: ${event.message || 'check the studio terminal'}`);return;
+      }
+      if(event.type==='runtime-refresh'){
+        const requested=++refresh;
+        loadProject().then((loaded)=>{
+          if(disposed||requested!==refresh)return;
+          setSnapshot((current)=>mergeRuntimeDocuments(current,loaded));
+          setStatus(`Dialogue refreshed · ${loaded.documents.filter(item=>item.readOnly).length} modules from the game code`);
+        }).catch((error)=>{if(!disposed)setStatus(`Dialogue refresh failed: ${error instanceof Error?error.message:String(error)}`);});
+        return;
+      }
+      if(event.path)setExternalChanges((current) => new Set(current).add(event.path));
+    });
+    return()=>{disposed=true;unsubscribe();};
+  }, []);
 
   const envelope = snapshot?.documents.find((item) => item.document.id === selectedDocumentId) || null;
   const document = envelope?.document || null;
@@ -249,11 +267,8 @@ export function App() {
   const openCue = (cueId: string, switchTab = false) => { setSelectedCueId(cueId); if (switchTab) setTab('audio'); };
   // Authored documents first, then the dialogue still written in code. Search
   // reaches into the lines themselves, so any sentence the game says is findable.
-  const visibleDocuments = useMemo(() => (snapshot?.documents || []).filter((item) => {
-    const q = search.toLowerCase(); if (!q) return true;
-    if (`${item.document.title} ${item.document.id} ${(item.document.tags || []).join(' ')}`.toLowerCase().includes(q)) return true;
-    return Object.values(item.document.nodes).some((node) => node.lines?.some((line) => (line.text || '').toLowerCase().includes(q)) || node.choices?.some((choice) => (choice.text || '').toLowerCase().includes(q)));
-  }).sort((a, b) => Number(!!a.readOnly) - Number(!!b.readOnly)), [snapshot?.documents, search]);
+  const visibleDocuments = useMemo(() => (snapshot?.documents || []).filter((item) => storyMatchesSearch(item,search))
+    .sort((a, b) => Number(!!a.readOnly) - Number(!!b.readOnly)), [snapshot?.documents, search]);
 
   if (!snapshot || !document || !audio || !media || !envelope) return <div className="loading"><div className="studio-mark">CS</div><p>{status}</p></div>;
   const saveDisabled = tab === 'story' ? !!envelope.readOnly || !dirtyStories.has(document.id) || !storyValidation.ok
@@ -277,16 +292,14 @@ export function App() {
 
     <WorkspaceErrorBoundary key={tab} onReset={() => { setSelectedNodeId(null); setPreviewOpen(false); setTab('timeline'); }}>
     <Suspense fallback={<div className="loading"><div className="studio-mark">CS</div><p>Loading workspace…</p></div>}>
-    {tab === 'timeline' ? <TimelineWorkspace project={snapshot.project} documents={authored} selectedDocumentId={document.id} onSelect={(id) => { const next = snapshot.documents.find((item) => item.document.id === id)?.document; setSelectedDocumentId(id); setSelectedNodeId(next?.entry || null); setStoryView('compose'); setTab('story'); }} />
+    {tab === 'timeline' ? <TimelineWorkspace project={snapshot.project} documents={snapshot.documents} selectedDocumentId={document.id} runtimeDocumentCount={snapshot.documents.length-authored.length} onBrowseRuntime={()=>{setSearch('runtime');setTab('story');}} onSelect={(id) => { const next = snapshot.documents.find((item) => item.document.id === id)?.document; setSearch('');setSelectedDocumentId(id); setSelectedNodeId(next?.entry || null); setStoryView('compose'); setTab('story'); }} />
     : tab === 'story' ? <div className={`story-workspace story-workspace--${storyView} ${previewOpen ? 'has-preview' : ''}`}>
       <aside className="story-browser">
         <div className="panel-heading"><span>STORY INDEX</span><strong>{authored.length} documents · {snapshot.documents.length - authored.length} from code</strong></div>
         <div className="story-view-switch"><button className={storyView === 'compose' ? 'is-active' : ''} onClick={() => setStoryView('compose')}>Compose</button><button className={storyView === 'map' ? 'is-active' : ''} onClick={() => setStoryView('map')}>Map</button></div>
-        <input className="search" placeholder="Search scenes, tags, endings" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <input className="search" placeholder="Search dialogue, scenes, choices" value={search} onChange={(event) => setSearch(event.target.value)} />
         <div className="story-list">{visibleDocuments.map((item) => <button key={item.document.id} className={item.document.id === document.id ? 'is-active' : ''} onClick={() => {
-          // Searching for a sentence opens the beat that says it.
-          const q = search.toLowerCase(), hit = q ? Object.values(item.document.nodes).find((node) => node.lines?.some((line) => (line.text || '').toLowerCase().includes(q)) || node.choices?.some((choice) => (choice.text || '').toLowerCase().includes(q))) : null;
-          setSelectedDocumentId(item.document.id); setSelectedNodeId(hit?.id || item.document.entry); setStoryView('compose'); }}>
+          setSelectedDocumentId(item.document.id); setSelectedNodeId(storySearchNode(item,search)); setStoryView('compose'); }}>
           <i style={{ background: item.document.regions.find((region) => region.kind === 'ending')?.color || item.document.regions[0]?.color }} />
           <span><b>{item.document.title}</b><small>{item.readOnly ? `${item.module} · read-only` : item.document.id} · {Object.keys(item.document.nodes).length} nodes</small></span>
           {dirtyStories.has(item.document.id) && <em>●</em>}

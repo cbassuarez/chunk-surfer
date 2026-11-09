@@ -20,9 +20,9 @@ def smooth(x):x=max(0,min(1,x));return x*x*(3-2*x)
 # Three unequal thick rolled volumes. Radii are measured cross-section axes,
 # not the width of an alpha ribbon. The center lobe lies forward of the others.
 PATHS={
- 'A':[[-.45,.06,.04,.1,.12],[-.48,.35,.06,.1,.12],[-.51,.72,.075,.1,.12],[-.49,1.06,.09,.1,.12],[-.41,1.31,.10,.1,.12],[-.33,1.41,.12,.1,.12]],
- 'B':[[-.02,.07,-.15,.1,.12],[.10,.43,-.17,.1,.12],[.10,.87,-.18,.1,.12],[.045,1.30,-.20,.1,.12],[.20,1.72,-.26,.1,.12],[.405,1.96,-.30,.1,.12]],
- 'C':[[.46,.06,.27,.1,.12],[.54,.30,.27,.1,.12],[.57,.60,.28,.1,.12],[.52,.88,.29,.1,.12],[.43,1.12,.29,.1,.12],[.35,1.24,.29,.1,.12]],
+ 'A':[[-.45,.06,.04,.1,.12],[-.49,.30,.07,.1,.12],[-.52,.65,.09,.1,.12],[-.48,.98,.10,.1,.12],[-.36,1.18,.08,.1,.12],[-.27,1.30,.06,.1,.12]],
+ 'B':[[-.02,.07,-.15,.1,.12],[.10,.38,-.17,.1,.12],[.08,.79,-.20,.1,.12],[.03,1.20,-.24,.1,.12],[.19,1.62,-.31,.1,.12],[.43,1.93,-.39,.1,.12]],
+ 'C':[[.46,.06,.27,.1,.12],[.55,.25,.27,.1,.12],[.57,.53,.27,.1,.12],[.49,.79,.26,.1,.12],[.37,.98,.24,.1,.12],[.27,1.11,.20,.1,.12]],
 }
 def catmull(rows,t):
  n=len(rows);u=max(0,min(n-1,t*(n-1)));i=min(n-2,int(u));u-=i
@@ -55,17 +55,28 @@ def solid_fold(name,profile,depth,half_thickness,bevel):
  for b,p in zip(spline.bezier_points,profile):b.co=(p[0],p[1],0);b.handle_left_type='AUTO';b.handle_right_type='AUTO'
  obj=bpy.data.objects.new(name,curve);bpy.context.collection.objects.link(obj);active(obj);bpy.ops.object.convert(target='MESH');obj=bpy.context.object
  for v in obj.data.vertices:
-  x,y,z=v.co;forward=-.12*smooth((y-1.35)/.65)if name=='fold_B'else 0
-  v.co=B((x,y,z+depth+forward))
+  x,y,z=v.co
+  # Broad cupped surfaces and a leading cantilever, not three parallel fronds.
+  # Both sides share the same coherent displacement: thickness stays solid.
+  if name=='fold_B':
+   forward=-.19*smooth((y-.90)/1.10)
+   dish=.065*math.exp(-((x-.13)/.19)**2-((y-1.02)/.48)**2)
+  elif name=='fold_A':
+   forward=.040*sin(y/1.40*pi)
+   dish=.035*math.exp(-((x+.46)/.15)**2-((y-.72)/.40)**2)
+  else:
+   forward=-.055*smooth((y-.45)/.70)
+   dish=-.035*math.exp(-((x-.64)/.17)**2-((y-.62)/.34)**2)
+  v.co=B((x,y,z+depth+forward+dish))
  return obj
 profiles={
- 'A':[[-.48,0],[-.60,.34],[-.62,.83],[-.55,1.23],[-.42,1.46],[-.24,1.36],[-.26,1.18],[-.39,1.10],[-.42,.79],[-.38,.43],[-.32,.16],[-.34,.035]],
- 'B':[[-.08,0],[.15,.085],[.285,.42],[.30,.77],[.18,1.14],[.20,1.44],[.37,1.70],[.59,1.90],[.49,2.05],[.21,1.99],[.02,1.74],[-.12,1.46],[-.13,1.12],[-.04,.82],[-.11,.43],[-.16,.15]],
- 'C':[[.44,.015],[.60,.25],[.64,.62],[.56,.98],[.41,1.28],[.28,1.27],[.29,1.09],[.43,.91],[.48,.61],[.42,.35],[.35,.12]],
+ 'A':[[-.48,0],[-.64,.26],[-.65,.73],[-.58,1.08],[-.43,1.31],[-.26,1.38],[-.21,1.24],[-.35,1.12],[-.43,.81],[-.39,.44],[-.30,.18],[-.34,.035]],
+ 'B':[[-.08,0],[.18,.07],[.30,.34],[.32,.71],[.15,1.05],[.18,1.34],[.31,1.59],[.52,1.80],[.57,1.95],[.41,2.05],[.18,1.96],[.02,1.69],[-.12,1.38],[-.17,1.04],[-.05,.74],[-.14,.40],[-.18,.15]],
+ 'C':[[.44,.015],[.63,.18],[.68,.50],[.60,.83],[.43,1.08],[.25,1.16],[.19,1.05],[.35,.85],[.44,.58],[.39,.32],[.31,.10]],
 }
 for row in PATHS['C']:row[0]+=.14
 for row in profiles['C']:row[0]+=.14
-objects=[solid_fold('fold_A',profiles['A'],.06,.065,.05),solid_fold('fold_B',profiles['B'],-.17,.075,.055),solid_fold('fold_C',profiles['C'],.29,.06,.045)]
+objects=[solid_fold('fold_A',profiles['A'],.06,.073,.048),solid_fold('fold_B',profiles['B'],-.17,.085,.052),solid_fold('fold_C',profiles['C'],.27,.055,.044)]
 base=loft('Low posterior load bridge',[[-.46,.055,.18,.080,.075],[-.18,.055,.19,.090,.085],[.15,.055,.20,.085,.080],[.61,.055,.24,.080,.075]],.1,40,48);objects.append(base)
 objects.append(loft('Low longitudinal root',[[-.025,.050,-.18,.075,.065],[.0,.050,-.045,.085,.065],[.02,.050,.12,.085,.065],[.035,.050,.21,.080,.065]],0,32,48))
 active(objects[0])
@@ -80,9 +91,8 @@ if tri>TRIANGLE_TARGET:
 bm=bmesh.new();bm.from_mesh(obj.data);bmesh.ops.triangulate(bm,faces=list(bm.faces));bmesh.ops.recalc_face_normals(bm,faces=bm.faces);bm.to_mesh(obj.data);bm.free();obj.data.update()
 for f in obj.data.polygons:f.use_smooth=True
 P=np.array([G(v.co)for v in obj.data.vertices])
-# Broad continuous concavity across the faces survives the negative contour;
-# these centimetre-scale bends are geometry, not a flat shaded silhouette.
-P[:,2]+=.045*np.sin(P[:,1]*2.4+P[:,0]*1.5)+.025*np.cos(P[:,0]*7.5-P[:,1]*.8)
+# Cupped faces and changing depth are authored into each solid fold before
+# remeshing. No generic sinusoidal displacement decorates the final surface.
 min0=P.min(0);max0=P.max(0)
 transform=np.array([(.90 if PRODUCTION else 1.25)/(max0[0]-min0[0]),2.05/(max0[1]-min0[1]),.70/(max0[2]-min0[2])])
 shift=np.array([(min0[0]+max0[0])*.5,min0[1],(min0[2]+max0[2])*.5]);P=(P-shift)*transform
@@ -183,6 +193,28 @@ def travelling_wave(u,idle=False):
    S[j,4]+=side*.080*trail
    S[j,5]+=side*.16*curl
  return S*smooth(u/.045)*(1-smooth((u-.90)/.10))
+def chase_wave(u):
+ # One forward-directed pressure phrase: the high leading fold commits first,
+ # then a broad lower load carries its delayed rear material. It never moves
+ # the root, invents a footstep, reaches through a collider or opens a mouth.
+ S=state()
+ for fi,name in enumerate(['B','A','C']):
+  for k in range(1,6):
+   f=k/5;j=joint_names.index('fold_'+name+'_'+str(k));delay=[0,.16,.34][fi]
+   reach=packet(u,.025+delay+(1-f)*.10,.42+delay+(1-f)*.10)*f
+   carry=packet(u,.23+delay*.35,.86+delay*.20)*f
+   brace=packet(u,.12+delay*.25,.62+delay*.18)*(1-f*.65)
+   if name=='B':
+    S[j,1]-=.045*reach+.020*brace
+    S[j,2]-=.075*reach-.020*carry
+    S[j,3]-=.12*reach
+   else:
+    side=-1 if name=='A'else 1
+    S[j,0]-=side*.036*brace
+    S[j,1]-=.025*brace
+    S[j,2]+=.025*brace-.025*carry
+    S[j,5]+=side*.065*carry
+ return S*smooth(u/.035)*(1-smooth((u-.91)/.09))
 def motion(name,t):
  if name in ['pressure_hold','pressure_idle']:return N.copy()
  if name in ['pressure_arrest','density_retained']:return R.copy()
@@ -203,6 +235,7 @@ def motion(name,t):
  if name in ['pressure_approach','pressure_limp']:
   u=t/(2.4 if name=='pressure_approach' else 3.4)
   return R+travelling_wave(u) if PRODUCTION else R+(L-R)*.55*correction(u*2.4,[.15,1.12])
+ if name=='density_chase':return R+travelling_wave(t/2.4)*.60+chase_wave(t/2.4)
  if name=='density_idle':return R+travelling_wave(t/6.4,True)
  if name=='density_turn':
   S=R.copy();u=t/1.2;v=sin(pi*u)**2
@@ -213,7 +246,7 @@ def motion(name,t):
 def motion_scales(name,t):
  out=np.ones((19,3))
  if not PRODUCTION:return out
- if name in['pressure_approach','pressure_limp']:u=t/(2.4 if name=='pressure_approach'else 3.4);gain=1
+ if name in['pressure_approach','pressure_limp','density_chase']:u=t/(3.4 if name=='pressure_limp'else 2.4);gain=1.10 if name=='density_chase'else 1
  elif name in['pressure_advance','pressure_pivot']:u=t/.72;gain=.75
  elif name=='density_turn':u=t/1.2;gain=.45
  elif name=='density_idle':u=t/6.4;gain=.28
@@ -227,7 +260,9 @@ def motion_scales(name,t):
    out[joint_names.index('fold_'+fold+'_'+str(k))]=[1+.12*bulge,1-.10*bulge,1+.16*bulge]
  return out
 DUR={'pressure_hold':1,'pressure_idle':9.6,'pressure_approach':2.4,'pressure_limp':3.4,'pressure_listen':4.8,'pressure_load':.5,'pressure_advance':.72,'pressure_arrest':1,'pressure_pivot':.72,'density_clamp':2.2,'density_retained':1,'density_release':1.5,'density_turn':1.2,'density_reload':.5,'density_listen':4.8}
-if PRODUCTION:DUR['density_idle']=6.4
+if PRODUCTION:
+ DUR.pop('density_turn') # Unused study turn replaced within the existing16-clip limit.
+ DUR.update({'density_idle':6.4,'density_chase':2.4})
 def quat(e):
  x,y,z=e*.5;cx,sx=cos(x),sin(x);cy,sy=cos(y),sin(y);cz,sz=cos(z),sin(z)
  return np.array([sx*cy*cz+cx*sy*sz,cx*sy*cz-sx*cy*sz,cx*cy*sz+sx*sy*cz,cx*cy*cz-sx*sy*sz])
@@ -349,6 +384,11 @@ if PRODUCTION:
   group=(i-1)//6;k=(i-1)%6;lo=1+group*6;hi=lo+5;tangent=JP[min(hi,i+1)]-JP[max(lo,i-1)];tangent/=max(1e-9,np.linalg.norm(tangent));curl_axis=np.cross(tangent,[0,0,-1]);curl_axis/=max(1e-9,np.linalg.norm(curl_axis))
   controls.append({'name':name,'fold':['A','B','C'][group],'station':k,'normalizedStation':k/5,'pivotM':JP[i].tolist(),'tangentAxis':tangent.tolist(),'curlAxis':curl_axis.tolist(),'splayAxis':[0,0,1],'rootPin':k==0,'suggestedSecondaryAdditive':{'rotationRadians':.085*(k/5),'translationM':.04*(k/5)},'meaning':'Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0.'})
  stats.update({'kind':'production-hush-density','globalReplacement':True,'asset':'public/assets/hush-density.glb','meshes':production_zones,'mesh':'hush_density_core / hush_density_return / hush_density_volume','geometryVertexBudgetMeaning':'Unique sculpt vertices and compact core/return/fullvolume exported entry vertices are both reported. Combined exported vertices<=50000.','rigControls':controls,'nativeWidthM':.90,'recommendedDefaultScale':[1,1,1],'runtimeWidthPolicy':'Do not reinterpret legacy actor.widthM=.68 as mandatory default squeeze. Door squeezing requires an observed clearance rule; ordinary default native width is .90m.','clips':DUR,'sourceHumanReferencePreserved':'public/assets/pressure-character.glb','idlePolicy':'density_idle is one finite6.4s asynchronous travelling packet,R→R. pressure_idle remains a static compatibility alias. Do not loop idle continuously or synchronize all folds.','locomotionPolicy':'pressure_approach/limp are closedR→R tip-capture→travellingcontraction→drag/release cycles, phase owned by accepted displacement and capped at2cycles/s. pressure_advance adds the same finite wave toL→R. No biped gait, foot IK or root translation.','productionCredit':'Entirely original procedural nonhuman geometry and authored spatial rig/curves. No MakeHuman geometry or human textures used.','limits':['Existing gameplay root/contact/hearing/audio contracts remain authoritative.','Global integration is authorized; native render, collision-clearance and human fear acceptance remain separate validation.','The base is root-relative traction, not world-planted feet.','Strong folds can intentionally overlap in depth; sampled strain is not proof of all-time self-collision absence.']})
+ stats['clipEndpoints'].pop('density_turn',None)
+ stats['clipEndpoints']['density_chase']='R→R, finite accepted-displacement launch/carry/reach phrase; no root travel'
+ stats['modelRevision']='density-raked-load-2'
+ stats['modelConstruction']='Three unequal solid cupped folds: low resisting brace, high forward-raked leading mass and shorter rear return; one continuous low load bridge and two open-ended channels. Same native rest envelope and root.'
+ stats['chasePhrase']='density_chase: finite distal commitment, broad lower loading, delayed rear carry and retained return; no baked root travel or additional contact reach.'
  stats['maximumSampledRadialEnvelopeM']=max_radial
  stats['nativeDimensionsM']={'width':.90,'height':2.05,'depth':.70}
  stats['authoredScaleRange']=[.90,1.16]

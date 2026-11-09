@@ -13,6 +13,7 @@ export const ITEM_PORTRAITS=Object.freeze({
   light:item('light',4.3),'tuning-fork':item('tuning-fork',4.5),coffee:item('coffee',2.9,{environmentIntensity:.75,exposure:1}),
   badge:item('badge',3.3),keyring:item('keyring',3.55),'chapel-key':item('chapel-key',3.45),
   'plant-spanner':item('plant-spanner',3.6),'marble-eyes':item('marble-eyes',4.1,{environmentIntensity:.75,exposure:.85}),'sheet-music':item('sheet-music',3.6),
+  'music-box':item('music-box',4.6,{environmentIntensity:.85,exposure:1}),
 });
 const ALIASES=Object.freeze({torch:'light',rig:'interface',fork:'tuning-fork',spanner:'plant-spanner',bust:'marble-eyes','key-c17':'chapel-key','standard-keyring':'keyring','recorder-headphones':'recorder','recorder-+-headphones':'recorder','the-guards-coffee':'coffee'});
 export function itemPortrait(value){

@@ -18,7 +18,7 @@ function body(source,name){
  assert.ok(end>start);return source.slice(start,end);
 }
 function fixture(){
- const calls=[],state={recording:true,progress:.90,spoiled:false,paused:false,focused:true,blocked:false,slating:false,stalled:false,assisted:false,light:false,tutorial:false,special:false,resident:false,takeId:'physical-take:1'},
+ const calls=[],state={recording:true,progress:.90,spoiled:false,paused:false,focused:true,blocked:false,slating:false,stalled:false,assisted:false,light:false,tutorial:false,special:false,resident:false,takeId:'physical-take:1',roomId:'amplifications',inB3:false,scareFamily:'hands'},
   controller=createRecordingEmbodiment(),settings={flash:'full',shake:'full',reduceDread:false};
  let resolve,loads=0;
  const h={console,Promise,Math,storyMode:true,usingSpecialSpace:()=>state.special,HUNTER,takeHunter:HUNTER.freshTakeHunter(),
@@ -28,7 +28,8 @@ function fixture(){
   PB:{takeFor:()=>({id:state.takeId}),finishTapeTake:()=>calls.push(['tape-seal'])},
   recordingEmbodiment:controller,recordingEmbodimentReady:false,recordingEmbodimentLoading:null,
   prewarmRecordingEmbodimentMeshes:()=>{loads++;return new Promise(r=>{resolve=value=>{state.resident=value;r(value);};});},R3:{},P3:{installAuthoredPropMeshes:()=>state.resident?['installed']:false},installRecordingEmbodimentMaterials,
-  takeRoom:'main_b3',currentWorld:()=> 'main_b3',getSave:()=>({settings}),TUT:{tutorialActive:()=>state.tutorial},
+  takeRoom:'amplifications',currentWorld:()=> 'amplifications',getSave:()=>({settings}),TUT:{tutorialActive:()=>state.tutorial},
+  recordingScareContext:()=>({roomId:state.roomId,inB3:state.inB3,scareFamily:state.scareFamily}),
   shakeMode:()=>settings.shake,paused:false,gameplayInputLifecycleActive:()=>state.focused,scenes:{blocksWorld:()=>state.blocked},
   cancelRecordingPressureAudio:()=>calls.push(['stop-pressure-audio']),recordingPressurePerformance:{reset:()=>calls.push(['reset-pressure'])},
   cancelControlScope:()=>{},liveRecordingPointerControls:new Map(),finishRecordingSlate:()=>{},LEVEL_CHECK_ROOM:'level-check',
@@ -89,6 +90,13 @@ test('actual main detects lost prop residency, clears unsafe instances, then rep
  const f=fixture();f.tick();await f.ready();for(let n=0;n<100;n++)f.tick();assert.ok(f.controller.snapshot().active);
  f.state.resident=false;f.tick();assert.equal(f.h.recordingEmbodimentReady,false);assert.equal(f.controller.snapshot().active,false);
  assert.equal(f.loads(),2);await f.ready();f.tick();assert.equal(f.controller.snapshot().active,false);assert.ok(f.controller.snapshot().proximity<.03);
+});
+test('actual main hook passes B3 and take-family exclusion through to the presentation without a release ghost',async()=>{
+ for(const blocked of[{roomId:'main_b3'},{inB3:true},{scareFamily:'hallucinations'},{scareFamily:'none'}]){
+  const f=fixture();f.tick();await f.ready();for(let n=0;n<100;n++)f.tick();assert.ok(f.controller.snapshot().active);
+  Object.assign(f.state,blocked);f.tick();assert.equal(f.controller.snapshot().active,false);
+  assert.equal(f.controller.snapshot().phase,'absent');assert.deepEqual(f.calls,[]);
+ }
 });
 test('actual recorder loop keeps the presentation tick outside recording and performs the post-STOP release',async()=>{
  const f=fixture();f.tick();await f.ready();for(let n=0;n<100;n++)f.tick();f.h.stopTake({silent:true});

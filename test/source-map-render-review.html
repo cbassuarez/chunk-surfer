@@ -1,0 +1,5 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><base href="/"><title>Source map production render review</title>
+<style>html,body{margin:0;height:100%;background:#121514;color:#eee;font:14px system-ui}header{height:70px;box-sizing:border-box;padding:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}button,select{font:inherit;padding:5px}#map{height:calc(100% - 70px);position:relative}output{font-variant-numeric:tabular-nums;max-width:700px}canvas.r3d{image-rendering:pixelated}</style></head>
+<body><header><label>Destination <select id="destination"></select></label><button id="load">Load destination</button><label>Look <select id="heading"><option value="0">North</option><option value="1.57079632679">East</option><option value="3.14159265359">South</option><option value="-1.57079632679">West</option></select></label><label><input type="checkbox" id="hold" checked> Hold position</label><output id="status">Choose a destination to inspect production geometry.</output></header><div id="map" tabindex="0"></div>
+<script type="module" src="/tools/chunk_surfer/source-map-render-review.js"></script></body></html>

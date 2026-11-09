@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SOURCE_CONTINUATION as C,continuationSurfaces,continuationSolids} from '../src/data/source-continuation.js';
+import {ARCHIPELAGO_ISLANDS} from '../src/data/source-continuation-archipelago.js';
 import {SOURCE_ISLANDS,sourceContinuationIslandGeometryLibrary,sourceContinuationIslandPlacements,sourceContinuationIslandProps,sourceContinuationIslandDiagnostics} from '../src/render/source-continuation-islands.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {sourceContinuationRenderFrame,SOURCE_CONTINUATION_ARCHITECTURE} from '../src/render/source-continuation-renderer.js';
@@ -40,15 +41,29 @@ test('no unreachable island enters built construction, or the stack view of the 
 
 test('every reachable island hangs on a root beneath its own deck',()=>{
   const roots=points(sourceContinuationIslandGeometryLibrary()['catch-island-roots-stone']);
-  for(const s of continuationSurfaces({phase:'catch'}).filter(s=>['island','seat-island','door-island'].includes(s.role))){
+  for(const s of continuationSurfaces({phase:'catch'}).filter(s=>!s.archipelago&&['island','seat-island','door-island'].includes(s.role))){
     const under=roots.filter(p=>p[0]>=s.minX-1e-6&&p[0]<=s.maxX+1e-6&&p[2]>=s.minZ-1e-6&&p[2]<=s.maxZ+1e-6);
     assert.ok(under.length>=8,s.id);
     assert.ok(Math.max(...under.map(p=>p[1]))<=s.y-(s.thickness??.35)+1e-6,`${s.id} root rises through its deck`);
     assert.ok(Math.min(...under.map(p=>p[1]))<s.y-6,`${s.id} root is too shallow to read`);
   }
+  const depths=[];
+  for(const island of ARCHIPELAGO_ISLANDS.filter(i=>!i.existing)){
+    const physical=continuationSolids({chartId:0}).filter(s=>s.archipelago&&s.islandId===island.id&&s.id.includes('-root-'));
+    assert.equal(physical.length,3,island.id+' has three actual bearing tiers');
+    for(const tier of physical){
+      assert.ok(tier.minX>=island.minX&&tier.maxX<=island.maxX&&tier.minZ>=island.minZ&&tier.maxZ<=island.maxZ,island.id+' root stays beneath its deck');
+      assert.ok(tier.maxY<=island.feet-.9+1e-6,island.id+' physical root never rises through the deck');
+    }
+    assert.ok(Math.min(...physical.map(s=>s.minY))<island.feet-6,island.id+' has a substantial hanging root');
+    const upper=physical.find(s=>s.id.endsWith('-root-0')),lower=physical.find(s=>s.id.endsWith('-root-2'));
+    assert.ok(lower.maxX-lower.minX<upper.maxX-upper.minX&&lower.maxZ-lower.minZ<upper.maxZ-upper.minZ,island.id+' root narrows below its bearing course');
+    depths.push(island.feet-Math.min(...physical.map(s=>s.minY)));
+  }
+  assert.equal(depths.length,14,'every new island has physical roots rather than duplicate decorative roots');
   const depth=role=>{const s=continuationSurfaces({phase:'catch'}).find(s=>s.role===role);
     return s.y-Math.min(...roots.filter(p=>p[0]>=s.minX&&p[0]<=s.maxX&&p[2]>=s.minZ&&p[2]<=s.maxZ).map(p=>p[1]));};
-  assert.ok(depth('door-island')>depth('island')*1.8,'the door island hangs deepest');
+  assert.ok(depth('door-island')>Math.max(...depths)*1.8,'the door island hangs deepest');
 });
 
 test('the universe belongs to the Catch frame only and sways slowly within the native budget',()=>{

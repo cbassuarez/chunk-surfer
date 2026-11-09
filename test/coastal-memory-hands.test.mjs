@@ -8,12 +8,13 @@ test('holding the pin without cranking stays put; cranking advances the tune', (
   // Hold, no crank: no score advance.
   const held = stepHands(h, { pinHeld: true, crankDelta: 0 }, 0.25);
   assert.equal(held.winding.score, 0);
-  assert.equal(held.events.length, 0);
+  assert.equal(held.events.some(e=>e.type==='pluck'), false);
   // Crank forward a full turn over a quarter second (4 turns/sec).
-  const cranked = stepHands(h, { pinHeld: true, crankDelta: 1 }, 0.25);
+  let cranked = stepHands(h, { pinHeld: true, crankDelta: 1 }, 0.25),events=[...cranked.events];
+  for(let i=0;i<3;i++){cranked=stepHands(cranked.hands,{pinHeld:true,crankDelta:.25},.25);events.push(...cranked.events);}
   assert.ok(cranked.winding.score > 0);
   assert.ok(cranked.hands.crankRate > 0);
-  assert.ok(cranked.events.some((e) => e.type === 'pluck'));
+  assert.ok(events.some((e) => e.type === 'pluck'));
 });
 
 test('crank rate smooths toward the input rather than jumping', () => {
@@ -38,7 +39,7 @@ test('shaking jostles the train: a rattle event and extra wear', () => {
   let h = freshHands();
   const r = stepHands(h, { pinHeld: false, crankDelta: 0, shake: 1 }, 0.25);
   assert.ok(r.events.some((e) => e.type === 'shake'));
-  assert.ok(r.winding.wear > 0);
+  assert.equal(r.winding.wear, 0, 'handling sound is not permanent extra damage');
   // A tiny shake below threshold is ignored.
   const quiet = stepHands(freshHands(), { pinHeld: false, crankDelta: 0, shake: HANDS_TUNING.shakeThreshold / 2 }, 0.25);
   assert.equal(quiet.events.some((e) => e.type === 'shake'), false);

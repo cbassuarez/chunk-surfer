@@ -43,6 +43,11 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
   pub = null, marble = null, roofRen = null, guidance = null } = {}) {
   const data = object(save), flags = object(data.flags), entries = [];
   const rooms = list(job?.rooms), takes = new Set([...list(data.takes), ...list(data.rec?.takes)]);
+  const hasB3=rooms.some(r=>r.roomId==='main_b3');
+  const b3Recorded=rooms.some(r=>r.roomId==='main_b3'&&r.recorded===true)||takes.has('main_b3');
+  const b3Investigating=hasB3&&!b3Recorded&&flags['b3.speakers.woken']===true&&flags['b3.speakers.silenced']!==true;
+  const b3Investigated=b3Recorded||flags['b3.speakers.silenced']===true;
+  const fourRoomsRemain=b3Recorded&&['the_tub','soundnoisemusic','amplifications','lux_nova'].every(id=>rooms.some(r=>r.roomId===id));
   const knownJob = flags['bag.taken'] === true || flags['radio.work-order-read'] === true
     || rooms.some(r => r.recorded === true || takes.has(r.roomId));
   if (knownJob) {
@@ -61,8 +66,11 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
     entries.push(entry('work-order', 'The work order', 'Conservatoire', {
       category: 'assignment', state: complete ? 'resolved' : 'active',
       status: status(complete ? 'RECORDED' : rooms.length ? `${done} / ${rooms.length} RECORDED` : 'ISSUED', complete ? 'success' : 'amber'),
-      summary: 'Capture the room tones named in the client’s work order.',
-      next: guidanceLabel || (complete ? null : !flags['setup.levels'] && !departed ? 'Set your recorder levels in the Get In.'
+      summary: fourRoomsRemain&&!complete
+        ?'B3 is recorded. The remaining work is the natatorium, practice rooms, concert hall and chapel. The chapel may take some time.'
+        :'Capture the room tones named in the client’s work order. Set levels and investigate B3’s speaker feed before filing its take.',
+      next: guidanceLabel || (complete ? null : b3Investigating ? 'Investigate B3’s speaker feed. The music has to stop before its room tone can be recorded.'
+        : !flags['setup.levels'] && !departed ? 'Set your recorder levels in the Get In.'
         : marked ? `Continue the work in ${marked.label || marked.roomId}.` : 'Review the remaining rooms in the work order.'),
       evidence: rooms.filter(r => r.recorded).map(r => `${r.label || r.roomId}: recorded.`),
       outcome: complete ? 'Every room on the work order has a recorded take.' : null,
@@ -309,13 +317,24 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
     if (value.id === 'quest:work-order') {
       const fulfilled = value.state === 'resolved';
       const unfinished = rooms.find(r => !r.recorded);
+      const levelsDone=flags['setup.levels']===true||rooms.some(r=>r.recorded);
+      const preparation=hasB3?[
+        milestone('setup:levels','Set recorder levels in the Get In.',levelsDone),
+        milestone('b3:investigate','Investigate B3’s speaker feed.',b3Investigated,!levelsDone),
+      ]:[];
       return represent(value, { nature: 'undertaking', commitment: fulfilled ? 'fulfilled' : 'assigned',
         stage: { id: guidance?.id || (fulfilled ? 'recordings:finished' : 'recordings:work'),
           label: fulfilled ? 'Recordings finished' : guidance?.required === true ? 'Required route remains'
             : rooms.length ? `${rooms.filter(r => r.recorded).length} / ${rooms.length} recorded` : 'Work issued' },
         nextLabel: value.next ? guidance?.required === false ? 'OPTIONAL' : 'NEXT' : null,
-        milestones: rooms.filter(r => r.recorded || r === unfinished).map(r => milestone(r.roomId, r.label || r.roomId, r.recorded)),
-        records: rooms.filter(r => r.recorded).map(r => record(`take:${r.roomId}`, r.label || r.roomId, 'A room-tone take is on the recorder.')),
+        milestones: [...preparation,...rooms.filter(r => fourRoomsRemain || r.recorded || r === unfinished)
+          .map(r => milestone(r.roomId, r.label || r.roomId, r.recorded,!r.recorded&&(r!==unfinished||r.roomId==='main_b3'&&!b3Investigated)))],
+        records: [
+          ...(flags['setup.levels']?[record('setup:levels','Recorder levels','The Get In level check is complete.')]:[]),
+          ...(b3Investigated?[record('b3:investigate','B3 speaker feed','The speaker feed was dealt with before recording B3.')]:[]),
+          ...rooms.filter(r => r.recorded).map(r => record(`take:${r.roomId}`, r.label || r.roomId, 'A room-tone take is on the recorder.')),
+          ...(fourRoomsRemain&&!fulfilled?[record('remaining:chapel','Four remaining rooms','Natatorium, practice rooms, concert hall and chapel. The chapel may take some time; allow for it in the shift.')]:[]),
+        ],
         closure: fulfilled ? closure('Work recorded', value.outcome) : null,
         hasOpenCommitment: !fulfilled, trackable: !fulfilled && !!value.next,
       });

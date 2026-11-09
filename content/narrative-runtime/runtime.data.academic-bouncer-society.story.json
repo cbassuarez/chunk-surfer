@@ -4,10 +4,25 @@
   "title": "Runtime · data/academic-bouncer-society.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "academicBouncerSocialDialogue.musicContext",
+  "entry": "ACADEMIC_BOUNCER_SOCIAL_BEATS",
   "entries": [
+    "ACADEMIC_BOUNCER_SOCIAL_BEATS",
+    "academicBouncerSocialBeatLines",
+    "academicBouncerSocialDialogue.opening",
+    "academicBouncerSocialDialogue.returned.doorwork",
+    "academicBouncerSocialDialogue.returned.register",
+    "academicBouncerSocialDialogue.returned.music",
+    "academicBouncerSocialDialogue.returned.portraits",
+    "academicBouncerSocialDialogue.returned.stay",
+    "academicBouncerSocialDialogue",
     "academicBouncerSocialDialogue.musicContext",
-    "academicBouncerSocialDialogue.nodes.start"
+    "academicBouncerSocialDialogue.nodes.start",
+    "academicBouncerSocialDialogue.nodes.doorwork",
+    "academicBouncerSocialDialogue.nodes.register",
+    "academicBouncerSocialDialogue.nodes.music",
+    "academicBouncerSocialDialogue.nodes.portraits",
+    "academicBouncerSocialDialogue.nodes.stay",
+    "academicBouncerSocialDialogue.nodes.leave"
   ],
   "tags": [
     "runtime",
@@ -17,6 +32,387 @@
   "module": "src/data/academic-bouncer-society.js",
   "notes": "Generated from src/data/academic-bouncer-society.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "ACADEMIC_BOUNCER_SOCIAL_BEATS": {
+      "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l0",
+          "who": "unknown",
+          "text": "Agathe wanted a time for the opening.",
+          "source": "src/data/academic-bouncer-society.js:15"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l1",
+          "who": "unknown",
+          "text": "Did you give her one?",
+          "source": "src/data/academic-bouncer-society.js:16"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l2",
+          "who": "unknown",
+          "text": "I gave her a heading.",
+          "source": "src/data/academic-bouncer-society.js:17"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l3",
+          "who": "unknown",
+          "text": "She will enjoy that for hours.",
+          "source": "src/data/academic-bouncer-society.js:18"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l4",
+          "who": "unknown",
+          "text": "Odette says we are blocking her closing round.",
+          "source": "src/data/academic-bouncer-society.js:21"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l5",
+          "who": "unknown",
+          "text": "We are receiving.",
+          "source": "src/data/academic-bouncer-society.js:22"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l6",
+          "who": "unknown",
+          "text": "You can receive a complaint.",
+          "source": "src/data/academic-bouncer-society.js:23"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l7",
+          "who": "unknown",
+          "text": "Then we have received her.",
+          "source": "src/data/academic-bouncer-society.js:24"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l8",
+          "who": "unknown",
+          "text": "Stand as though someone is expected.",
+          "source": "src/data/academic-bouncer-society.js:27"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l9",
+          "who": "unknown",
+          "text": "Someone is standing right there.",
+          "source": "src/data/academic-bouncer-society.js:28"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l10",
+          "who": "unknown",
+          "text": "And you could learn from their patience.",
+          "source": "src/data/academic-bouncer-society.js:29"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l11",
+          "who": "unknown",
+          "text": "Celeste keeps asking us to sit down.",
+          "source": "src/data/academic-bouncer-society.js:32"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l12",
+          "who": "unknown",
+          "text": "She means both of us.",
+          "source": "src/data/academic-bouncer-society.js:33"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l13",
+          "who": "unknown",
+          "text": "And leave the door unattended?",
+          "source": "src/data/academic-bouncer-society.js:34"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l14",
+          "who": "unknown",
+          "text": "That is the part she has been trying to explain.",
+          "source": "src/data/academic-bouncer-society.js:35"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l15",
+          "who": "unknown",
+          "text": "Noe says my profile is wasted on the stair.",
+          "source": "src/data/academic-bouncer-society.js:38"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l16",
+          "who": "unknown",
+          "text": "He does like a potential customer.",
+          "source": "src/data/academic-bouncer-society.js:39"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l17",
+          "who": "unknown",
+          "text": "He has an eye.",
+          "source": "src/data/academic-bouncer-society.js:40"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l18",
+          "who": "unknown",
+          "text": "On anyone who might compliment him.",
+          "source": "src/data/academic-bouncer-society.js:41"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l19",
+          "who": "unknown",
+          "text": "I could go and see what they are arguing about.",
+          "source": "src/data/academic-bouncer-society.js:44"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l20",
+          "who": "unknown",
+          "text": "You would miss an entrance.",
+          "source": "src/data/academic-bouncer-society.js:45"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l21",
+          "who": "unknown",
+          "text": "You would miss me missing it.",
+          "source": "src/data/academic-bouncer-society.js:46"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l22",
+          "who": "unknown",
+          "text": "I dislike an irregular formation.",
+          "source": "src/data/academic-bouncer-society.js:47"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l23",
+          "who": "unknown",
+          "text": "Odette. Are we open or closed?",
+          "source": "src/data/academic-bouncer-society.js:50"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l24",
+          "who": "unknown",
+          "text": "You are in the way.",
+          "source": "src/data/academic-bouncer-society.js:51"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l25",
+          "who": "unknown",
+          "text": "At last. A definite answer.",
+          "source": "src/data/academic-bouncer-society.js:52"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l26",
+          "who": "unknown",
+          "text": "Staff are not included in the guest total.",
+          "source": "src/data/academic-bouncer-society.js:55"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l27",
+          "who": "unknown",
+          "text": "Vera will be devastated. She has practised looking expected.",
+          "source": "src/data/academic-bouncer-society.js:56"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l28",
+          "who": "unknown",
+          "text": "I could add a category.",
+          "source": "src/data/academic-bouncer-society.js:57"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SOCIAL_BEATS.l29",
+          "who": "unknown",
+          "text": "Please do not. She will make us dress for it.",
+          "source": "src/data/academic-bouncer-society.js:58"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:15"
+    },
+    "academicBouncerSocialBeatLines": {
+      "id": "academicBouncerSocialBeatLines",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialBeatLines.l0",
+          "who": "unknown",
+          "text": "Our visitor has now heard about the register.",
+          "source": "src/data/academic-bouncer-society.js:65"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l1",
+          "who": "unknown",
+          "text": "Agathe will want an acknowledgment.",
+          "source": "src/data/academic-bouncer-society.js:66"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l2",
+          "who": "unknown",
+          "text": "She can use our visitor's expression.",
+          "source": "src/data/academic-bouncer-society.js:67"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l3",
+          "who": "unknown",
+          "text": "We could accept Celeste's invitation together.",
+          "source": "src/data/academic-bouncer-society.js:70"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l4",
+          "who": "unknown",
+          "text": "We are together.",
+          "source": "src/data/academic-bouncer-society.js:71"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l5",
+          "who": "unknown",
+          "text": "You make a compelling case for staying on the stair.",
+          "source": "src/data/academic-bouncer-society.js:72"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l6",
+          "who": "unknown",
+          "text": "I have explained why Noe cannot have my profile.",
+          "source": "src/data/academic-bouncer-society.js:75"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l7",
+          "who": "unknown",
+          "text": "She would have to stop watching the entrance.",
+          "source": "src/data/academic-bouncer-society.js:76"
+        },
+        {
+          "id": "academicBouncerSocialBeatLines.l8",
+          "who": "unknown",
+          "text": "And you would have to stop improving the explanation.",
+          "source": "src/data/academic-bouncer-society.js:77"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:65"
+    },
+    "academicBouncerSocialDialogue.opening": {
+      "id": "academicBouncerSocialDialogue.opening",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.opening.l0",
+          "who": "unknown",
+          "text": "You need not repeat the welcome. It was heard the first time.",
+          "source": "src/data/academic-bouncer-society.js:91"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.opening.l1",
+          "who": "unknown",
+          "text": "That is more than we can say for most welcomes.",
+          "source": "src/data/academic-bouncer-society.js:92"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:91"
+    },
+    "academicBouncerSocialDialogue.returned.doorwork": {
+      "id": "academicBouncerSocialDialogue.returned.doorwork",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.returned.doorwork.l0",
+          "who": "unknown",
+          "text": "We are still at the part before good evening.",
+          "source": "src/data/academic-bouncer-society.js:95"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.returned.doorwork.l1",
+          "who": "unknown",
+          "text": "It has excellent job security.",
+          "source": "src/data/academic-bouncer-society.js:95"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:95"
+    },
+    "academicBouncerSocialDialogue.returned.register": {
+      "id": "academicBouncerSocialDialogue.returned.register",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.returned.register.l0",
+          "who": "unknown",
+          "text": "Agathe still refuses to count us twice.",
+          "source": "src/data/academic-bouncer-society.js:96"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.returned.register.l1",
+          "who": "unknown",
+          "text": "Vera calls that a staffing issue.",
+          "source": "src/data/academic-bouncer-society.js:96"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:96"
+    },
+    "academicBouncerSocialDialogue.returned.music": {
+      "id": "academicBouncerSocialDialogue.returned.music",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.returned.music.l0",
+          "who": "unknown",
+          "text": "Hugh is still defending the wrong notes.",
+          "source": "src/data/academic-bouncer-society.js:97"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.returned.music.l1",
+          "who": "unknown",
+          "text": "They give Sabine something to love.",
+          "source": "src/data/academic-bouncer-society.js:97"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:97"
+    },
+    "academicBouncerSocialDialogue.returned.portraits": {
+      "id": "academicBouncerSocialDialogue.returned.portraits",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.returned.portraits.l0",
+          "who": "unknown",
+          "text": "My profile remains unavailable.",
+          "source": "src/data/academic-bouncer-society.js:98"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.returned.portraits.l1",
+          "who": "unknown",
+          "text": "Noe will have to console himself with the other side.",
+          "source": "src/data/academic-bouncer-society.js:98"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:98"
+    },
+    "academicBouncerSocialDialogue.returned.stay": {
+      "id": "academicBouncerSocialDialogue.returned.stay",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.returned.stay.l0",
+          "who": "unknown",
+          "text": "We are both still here.",
+          "source": "src/data/academic-bouncer-society.js:99"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.returned.stay.l1",
+          "who": "unknown",
+          "text": "She makes it sound like a triumph of procedure.",
+          "source": "src/data/academic-bouncer-society.js:99"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:99"
+    },
+    "academicBouncerSocialDialogue": {
+      "id": "academicBouncerSocialDialogue",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.l0",
+          "who": "unknown",
+          "text": "Back through the door. You do make our duties look possible.",
+          "source": "src/data/academic-bouncer-society.js:101"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.l1",
+          "who": "unknown",
+          "text": "A familiar entrance is still an entrance.",
+          "source": "src/data/academic-bouncer-society.js:102"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:101"
+    },
     "academicBouncerSocialDialogue.musicContext": {
       "id": "academicBouncerSocialDialogue.musicContext",
       "type": "line",
@@ -29,9 +425,63 @@
         },
         {
           "id": "academicBouncerSocialDialogue.musicContext.l1",
+          "who": "unknown",
+          "text": "You have heard him with living air, then.",
+          "source": "src/data/academic-bouncer-society.js:105"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l2",
+          "who": "unknown",
+          "text": "Celeste will have heard him too.",
+          "source": "src/data/academic-bouncer-society.js:106"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l3",
+          "who": "unknown",
+          "text": "I should like to hear her review. Sabine would be furious.",
+          "source": "src/data/academic-bouncer-society.js:107"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l4",
           "who": "me",
           "text": "Sabine has been explaining her reviews.",
           "source": "src/data/academic-bouncer-society.js:109"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l5",
+          "who": "unknown",
+          "text": "She has? We have been waiting a long time.",
+          "source": "src/data/academic-bouncer-society.js:109"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l6",
+          "who": "unknown",
+          "text": "She once called our welcome overextended.",
+          "source": "src/data/academic-bouncer-society.js:110"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l7",
+          "who": "unknown",
+          "text": "Vera thought it was a compliment. There was a long evening after that.",
+          "source": "src/data/academic-bouncer-society.js:111"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l8",
+          "who": "unknown",
+          "text": "Emile leaves something wrong in the music. It gives the room an excuse to keep talking.",
+          "source": "src/data/academic-bouncer-society.js:112"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l9",
+          "who": "unknown",
+          "text": "You like the arguments.",
+          "source": "src/data/academic-bouncer-society.js:113"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l10",
+          "who": "unknown",
+          "text": "I like the part where Celeste decides we are all having a good time.",
+          "source": "src/data/academic-bouncer-society.js:114"
         }
       ],
       "source": "src/data/academic-bouncer-society.js:105"
@@ -45,34 +495,274 @@
           "id": "academicBouncerSocialDialogue.nodes.start.c0",
           "text": "why keep opening the reception?",
           "source": "src/data/academic-bouncer-society.js:116",
-          "targetName": "doorwork"
+          "goto": "academicBouncerSocialDialogue.nodes.doorwork"
         },
         {
           "id": "academicBouncerSocialDialogue.nodes.start.c1",
           "text": "what do Odette and Agathe make of you?",
           "source": "src/data/academic-bouncer-society.js:116",
-          "targetName": "register"
+          "goto": "academicBouncerSocialDialogue.nodes.register"
         },
         {
           "id": "academicBouncerSocialDialogue.nodes.start.c2",
           "text": "Emile is using my voice. / Sabine has been explaining her reviews. / what do you like about the company here?",
           "source": "src/data/academic-bouncer-society.js:117",
-          "targetName": "music"
+          "goto": "academicBouncerSocialDialogue.nodes.music"
         },
         {
           "id": "academicBouncerSocialDialogue.nodes.start.c3",
           "text": "does everyone have to pass your inspection?",
           "source": "src/data/academic-bouncer-society.js:117",
-          "targetName": "portraits"
+          "goto": "academicBouncerSocialDialogue.nodes.portraits"
         },
         {
           "id": "academicBouncerSocialDialogue.nodes.start.c4",
           "text": "would either of you rather go inside?",
           "source": "src/data/academic-bouncer-society.js:118",
-          "targetName": "stay"
+          "goto": "academicBouncerSocialDialogue.nodes.stay"
         }
       ],
       "source": "src/data/academic-bouncer-society.js:116"
+    },
+    "academicBouncerSocialDialogue.nodes.doorwork": {
+      "id": "academicBouncerSocialDialogue.nodes.doorwork",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l0",
+          "who": "unknown",
+          "text": "The beginning is her favourite part.",
+          "source": "src/data/academic-bouncer-society.js:120"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l1",
+          "who": "unknown",
+          "text": "He says that as though beginnings were plentiful.",
+          "source": "src/data/academic-bouncer-society.js:121"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l2",
+          "who": "unknown",
+          "text": "No. I say it because I notice.",
+          "source": "src/data/academic-bouncer-society.js:122"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l3",
+          "who": "unknown",
+          "text": "A room ought to notice when someone enters it.",
+          "source": "src/data/academic-bouncer-society.js:123"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l4",
+          "who": "unknown",
+          "text": "She practises the welcome when there is nobody to hear it.",
+          "source": "src/data/academic-bouncer-society.js:124"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l5",
+          "who": "unknown",
+          "text": "You hear it.",
+          "source": "src/data/academic-bouncer-society.js:125"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.doorwork.l6",
+          "who": "unknown",
+          "text": "Yes. I have become an extremely difficult audience.",
+          "source": "src/data/academic-bouncer-society.js:126"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:120"
+    },
+    "academicBouncerSocialDialogue.nodes.register": {
+      "id": "academicBouncerSocialDialogue.nodes.register",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.register.l0",
+          "who": "unknown",
+          "text": "Odette closes. Agathe counts. Someone must receive the discrepancy.",
+          "source": "src/data/academic-bouncer-society.js:128"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.register.l1",
+          "who": "unknown",
+          "text": "You can see why she enjoys this job.",
+          "source": "src/data/academic-bouncer-society.js:129"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.register.l2",
+          "who": "unknown",
+          "text": "Agathe wants everyone accounted for. Odette wants everyone to know where the door is.",
+          "source": "src/data/academic-bouncer-society.js:130"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.register.l3",
+          "who": "unknown",
+          "text": "Neither trusts us to finish a sentence.",
+          "source": "src/data/academic-bouncer-society.js:131"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.register.l4",
+          "who": "unknown",
+          "text": "Odette does trust you with the landing.",
+          "source": "src/data/academic-bouncer-society.js:132"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.register.l5",
+          "who": "unknown",
+          "text": "She trusts me to notice when you are standing in it.",
+          "source": "src/data/academic-bouncer-society.js:133"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:128"
+    },
+    "academicBouncerSocialDialogue.nodes.music": {
+      "id": "academicBouncerSocialDialogue.nodes.music",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.music.l0",
+          "who": "unknown",
+          "text": "A little bad music. Some very good objections.",
+          "source": "src/data/academic-bouncer-society.js:135"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.music.l1",
+          "who": "unknown",
+          "text": "Hugh will stay for an objection long after the music has stopped.",
+          "source": "src/data/academic-bouncer-society.js:136"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.music.l2",
+          "who": "unknown",
+          "text": "You have never left me short of one.",
+          "source": "src/data/academic-bouncer-society.js:137"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:135"
+    },
+    "academicBouncerSocialDialogue.nodes.portraits": {
+      "id": "academicBouncerSocialDialogue.nodes.portraits",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l0",
+          "who": "unknown",
+          "text": "Noe may inspect whichever side of my face he can see from the gallery.",
+          "source": "src/data/academic-bouncer-society.js:140"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l1",
+          "who": "unknown",
+          "text": "She means none of it. It is a very small concession.",
+          "source": "src/data/academic-bouncer-society.js:141"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l2",
+          "who": "unknown",
+          "text": "Lucien wears that jacket as though it were an answer.",
+          "source": "src/data/academic-bouncer-society.js:142"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l3",
+          "who": "unknown",
+          "text": "It is. Noe keeps asking a different question with a pencil.",
+          "source": "src/data/academic-bouncer-society.js:143"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l4",
+          "who": "unknown",
+          "text": "Noe offered to draw my profile. He said I have a decisive line.",
+          "source": "src/data/academic-bouncer-society.js:144"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l5",
+          "who": "unknown",
+          "text": "You have been repeating it ever since.",
+          "source": "src/data/academic-bouncer-society.js:145"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.portraits.l6",
+          "who": "unknown",
+          "text": "A useful professional opinion bears repeating.",
+          "source": "src/data/academic-bouncer-society.js:146"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:140"
+    },
+    "academicBouncerSocialDialogue.nodes.stay": {
+      "id": "academicBouncerSocialDialogue.nodes.stay",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l0",
+          "who": "unknown",
+          "text": "I am quite comfortable where I can hear her.",
+          "source": "src/data/academic-bouncer-society.js:148"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l1",
+          "who": "unknown",
+          "text": "That could be almost anywhere on this floor.",
+          "source": "src/data/academic-bouncer-society.js:149"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l2",
+          "who": "unknown",
+          "text": "I know. I selected my post carefully.",
+          "source": "src/data/academic-bouncer-society.js:150"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l3",
+          "who": "unknown",
+          "text": "Celeste asks both of us. Vera keeps answering for the door.",
+          "source": "src/data/academic-bouncer-society.js:151"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l4",
+          "who": "unknown",
+          "text": "Someone should be here when a person arrives alone.",
+          "source": "src/data/academic-bouncer-society.js:152"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l5",
+          "who": "unknown",
+          "text": "And when no one arrives?",
+          "source": "src/data/academic-bouncer-society.js:153"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l6",
+          "who": "unknown",
+          "text": "You are not alone, are you?",
+          "source": "src/data/academic-bouncer-society.js:154"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.stay.l7",
+          "who": "unknown",
+          "text": "No. A remarkably successful arrangement.",
+          "source": "src/data/academic-bouncer-society.js:155"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:148"
+    },
+    "academicBouncerSocialDialogue.nodes.leave": {
+      "id": "academicBouncerSocialDialogue.nodes.leave",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.leave.l0",
+          "who": "unknown",
+          "text": "Mind the last turn if you are going down.",
+          "source": "src/data/academic-bouncer-society.js:156"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.leave.l1",
+          "who": "unknown",
+          "text": "She will want to see your next entrance.",
+          "source": "src/data/academic-bouncer-society.js:157"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:156"
     }
   }
 }

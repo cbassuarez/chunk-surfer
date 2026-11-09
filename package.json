@@ -10,8 +10,6 @@
     "assets:vegetation": "node tools/chunk_surfer/build-vegetation.mjs",
     "assets:main-stair": "node tools/chunk_surfer/build-main-stair.mjs",
     "assets:source-structures": "node tools/chunk_surfer/build-source-structures.mjs",
-    "assets:horizon-tape": "node tools/chunk_surfer/build-horizon-tape.mjs",
-    "assets:horizon-bust": "node tools/chunk_surfer/build-horizon-bust.mjs",
     "assets:window-media": "node scripts/build-window-media.mjs",
     "media:validate": "node scripts/validate-window-media.mjs",
     "assets:doors": "node scripts/build-door-pack.mjs",

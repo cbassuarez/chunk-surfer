@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "shared-coastal-memory-assets",
   "revision": "coastal-memory-8",
-  "sha256": "4319574d810e046a153c15fef15d0aecf76c878af1b6a6d556088184abf6e0a9",
-  "bytes": 4661700,
-  "triangles": 44364,
+  "sha256": "a68e46b3f6681dbf898ee6bc774bd26bc51b662066a53114055c4de5e500b9d5",
+  "bytes": 6156856,
+  "triangles": 47370,
   "meshes": {
     "cm_limestone_coast": {
       "bounds": {
@@ -929,52 +929,113 @@
     "cm_broken_music_box": {
       "bounds": {
         "min": [
-          -0.1599999964237213,
-          0,
-          -0.12999999523162842
+          -0.02700000070036107,
+          -4.4509270682377336e-11,
+          -0.01761999999999998
         ],
         "max": [
-          0.1599999964237213,
-          0.2789103388786316,
-          0.12999999523162842
+          0.02705499945859763,
+          0.04600000004493692,
+          0.016055
         ]
       },
-      "triangles": 704,
-      "vertices": 1638,
+      "triangles": 2822,
+      "vertices": 8466,
       "features": {
-        "type": "broken-wound-cylinder-music-box",
+        "type": "reference-led-closed-coated-music-box",
         "dimensionsMetres": [
-          0.32,
-          0.22,
-          0.26
+          0.054,
+          0.046,
+          0.032
         ],
-        "tune": "Clair de lune, bars 1-8",
-        "construction": "Wooden open cavity on a brass bed: fourteen-tine comb (two snapped to stubs, the A5 tine lying loose in the box), spring barrel with ratchet click, governor bridge; the pinned cylinder, gear, winding key and fan are separate rotating meshes.",
-        "mechanism": "Every pin meets its tine when the audio plucks it. Broken lid remains inert."
+        "dimensionsProvisional": true,
+        "damaged": true,
+        "casingClosed": true,
+        "construction": "Rounded aged ivory coated case; real closed rear rim and near-full dark plate; three crosshead brass screws, bores, retaining tabs, and separately pivoted oval winding key. No exposed internals.",
+        "damage": "One lower-right impact, compressed about 3–4 mm with a ragged dark-green undercoat chip wrapping from front to side, and a subtly bent oval key. Plate remains seated.",
+        "keyPivot": [
+          -0.01134,
+          0.0253,
+          -0.0171
+        ],
+        "keyAxis": [
+          0,
+          0,
+          1
+        ],
+        "referenceTextures": [
+          "texture-portrait.png",
+          "texture-label.png"
+        ],
+        "part": "body"
+      }
+    },
+    "cm_broken_music_box_key": {
+      "bounds": {
+        "min": [
+          -0.01389,
+          0.0179,
+          -0.020826408163265305
+        ],
+        "max": [
+          -0.00879,
+          0.0327,
+          -0.016799999977461993
+        ]
+      },
+      "triangles": 790,
+      "vertices": 2370,
+      "features": {
+        "type": "reference-led-closed-coated-music-box",
+        "dimensionsMetres": [
+          0.054,
+          0.046,
+          0.032
+        ],
+        "dimensionsProvisional": true,
+        "damaged": true,
+        "casingClosed": true,
+        "construction": "Rounded aged ivory coated case; real closed rear rim and near-full dark plate; three crosshead brass screws, bores, retaining tabs, and separately pivoted oval winding key. No exposed internals.",
+        "damage": "One lower-right impact, compressed about 3–4 mm with a ragged dark-green undercoat chip wrapping from front to side, and a subtly bent oval key. Plate remains seated.",
+        "keyPivot": [
+          -0.01134,
+          0.0253,
+          -0.0171
+        ],
+        "keyAxis": [
+          0,
+          0,
+          1
+        ],
+        "referenceTextures": [
+          "texture-portrait.png",
+          "texture-label.png"
+        ],
+        "part": "key"
       }
     },
     "cm_music_box_cylinder": {
       "bounds": {
         "min": [
-          -0.1080000028014183,
-          -0.029510071501135826,
-          -0.029507942497730255
+          -0.016499999910593033,
+          -0.005300940480083227,
+          -0.0053006745874881744
         ],
         "max": [
-          0.1080000028014183,
-          0.02949131466448307,
-          0.029254546388983727
+          0.016499999910593033,
+          0.005295665003359318,
+          0.005250066984444857
         ]
       },
       "triangles": 2112,
       "vertices": 5280,
       "features": {
-        "type": "rotating-pinned-brass-cylinder",
-        "pivot": "Own local X axis at the canonical cylinder center",
+        "type": "inferred-hidden-pinned-cylinder",
+        "pivot": "Own local X axis at inferred cylinder center",
         "tune": "Clair de lune, bars 1-8",
         "pins": 72,
-        "shearedPins": 6,
-        "contactRadius": 0.0295,
+        "shearedPins": 0,
+        "contactRadius": 0.0053,
         "pinAngles": [
           1.81273,
           1.81273,
@@ -1054,93 +1115,112 @@
     "cm_music_box_gear": {
       "bounds": {
         "min": [
-          -0.010999999940395355,
-          -0.03280000016093254,
-          -0.03280000016093254
+          -0.001500000013038516,
+          -0.005100000184029341,
+          -0.005100000184029341
         ],
         "max": [
-          0.010999999940395355,
-          0.03280000016093254,
-          0.03280000016093254
+          0.001500000013038516,
+          0.005100000184029341,
+          0.005100000184029341
         ]
       },
-      "triangles": 464,
-      "vertices": 1016,
+      "triangles": 432,
+      "vertices": 936,
       "features": {
-        "type": "coaxial-cylinder-gear",
-        "pivot": "Own local X axis, rigidly attached to the actual cylinder",
+        "type": "inferred-hidden-cylinder-gear",
+        "pivot": "Own local X axis",
         "teeth": 24,
-        "chippedTeeth": 3,
-        "chipped": [
-          11,
-          5,
-          21
-        ],
-        "missingTeeth": 3
+        "chippedTeeth": 0,
+        "chipped": [],
+        "missingTeeth": 0
       }
     },
     "cm_music_box_live_tine": {
       "bounds": {
         "min": [
-          -0.0042500002309679985,
-          -0.0008500000112690032,
+          -0.000699999975040555,
+          -0.0001250000059371814,
           -1
         ],
         "max": [
-          0.0042500002309679985,
-          0.0008500000112690032,
+          0.000699999975040555,
+          0.0001250000059371814,
           0
         ]
       },
       "triangles": 12,
       "vertices": 24,
       "features": {
-        "type": "surviving-steel-comb-tooth",
-        "pivot": "Root at local origin; -Z points toward the cylinder, scale Z is physical tine length",
-        "widthMetres": 0.0085,
-        "thicknessMetres": 0.0017
+        "type": "inferred-hidden-whole-comb-tooth",
+        "pivot": "Root at local origin; scale Z is physical tine length",
+        "widthMetres": 0.0014,
+        "thicknessMetres": 0.00025
       }
     },
     "cm_music_box_key": {
       "bounds": {
         "min": [
-          -0.045429810881614685,
-          -0.029999999329447746,
-          -0.012400000356137753
+          -0.01389,
+          0.0179,
+          -0.020826408163265305
         ],
         "max": [
-          0.029999999329447746,
-          0.02791413478553295,
-          0.012400000356137753
+          -0.00879,
+          0.0327,
+          -0.016799999977461993
         ]
       },
-      "triangles": 360,
-      "vertices": 824,
+      "triangles": 790,
+      "vertices": 2370,
       "features": {
-        "type": "butterfly-winding-key-on-barrel-arbor",
-        "pivot": "Own local X axis on the barrel arbor",
-        "ratchetTeeth": 12
+        "type": "reference-led-closed-coated-music-box",
+        "dimensionsMetres": [
+          0.054,
+          0.046,
+          0.032
+        ],
+        "dimensionsProvisional": true,
+        "damaged": true,
+        "casingClosed": true,
+        "construction": "Rounded aged ivory coated case; real closed rear rim and near-full dark plate; three crosshead brass screws, bores, retaining tabs, and separately pivoted oval winding key. No exposed internals.",
+        "damage": "One lower-right impact, compressed about 3–4 mm with a ragged dark-green undercoat chip wrapping from front to side, and a subtly bent oval key. Plate remains seated.",
+        "keyPivot": [
+          -0.01134,
+          0.0253,
+          -0.0171
+        ],
+        "keyAxis": [
+          0,
+          0,
+          1
+        ],
+        "referenceTextures": [
+          "texture-portrait.png",
+          "texture-label.png"
+        ],
+        "part": "key"
       }
     },
     "cm_music_box_fan": {
       "bounds": {
         "min": [
-          -0.01549999974668026,
-          -0.041999999433755875,
-          -0.00559999980032444
+          -0.0044999998062849045,
+          -0.007000000216066837,
+          -0.0005499999970197678
         ],
         "max": [
-          0.016544735059142113,
-          0.009096113033592701,
-          0.00559999980032444
+          0.0044999998062849045,
+          0.004999999888241291,
+          0.0005499999970197678
         ]
       },
-      "triangles": 356,
-      "vertices": 872,
+      "triangles": 56,
+      "vertices": 128,
       "features": {
-        "type": "governor-air-brake",
-        "pivot": "Own local Y axis on the governor arbor",
-        "bentVanes": 1
+        "type": "inferred-hidden-governor",
+        "pivot": "Own local Y axis",
+        "bentVanes": 0
       }
     },
     "cm_damp_note": {
@@ -1382,8 +1462,25 @@
       "ormSha256": "4e52cca033581901bcd05fa059c82d78aa18444808a1306afdd1cad61e947615"
     },
     {
-      "key": "steel",
+      "key": "brassKey",
       "index": 9,
+      "baseLinear": [
+        0.4620769996544071,
+        0.3662525955988395,
+        0.1559264637078274
+      ],
+      "roughness": 0.31,
+      "metallic": 0.85,
+      "repeatMetres": 0.012,
+      "reliefMetres": 0.00001,
+      "mapSize": 256,
+      "albedoSha256": "bcfae71d990bd7f3868e2e1cbaa8b0dc1175777563a20d003f4ea19a3ac9cf76",
+      "normalSha256": "0691b36a1af7e5d94a94b541d23f6f2c774b14bce2d31f2d75e85af1b501ff4d",
+      "ormSha256": "9dc5396006ac4245a4099f7667eb261b06cfbaebacd0d8b9ade2af74a37485c1"
+    },
+    {
+      "key": "steel",
+      "index": 10,
       "baseLinear": [
         0.14,
         0.16,
@@ -1400,7 +1497,7 @@
     },
     {
       "key": "rust",
-      "index": 10,
+      "index": 11,
       "baseLinear": [
         0.09,
         0.038,
@@ -1417,7 +1514,7 @@
     },
     {
       "key": "paper",
-      "index": 11,
+      "index": 12,
       "baseLinear": [
         0.43,
         0.4,
@@ -1434,7 +1531,7 @@
     },
     {
       "key": "lamp",
-      "index": 12,
+      "index": 13,
       "baseLinear": [
         0.35,
         0.24,
@@ -1451,7 +1548,7 @@
     },
     {
       "key": "marineEnamel",
-      "index": 13,
+      "index": 14,
       "baseLinear": [
         0.46,
         0.48,
@@ -1468,7 +1565,7 @@
     },
     {
       "key": "vanEnamel",
-      "index": 14,
+      "index": 15,
       "baseLinear": [
         0.62,
         0.62,
@@ -1485,7 +1582,7 @@
     },
     {
       "key": "rubber",
-      "index": 15,
+      "index": 16,
       "baseLinear": [
         0.018,
         0.023,
@@ -1502,7 +1599,7 @@
     },
     {
       "key": "shingle",
-      "index": 16,
+      "index": 17,
       "baseLinear": [
         0.215,
         0.215,
@@ -1519,7 +1616,7 @@
     },
     {
       "key": "wetShingle",
-      "index": 17,
+      "index": 18,
       "baseLinear": [
         0.085,
         0.09,
@@ -1536,7 +1633,7 @@
     },
     {
       "key": "sand",
-      "index": 18,
+      "index": 19,
       "baseLinear": [
         0.15,
         0.14,
@@ -1553,7 +1650,7 @@
     },
     {
       "key": "driftwood",
-      "index": 19,
+      "index": 20,
       "baseLinear": [
         0.33,
         0.315,
@@ -1570,7 +1667,7 @@
     },
     {
       "key": "kelp",
-      "index": 20,
+      "index": 21,
       "baseLinear": [
         0.04,
         0.045,
@@ -1584,6 +1681,193 @@
       "albedoSha256": "fe360d7421f7890a44a9ba4c1597d87cf6a78846e0019862cb5dcf5ad1c44acd",
       "normalSha256": "49a00cdee455920c4f5d12a1d27a244fe15ae46bee64f7fc02d984414cd65c6a",
       "ormSha256": "b799582452d2dc918b407ab2f49c5c9f66d7f59bec9470dcd508c188113674b6"
+    },
+    {
+      "key": "plastic",
+      "index": 22,
+      "baseLinear": [
+        0.5647115057049292,
+        0.5028864580325687,
+        0.3613067797835095
+      ],
+      "roughness": 0.4,
+      "metallic": 0,
+      "repeatMetres": 0.011,
+      "reliefMetres": 0.000025,
+      "mapSize": 256,
+      "albedoSha256": "af96782ace6af5cecec0e49798c9037b9a610230ddbfd5c50beaaa648077c032",
+      "normalSha256": "b661c6f03c4a53842d524bce74c849c044b4cb15dc0e1073ce706a4fe6ea70eb",
+      "ormSha256": "07ce2c29506921cde8bb6d669322f00d9aa1bc49dc175f2e9d58245b50fbdc84"
+    },
+    {
+      "key": "baseMetal",
+      "index": 23,
+      "baseLinear": [
+        0.016,
+        0.02,
+        0.028
+      ],
+      "roughness": 0.42,
+      "metallic": 0.7,
+      "repeatMetres": 0.3,
+      "reliefMetres": 0.0002,
+      "mapSize": 128,
+      "albedoSha256": "f4809f25f22f451cdd4268a69868086a064bfbb77c6f8a8f3acca91ef7f8f595",
+      "normalSha256": "e274cfb5a722316d3c2005f027144da1f69d8cf6e845b81fbffc5edb5ec3e9b1",
+      "ormSha256": "5b71e4b31a8bcc6ef0c845e38e5e23f2a97b29cdcc9d521d74a27720ac2e879c"
+    },
+    {
+      "key": "portrait",
+      "index": 24,
+      "baseLinear": [
+        1,
+        1,
+        1
+      ],
+      "roughness": 0.51,
+      "metallic": 0,
+      "repeatMetres": 0.05,
+      "reliefMetres": 0.000008,
+      "mapSize": 128,
+      "albedoSha256": "5e2494b77dbf1b5ef39da87c1284e82f81ccb21c46506a0b535e7b7142aee14e",
+      "normalSha256": "9231ca404a51fdb14fabcc998ac097756471358e16e58b40f82f54d074323629",
+      "ormSha256": "3a86e84eb10ff4ab0e6306b039076ac5b5a3bd2c8b78cc8aba51aaabc15cc0a0"
+    },
+    {
+      "key": "boxLabel",
+      "index": 25,
+      "baseLinear": [
+        1,
+        1,
+        1
+      ],
+      "roughness": 0.46,
+      "metallic": 0,
+      "repeatMetres": 0.04,
+      "reliefMetres": 0.000008,
+      "mapSize": 128,
+      "albedoSha256": "a6e0f3d068f124ae1f493bab8bb11b35439e562fef5fc00586a5c9ec1dbe9fc1",
+      "normalSha256": "cf0977b24c4973312f2af33060c713620ff43e1bafbf4095c4d8c1283eddfb79",
+      "ormSha256": "e2bed53f7139d4a68d47084f706c243bb5755edb979873ecf1a4e604d548ecad"
+    },
+    {
+      "key": "boxBack",
+      "index": 26,
+      "baseLinear": [
+        0.019382360956935723,
+        0.030713443732993635,
+        0.042311410620809675
+      ],
+      "roughness": 0.43,
+      "metallic": 0.12,
+      "repeatMetres": 0.012,
+      "reliefMetres": 0.000019,
+      "mapSize": 256,
+      "albedoSha256": "16be54808eb3eb8e40207c6e09b0d82dbc21ccf2e7058755a205a3738664cc4c",
+      "normalSha256": "7753c494878a53910c15fd21ca8a4f1fb6fe11aeeace0f469091b9993284b1cb",
+      "ormSha256": "3b9e2f51c9473bf164df9bcbbf9100fccb5ead33da80ca6814dd55c0b8941eb8"
+    },
+    {
+      "key": "boxSeam",
+      "index": 27,
+      "baseLinear": [
+        0.0953074666309647,
+        0.09084171118340767,
+        0.07036009569659588
+      ],
+      "roughness": 0.64,
+      "metallic": 0,
+      "repeatMetres": 0.011,
+      "reliefMetres": 0,
+      "mapSize": 128,
+      "albedoSha256": "b3771baf41ff669fc1a86954fc065a9f22391a5b14f301bd47d9275dd8dd415c",
+      "normalSha256": "6a7ef7a4e4abea62d8284d8a2ccaf2b315e230aaef1d35ccc59c414f74302c24",
+      "ormSha256": "571ef8951d28fe37476a544a9826cda9b6d95b003070bcf1e8ce6f9c93aebf5f"
+    },
+    {
+      "key": "boxScrew",
+      "index": 28,
+      "baseLinear": [
+        0.41254261348390375,
+        0.2831487404299921,
+        0.07227185068231748
+      ],
+      "roughness": 0.33,
+      "metallic": 0.82,
+      "repeatMetres": 0.009,
+      "reliefMetres": 0.000008,
+      "mapSize": 128,
+      "albedoSha256": "0c040ecbec64f401babd92f29afaa9af155fec10b56a8ba8e9c18e8bdb09f997",
+      "normalSha256": "bbc76877b19223725a3e13a2f33d3b9d95c2ac7d6438aec673e9b1727759fb87",
+      "ormSha256": "d87883a76c97c98ef8ba97ff7336f45d2fa2ea6a5280a1d70ab537c66b7a546f"
+    },
+    {
+      "key": "boxEngraving",
+      "index": 29,
+      "baseLinear": [
+        0.0822827071298148,
+        0.07036009569659588,
+        0.03189603307301153
+      ],
+      "roughness": 0.69,
+      "metallic": 0.4,
+      "repeatMetres": 0.012,
+      "reliefMetres": 0,
+      "mapSize": 128,
+      "albedoSha256": "4cf0145a509ac4c09602e24c3b291ee2dd0784f8e1a9efe93836f8e2394fd4a6",
+      "normalSha256": "6a7ef7a4e4abea62d8284d8a2ccaf2b315e230aaef1d35ccc59c414f74302c24",
+      "ormSha256": "81e4e0afa963b527205ef9e8ddabc60539abc611a64fd39540c5666bb1bd64ad"
+    },
+    {
+      "key": "boxScuff",
+      "index": 30,
+      "baseLinear": [
+        0.341914424908661,
+        0.3049873140698863,
+        0.21952619972926923
+      ],
+      "roughness": 0.79,
+      "metallic": 0,
+      "repeatMetres": 0.011,
+      "reliefMetres": 0.000035,
+      "mapSize": 128,
+      "albedoSha256": "5f7ccb475c27b98ab9d798d548ed40500827c87b5c4ddd84ecafd5218634ae53",
+      "normalSha256": "1d5d3790192da6de3b512565b4ceeb4c1bb42167efc8ea7caebe311033577657",
+      "ormSha256": "8b6090191ab86dea3da70c9e44de9b4e8ca41c8e08905ce0e5225340d5b23962"
+    },
+    {
+      "key": "boxOxide",
+      "index": 31,
+      "baseLinear": [
+        0.13286832155381798,
+        0.16826940018969075,
+        0.12743768043564743
+      ],
+      "roughness": 0.86,
+      "metallic": 0.12,
+      "repeatMetres": 0.012,
+      "reliefMetres": 0.000015,
+      "mapSize": 128,
+      "albedoSha256": "a6b055100132d7c79b7f4026423a613bb96e56650af21b7835bcf2b52701e62d",
+      "normalSha256": "6ee7ea516b4ac776902194b8b7fb8a70ff24e746994e388d17fd93181027706f",
+      "ormSha256": "ee8338cf6f78c1ebd6bfc9d69c2c3127fbeedc9b8cdd62ffa5e07e874854a660"
+    },
+    {
+      "key": "boxImpactUndercoat",
+      "index": 32,
+      "baseLinear": [
+        0.03433980680868217,
+        0.06124605423161761,
+        0.04518620438567554
+      ],
+      "roughness": 0.86,
+      "metallic": 0,
+      "repeatMetres": 0.008,
+      "reliefMetres": 0.000045,
+      "mapSize": 128,
+      "albedoSha256": "1d33f8f2898d065bffb3babc9be515cef3022580a194312b625e763ac7484f5b",
+      "normalSha256": "e539e5dd647b0c180bbe36386799c3b9732421a1dd6a79fc77886014f72157a9",
+      "ormSha256": "0897260c46077337038aea71fff83c94f1b5caeace5071f22167a4b888acfcce"
     }
   ],
   "frame": {
@@ -1640,7 +1924,7 @@
     "alphaBlending": false,
     "opaqueSeaMesh": false,
     "mipmapSampler": 9987,
-    "textureMaps": 63
+    "textureMaps": 99
   },
   "references": [
     {
@@ -1660,7 +1944,7 @@
     }
   ],
   "notes": [
-    "Original deterministic mesh and texture synthesis; no third-party photograph or model is embedded.",
+    "Original authored geometry and physical material synthesis; the music-box portrait and title use the user-supplied reference photographs. Hardware and impact damage are geometry, and the case remains closed.",
     "Bank collision reads the same triangle vertices as the exported visual surface. Irregular rim outcrops share their exact base polygons with physical foot collision; the exposed viewing notch is intentionally open.",
     "Actual water, refraction, depth extinction and submerged real-headlamp scattering belong to the world compositor; this pack supplies no opaque sea plane.",
     "The sunk vehicle uses the actual shared driving van asset and its loaded headlamp, tyre and cabin anchors in scene.js, with one shared settled body matrix. No generic-van anchor fallback is retained.",

@@ -1,65 +1,13 @@
-# Music-box keepsake — integration plan
+# Lyle’s closed Sankyo keepsake
 
-The keepsake (Lyle's broken Clair de Lune box) is becoming an interactive, in-hand
-object built entirely from Seb's real recording. This records what exists, the
-contracts between layers, and the one remaining step (the visual/scene wiring).
+One reference-led object supplies the opening cab, coastal handling and item asset. The coated cream shell, portrait, side label, seated dark rear plate, crosshead fittings and separate oval key share a physical frame. The opening is lightly worn; the coast adds localized impact damage while keeping the case closed. Dimensions remain provisional; Sankyo is user-confirmed, the exact movement SKU is unconfirmed.
 
-## Built and tested (35 tests, `node --test`)
+Both appearances use the same damaged sound. Its mismatch with the opening’s intact-looking case is intentional and is not explained in inspection copy. The untouched coastal box stays silent. Supported manual turning plays the supplied Clair de lune performance at unchanged pitch; holding still pauses; release arrests the forward phrase, recoils the key and sounds a short pitched comb rake with quieter mechanical whirr underneath. The rake is authored from recorded Clair de lune attacks at unchanged pitch; it is not claimed as a literal transcription of a release. Every genuine slip gets this pitched response, including rapid catch/release, while incidental handling rattles remain limited. Position persists across attempts. No reverse tune or arbitrary collection of missing, detuned or progressively failing notes is added. Hidden pinning geometry remains an inferred study rather than a transcription of the audible errors.
 
-| Layer | Module |
-|---|---|
-| Winding mechanism (hold/crank/slam/skip/wear, governor, ratchet clicks) | `src/game/coastal-memory/winding.js` |
-| Hands input glue (pinHeld / crankDelta / shake → winding) | `src/game/coastal-memory/hands.js` |
-| Interaction controller (pick up / rotate / shake / crank / put down → frame) | `src/game/coastal-memory/hands-scene.js` |
-| Full phrase bank (5 whole playthroughs) | `src/data/coastal-music-box-phrases.js` |
-| One-shot bank + "repitch only missing notes" rule | `src/data/coastal-music-box-notes.js` |
-| Lo-fi crush (8–12 bit, 20–32 kHz) | `src/audio/lo-fi.js` |
-| Interactive audio owner (varispeed phrase + broken bits) | `src/audio/coastal-memory-winding.js` |
-| Hands interaction (pick up / rotate / shake / crank / put down) | `src/game/coastal-memory/hands-scene.js` |
-| Renderer input (mechanism from winding + in-hand box placement) | `winding.js` (`coastalHandsMechanism`) + `scene.js` (`hands`) |
-| Overture renderer (offline: music box + Bach Chaconne + Couperin clavecin) | `tools/chunk_surfer/build-music-box-overture.mjs` |
+`src/game/music-box-inspection.js` supplies both viewers’ centred rigid transforms and accumulated camera-relative quaternion rotation. Rotation never changes physical size. The key follows the same case transform before its local arbor rotation. Brackets roll; the other axes remain independent after full turns. Wheel input changes viewing distance.
 
-Assets: `assets/music-box/phrases/`, `assets/music-box/samples/`,
-`assets/music-box/overture.wav` / `.m4a`, with `phrase-bank.json` and `note-bank.json`.
+`src/audio/music-box-transport.js` shares decoded assets while keeping playback ownership separate. Rattle and the pitched release material come from the long voice memo; the shorter memo’s phone/counter contacts are excluded. `assets/music-box/reference-performance.json` records intervals, processing, hashes and limitations. `tools/chunk_surfer/build-music-box-reference.mjs` reproduces preparation without playing audio.
 
-## Data flow (the contracts)
+The existing coastal receipt requires nine seconds of actually routed handled melody with the recorder monitored. Rattle, recoil, wind/sea, loading and pause do not earn progress. Handling borrows the coastal renderer/body and returns control on lowering; the saved Source return pose and voluntary Contact are unchanged.
 
-```
-pointer/wheel/controller
-   └─► stepHandsInteraction(state, {pickUp,putDown,pinHeld,crankDelta,shake,lookDelta}, dt)
-          └─► stepHands  →  stepWinding  →  { state, events }
-                ├─► createCoastalWindingAudio.update({state: winding, events, turn, held})
-                │      phrase BufferSource.playbackRate = phraseRate(crank)   (slow/fast)
-                │      slam ⇒ stop phrase + rake one-shots + whoosh
-                └─► renderer draws from handsInteractionFrame(state):
-                       boxPose.yaw/pitch (orbit), cylinderAngle, keyAngle, shakeLevel, ui
-```
-
-`handsInteractionFrame` already exposes every renderer input; the audio owner
-already voices every event. The visual layer is the only unwired seam.
-
-## Remaining: live scene + audio wiring
-
-The renderer input is built and tested (`coastalHandsMechanism` turns the winding
-state into the cylinder/gear/key/fan/tine mechanism; `makeCoastalMemoryScene({hands})`
-draws the box in hand instead of on its plinth; `coastalHandsHeldLocal` places the
-held box in front of the camera). The live scene controller exists too
-(`src/game/coastal-hands-scene.js`), routing E/F/W/S/A/D/Q input through
-`stepHandsInteraction` into `createCoastalWindingAudio`, and `coastalMemoryRenderFrame`
-carries `frame.hands` into the scene. The plinth scene exposes `frame.canPickUp` +
-`frame.ui.pickup` ('F · PICK UP THE BOX'), and `F` in range calls `onPickUp`.
-`main.js` wires `onPickUp` to `beginCoastalHands()` (pauses the plinth scene, pushes
-the hands scene sharing the coastal renderer, and resumes on `releaseCoastalHands`).
-
-The build is code-complete; what remains is in-game QA, which needs `pnpm dev`:
-
-1. **Double render.** Both the paused plinth scene and the hands scene call the
-   shared renderer each frame (scenes.js renders bottom-up). The hands scene is
-   later and wins, but the coast is drawn twice — gate the plinth scene's
-   `renderer.render` on `!paused`, or fold hands into the plinth scene as a mode.
-2. **UI overlay.** The plinth scene's `paintOverlay` still draws its note/recorder
-   hints during hands mode; the hands scene's `ui` needs a `paintOverlay`.
-3. **Feel.** Render pose, crank rate, slam and the lo-fi voice need an ear/eye pass.
-
-The winding, input, audio and lo-fi layers are complete and deterministic; the
-remaining work is presentation and needs the game running to verify.
+Construction review: `artifacts/music-box-rebuild/index.html`. Staged production-shader captures and their limits: `artifacts/music-box-rebuild/render-report.json`. Mechanical, audio and centring tests are technical evidence. Exact acoustic attribution of the release/rattle candidates, final-mix recognition, uninterrupted native-route acceptance and unfamiliar-player comprehension remain separate listening/play acceptance tasks.

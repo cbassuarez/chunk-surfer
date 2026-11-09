@@ -33,7 +33,7 @@ import {
 import { resolveStoryArt } from './story-art.js';
 import { promptLine, activeInputPromptDevice } from './bindings.js';
 import {sourceRestSubtitleLayout} from '../render/source-rest-subtitle.js';
-import {vfdMarqueeFrame} from '../render/vfd-marquee.js';
+import {renderArrivalTitleOption} from '../render/arrival-title-options.js';
 import {hardwareMotionReduced} from '../render/hardware-material.js';
 
 const COL_W = 86;
@@ -108,6 +108,8 @@ export function makeColdOpenScene({
     view() { return { ...choiceView(), presentation, transcriptBackground }; }, // for the headless suites
     textReviewSuspend() { convo.textReviewSuspend?.(); },
     textReviewResume() { convo.textReviewResume?.(); },
+    presentationPause() { return convo.presentationPause?.(); },
+    presentationResume() { return convo.presentationResume?.(); },
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (!active()) return true;
@@ -511,7 +513,7 @@ export function makeBoothDownbeatHoldScene({ duration = 0, onDone, scrim = 0.28 
 // every existing caller and the god menu are unchanged.
 export function makeWorldTitleScene({
   onDone, audio, cue, camera = null,
-  duration = 12.0, turn = 1.3, iris = 1.6, marquee = false,
+  duration = 12.0, turn = 1.3, iris = 1.6, marquee = false, manageSoundtrack = true,
 } = {}) {
   let t = 0;
   let done = false;
@@ -544,7 +546,7 @@ export function makeWorldTitleScene({
     // the title must not add a second, disembodied slam.
     enter() {
       entryPose = camera?.pose?.() || null;
-      audio?.fadeSoundtrack?.({ fade: Math.max(2, lead + duration - 2.4) });
+      if(manageSoundtrack)audio?.fadeSoundtrack?.({ fade: Math.max(2, lead + duration - 2.4) });
     },
     update(dt) {
       t += dt;
@@ -626,48 +628,10 @@ export function makeWorldTitleScene({
         return;
       }
 
-      // A finite dot-display title and two caption fields. Long names move
-      // once after their reading hold, then stay at the ending; the scene's
-      // original fade, duration and camera remain their only timing owner.
-      const title = 'CHUNK SURFER';
-      const place = 'ELLERY CONSERVATOIRE OF MUSIC';
-      const work = '5 ROOMS / 1 CLEAN MINUTE EACH';
-      const width = Math.min(34,Math.max(16,cols-4)),reduced=hardwareMotionReduced();
-      const wrap = (copy,available) => {
-        const lines = [];
-        let line = '';
-        for (const word of copy.split(' ')) {
-          const next = line ? `${line} ${word}` : word;
-          if (line && next.length > available) { lines.push(line); line = word; }
-          else line = next;
-        }
-        if (line) lines.push(line);
-        return lines;
-      };
-      const compact = rows < 15;
-      const scale = Math.min(compact ? 2 : 3.4, (cols - 4) / title.length,reduced?width/title.length:Infinity),
-        placeScale=compact?1:1.25,workScale=1,
-        placeLines=reduced?wrap(place,Math.floor(width/placeScale)):[place],workLines=reduced?wrap(work,width):[work];
-      const titleHeight = scale * .60;
-      const placeGap = compact ? .50 : 1.75, workGap = compact ? .25 : .85;
-      const placeHeight=placeLines.length*placeScale,workHeight=workLines.length*workScale,
-        height = titleHeight + placeGap + placeHeight + workGap + workHeight;
-      const y = Math.max(.15, Math.min(rows - height - .15, rows * .46 - height / 2));
-      const drawField=(copy,atY,fontScale,alpha,reveal)=>{
-        const frame=vfdMarqueeFrame(copy,{width,scale:fontScale,time:Math.max(0,tt-reveal-1.8),
-          reducedMotion:reduced,startHold:1.2,endHold:1.2,speed:3.8}),x=(cols-width)/2;
-        uiWithClip({x,y:atY-.18,w:width,h:Math.max(1,fontScale*.68)+.36},()=>{
-          drawVfdText(x+Math.max(0,(width-frame.contentWidth)/2)-frame.offset,atY,copy,
-            {scale:fontScale,role:'ui-primary',color:UI_COLOR.primary,alpha});
-        });
-      };
-      drawField(title,y,scale,up(0),0);
-      const placeY = y + titleHeight + placeGap;
-      for (const [index, line] of placeLines.entries())
-        drawField(line,placeY+index*placeScale,placeScale,up(2.4)*.90,2.4);
-      const workY = placeY + placeHeight + workGap;
-      for (const [index, line] of workLines.entries())
-        drawField(line,workY+index*workScale,workScale,up(3.6)*.72,3.6);
+      // The approved disc display uses exactly the same layout and phosphor
+      // rendering as its design preview. The title itself never scrolls.
+      renderArrivalTitleOption({direction:'disc',cols,rows,time:tt,duration,
+        reducedMotion:hardwareMotionReduced()}, {drawText:drawVfdText,withClip:uiWithClip});
     },
   };
 }

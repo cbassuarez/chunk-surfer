@@ -1,6 +1,6 @@
 // The manifestation is a skinned volume. Its geometry pass transports actual
 // coverage and view depth into acquisition; no image/card supplies its contour.
-// HUSH reveals a screen-fixed image. The retained human reference keeps
+// HUSH reveals a world-oriented stellar field. The retained human reference keeps
 // its black absence; neutral radiance remains outside either physical volume.
 // Endpoint identity only: acquisition still chooses every glow mark. Sharing
 // this operation keeps glass, exposure and phosphor from tinting that material.
@@ -55,7 +55,11 @@ void main(){
  float cosmos=mod(floor(bits/32.0),2.0);
  float coreMask=step(.018,mass)*core;
  float cosmosMask=coreMask*cosmos;
- vec4 cosmic=hushCosmosField(gl_FragCoord.xy,uRes);
+ // The geometry pass sampled the stationary world ray before acquisition.
+ // Carry that exact five-bit stellar signal; never pin it to the viewport by
+ // evaluating a second field here or after the recorder has chosen its marks.
+ float cosmicSignal=mod(bits,32.0)/31.0;
+ vec4 cosmic=hushCosmosSignalMaterial(cosmicSignal);
  float nearGlow=0.0,midGlow=0.0,wideGlow=0.0,farGlow=0.0;
  for(int i=0;i<8;i++){
   float a=float(i)*.78539816339;vec2 d=vec2(cos(a),sin(a));
@@ -72,7 +76,7 @@ void main(){
  // Carry the already depth-clipped finite material support with the scene.
  // Acquisition and POST can retain black/white endpoints without resampling
  // the radial glow neighbourhood or repainting a smooth halo after recording.
- oIdentity=vec4(coreMask,step(.000001,glowLight),cosmic.a,cosmosMask);
+ oIdentity=vec4(coreMask,step(.000001,glowLight),cosmicSignal,cosmosMask);
  // The old text-only scene keeps its own presentation outside the physical
  // material. Use its actual core/glow footprint, not an unconditional expanded
  // mesh mask. Strength already entered acquisition, so do not multiply it twice.

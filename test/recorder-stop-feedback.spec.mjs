@@ -11,7 +11,7 @@ const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),instru
 const from=main.indexOf('function recordAction('),until=main.indexOf('\n  if(usingSourceSpace()){',from);assert.ok(from>=0&&until>from);
 function fixture(cells=4){
  let recording=true,now=100;const spoken=[],rejected=[],brakes=[];
- const h=vm.createContext({takeHunter:{...HUNTER.armTakeHunter(null,{roll:0}),seconds:9,cells,warningSeconds:2.4},HUNTER,
+ const h=vm.createContext({takeRoom:'amplifications',takeHunter:{...HUNTER.armTakeHunter(null,{roll:0}),seconds:9,cells,warningSeconds:2.4},HUNTER,
   REC:{isRecording:()=>recording,isSlating:()=>false,isStalled:()=>false,recState:()=>({spoiled:false})},
   chapelTapeCaseAvailable:()=>true,cancelApparitionApplause(){},micCheckActive:()=>false,
   pressControl:(id,options)=>pressControl(id,{...options,now}),pressPromptControl:(id,options)=>{rejected.push({id,...options});pressControl(id,{...options,now});},

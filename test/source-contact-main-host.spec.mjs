@@ -35,11 +35,18 @@ test('actual Contact host forwards night facts, current chapter and run, checkpo
  for(const chapter of['I','II','III']){
   const f=fixture({continuation:chapter!=='I'}),checkpoint=chapter==='I'?null:{phase:chapter==='II'?'wrong-return':'catch',x:16,z:-22,feet:0};
   assert.equal(f.scope.openSourceHushContact({chapter,locallyAvailable:chapter!=='I',checkpoint}),true);
-  assert.deepEqual(plain(f.calls.begin[0].options),{chapter,locallyAvailable:chapter!=='I',runId:'main-contact-run'});
+  assert.deepEqual(plain(f.calls.begin[0].options),{chapter,locallyAvailable:chapter!=='I',captured:false,runId:'main-contact-run'});
   assert.deepEqual(plain(f.calls.begin[0].facts),{leads:{listen:2,cut:1},composure:73,ceiling:90,takes:2,rig:true,evidence:['actual-night-trace'],clues:{tallies:false,voice:true,chandelier:false}});
   if(checkpoint){assert.equal(f.calls.checkpoints[0],checkpoint);assert.deepEqual(f.calls.sequence,['checkpoint','begin']);}
   assert.equal(f.calls.resolve.length,0,'opening or approaching never confirms a cost');assert.equal(f.actor.hasTarget,false);assert.equal(f.actor.speed,0);
  }
+});
+
+test('actual captured Contact host forwards the physical offer without choosing or confirming combat',()=>{
+ const f=fixture(),checkpoint={phase:'wrong-return',recovery:{reason:'hush-pressure',contact:'pending'}};
+ assert.equal(f.scope.openSourceHushContact({chapter:'II',locallyAvailable:true,captured:true,checkpoint}),true);
+ assert.equal(f.calls.checkpoints[0],checkpoint);assert.equal(f.calls.begin[0].options.captured,true);
+ assert.equal(f.calls.resolve.length,0);f.scope.dialog.onResolve();assert.equal(f.calls.cancel,1);assert.equal(f.calls.released,1);
 });
 
 test('recording, listening, playback and an expired night refuse new Contact before any modal, checkpoint or cost',()=>{

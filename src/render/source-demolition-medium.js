@@ -1,6 +1,6 @@
 // A bounded world medium, evaluated before the normal acquisition/dither pass.
 // Depth is camera-forward distance; integration needs distance along the ray.
-import { horizonCamera } from './horizon3d.js';
+import { sourceViewCamera } from './source-view-camera.js';
 
 export const SOURCE_DEMOLITION_MEDIUM_SAMPLES = 6;
 const clamp = n => Math.max(0, Math.min(1, n));
@@ -14,7 +14,7 @@ export function sourceDemolitionMediumUniforms({medium,eye=[0,0,0],yaw=0,pitch=0
     !Number.isFinite(medium.progress)||medium.max.some((v,i)=>v<=medium.min[i]))return null;
   const progress=clamp(medium.progress);
   if(progress<=0)return null;
-  const camera=horizonCamera({camX:eye[0],camY:eye[1],camZ:eye[2],yaw,pitch,aspect});
+  const camera=sourceViewCamera({camX:eye[0],camY:eye[1],camZ:eye[2],yaw,pitch,aspect});
   return {min:[...medium.min],max:[...medium.max],progress,eye:[...eye],forward:camera.forward,
     right:[camera.view[0],camera.view[4],camera.view[8]],
     up:[camera.view[1],camera.view[5],camera.view[9]],

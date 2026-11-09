@@ -497,10 +497,13 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
     wetEnvironmentGain = null;
   }
 
-  function timerOnly(handle, duration) {
+  function timerOnly(handle, duration, elapsed = 0) {
     handle.started = true;
+    handle.timerMode = true;
+    handle.startTime = null;
     handle.startMs = performance.now();
     handle.duration = Math.max(0.08, duration);
+    handle.timerOffset = clamp(elapsed,0,handle.duration);
   }
 
   function start(text, opts = {}) {
@@ -516,14 +519,28 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
       startTime: null,
       startMs: 0,
       duration: Math.max(0.25, clean.length / 13),
+      paused: false,
+      timerMode: false,
+      timerOffset: 0,
+      buffer: null,
+      sourceOffset: 0,
+      speed: 1,
+      wobblePhase: 0,
+      wobbleFrequency: 0,
+      wobbleDepth: 0,
+      sourcePosition() {
+        if(!this.buffer)return 0;
+        if(this.paused||!this.source||this.startTime==null)return this.sourceOffset;
+        const time=Math.max(0,Number(ctx?.currentTime)-this.startTime),omega=2*Math.PI*this.wobbleFrequency,
+          wobble=omega?this.wobbleDepth/omega*(Math.cos(this.wobblePhase)-Math.cos(this.wobblePhase+omega*time)):0;
+        return clamp(this.sourceOffset+this.speed*time+wobble,0,this.buffer.duration);
+      },
       progress() {
         if (this.ended) return 1;
         if (!this.started) return 0;
-        const c = ctx;
-        const elapsed = c && this.startTime != null && c.state === 'running'
-          ? c.currentTime - this.startTime
-          : (performance.now() - this.startMs) / 1000;
-        return clamp(elapsed / Math.max(0.08, this.duration), 0, 1);
+        if(this.buffer&&!this.timerMode)return clamp(this.sourcePosition()/this.buffer.duration,0,1);
+        const elapsed=this.timerOffset+(this.paused?0:(performance.now()-this.startMs)/1000);
+        return clamp(elapsed/Math.max(.08,this.duration),0,1);
       },
       charsFor() {
         return Math.min(clean.length, Math.floor(clean.length * this.progress()));
@@ -535,16 +552,78 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
         this.ended = true;
         this.stop();
       },
+      pause() {
+        if(this.paused)return false;
+        if(this.ended){
+          // A finished mouth can still have a short reflection tail while its
+          // caption waits. That old tail must not emerge after a quick pause.
+          const key=opts.speaker||'default',chain=chains.get(key);
+          if(chain&&chain===this.chain){try{chain.input.disconnect();chain.output.disconnect();}catch{}chains.delete(key);}
+          this.chain=null;return false;
+        }
+        if(this.started){
+          if(this.buffer&&!this.timerMode){
+            const time=this.source&&this.startTime!=null?Math.max(0,Number(ctx?.currentTime)-this.startTime):0;
+            this.sourceOffset=this.sourcePosition();this.wobblePhase=(this.wobblePhase+2*Math.PI*this.wobbleFrequency*time)%(2*Math.PI);
+          }else this.timerOffset=Math.min(this.duration,this.timerOffset+(performance.now()-this.startMs)/1000);
+        }
+        this.paused=true;retireSource(this);
+        // Retire the old reflection graph as well. Otherwise a quick resume
+        // can reveal a syllable tail that continued behind a muted pause menu.
+        const key=opts.speaker||'default',chain=chains.get(key);
+        if(chain&&chain===this.chain){try{chain.input.disconnect();chain.output.disconnect();}catch{}chains.delete(key);}
+        this.chain=null;return true;
+      },
+      resume() {
+        if(this.ended||!this.paused||current!==this||id!==seq)return false;
+        this.paused=false;
+        if(this.buffer&&!this.timerMode)playPrepared();
+        else if(this.started)this.startMs=performance.now();
+        // A queued provider result will call playPrepared when it arrives.
+        return true;
+      },
       stop() {
-        try { this.source?.stop(); } catch (_) {}
-        try { this.source?.disconnect(); } catch (_) {}
-        this.source = null;
+        this.ended=true;this.paused=false;retireSource(this);this.buffer=null;
         // The bed that ran under the line stops with it. Except the smear,
         // which is in the chain and is allowed to keep going.
-        try { this.bed?.src.stop(); this.bed?.g.disconnect(); } catch (_) {}
-        this.bed = null;
       },
     };
+    function retireSource(owner){
+      const source=owner.source;owner.source=null;
+      if(source){source.onended=null;try{source.stop();source.disconnect();}catch{}}
+      try{owner.bed?.src.stop();owner.bed?.g.disconnect();}catch{}owner.bed=null;
+      try{owner.wobble?.lfo.stop();owner.wobble?.lfo.disconnect();owner.wobble?.depth.disconnect();}catch{}owner.wobble=null;
+    }
+    function playPrepared(){
+      if(current!==handle||id!==seq||handle.ended||handle.paused||!handle.buffer||handle.source)return;
+      if(handle.sourceOffset>=handle.buffer.duration){handle.ended=true;if(current===handle)current=null;return;}
+      const c=ensureContext();if(!c){timerOnly(handle,handle.duration,handle.progress()*handle.duration);return;}
+      try{c.resume?.()?.catch?.(()=>{});}catch{}
+      try{
+        const chain=chainFor(opts.speaker),p=chain.profile,src=c.createBufferSource();src.buffer=handle.buffer;
+        src.playbackRate.setValueAtTime(handle.speed,c.currentTime);
+        handle.chain=chain;
+        if(p.wobble){
+          const lfo=c.createOscillator(),depth=c.createGain();lfo.frequency.value=handle.wobbleFrequency;depth.gain.value=handle.wobbleDepth;
+          if(handle.wobblePhase&&c.createPeriodicWave&&lfo.setPeriodicWave){
+            lfo.setPeriodicWave(c.createPeriodicWave(new Float32Array([0,Math.sin(handle.wobblePhase)]),new Float32Array([0,Math.cos(handle.wobblePhase)]),{disableNormalization:true}));
+          }
+          lfo.connect(depth);depth.connect(src.playbackRate);lfo.start();handle.wobble={lfo,depth};
+        }
+        src.connect(chain.input);
+        if(p.hiss)handle.bed=startBed(c,chain.output,p.hiss,8000);
+        else if(p.squelch)handle.bed=startBed(c,chain.output,p.squelch,3000);
+        src.onended=()=>{
+          if(handle.source!==src||handle.paused||handle.ended)return;
+          handle.sourceOffset=handle.buffer?.duration||0;handle.ended=true;retireSource(handle);
+          if(current===handle)current=null;
+        };
+        handle.source=src;handle.started=true;handle.timerMode=false;handle.startTime=c.currentTime;handle.startMs=performance.now();
+        src.start(c.currentTime,handle.sourceOffset);
+      }catch{
+        const elapsed=handle.progress()*handle.duration;retireSource(handle);timerOnly(handle,handle.duration,elapsed);
+      }
+    }
     current = handle;
     if (!clean) {
       timerOnly(handle, 0.08);
@@ -558,43 +637,14 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
         timerOnly(handle, handle.duration);
         return;
       }
-      try { c.resume?.(); } catch (_) {}
       try {
-        const chain = chainFor(opts.speaker);
-        const p = chain.profile;
+        const p = profileFor(opts.speaker);
         const buffer = c.createBuffer(1, samples.length, sampleRate);
         buffer.copyToChannel(samples, 0);
-        const src = c.createBufferSource();
-        src.buffer = buffer;
         const speed = clamp((Number(opts.rate) || 1) * (p.rate ?? 1), 0.35, 2.0);
-        src.playbackRate.setValueAtTime(speed, c.currentTime);
-        // Tape does not hold pitch. Neither does the man on it.
-        if (p.wobble) {
-          const lfo = c.createOscillator();
-          const depth = c.createGain();
-          lfo.frequency.value = 0.7 + Math.random() * 0.5;
-          depth.gain.value = speed * p.wobble;
-          lfo.connect(depth); depth.connect(src.playbackRate);
-          lfo.start();
-          src.onended = () => { try { lfo.stop(); lfo.disconnect(); depth.disconnect(); } catch (_) {} };
-        }
-        src.connect(chain.input);
-        if (p.hiss) handle.bed = startBed(c, chain.output, p.hiss, 8000);
-        else if (p.squelch) handle.bed = startBed(c, chain.output, p.squelch, 3000);
-        const prevEnded = src.onended;
-        src.onended = () => {
-          prevEnded?.();
-          handle.ended = true;
-          try { handle.bed?.src.stop(); handle.bed?.g.disconnect(); } catch (_) {}
-          handle.bed = null;
-          if (current === handle) current = null;
-        };
-        handle.source = src;
+        handle.buffer=buffer;handle.speed=speed;handle.wobbleFrequency=p.wobble ? .7+Math.random()*.5 : 0;handle.wobbleDepth=speed*(p.wobble||0);
         handle.duration = buffer.duration / speed;
-        handle.started = true;
-        handle.startTime = c.currentTime;
-        handle.startMs = performance.now();
-        src.start();
+        playPrepared();
       } catch (_) {
         timerOnly(handle, handle.duration);
       }
@@ -605,6 +655,8 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
   return {
     start,
     stop: stopCurrent,
+    pause: () => current?.pause?.() || false,
+    resume: () => current?.resume?.() || false,
     dispose,
     setEnvironment,
     environment: () => ({ ...environment }),

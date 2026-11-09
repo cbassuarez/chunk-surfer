@@ -40,7 +40,6 @@ export function stepHands(hands, input = {}, dt = 0) {
   // can knock the pin out of a steady crank (a skip in the note stream).
   if (shakeImpulse > HANDS_TUNING.shakeThreshold) {
     events.push({ type: 'shake', at: 0, impulse: shakeImpulse });
-    winding.state.wear = clamp(winding.state.wear + shakeImpulse * HANDS_TUNING.shakeWear, 0, 1);
   }
 
   return {

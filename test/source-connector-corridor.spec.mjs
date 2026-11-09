@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SOURCE_CONNECTOR_CORRIDOR as C,SOURCE_CONNECTOR_REVIEW_STATES as FIX,
-  corridorParts,corridorCabinetBox,corridorDecorProgress} from '../src/data/source-connector-corridor.js';
+  corridorParts,corridorCabinetBox,corridorDecorProgress,corridorStrain} from '../src/data/source-connector-corridor.js';
 import {freshSourceConnectorCorridor,normalizeSourceConnectorCorridor,advanceSourceConnectorCorridor} from '../src/game/source-connector-corridor.js';
 import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation,sourceContinuationCanOccupy,sourceContinuationRecoveryPlan} from '../src/game/source-continuation.js';
 import {SOURCE_CONTINUATION as WORLD,continuationChartSolids,continuationSupportAt} from '../src/data/source-continuation.js';
@@ -38,8 +38,8 @@ test('chart4 arrival and side routes cannot trigger an offscreen hallway event',
 });
 
 test('the finite strain completes once without altering body distance, floor or control state',()=>{
-  let s=state(point(-146,-65));const start={x:s.x,z:s.z,feet:s.feet};s=run(s,4.5);
-  assert.equal(s.corridor.strainElapsed,3.6);assert.equal(s.corridor.phase,'dormant');
+  let s=state(point(-146,-65));const start={x:s.x,z:s.z,feet:s.feet};s=run(s,C.strainSeconds+.9);
+  assert.equal(s.corridor.strainElapsed,C.strainSeconds);assert.equal(s.corridor.phase,'dormant');
   assert.deepEqual({x:s.x,z:s.z,feet:s.feet},start);assert.equal(s.recovery,null);assert.equal(s.fall,null);
   const before=structuredClone(s.corridor);s=run(s,4);assert.deepEqual(s.corridor,before);
   const paused=stepSourceContinuation(s,{dt:.25,forward:1,paused:true}).state;
@@ -47,14 +47,14 @@ test('the finite strain completes once without altering body distance, floor or 
   const delayed=stepSourceContinuation(s,{dt:.25,forward:1,renderReady:false}).state;assert.deepEqual(delayed.corridor,s.corridor);
 });
 
-test('the real obstruction leaves a continuous1.1m supported bypass and stops the central walking line',()=>{
+test('the real obstruction leaves a continuous2.6m supported bypass and stops the central walking line',()=>{
   let s=state(point(-146,-68.1));s=run(s,2.5);
-  assert.equal(s.corridor.phase,'settled');assert.equal(C.bypass.width,1.1);
+  assert.equal(s.corridor.phase,'settled');near(C.bypass.width,2.6);
   const box=corridorCabinetBox(s.corridor);near(box.minY,8.4);
   assert.equal(sourceContinuationCanOccupy(-146,-77,s),false);
-  for(let z=-75.8;z>=-78.2;z-=.025){
-    assert.ok(continuationSupportAt(C.bypass.centerX,z,s));
-    assert.equal(continuationFreeBody({...point(C.bypass.centerX,z)},s,{radius:WORLD.hush.radius}),true);
+  for(const x of[C.bypass.centerX-.75,C.bypass.centerX,C.bypass.centerX+.75])for(let z=-75.8;z>=-78.2;z-=.025){
+    assert.ok(continuationSupportAt(x,z,s));
+    assert.equal(continuationFreeBody({...point(x,z)},s,{radius:WORLD.hush.radius}),true);
   }
   Object.assign(s,point(-146,-75));s=run(s,1,{forward:1});assert.ok(s.z>-76.5,'a held W crossed the cabinet');
   s=run(s,.45,{side:1});s=run(s,2.5,{forward:1});assert.ok(s.z<-78.2,'ordinary sidestep and walk did not use the visible bypass');
@@ -126,13 +126,13 @@ test('the earned pre-obstruction anchor restores a safe centre and recovery rout
   assert.equal(s.corridor.phase,'settled');assert.equal(sourceContinuationCanOccupy(C.bypass.centerX,-77,s),true);
 });
 
-test('open side step-offs remain ordinary ballistic releases from an arbitrary corridor position',()=>{
-  let s=state(point(-145.02,-74.3));s.corridor={...FIX.settled};s=run(s,.12,{side:1});
+test('open side step-offs remain ordinary ballistic releases from the widened corridor edge',()=>{
+  let s=state(point(C.floorMaxX-.12,-74.3));s.corridor={...FIX.settled};s=run(s,.12,{side:1});
   assert.ok(s.fall);assert.equal(s.fall.trigger,'step-off');assert.ok(s.hush.trail.some(p=>p.kind==='drop'));
 });
 
 test('the actual render submission and every physical corridor part have matching box transforms',()=>{
-  const meshes=sourceConnectorGeometryLibrary();assert.equal(Object.keys(meshes).length,3);
+  const meshes=sourceConnectorGeometryLibrary();assert.equal(Object.keys(meshes).length,4);
   for(const fixture of Object.values(FIX)){
     const s=state();s.corridor={...fixture};const rows=corridorParts(s),parts=sourceConnectorRenderParts(s),frame=sourceContinuationRenderFrame(s);
     const actual=frame.canonicalProps.filter(p=>p.connector&&p.chartId===4);
@@ -181,4 +181,52 @@ test('the original chart4 approach enters the open west bay with both actual bod
   }
   assert.equal(hushCrossedWest,true);assert.ok(s.hush.x>-146.3);assert.ok(s.hush.z<-61);
   assert.equal(s.corridor.strainStarted,true);assert.equal(s.corridor.phase,'dormant','mechanism has not yet reached its warning trigger');
+});
+
+test('the passage retains a furnished Lyric profile, real supported glasses and stripped construction in the same footprint',()=>{
+  for(const fixture of Object.values(FIX)){
+    const rows=corridorParts({corridor:fixture});assert.ok(rows.length<200,'the existing reach remains a bounded kit');
+    const glasses=rows.filter(p=>p.visualMesh==='connector-glass');
+    assert.equal(glasses.length,10);assert.equal(rows.filter(p=>p.backBarMirror).length,5);
+    assert.ok(rows.some(p=>p.id.includes('counter-top')&&p.maxX-p.minX>=.39));
+    assert.ok(rows.some(p=>p.stockStage==='stripped'));assert.ok(rows.some(p=>p.stockStage==='salvage'));
+    for(const glass of glasses){
+      const shelf=rows.find(p=>p.id===glass.restingOn);assert.ok(shelf);
+      near(glass.minY,shelf.maxY);assert.ok(glass.minX>=shelf.minX&&glass.maxX<=shelf.maxX);
+      assert.ok(glass.minZ>=shelf.minZ&&glass.maxZ<=shelf.maxZ);
+    }
+    for(const row of rows)for(const [lo,hi]of[['minX','maxX'],['minY','maxY'],['minZ','maxZ']])
+      assert.ok(Number.isFinite(row[lo])&&Number.isFinite(row[hi])&&row[hi]>row[lo],row.id+' is a real finite volume');
+  }
+  const mesh=sourceConnectorGeometryLibrary()['connector-glass'];
+  const vertices=Array.from({length:mesh.p.length/3},(_,i)=>mesh.p.slice(i*3,i*3+3));
+  near(Math.min(...vertices.map(p=>p[1])),0);near(Math.max(...vertices.map(p=>p[1])),1);
+  assert.ok(vertices.some(p=>p[1]===1&&Math.abs(Math.hypot(p[0],p[2])-.44)<1e-8),'the rim has an inner surface');
+  for(let i=0;i<mesh.i.length;i+=3){
+    const [a,b,c]=mesh.i.slice(i,i+3).map(k=>vertices[k]),u=b.map((v,k)=>v-a[k]),v=c.map((n,k)=>n-a[k]);
+    assert.ok(Math.hypot(u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])>1e-10,'no degenerate glass cap or fake flat sprite');
+  }
+});
+
+test('the cabinet has a continuous visible suspension and applied furniture while leaving the supported bypass clear',()=>{
+  for(const fixture of Object.values(FIX)){
+    const rows=corridorParts({corridor:fixture}),cabinet=corridorCabinetBox(fixture),beam=rows.find(p=>p.id==='journey-corridor-hoist-crossbeam');
+    const guides=rows.filter(p=>p.id.startsWith('journey-corridor-cabinet-guide-'));assert.equal(guides.length,2);
+    for(const guide of guides){near(guide.minY,cabinet.maxY);near(guide.maxY,beam.maxY);assert.ok(guide.minX>=beam.minX&&guide.maxX<=beam.maxX);}
+    assert.ok(rows.some(p=>p.id==='journey-corridor-cabinet-handle'&&p.material==='worn-metal'));
+    for(let z=-75.8;z>=-78.2;z-=.1)assert.equal(continuationFreeBody(point(C.bypass.centerX,z),{...point(C.bypass.centerX,z),corridor:fixture},{radius:WORLD.hush.radius}),true);
+  }
+});
+
+test('visual strain remains perceptible at the cabinet decision and old finished saves do not replay it',()=>{
+  let s=state(point(-146,-61));let n=0;
+  while(s.z>-74&&n++<1600)s=stepSourceContinuation(s,{dt:1/120,forward:1}).state;
+  assert.ok(n<1600);assert.ok(corridorStrain(s.corridor)>.8,'strain must survive the ordinary approach to the obstruction');
+  assert.ok(corridorDecorProgress(15.5,s.corridor)-15.5>4,'the prior subtle bay shuffle has a substantial visible displacement');
+  const old={version:1,phase:'settled',elapsed:.9,strainStarted:true,strainElapsed:3.6,legacyPassed:false,blockedBy:null};
+  const migrated=normalizeSourceConnectorCorridor(old,point(-146,-75));
+  assert.equal(migrated.version,C.version);near(migrated.strainElapsed,C.strainSeconds);near(corridorStrain(migrated),0);
+  assert.equal(migrated.phase,'settled');assert.equal(migrated.legacyPassed,false);
+  // The apparent stretch is not misreported as new walking or a moved gate.
+  near(corridorDecorProgress(0,s.corridor),0);near(corridorDecorProgress(C.length,s.corridor),31);
 });

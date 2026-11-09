@@ -71,7 +71,6 @@ const cells = (value) => `${number(value)} cells · ${number(value * CELL)} m`;
 // Constants the runtime keeps to itself. Read out of the file rather than typed
 // again, so the page shows the number the game is actually using.
 const CODE_CONSTANTS = Object.freeze({
-  bustDepth: 'HORIZON_BUST_DEPTH',
   doorCount: 'ROUTE_DOOR_FIELD_COUNT',
   keyDoors: 'TOWER_KEY_DOORS',
   closeBehind: 'EDGE_DOOR_CLOSE_BEHIND',
@@ -83,9 +82,9 @@ export const SECTIONS = Object.freeze([
   { id: 'in', title: 'Getting in', blurb: 'From the building to the Hanging Shore. Everyone walks this, in this order.' },
   { id: 'field', title: 'The field', blurb: 'The Braided Divide, its optional Last Reception, and the original page and goods pair. Contact remains a voluntary meeting in the field.' },
   { id: 'contact', title: 'The Contact road', blurb: 'Choose a warned fight with HUSH. The first two wins return to the field; the third win or any loss resolves this road.' },
-  { id: 'away', title: 'Walking away', blurb: 'The original goods pair leads through Wrong Return and the Catch. Its final pair hands back to the existing drive, physical outskirts and tape.' },
-  { id: 'tower', title: 'The tower road', blurb: 'The bust’s detour: the bells, a field of doors, and St Brendan’s.' },
-  { id: 'chapel', title: 'The chapel road', blurb: 'Straight on past the end of the tape to the chapel’s own door.' },
+  { id: 'away', title: 'Walking away', blurb: 'The original goods pair leads through Wrong Return and the Catch. Its final pair hands back to the existing drive, physical outskirts and Horizon.' },
+  { id: 'tower', title: 'The tower road', blurb: 'The occupant’s offer: the bells, a field of doors, and St Brendan’s.' },
+  { id: 'chapel', title: 'The chapel road', blurb: 'From Horizon onward to the chapel’s own door.' },
 ]);
 
 export const LANES = Object.freeze({
@@ -263,8 +262,8 @@ export const STAGES = Object.freeze([
       ['The landmark arrival', at(RUNTIME, "dispatch({ type: 'FINAL_REACHED' }")],
       ['The actual walked exit intercept', at(RUNTIME, "const continuation = sourceContinuationEntry('forward');")],
     ],
-    presets: [G.FINAL, G.NORMAL_EXIT], jump: [], puzzles: ['horizon-transport', 'redaction'],
-    specs: ['test/horizon-transport.spec.mjs', 'test/source-finale-routes.spec.mjs'],
+    presets: [G.FINAL, G.NORMAL_EXIT], jump: [], puzzles: ['redaction'],
+    specs: ['test/horizon-approach-runtime.spec.mjs', 'test/source-finale-routes.spec.mjs'],
   },
   {
     id: 'contact', section: 'contact', lane: 'contact', short: 'Contact', title: 'Contact: the voluntary HUSH encounters',
@@ -296,7 +295,7 @@ export const STAGES = Object.freeze([
     happens: 'The real pair keeps its fixed opening and collision. On a fresh normal route, crossing seems to return to Ellery. The false building and retained descent precede Wrong Return, while Source I and its original body remain intact. False echo pairs still erase themselves. Existing onward journeys retain their position.',
     moveOn: 'Open and walk through the real pair into the false Ellery return.',
     callouts: [
-      { kind: 'can-return', text: 'Visible refuge portals return to this original approach with continuation progress intact. Until the bust has an answer, returning from the physical road reopens the final Catch balcony.' },
+      { kind: 'can-return', text: 'Visible refuge portals return to this original approach with continuation progress intact. Until Horizon has an answer, returning from the physical road reopens the final Catch balcony.' },
       { kind: 'saves', text: 'The new route lives in chunkSurf.sourceContinuation. Source I remains uncommitted until the final Catch door is physically crossed.' },
     ],
     phases: [P.LANDSCAPE, P.FINAL, P.HORIZON], finale: [S.UNCOMMITTED, S.HORIZON], objectives: [], checkpoints: [],
@@ -305,7 +304,7 @@ export const STAGES = Object.freeze([
       { to: 'earthfall', when: 'existing descent checkpoint resumes' },
       { to: 'wrong-return', when: 'existing Source II checkpoint resumes' },
       { to: 'nothing', when: 'legacy save already beyond the original handoff' },
-      { to: 'catch', when: 'reverse from the road before the bust decision, after completing the added route', back: true },
+      { to: 'catch', when: 'reverse from the road before the Horizon decision, after completing the added route', back: true },
     ],
     span: () => null,
     measure: (k) => [['Shut behind you after', `${number(k.closeBehind)} cells`]],
@@ -428,7 +427,7 @@ export const STAGES = Object.freeze([
     moveOn: 'Walk on until the road starts under you.',
     callouts: [{ kind: 'note', text: 'The recording has not started. Everything out here plays at second zero of the tape.' }],
     phases: [P.HORIZON], finale: [S.HORIZON], objectives: ['horizon-walk'], checkpoints: [],
-    next: [{ to: 'arrival-night', when: 'where the road starts' }, { to: 'catch', when: 'back through the original pair before the bust decision, after the continuation is complete', back: true }],
+    next: [{ to: 'arrival-night', when: 'where the road starts' }, { to: 'catch', when: 'back through the original pair before the Horizon decision, after the continuation is complete', back: true }],
     span: () => SOURCE_NOTHING_LENGTH,
     measure: () => [['Length', cells(SOURCE_NOTHING_LENGTH)]],
     cites: [['Its length', at(LEVEL, 'export const SOURCE_NOTHING_LENGTH')]],
@@ -439,10 +438,10 @@ export const STAGES = Object.freeze([
     id: 'arrival-night', section: 'away', lane: 'away', short: 'The road', title: 'The same scene, over and over',
     where: 'Outside the bay, the night you arrived: the lodge, the lamps, the shelter, the bus, the van. One short scene, passed again and again for about a kilometre.',
     happens: 'Every pass is the same scene, a little more worn than the last — lamps out, pieces missing, everything further off true — and more likely to break badly: mirrored, stuttering, everyone turned toward you, the bus across the road, the road gone.',
-    moveOn: 'Keep walking. The road runs out a short walk from the head of the tape.',
+    moveOn: 'Keep walking. The road runs out at the far edge, where Horizon interrupts.',
     callouts: [{ kind: 'note', text: 'It rains on the road, and only on the road.' }],
     phases: [P.HORIZON], finale: [S.HORIZON], objectives: ['horizon-walk'], checkpoints: [],
-    next: [{ to: 'source-pub', when: 'optional: favors completed, last-light recording heard, and the Lyric threshold chosen', branch: true }, { to: 'tape', when: 'at the head of the tape' }],
+    next: [{ to: 'source-pub', when: 'optional: favors completed, last-light recording heard, and the Lyric passage chosen', branch: true }, { to: 'tape', when: 'at the street’s far edge' }],
     span: () => SOURCE_OUTSKIRTS_LENGTH,
     measure: () => [
       ['Length', cells(SOURCE_OUTSKIRTS_LENGTH)],
@@ -462,8 +461,8 @@ export const STAGES = Object.freeze([
     id: 'source-pub', section: 'away', lane: 'away', short: 'The lower Lyric', title: 'The optional Source pub',
     where: 'A fixed Lyric entrance near the original last-light point on the physical road, available after Iona’s ordinary-world favors and the recording.',
     happens: 'Iona is warmly oblivious in a colder unfinished bar. Five rounds ask for increasingly distant work among cask stacks. An empty tray and then a barrel drop through real openings; following either is a chosen descent into a lower room. The final errand leaves one clean glass. The road and tape remain where they were.',
-    moveOn: 'Choose whether to help. Use the room’s explicit exit to restore the exact physical-road pose, then continue to the tape.',
-    callouts: [{kind:'can-return',text:'The room is optional, persists independently and returns to the same road pose. Its falls never move the ordinary Source body or commit Contact or a bust branch.'}],
+    moveOn: 'Choose whether to help. Use the room’s explicit exit to restore the exact physical-road pose, then continue to Horizon.',
+    callouts: [{kind:'can-return',text:'The room is optional, persists independently and returns to the same road pose. Its falls never move the ordinary Source body or commit Contact or a Horizon branch.'}],
     phases: [P.HORIZON], finale: [S.HORIZON], objectives: [], checkpoints: [],
     next: [{to:'arrival-night',when:'leave the Lyric and resume the original road',back:true}],
     span: () => null,
@@ -477,41 +476,33 @@ export const STAGES = Object.freeze([
     specs: ['test/source-pub.spec.mjs', 'test/source-pub-main.spec.mjs', 'test/source-pub-renderer.spec.mjs'],
   },
   {
-    id: 'tape', section: 'away', lane: 'away', short: 'The tape', title: 'The tape',
-    where: 'The recording, laid out as ground.',
-    happens: 'Where you stand is where the recording is: stop and it stops, walk back and it runs backwards. The bust stands a way in, and talking to it decides the road.',
-    moveOn: 'Accept the bust and follow the path it cuts to the tower. Otherwise walk to the end of the tape, which puts you on the chapel road.',
-    callouts: [
-      { kind: 'fork', text: 'The bust decides the road. Accepting leads to the tower; anything else, and the end of the tape leads to the chapel.' },
-      { kind: 'gate', text: 'The bust only offers the tower if you carry what it asks about (the marble eyes). Otherwise it declines for you.' },
-      { kind: 'no-return', text: 'Once the bust has had its answer, the grey doors stay locked behind you.' },
-      { kind: 'note', text: 'Walk off the side of the band and you are put back near the head of the tape.' },
+    id:'tape',section:'away',lane:'away',short:'Horizon',title:'Horizon — walk to the object',
+    where:'At the far edge of the existing street, inside one closed curved space.',
+    happens:'Seven roads lead to one occupant: Sarah, Lyle, a daisy or an ant. The truth is always given. A recorded condition opens the tower offer; the daisy can complete its condition here.',
+    moveOn:'After the truth and offer are understood, walk toward the tower to accept or walk onward to decline. Waiting never chooses.',
+    callouts:[
+      {kind:'fork',text:'The earned tower offer and the ordinary chapel route use physical departures.'},
+      {kind:'gate',text:'Sarah’s boundary, Lyle’s music box, the last petal or the watched ant provides evidence. Gallery eye state is independent.'},
+      {kind:'saves',text:'The occupant, local progress and final road survive interruption. A cathedral loss returns to the same occupant with the chapel closed.'},
     ],
-    phases: [P.HORIZON], finale: [S.HORIZON], objectives: ['horizon-walk'], checkpoints: [],
-    next: [
-      { to: 'bell-passage', when: 'accept the bust, then take its path', branch: true },
-      { to: 'chapel-outskirts', when: 'at the end of the tape' },
+    phases:[P.HORIZON],finale:[S.HORIZON],objectives:['horizon-walk'],checkpoints:[],
+    next:[{to:'bell-passage',when:'accept the earned offer and walk toward the tower',branch:true},{to:'chapel-outskirts',when:'walk onward after the truth'}],
+    span:()=>148,
+    measure:()=>[['Initial approach','74 m'],['Roads','7'],['Real debris instances','118']],
+    cites:[
+      ['The interruption',at(MAIN,'function beginHorizonInterruption(')],
+      ['The far edge',at(RUNTIME,'horizonApproachDue:()=>')],
+      ['Offer evidence',at('src/game/horizon-approach-record.js','export function readHorizonApproachRecord(')],
+      ['Recognition',at(RUNTIME,'function recognizeHorizonApproach(')],
+      ['Decision',at(RUNTIME,'function decideHorizonApproach(')],
+      ['Road',at(RUNTIME,'function chooseHorizonExit(exit) {')],
     ],
-    span: () => SOURCE_HORIZON.length,
-    measure: (k) => [
-      ['Length', cells(SOURCE_HORIZON.length)],
-      ['The recording', `${number(SOURCE_HORIZON.tapeSeconds)}s`],
-      ['The bust stands', `${number(k.bustDepth)} cells in`],
-    ],
-    cites: [
-      ['Position is time', at(LEVEL, 'export function sourceHorizonSeconds(y) {')],
-      ['Whether the bust offers the tower', at(RUNTIME, 'function talkToHorizonBust() {')],
-      ['The decision', at(STATE, "case 'HORIZON_BUST_DECIDED': {")],
-      ['Onto the tower road', at(RUNTIME, 'chooseHorizonExit(HORIZON_EXIT.TOWER);')],
-      ['Onto the chapel road', at(RUNTIME, 'chooseHorizonExit(HORIZON_EXIT.CHAPEL);')],
-      ['The rule it passes', at(STATE, "case 'HORIZON_EXIT_CHOSEN': {")],
-    ],
-    presets: [], jump: [{ probe: 'horizonPreset', call: '__probe.horizonPreset(0)' }], puzzles: [],
-    specs: ['test/horizon.spec.mjs', 'test/horizon-bust.spec.mjs', 'test/horizon-score.spec.mjs', 'test/source-horizon-recovery.spec.mjs'],
+    presets:[],jump:[{probe:'horizonPreset',call:'__probe.horizonPreset(0)'}],puzzles:[],
+    specs:['test/horizon-approach.spec.mjs','test/horizon-approach-record.spec.mjs','test/horizon-approach-dialogue.spec.mjs','test/horizon-approach-runtime.spec.mjs'],
   },
   {
     id: 'bell-passage', section: 'tower', lane: 'tower', short: 'Bell passage', title: 'The bell passage',
-    where: 'Past the tape on the tower road: the chapel ring’s eight bells, at every size.',
+    where: 'From Horizon on the tower road: the chapel ring’s eight bells, at every size.',
     happens: 'Three stretches — huge half-sunk bells, miniatures ringing much too fast, then all eight at their true size ringing rounds. Brushing bells makes noise.',
     moveOn: 'Walk through to the door field.',
     callouts: [
@@ -611,8 +602,8 @@ export const STAGES = Object.freeze([
     specs: ['test/church.spec.mjs', 'test/source-finale-routes.spec.mjs'],
   },
   {
-    id: 'chapel-outskirts', section: 'chapel', lane: 'chapel', short: 'Past the tape', title: 'Past the end of the tape',
-    where: 'Straight on from the tape’s last frame.',
+    id: 'chapel-outskirts', section: 'chapel', lane: 'chapel', short: 'The chapel road', title: 'Beyond Horizon',
+    where: 'Onward from the occupant and the closed space.',
     happens: 'The recording has run out. Across the black to either side stand the road’s lamps, phone boxes and the building. Each look brings them closer, up to a line they cannot cross; their sound comes through as if through a thick wall.',
     moveOn: 'Walk into the planted corridor of doors. The far edges can be looked at, but never reached.',
     callouts: [{ kind: 'saves', text: 'Saved as the chapel outskirts.' }],
@@ -752,7 +743,7 @@ function layout(stages, k) {
   const contactEnd = place(['contact'], 'contact', forkAt + MOMENT / 2);
   const tapeEnd = place(['grey-doors', 'wrong-return', 'catch', 'source-drive', 'nothing', 'arrival-night', 'tape'], 'shared', awayAt);
   const tapeStart = tapeEnd - (by.get('tape').length || 0);
-  const bustAt = tapeStart + (Number(k.bustDepth) || 0);
+  const offerAt = tapeStart + 148;
   // The home errand is a side trip listed below, not extra distance between the
   // tape and the chapel. The strip keeps the main road's physical length.
   const chapelEnd = place(['chapel-outskirts', 'chapel-station', 'chapel-door'], 'shared', tapeEnd);
@@ -761,8 +752,8 @@ function layout(stages, k) {
   return {
     moment: MOMENT,
     segments,
-    forks: [{ id: 'field', x: forkAt, to: 'contact', label: 'voluntary Contact' }, { id: 'tape', x: bustAt, to: 'tower', label: 'the bust' }],
-    towerCut: { x0: bustAt, x1: tapeEnd },
+    forks: [{ id: 'field', x: forkAt, to: 'contact', label: 'voluntary Contact' }, { id: 'tape', x: offerAt, to: 'tower', label: 'the occupant’s offer' }],
+    towerCut: { x0: offerAt, x1: tapeEnd },
     contactFrom: forkAt,
     ends: [
       { row: 'contact', x: contactEnd, family: 'contact', endings: endingsFor('contact') },
@@ -809,7 +800,6 @@ function geometryErrors(k) {
   }
   const overlap = chapel.from - SOURCE_HORIZON.to;
   if (overlap < 0 || overlap > 4) errors.push(`past the tape starts ${overlap} cells from the tape’s end, which leaves a gap or a long overlap`);
-  if (!(k.bustDepth > 0 && k.bustDepth < SOURCE_HORIZON.length)) errors.push('the bust does not stand on the tape');
   return errors;
 }
 

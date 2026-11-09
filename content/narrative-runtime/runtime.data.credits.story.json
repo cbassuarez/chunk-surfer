@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.credits",
+  "title": "Runtime · data/credits.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "CREDITS",
+  "entries": [
+    "CREDITS"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/credits.js",
+  "notes": "Generated from src/data/credits.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "CREDITS": {
+      "id": "CREDITS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "CREDITS.l0",
+          "who": "thought",
+          "text": "A game by Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:46"
+        },
+        {
+          "id": "CREDITS.l1",
+          "who": "thought",
+          "text": "A haunting at Ellery Conservatoire",
+          "source": "src/data/credits.js:47"
+        },
+        {
+          "id": "CREDITS.l2",
+          "who": "thought",
+          "text": "Design — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:53"
+        },
+        {
+          "id": "CREDITS.l3",
+          "who": "thought",
+          "text": "Writing — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:54"
+        },
+        {
+          "id": "CREDITS.l4",
+          "who": "thought",
+          "text": "Programming — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:55"
+        },
+        {
+          "id": "CREDITS.l5",
+          "who": "thought",
+          "text": "Audio — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:56"
+        },
+        {
+          "id": "CREDITS.l6",
+          "who": "thought",
+          "text": "Sound Design — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:57"
+        },
+        {
+          "id": "CREDITS.l7",
+          "who": "thought",
+          "text": "Sound Design — Paul Yorke",
+          "source": "src/data/credits.js:58"
+        },
+        {
+          "id": "CREDITS.l8",
+          "who": "thought",
+          "text": "Bell recordings — Joseph SARDIN & Axeline T. (CC0)",
+          "source": "src/data/credits.js:59"
+        },
+        {
+          "id": "CREDITS.l9",
+          "who": "thought",
+          "text": "Visual Systems — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:60"
+        },
+        {
+          "id": "CREDITS.l10",
+          "who": "thought",
+          "text": "Interface — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:61"
+        },
+        {
+          "id": "CREDITS.l11",
+          "who": "thought",
+          "text": "Tauri",
+          "source": "src/data/credits.js:67"
+        },
+        {
+          "id": "CREDITS.l12",
+          "who": "thought",
+          "text": "Vite",
+          "source": "src/data/credits.js:68"
+        },
+        {
+          "id": "CREDITS.l13",
+          "who": "thought",
+          "text": "Cuelume — Daniel Belyi (MIT)",
+          "source": "src/data/credits.js:69"
+        },
+        {
+          "id": "CREDITS.l14",
+          "who": "thought",
+          "text": "JavaScript",
+          "source": "src/data/credits.js:70"
+        },
+        {
+          "id": "CREDITS.l15",
+          "who": "thought",
+          "text": "Rust",
+          "source": "src/data/credits.js:71"
+        },
+        {
+          "id": "CREDITS.l16",
+          "who": "thought",
+          "text": "Browne K., Schlehlein H., Herr II B. W., Quardokus E., Bueckle A., Börner K. (2022). HuBMAP CCF 3D Reference Object Library, v1.2. CC BY 4.0.",
+          "source": "src/data/credits.js:77"
+        },
+        {
+          "id": "CREDITS.l17",
+          "who": "thought",
+          "text": "Original heart model created by Kristen Browne using NLM Visible Human Male data.",
+          "source": "src/data/credits.js:78"
+        },
+        {
+          "id": "CREDITS.l18",
+          "who": "thought",
+          "text": "https://hubmapconsortium.github.io/ccf/pages/ccf-3d-reference-library.html",
+          "source": "src/data/credits.js:79"
+        },
+        {
+          "id": "CREDITS.l19",
+          "who": "thought",
+          "text": "https://creativecommons.org/licenses/by/4.0/",
+          "source": "src/data/credits.js:80"
+        },
+        {
+          "id": "CREDITS.l20",
+          "who": "thought",
+          "text": "Adapted: external chamber selection, simplified geometry and local boundary repair, axis conversion, uniform monumental scale, authored materials and animation.",
+          "source": "src/data/credits.js:81"
+        },
+        {
+          "id": "CREDITS.l21",
+          "who": "thought",
+          "text": "Infinite, 3D Head Scan by Lee Perry-Smith, based on work at www.triplegangers.com; distributed through three.js r185. CC BY3.0. Modified for Chunk Surfer: frontal crop, connected strain deformation, reduced skull base mass, broad scanned-silhouette contact feather, low-frequency wall bow and outward-only bas-relief rasterization. No endorsement implied.",
+          "source": "src/data/credits.js:91"
+        },
+        {
+          "id": "CREDITS.l22",
+          "who": "thought",
+          "text": "Bolognese bellringers — Renato Morselli (CC BY 3.0)",
+          "source": "src/data/credits.js:105"
+        },
+        {
+          "id": "CREDITS.l23",
+          "who": "thought",
+          "text": "Bristol Cathedral — George Si (CC BY 3.0)",
+          "source": "src/data/credits.js:106"
+        },
+        {
+          "id": "CREDITS.l24",
+          "who": "thought",
+          "text": "Oulu demolition — Estormiz (CC0)",
+          "source": "src/data/credits.js:107"
+        },
+        {
+          "id": "CREDITS.l25",
+          "who": "thought",
+          "text": "Clouds timelapse — John Fowler (CC BY 2.0)",
+          "source": "src/data/credits.js:108"
+        },
+        {
+          "id": "CREDITS.l26",
+          "who": "thought",
+          "text": "UK partial eclipse — Adrian Parsons (CC BY 3.0)",
+          "source": "src/data/credits.js:109"
+        },
+        {
+          "id": "CREDITS.l27",
+          "who": "thought",
+          "text": "Sunflower pollination — Oscar Gil Fernández (CC BY 2.0)",
+          "source": "src/data/credits.js:110"
+        },
+        {
+          "id": "CREDITS.l28",
+          "who": "thought",
+          "text": "Clinical eye footage — Otranto and Eberhard (CC BY 2.0)",
+          "source": "src/data/credits.js:111"
+        },
+        {
+          "id": "CREDITS.l29",
+          "who": "thought",
+          "text": "S5 video courtesy Dr. W.E. Burr",
+          "source": "src/data/credits.js:112"
+        },
+        {
+          "id": "CREDITS.l30",
+          "who": "thought",
+          "text": "Project flower footage — Sebastian Suarez-Solis",
+          "source": "src/data/credits.js:113"
+        },
+        {
+          "id": "CREDITS.l31",
+          "who": "thought",
+          "text": "DIY Ferrocell, View Magnetic Fields with Ferrofluid — Magnetic HD (CC BY3.0)",
+          "source": "src/data/credits.js:114"
+        },
+        {
+          "id": "CREDITS.l32",
+          "who": "thought",
+          "text": "https://commons.wikimedia.org/wiki/File:DIY_Ferrocell,_View_Magnetic_Fields_with_Ferrofluid.webm",
+          "source": "src/data/credits.js:115"
+        },
+        {
+          "id": "CREDITS.l33",
+          "who": "thought",
+          "text": "https://creativecommons.org/licenses/by/3.0/",
+          "source": "src/data/credits.js:116"
+        },
+        {
+          "id": "CREDITS.l34",
+          "who": "thought",
+          "text": "Adapted: continuous62–78second excerpt; cropped, resized, silent; geometry composited over footage",
+          "source": "src/data/credits.js:117"
+        },
+        {
+          "id": "CREDITS.l35",
+          "who": "thought",
+          "text": "Commons derivatives edited, looped, color-processed and datamoshed",
+          "source": "src/data/credits.js:126"
+        },
+        {
+          "id": "CREDITS.l36",
+          "who": "thought",
+          "text": "Excerpted, downmixed and filtered for distance",
+          "source": "src/data/credits.js:133"
+        },
+        {
+          "id": "CREDITS.l37",
+          "who": "thought",
+          "text": "Also spatially looped in Source II–III surroundings; decoded 10/12-bit PCM amplitude quantization, separate 28/36 kHz sample holding, camera-relative placement, filtering and 6.8-second synthetic convolution; local machinery warnings duck this bus.",
+          "source": "src/data/credits.js:146"
+        },
+        {
+          "id": "CREDITS.l38",
+          "who": "thought",
+          "text": "Excerpted, layered, bitcrushed and placed",
+          "source": "src/data/credits.js:156"
+        },
+        {
+          "id": "CREDITS.l39",
+          "who": "thought",
+          "text": "Adapted: excerpts, levelling, world placement and procedural room tail",
+          "source": "src/data/credits.js:191"
+        },
+        {
+          "id": "CREDITS.l40",
+          "who": "thought",
+          "text": "Latin recitations and a recorded congregation; assembled fictional service",
+          "source": "src/data/credits.js:192"
+        },
+        {
+          "id": "CREDITS.l41",
+          "who": "thought",
+          "text": "https://freemusicarchive.org/music/The_Tudor_Consort/Renaissance_influences_-_Pizzetti_Messa_di_Requiem__Palestrina_Missa_Sicut_lilium_inter_spinas/02_Kyrie_-_Missa_Sicut_lilium_inter_spinas/",
+          "source": "src/data/credits.js:199"
+        },
+        {
+          "id": "CREDITS.l42",
+          "who": "thought",
+          "text": "https://creativecommons.org/licenses/by/3.0/",
+          "source": "src/data/credits.js:199"
+        },
+        {
+          "id": "CREDITS.l43",
+          "who": "thought",
+          "text": "Adapted: {CHAPEL_CHOIR_SOURCE.changes}",
+          "source": "src/data/credits.js:200"
+        },
+        {
+          "id": "CREDITS.l44",
+          "who": "thought",
+          "text": "Five-part recorded ensemble mix; independent six-part recording pending. Original gain treatment; not a performance or reproduction of Marcoll’s Amproprifications.",
+          "source": "src/data/credits.js:201"
+        },
+        {
+          "id": "CREDITS.l45",
+          "who": "thought",
+          "text": "Contemporary material recordings; adapted foley, not a recording of this tower.",
+          "source": "src/data/credits.js:211"
+        },
+        {
+          "id": "CREDITS.l46",
+          "who": "thought",
+          "text": "cbassuarez.com",
+          "source": "src/data/credits.js:224"
+        },
+        {
+          "id": "CREDITS.l47",
+          "who": "thought",
+          "text": "© 2026 Sebastian Suarez-Solis. All rights reserved.",
+          "source": "src/data/credits.js:230"
+        }
+      ],
+      "source": "src/data/credits.js:46"
+    }
+  }
+}

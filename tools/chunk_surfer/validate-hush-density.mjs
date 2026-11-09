@@ -11,6 +11,7 @@ const asset = parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byt
 const entries = Object.fromEntries(asset.entries.map(e => [e.name, e]));
 assert.deepEqual(Object.keys(entries).sort(), ['hush_density_core', 'hush_density_return', 'hush_density_volume']);
 assert.equal(asset.clips.size, 16);
+assert(asset.clips.has('density_chase'), 'the authored chase phrase must ship in the actual asset');
 for (const e of asset.entries) { assert.equal(e.skin.joints.length, 19); assert.equal(e.morphCount, 0); }
 const e = entries.hush_density_volume, p = e.primitives[0];
 assert(asset.entries.reduce((n, e) => n + e.primitives.reduce((n, p) => n + p.vertexCount, 0), 0) <= 50000);
@@ -98,20 +99,20 @@ for (const [id, a, at, b, bt] of [
   ['advance-retained', 'pressure_advance', .72, 'density_retained', 0], ['retained-reload', 'density_retained', 1, 'density_reload', 0],
   ['reload-advance', 'density_reload', .5, 'pressure_advance', 0], ['retained-listen', 'density_retained', 1, 'density_listen', 0],
   ['retained-idle', 'density_retained', 1, 'density_idle', 0], ['idle-end-retained', 'density_idle', 6.4, 'density_retained', 0],
-  ['approach-loop', 'pressure_approach', 0, 'pressure_approach', 2.4], ['turn-loop', 'density_turn', 0, 'density_turn', 1.2],
+  ['approach-loop', 'pressure_approach', 0, 'pressure_approach', 2.4], ['chase-loop','density_chase',0,'density_chase',2.4],
 ]) { const maximumVertexDifferenceM = difference(skin({ clip: a, time: at }), skin({ clip: b, time: bt })); assert(maximumVertexDifferenceM < 2e-6, id); seams.push({ id, maximumVertexDifferenceM }); }
 assert.equal(clipMetrics.find(x => x.clip === 'pressure_idle').maximumMotionFromFirstM, 0);
 assert(clipMetrics.find(x => x.clip === 'density_idle').maximumMotionFromFirstM > .01);
 // Real captured-state descriptors include authored scales, finite clip blending,
 // attention and compression. Test current bounded extrema without new clocks.
 const combined = [];
-for (const event of ['still', 'travel', 'notice', 'blocked', 'settle']) for (const attention of [-.65, .65]) for (let n = 0; n <= 24; n++) {
-  const time = n / 24, density = { version: 1, phase: time, rate: 2, traction: 1, compression: .98, retained: .86,
+for (const event of ['still', 'travel', 'notice', 'blocked', 'settle']) for (const attention of [-.65, .65]) for (const drive of [0,1]) for (let n = 0; n <= 24; n++) {
+  const time = n / 24, density = { version: 1, phase: time, rate: 2, traction: 1, drive, compression: .98, retained: .86,
     attention, event, eventTime: time * (event === 'notice' ? 4.8 : 6.4), listening: event === 'notice', blocked: event === 'blocked', seed: 71 };
   const descriptor = hushDensityCharacter({ density }), r = skin(descriptor); measure(r);
   const palette = sampleCharacterPose(asset, e, descriptor).bones;
   for (const entry of asset.entries) assert.deepEqual(sampleCharacterPose(asset, entry, descriptor).bones, palette);
-  combined.push({ event, attention, phase: time });
+  combined.push({ event, attention, drive, phase: time });
 }
 assert(baseDrift < 2e-6); assert(radial <= .72, 'authored+current runtime wave must fit declared mechanical radial envelope');
 const maximumEdgeExtension = Math.max(...clipMetrics.map(x => x.edgeExtension.maximum));

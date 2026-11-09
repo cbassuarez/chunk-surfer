@@ -48,7 +48,7 @@ const realSeat=SOURCE_REST_SEATS[0],realEye=sourceRestEyePosition(realSeat);
 /** The real hole's frame for this moment, turned rigidly so that it stands to the
  * film's camera as it stands to the listening seat. `wheels`, `falls`, `open` and
  * `shut` take the place of the recording's own schedule. */
-export function openingHorizonFrame({centre,radius,clock=0,view=OPENING_OMEN.view,wheels=[1,1,1],falls=[0,0,0],open=EYES,shut=0,breath=0,reducedMotion=false}={}){
+export function openingHorizonFrame({centre,radius,clock=0,view=OPENING_OMEN.view,wheels=[1,1,1],falls=[0,0,0],open=EYES,shut=0,breath=0,reducedMotion=false,eyePresentation=[2,.96]}={}){
   const base=sourceRestHorizonFrame({time:clock,unwrappedTime:clock,progress:0,breath,reducedMotion,seat:realSeat});
   if(!base.active)return null;
   const from=frameOf(sub(base.centre,realEye)),to=frameOf(view),
@@ -65,7 +65,8 @@ export function openingHorizonFrame({centre,radius,clock=0,view=OPENING_OMEN.vie
     // the flash is the few seconds after it went.
     eyeAges[eye]=shut>order?Math.min(24,(shut-order)*1.1):eye<open?1e4:20;
   }
-  return Object.freeze({...base,finish:'silicon',centre:[...centre],radius,spin:turn(base.spin),rings:Object.freeze(rings),eyeAges,light:.32*(.35+.65*alive/rings.length)});
+  return Object.freeze({...base,finish:'silicon',centre:[...centre],radius,spin:turn(base.spin),rings:Object.freeze(rings),eyeAges,
+    eyePresentation:Object.freeze([...eyePresentation]),light:.32*(.35+.65*alive/rings.length)});
 }
 
 const SHARED={structural:false,decorative:true,noReflection:true,noShadow:true};

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { freshContinuationHush, normalizeContinuationHush, advanceContinuationHush } from '../src/game/source-continuation-hush.js';
 import { JOURNEY_PORTALS } from '../src/data/source-continuation-journey.js';
+import { SOURCE_CONTINUATION as C } from '../src/data/source-continuation.js';
+import { HUSH_DENSITY_LIMITS } from '../src/game/hush-density-performance.js';
 
 const clone = v => JSON.parse(JSON.stringify(v));
 const player = () => ({ x: 20, z: 20, feet: 0, chartId: 0, phase: 'wrong-return', elapsed: 10,
@@ -23,10 +25,11 @@ test('accepted supported metres drive one density tick and leave route position 
   const actor = walker(); let previousPhase = 0;
   for (let n = 0; n < 10; n++) {
     advanceContinuationHush(actor, { dt: .02, player: player() });
-    assert.ok(Math.abs(actor.animationClock - .052 * (n + 1)) < 1e-9);
-    assert.ok(Math.abs(actor.z - (2 - .052 * (n + 1))) < 1e-9);
+    assert.ok(Math.abs(actor.animationClock - .02 * C.hush.speed * (n + 1)) < 1e-9);
+    assert.ok(Math.abs(actor.z - (2 - .02 * C.hush.speed * (n + 1))) < 1e-9);
     assert.ok(actor.density.phase - previousPhase <= .04 + 1e-10);
-    assert.ok(Math.abs(actor.density.residualDragMps - 1.6) < 1e-9);
+    const representedSpeed=HUSH_DENSITY_LIMITS.maxCyclesPerSecond*HUSH_DENSITY_LIMITS.cycleMetres;
+    assert.ok(Math.abs(actor.density.residualDragMps-(C.hush.speed-representedSpeed))<1e-9);
     previousPhase = actor.density.phase;
   }
   const restored = normalizeContinuationHush(clone(actor)), p = player();

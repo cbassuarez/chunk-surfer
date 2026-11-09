@@ -2,14 +2,16 @@
 // above it. Nothing here claims that its dead power supply has come back on.
 import {uiDraw,uiSize} from './ui.js';
 import {drawHardwareCap} from './hardware-material.js';
+import {B3_CONSOLE_LAYOUT,B3_CONSOLE_REFERENCE} from '../data/b3-console-layout.js';
+const FINISH=B3_CONSOLE_LAYOUT.finish;
 
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
-const LEGENDS=['VOICE','ROOM','RETURN','TALK','LINE 5','LINE 6','LINE 7','LINE 8','TAPE 1','TAPE 2','TAPE 3','TAPE 4','BUS 1','BUS 2','BUS 3','BUS 4'];
+const LEGENDS=B3_CONSOLE_LAYOUT.channelNames;
 export const B3_VISIBLE_STRIPS=8;
 export function b3ConsoleReadout(view={}){
   const fader=Array.isArray(view.fader)?view.fader:[],gain=clamp((fader[2]??.75)/.75,0,1.33);
   const output=view.active?Math.max(0,Number(view.noiseRatio??view.intensity)||0):0;
-  const source=gain>0?output/gain:0;
+  const source=Number.isFinite(view.sourceRatio)?Math.max(0,view.sourceRatio):gain>0?output/gain:0;
   const meter=ratio=>ratio>0?clamp((20*Math.log10(ratio)+20)/23):0;
   return{sourceRatio:source,outputRatio:output,sourceMeter:meter(source),outputMeter:meter(output),
     strips:LEGENDS.map((legend,i)=>({channel:i+1,legend,value:clamp(fader[i]??.75),signal:i===2?meter(source):0}))};
@@ -17,21 +19,23 @@ export function b3ConsoleReadout(view={}){
 export function b3ConsoleLayout(size={},selected=1){
   const cols=Math.max(20,Number(size.cols)||120),rows=Math.max(8,Number(size.rows)||38),visible=cols>=100?8:cols>=54?4:2;
   const w=Math.min(cols-1,96),h=Math.min(15.5,Math.max(5.8,rows*.39)),x=(cols-w)/2,y=rows-h-.9;
-  const bank=Math.floor((clamp(selected,1,16)-1)/visible)*visible,detail=h>=10,masterW=cols>=70?12:cols>=40?7:3.8;
-  const master={x:x+.55,y:y+.55,w:masterW,h:h-1.1};
-  const power={x:master.x+.3,y:detail?y+h-4.1:y+1.5,w:masterW-.6,h:detail?3.2:Math.max(2,h-2.5)};
-  const close={x:x+w-4.6,y:Math.max(0,y-1.3),w:4.1,h:1.15};
-  const look={x:Math.max(x,x+w-17),y:close.y,w:Math.min(11,w*.47),h:1.15};
-  const prev={x:master.x+master.w+.15,y:y+.7,w:1.4,h:h-1.4},next={x:x+w-1.65,y:y+.7,w:1.4,h:h-1.4};
+  const bank=Math.floor((clamp(selected,1,16)-1)/visible)*visible,detail=h>=10,masterW=cols>=100?16:cols>=70?11:cols>=40?6.3:3.8;
+  const master={x:x+w-masterW-.55,y:y+.55,w:masterW,h:h-1.1};
+  const power={x:master.x+.3,y:detail?y+h-3.1:y+1.5,w:masterW-.6,h:detail?2.5:Math.max(2,h-2.5)};
+  const closeW=Math.min(4.1,w*.20),lookW=Math.min(11,w*.31),inspectW=Math.min(15,w*.43),toolbarY=Math.max(0,y-1.3);
+  const close={x:x+w-closeW,y:toolbarY,w:closeW,h:1.15};
+  const look={x:close.x-.4-lookW,y:toolbarY,w:lookW,h:1.15};
+  const inspect={x:look.x-.4-inspectW,y:toolbarY,w:inspectW,h:1.15};
+  const prev={x:x+.55,y:y+.7,w:1.4,h:h-1.4},next={x:master.x-1.55,y:y+.7,w:1.4,h:h-1.4};
   const stripX=prev.x+prev.w,stripW=(next.x-stripX)/visible;
   const strips=Array.from({length:visible},(_,i)=>({channel:bank+i+1,x:stripX+i*stripW,y:y+.65,w:stripW,h:h-1.3,
     track:{x:stripX+i*stripW+stripW*.2,y:y+(detail?4.8:2.2),w:stripW*.6,h:Math.max(1.2,h-(detail?7:3.7))}}));
-  return{cols,rows,x,y,w,h,bank,visible,detail,master,power,close,look,prev,next,strips,footerY:rows-.8,
+  return{cols,rows,x,y,w,h,bank,visible,detail,master,power,close,look,inspect,prev,next,strips,footerY:rows-.8,
     worldVisibleToY:Math.max(0,y-1.3),collapsed:{x:Math.max(1,(cols-Math.min(70,cols-2))/2),y:rows-2.8,w:Math.min(70,cols-2),h:1.65}};
 }
 export function b3ConsoleHit(layout,x,y){
   const inside=r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h;
-  for(const [kind,r]of [['close',layout.close],['look',layout.look],['power',layout.power],['previous',layout.prev],['next',layout.next]])if(inside(r))return{kind};
+  for(const [kind,r]of [['close',layout.close],['look',layout.look],['inspect',layout.inspect],['power',layout.power],['previous',layout.prev],['next',layout.next]])if(inside(r))return{kind};
   const strip=layout.strips.find(inside);if(!strip)return null;
   return{kind:y>=strip.track.y-.4&&y<=strip.track.y+strip.track.h+.4?'fader':'select',channel:strip.channel,track:strip.track};
 }
@@ -62,28 +66,34 @@ export function drawB3Console(view,size=uiSize()){
     }
     const x=px(l.x),y=py(l.y),w=px(l.w),h=py(l.h),edge=Math.max(5*dpr,px(.65));
     ctx.fillStyle='#070a07';ctx.fillRect(x-3*dpr,y+3*dpr,w+6*dpr,h);
-    const body=ctx.createLinearGradient(0,y,0,y+h);body.addColorStop(0,'#62685b');body.addColorStop(.045,'#2c352b');body.addColorStop(.82,'#283026');body.addColorStop(1,'#111910');
+    const body=ctx.createLinearGradient(0,y,0,y+h);body.addColorStop(0,'#71777a');body.addColorStop(.045,FINISH.panel);body.addColorStop(.82,'#3d4448');body.addColorStop(1,'#22282a');
     ctx.fillStyle=body;ctx.fillRect(x,y,w,h);
-    const wood=ctx.createLinearGradient(x,0,x+edge,0);wood.addColorStop(0,'#131910');wood.addColorStop(.5,'#574b35');wood.addColorStop(1,'#292a1f');ctx.fillStyle=wood;ctx.fillRect(x,y,edge,h);ctx.fillRect(x+w-edge,y,edge,h);
+    const wood=ctx.createLinearGradient(x,0,x+edge,0);wood.addColorStop(0,'#131910');wood.addColorStop(.5,FINISH.wood);wood.addColorStop(1,'#292a1f');ctx.fillStyle=wood;ctx.fillRect(x,y,edge,h);ctx.fillRect(x+w-edge,y,edge,h);
     ctx.strokeStyle='#979b85';ctx.lineWidth=dpr;ctx.beginPath();ctx.moveTo(x+edge,y+.5*dpr);ctx.lineTo(x+w-edge,y+.5*dpr);ctx.stroke();
     for(const xx of[x+edge*.55,x+w-edge*.55])for(const yy of[y+7*dpr,y+h-7*dpr]){ctx.fillStyle='#0b100b';ctx.beginPath();ctx.arc(xx,yy,1.8*dpr,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#70735e';ctx.beginPath();ctx.moveTo(xx-1.2*dpr,yy);ctx.lineTo(xx+1.2*dpr,yy);ctx.stroke();}
-    cap(l.close,'LEAVE','close');cap(l.look,'LOOK UP  /  TAB','look');cap(l.prev,'‹','previous');cap(l.next,'›','next');
-    text('STUDIO B3',l.master.x+l.master.w/2,l.y+1,l.master.w-.3,'#b9c1a7',.64);
-    if(l.detail&&l.master.w>=8){meter({x:l.master.x+.5,y:l.y+1.6,w:l.master.w-1,h:2.25},read.sourceMeter,'RETURN');meter({x:l.master.x+.5,y:l.y+4,w:l.master.w-1,h:2.25},read.outputMeter,'STUDIO');text('16  /  4',l.master.x+l.master.w/2,l.y+7,l.master.w-1,'#8e9a83',.54);}
-    const p=l.power;rect(p,'#182014');ctx.strokeStyle=view.focus==='power'?'#ead5a5':'#535d4c';ctx.lineWidth=dpr;ctx.strokeRect(px(p.x),py(p.y),px(p.w),py(p.h));
-    text('POWER  /  P',p.x+p.w/2,p.y+.45,p.w-.15,'#c3c6ad',.54);
+    cap(l.inspect,view.returnTraced?'MONITOR RETURN':'TRACE / PATCH','inspect');cap(l.close,'LEAVE','close');cap(l.look,'LOOK UP  /  TAB','look');cap(l.prev,'‹','previous');cap(l.next,'›','next');
+    text(B3_CONSOLE_REFERENCE.displayName,l.master.x+l.master.w/2,l.y+1,l.master.w-.3,FINISH.ivory,.60);
+    if(l.detail&&l.master.w>=8){meter({x:l.master.x+.5,y:l.y+1.6,w:l.master.w-1,h:2.25},read.sourceMeter,'RETURN');meter({x:l.master.x+.5,y:l.y+4,w:l.master.w-1,h:2.25},read.outputMeter,'STUDIO');text('16 INPUT / 8 GROUP',l.master.x+l.master.w/2,l.y+6.8,l.master.w-1,'#c1c6c5',.48);
+      if(l.h>=14){const gx=l.master.x+.6,gw=(l.master.w-1.2)/8,gy=l.y+7.3;
+      for(let group=0;group<8;group++){const xx=gx+(group+.5)*gw;rect({x:xx-gw*.42,y:gy,w:gw*.84,h:2.2},FINISH.group);text(String(group+1),xx,gy+.3,gw*.8,FINISH.ivory,.43);rect({x:xx-.05,y:gy+.7,w:.1,h:1.05},'#111719');rect({x:xx-gw*.24,y:gy+1.3,w:gw*.48,h:.25},FINISH[B3_CONSOLE_LAYOUT.groupCapColors[group]]);}
+      text('TAPE MONITOR',l.master.x+l.master.w/2,gy+2.5,l.master.w-1,'#bcc5c7',.44);}}
+    const p=l.power;rect(p,FINISH.master);ctx.strokeStyle=view.focus==='power'?'#ead5a5':'#535d4c';ctx.lineWidth=dpr;ctx.strokeRect(px(p.x),py(p.y),px(p.w),py(p.h));
+    text('PSU  /  P',p.x+p.w/2,p.y+.45,p.w-.15,'#c3c6ad',.54);
     const switchX=px(p.x+p.w*.5),switchY=py(p.y+p.h*.5),sw=Math.min(px(p.w*.25),15*dpr),sh=Math.min(py(p.h*.33),25*dpr);
     ctx.fillStyle='#080e08';ctx.fillRect(switchX-sw*.65,switchY-sh*.65,sw*1.3,sh*1.3);ctx.fillStyle='#b9bba6';ctx.fillRect(switchX-sw*.5,switchY+(view.powerOn?-sh*.5:0),sw,sh*.5);
     text(view.powerOn?'I':'O',p.x+p.w/2,p.y+p.h-.35,p.w-.1,'#b6bda5',.58);
     for(const strip of l.strips){
       const item=read.strips[strip.channel-1],active=strip.channel===view.selected&&view.focus==='fader',sx=px(strip.x),sw=px(strip.w),sy=py(strip.y),sh=py(strip.h),cx=sx+sw*.5;
-      ctx.fillStyle=active?'#3c4936':'#303c2b';ctx.fillRect(sx,sy,sw-dpr,sh);ctx.strokeStyle='#5b6652';ctx.lineWidth=dpr;ctx.beginPath();ctx.moveTo(sx+.5*dpr,sy);ctx.lineTo(sx+.5*dpr,sy+sh);ctx.stroke();
+      ctx.fillStyle=active?'#646f75':FINISH.channel;ctx.fillRect(sx,sy,sw-dpr,sh);ctx.strokeStyle='#8a9295';ctx.lineWidth=dpr;ctx.beginPath();ctx.moveTo(sx+.5*dpr,sy);ctx.lineTo(sx+.5*dpr,sy+sh);ctx.stroke();
       text(String(strip.channel).padStart(2,'0'),strip.x+strip.w/2,strip.y+.45,strip.w-.2,'#d6d2ba',.65);
       if(l.detail){
-        if(strip.channel===3)meter({x:strip.x+strip.w*.13,y:strip.y+1,w:strip.w*.74,h:1.25},item.signal,'VU');
-        else for(let k=0;k<2;k++){const cy=py(strip.y+1.3+k*.75),radius=Math.min(7*dpr,sw*.14);ctx.fillStyle='#0c140c';ctx.beginPath();ctx.arc(cx,cy,radius+1.5*dpr,0,Math.PI*2);ctx.fill();ctx.fillStyle=k?'#a7ad92':'#657660';ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#e2dbc1';ctx.beginPath();ctx.moveTo(cx,cy-radius*.72);ctx.lineTo(cx,cy-radius*.12);ctx.stroke();}
+        const pot=(xx,yy,radius,color)=>{ctx.fillStyle='#1b2124';ctx.beginPath();ctx.arc(xx,yy,radius+1.1*dpr,0,Math.PI*2);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,yy,radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ede8d4';ctx.beginPath();ctx.moveTo(xx,yy-radius*.72);ctx.lineTo(xx,yy-radius*.12);ctx.stroke();};
+        pot(cx,py(strip.y+1.1),Math.min(6*dpr,sw*.14),FINISH.red);
+        for(let row=0;row<3;row++)for(let col=0;col<2;col++)pot(cx+(col?1:-1)*sw*.17,py(strip.y+1.8+row*.57),Math.min(5.2*dpr,sw*.11),col?FINISH.green:FINISH.blue);
+        // Dark segmented bar meter; a dead desk has no animated pilot lights.
+        for(let segment=0;segment<7;segment++)rect({x:strip.x+strip.w*.86,y:strip.y+.8+segment*.29,w:strip.w*.07,h:.18},segment<2?'#443a33':'#293a35');
         // An unlit routing key, not a phosphor or an active circuit indicator.
-        const kw=Math.min(15*dpr,sw*.3),ky=py(strip.y+3);ctx.fillStyle='#101910';ctx.fillRect(cx-kw*.6,ky-3*dpr,kw*1.2,6*dpr);ctx.fillStyle='#7e8970';ctx.fillRect(cx-kw*.45,ky-2*dpr,kw*.9,3*dpr);
+        const kw=Math.min(15*dpr,sw*.3),ky=py(strip.y+3.75);ctx.fillStyle='#101910';ctx.fillRect(cx-kw*.6,ky-3*dpr,kw*1.2,6*dpr);ctx.fillStyle='#7e8970';ctx.fillRect(cx-kw*.45,ky-2*dpr,kw*.9,3*dpr);
       }
       const t=strip.track,ty=py(t.y),th=py(t.h),tw=px(t.w);
       ctx.fillStyle='#091108';ctx.fillRect(cx-Math.max(dpr,tw*.045),ty,Math.max(2*dpr,tw*.09),th);

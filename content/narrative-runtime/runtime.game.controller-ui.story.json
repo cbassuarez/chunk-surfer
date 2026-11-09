@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.controller-ui",
+  "title": "Runtime · game/controller-ui.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "controllerDiagramModel.options",
+  "entries": [
+    "controllerDiagramModel.options"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/controller-ui.js",
+  "notes": "Generated from src/game/controller-ui.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "controllerDiagramModel.options": {
+      "id": "controllerDiagramModel.options",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "controllerDiagramModel.options.c0",
+          "text": "LAYOUT",
+          "source": "src/game/controller-ui.js:282",
+          "choiceId": "family"
+        }
+      ],
+      "source": "src/game/controller-ui.js:282"
+    }
+  }
+}

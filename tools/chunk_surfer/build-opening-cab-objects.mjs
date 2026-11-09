@@ -12,7 +12,7 @@ import {BoxGeometry,CylinderGeometry,Matrix4,Vector3,Matrix3} from 'three';
 import {importPropMesh} from './lib/glb-import.mjs';
 import {OPENING_CAB_PLACEMENT as C,OPENING_CAB_PAPERS} from '../../src/data/opening-cab-objects.js';
 import {FLASHLIGHT_HOUSING_COLORS} from '../../src/game/field-kit.js';
-import {buildIntactMusicBoxGroups} from './source-drive-study/build-coastal-memory.mjs';
+import {buildMusicBoxModel,MUSIC_BOX_MATERIALS,MUSIC_BOX_CONSTRUCTION,musicBoxMaterialMaps} from './lib/music-box-model.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -22,7 +22,7 @@ const mergeBounds=rows=>minmax(rows.flatMap(row=>row.groups.flatMap(g=>Array.fro
 const centre=b=>b.min.map((n,k)=>(n+b.max[k])/2);
 const plastics={classic:['#bc6b57','#bcbda9','#c9a151'],signal:['#bc6b57','#729aa9','#d0bc64'],'sea-glass':['#d09179','#a7bda0','#bcbda9']};
 
-export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
+export async function buildOpeningCabObjects({root=ROOT,write=true,writePapers=true}={}){
  const io=new NodeIO().registerExtensions(ALL_EXTENSIONS),rows=[],sources=[],targets={},registration={};
  const add=(name,objectId,groups,source=null,selection=null)=>{const row={name,objectId,groups,source,selection};rows.push(row);return row;};
  const recordSource=(file,cooked)=>{const row={file:path.relative(root,file),sha256:sha(fs.readFileSync(file)),sourceTriangles:cooked.sourceTriangles,triangles:cooked.triangles};sources.push(row);return row;};
@@ -65,7 +65,7 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
  for(const option of['reference','low-draw','headroom'])await item('amp-'+option,'amp','amp',{budget:1000});
  for(const option of['reference','throw','flood'])await item('flashlight-'+option,'flashlight','flashlight',{budget:1200,parts:'flashlight'});
 
- const material=(name,color,roughness=.9,metallic=0)=>({name,baseColorFactor:[...hex(color),1],roughnessFactor:roughness,metallicFactor:metallic});
+ const material=(name,color,roughness=.9,metallic=0,texture=null)=>({name,baseColorFactor:[...hex(color),1],roughnessFactor:roughness,metallicFactor:metallic,texture});
  function shape(geometry,at,mat,rotation=[0,0,0]){const m=new Matrix4().makeRotationFromEuler({isEuler:true,_x:rotation[0],_y:rotation[1],_z:rotation[2],_order:'XYZ'}).setPosition(...at);geometry.applyMatrix4(m);const g={positions:Array.from(geometry.getAttribute('position').array),normals:Array.from(geometry.getAttribute('normal').array),indices:geometry.index?Array.from(geometry.index.array):Array.from({length:geometry.getAttribute('position').count},(_,i)=>i),material:mat};geometry.dispose();return g;}
  const notebook=[],np=C.notebook.point,[nw,nh,nd]=C.notebook.size,cover=material('notebook / navy woven cloth','#233d43'),pages=material('notebook / used paper edges','#b8ad8c'),strap=material('notebook / worn elastic','#2d2920');
  notebook.push(shape(new BoxGeometry(nw,nh,nd),[np[0],np[1]+nh/2,np[2]],cover));
@@ -86,7 +86,7 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
 
  // The paper is already a real world sheet. Add only its thin, supported
  // clipboard and spring clip; job acceptance stays with the existing guard.
- const coalesce=groups=>{const merged=new Map();for(const group of groups){const key=JSON.stringify(group.material);let out=merged.get(key);if(!out){out={positions:[],normals:[],indices:[],material:group.material};merged.set(key,out);}const offset=out.positions.length/3;out.positions.push(...group.positions);out.normals.push(...group.normals);out.indices.push(...group.indices.map(index=>index+offset));}return[...merged.values()];};
+ const coalesce=groups=>{const merged=new Map();for(const group of groups){const key=JSON.stringify(group.material);let out=merged.get(key);if(!out){out={positions:[],normals:[],uvs:[],indices:[],material:group.material};merged.set(key,out);}const offset=out.positions.length/3;out.positions.push(...group.positions);out.normals.push(...group.normals);out.uvs.push(...(group.uvs||[]));out.indices.push(...group.indices.map(index=>index+offset));}return[...merged.values()];};
  const clip=[],cp=C.clipboard.point,[cw,ch,cd]=C.clipboard.size;
  clip.push(shape(new BoxGeometry(cw,ch,cd),cp,material('clipboard / rubbed fibreboard','#776952')));
  clip.push(shape(new BoxGeometry(.090,.004,.033),[cp[0],cp[1]+ch/2+.002,cp[2]-cd/2+.022],steel));
@@ -138,22 +138,25 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
  for(const g of writing)for(let i=0;i<g.positions.length;i+=3){const u=g.positions[i],v=g.positions[i+2],p=programmePoint(u,v);g.positions.splice(i,3,p[0],p[1]+.0009,p[2]);}
  programme.push(...writing);add('opening_cab_recital_programme','recital-programme',coalesce(programme));
 
- // Lyle's music box, whole and shut, from the coast pack's own construction.
- // It settles into the cushion: base at the mean height under its four feet.
- const mb=C.musicBox,turn=new Matrix4().makeRotationY(mb.turn),feet=[[-.14,-.11],[-.14,.11],[.14,-.11],[.14,.11]].map(([x,z])=>new Vector3(x,0,z).applyMatrix4(turn)),
-   base=feet.reduce((sum,f)=>sum+seatHeight(mb.point[0]+f.x,mb.point[2]+f.z),0)/feet.length+.006,
+ // One closed, slightly worn keepsake; actual footprint on the seat, and the
+ // same materials and local construction as the coastal and inspection asset.
+ const mb=C.musicBox,turn=new Matrix4().makeRotationY(mb.turn),feet=MUSIC_BOX_CONSTRUCTION.supportFootprint.map(([x,z])=>new Vector3(x,0,z).applyMatrix4(turn)),
+   base=Math.max(...feet.map(f=>seatHeight(mb.point[0]+f.x,mb.point[2]+f.z)))+.00025,
    boxMatrix=new Matrix4().makeTranslation(mb.point[0],base,mb.point[2]).multiply(turn),boxNormals=new Matrix3().getNormalMatrix(boxMatrix),
-   boxMaterial={wood:material('music box / dark polished wood','#4f3a26',.64),brass:material('music box / worn brass','#9c8248',.36,.84),steel:material('music box / blued steel key','#5f6b67',.43,.85)};
- const musicBox=buildIntactMusicBoxGroups().map(g=>({material:boxMaterial[g.material],indices:g.indices,
+   boxMaterial=Object.fromEntries(Object.entries(MUSIC_BOX_MATERIALS).map(([key,q])=>[key,{name:'music box / '+q.label,baseColorFactor:[1,1,1,1],roughnessFactor:1,metallicFactor:1,musicBoxMaterial:key}])),
+   canonicalBox=buildMusicBoxModel({damaged:false});
+ const placeBox=groups=>groups.map(g=>({material:boxMaterial[g.material],indices:g.indices,uvs:g.uvs,
    positions:Array.from({length:g.positions.length/3},(_,i)=>new Vector3().fromArray(g.positions,i*3).applyMatrix4(boxMatrix).toArray()).flat(),
    normals:Array.from({length:g.normals.length/3},(_,i)=>new Vector3().fromArray(g.normals,i*3).applyMatrix3(boxNormals).normalize().toArray()).flat()}));
- add('opening_cab_music_box','music-box',coalesce(musicBox));
- registration.musicBox={point:[mb.point[0],base,mb.point[2]],turn:mb.turn,source:'tools/chunk_surfer/source-drive-study/build-coastal-memory.mjs buildIntactMusicBoxGroups',method:'Same box as the coast, before the crash: lid shut, every part whole. Settled on the sampled passenger cushion.'};
+ add('opening_cab_music_box','music-box',coalesce(placeBox(canonicalBox.body)));
+ add('opening_cab_music_box_key','music-box',coalesce(placeBox(canonicalBox.key)));
+ const keyPivot=new Vector3(...MUSIC_BOX_CONSTRUCTION.keyPivot).applyMatrix4(boxMatrix);
+ registration.musicBox={point:[mb.point[0],base,mb.point[2]],turn:mb.turn,keyPivot:keyPivot.toArray(),keyAxis:new Vector3(...MUSIC_BOX_CONSTRUCTION.keyAxis).applyMatrix3(boxNormals).normalize().toArray(),dimensionsProvisional:true,source:'tools/chunk_surfer/lib/music-box-model.mjs',method:'Same closed coated case as coast and inspection, before impact. Real rear plate, fasteners, bores, seated seam and a separate oval key on the shared rear winding axis.'};
 
  const doc=new Document(),buffer=doc.createBuffer(),scene=doc.createScene('Separate opening cab belongings'),palette=new Map(),records=[];
  const accessor=(name,data,type)=>doc.createAccessor(name).setType(type).setArray(type==='SCALAR'?new Uint32Array(data):new Float32Array(data)).setBuffer(buffer);
  for(const row of rows){if(!row.groups.length)continue;const mesh=doc.createMesh(row.name);let triangles=0;
-  for(const g of row.groups){if(!g.indices.length)continue;const definition=g.material,key=JSON.stringify(definition);let mat=palette.get(key);if(!mat){mat=doc.createMaterial(definition.name).setBaseColorFactor(definition.baseColorFactor).setRoughnessFactor(definition.roughnessFactor).setMetallicFactor(definition.metallicFactor).setExtras({materialFactors:'gltf',source:'Chunk Surfer original item model or task-authored cab dressing'});palette.set(key,mat);}mesh.addPrimitive(doc.createPrimitive().setAttribute('POSITION',accessor(row.name+' position',g.positions,'VEC3')).setAttribute('NORMAL',accessor(row.name+' normal',g.normals,'VEC3')).setIndices(accessor(row.name+' indices',g.indices,'SCALAR')).setMaterial(mat));triangles+=g.indices.length/3;}
+  for(const g of row.groups){if(!g.indices.length)continue;const definition=g.material,key=JSON.stringify(definition);let mat=palette.get(key);if(!mat){mat=doc.createMaterial(definition.name).setBaseColorFactor(definition.baseColorFactor).setRoughnessFactor(definition.roughnessFactor).setMetallicFactor(definition.metallicFactor).setExtras({materialFactors:'gltf',source:'Chunk Surfer original item model or task-authored cab dressing'});if(definition.musicBoxMaterial){const maps=musicBoxMaterialMaps(definition.musicBoxMaterial,{root}),tex=(channel)=>doc.createTexture(definition.name+' '+channel).setImage(maps[channel]).setMimeType('image/png');mat.setBaseColorTexture(tex('albedo')).setNormalTexture(tex('normal')).setMetallicRoughnessTexture(tex('orm'));mat.setExtras({...mat.getExtras(),musicBoxConstruction:MUSIC_BOX_CONSTRUCTION.revision,coatedCase:true});}if(definition.texture){const file=path.join(root,definition.texture);if(fs.existsSync(file)){const tex=doc.createTexture(definition.name+' albedo').setImage(fs.readFileSync(file)).setMimeType('image/png');mat.setBaseColorTexture(tex);if(definition.emissive){mat.setEmissiveTexture(tex).setEmissiveFactor(hex(definition.emissive));}}}palette.set(key,mat);}const prim=doc.createPrimitive().setAttribute('POSITION',accessor(row.name+' position',g.positions,'VEC3')).setAttribute('NORMAL',accessor(row.name+' normal',g.normals,'VEC3'));if(g.uvs?.length===g.positions.length/3*2)prim.setAttribute('TEXCOORD_0',accessor(row.name+' uv',g.uvs,'VEC2'));mesh.addPrimitive(prim.setIndices(accessor(row.name+' indices',g.indices,'SCALAR')).setMaterial(mat));triangles+=g.indices.length/3;}
   scene.addChild(doc.createNode(row.name).setMesh(mesh));const bounds=mergeBounds([row]),center=centre(bounds);let focusPoint=center,best=Infinity;
   // A headphone's bounding-box centre is empty air. Keep a real surface
   // centroid as its authoring/review aim, without adding an invisible object.
@@ -169,7 +172,7 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
  if(write){
   const folder=path.join(root,'public/assets/opening-cab');fs.mkdirSync(folder,{recursive:true});
   const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'),papers=[];
-  for(const paper of OPENING_CAB_PAPERS){
+  for(const paper of writePapers?OPENING_CAB_PAPERS:[]){
    const recital=paper.id.endsWith('programme'),body=paper.body.filter(Boolean),size=8.1,leading=17;
    const handwritten=(lines,top,height=13)=>lines.map((line,row)=>[...line].flatMap((char,index)=>{
     const advance=Math.min(height*.75,170/line.length),left=105-line.length*advance/2+index*advance,
@@ -189,8 +192,8 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
    if(raster.status!==0)throw Error('Cab paper raster failed: '+(raster.stderr||raster.stdout));
    papers.push({id:paper.id,path:path.relative(path.join(root,'public'),output),materialPath:path.relative(path.join(root,'public'),materialOutput),sha256:sha(fs.readFileSync(output)),semanticSha256:sha(JSON.stringify(paper.body)),width:1050,height:1485});
   }
-  fs.writeFileSync(path.join(folder,'papers.json'),JSON.stringify({scope:'Dedicated cab papers; existing external-baked-paper reader; no shared atlas or catalogue rewrite',papers},null,2)+'\n');
-  fs.mkdirSync(path.join(root,'public/assets'),{recursive:true});fs.writeFileSync(path.join(root,'public',stats.asset),bytes);fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.credits.json'),JSON.stringify({provenance:stats.provenance,sources:stats.sources,registration:stats.registration,limitations:stats.limitations,sha256:stats.sha256},null,2)+'\n');fs.writeFileSync(path.join(root,'src/data/opening-cab-object-geometry.js'),'// Generated by build-opening-cab-objects.mjs; final exported geometry bounds.\nexport const OPENING_CAB_GEOMETRY='+JSON.stringify({sha256:stats.sha256,meshes:records,targets},null,2)+';\n');
+  if(writePapers)fs.writeFileSync(path.join(folder,'papers.json'),JSON.stringify({scope:'Dedicated cab papers; existing external-baked-paper reader; no shared atlas or catalogue rewrite',papers},null,2)+'\n');
+  fs.mkdirSync(path.join(root,'public/assets'),{recursive:true});fs.writeFileSync(path.join(root,'public',stats.asset),bytes);fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.credits.json'),JSON.stringify({provenance:stats.provenance,sources:stats.sources,registration:stats.registration,limitations:stats.limitations,sha256:stats.sha256},null,2)+'\n');fs.writeFileSync(path.join(root,'src/data/opening-cab-object-geometry.js'),'// Generated by build-opening-cab-objects.mjs; final exported geometry bounds.\nexport const OPENING_CAB_GEOMETRY='+JSON.stringify({sha256:stats.sha256,meshes:records,targets,registration:{musicBox:registration.musicBox}},null,2)+';\n');
  }
  return{bytes,stats};
 }

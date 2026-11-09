@@ -11,10 +11,10 @@ function host(){
  const log=[],speaker=createB3SpeakerDisturbance();let recording=false;
  const h={storyMode:true,usingSpecialSpace:()=>false,scenes,makeB3ConsoleScene,b3Speaker:speaker,b3ConsoleScene:null,
   REC:{isRecording:()=>recording,isSlating:()=>false,isStalled:()=>false},recordAction:()=>{log.push('stop');recording=false;},
-  b3FadersDirty:false,b3ControlCueAt:0,performance:{now:()=>1000},CUES:{playCue(){},CUE:{keys:'keys'}},
+  openB3ConsoleInvestigation:()=>log.push('investigate-return'),b3FadersDirty:false,b3ControlCueAt:0,performance:{now:()=>1000},CUES:{playCue(){},CUE:{keys:'keys'}},
   resetMotionInput:reason=>log.push('reset:'+reason),ensureInteractionFocus:()=>log.push('focus'),
   syncPointerMode:reason=>log.push('sync:'+reason),ensurePointerLock:reason=>{log.push('capture:'+reason);return Promise.resolve(true);}};
- vm.createContext(h);vm.runInContext(extract('openB3Console','b3BleedEvent'),h);return{h,log,speaker,setRecording:v=>recording=v};
+ vm.createContext(h);vm.runInContext(extract('openB3Console','openB3ConsoleInvestigation'),h);return{h,log,speaker,setRecording:v=>recording=v};
 }
 test('actual console host lends look on a fresh gesture and restores ordinary world ownership on leave',()=>{
  scenes.clear();const t=host();try{
@@ -37,6 +37,9 @@ test('actual host retains power paradox, reversible fader feedback and the sole 
   t.setRecording(true);scene.key({key:'r'});assert.equal(t.log.filter(x=>x==='stop').length,1);assert.equal(scene.view().looking,true);
   scene.key({key:'e'});assert.equal(t.h.b3ConsoleScene,null);
  }finally{scenes.clear();}
+});
+test('actual TRACE handoff releases the desk before opening the monitor-return investigation',()=>{
+ scenes.clear();const t=host();try{t.h.openB3Console();scenes.top().key({key:'i'});assert.equal(scenes.has('b3-console'),false);assert.equal(t.h.b3ConsoleScene,null);assert.equal(t.log.at(-1),'investigate-return');}finally{scenes.clear();}
 });
 test('the real recorder face is lifted clear of the hands-on desk and returns low during a glance',()=>{
  const calls=[],h={b3ConsoleScene:{view:()=>({looking:false,layout:{y:25}})},SPEECH:{speechPanelRows:()=>4},REC:{isSlating:()=>false,isStalled:()=>false},liveTakePanelRect:o=>{calls.push(o);return o;}};

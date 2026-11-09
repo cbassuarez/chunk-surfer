@@ -3,15 +3,15 @@ import {continuationSegmentBoxDistanceSquared} from './source-continuation-physi
 import {continuationBodyAxis} from './source-continuation-portals.js';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,Number(x)||0));
 const phases=new Set(['dormant','warning','lowering','settled']);
-export const freshSourceConnectorCorridor=()=>({version:1,phase:'dormant',elapsed:0,strainStarted:false,strainElapsed:0,legacyPassed:false,blockedBy:null});
+export const freshSourceConnectorCorridor=()=>({version:C.version,phase:'dormant',elapsed:0,strainStarted:false,strainElapsed:0,legacyPassed:false,blockedBy:null});
 export function normalizeSourceConnectorCorridor(value,world={}){
-  if(!value||value.version!==1){
+  if(!value||![1,C.version].includes(value.version)){
     const passed=world.phase==='catch'||world.chartId===4&&corridorProgress(world)>17;
     return passed?{...freshSourceConnectorCorridor(),phase:'settled',elapsed:C.lowerSeconds,strainStarted:true,strainElapsed:C.strainSeconds,legacyPassed:true}:freshSourceConnectorCorridor();
   }
   const phase=phases.has(value.phase)?value.phase:'dormant';
-  return{version:1,phase,elapsed:clamp(value.elapsed,0,phase==='warning'?C.warningSeconds:C.lowerSeconds),
-    strainStarted:!!value.strainStarted,strainElapsed:clamp(value.strainElapsed,0,C.strainSeconds),legacyPassed:!!value.legacyPassed,
+  return{version:C.version,phase,elapsed:clamp(value.elapsed,0,phase==='warning'?C.warningSeconds:C.lowerSeconds),
+    strainStarted:!!value.strainStarted,strainElapsed:value.version===1?clamp(value.strainElapsed,0,3.6)/3.6*C.strainSeconds:clamp(value.strainElapsed,0,C.strainSeconds),legacyPassed:!!value.legacyPassed,
     blockedBy:['player','hush'].includes(value.blockedBy)?value.blockedBy:null};
 }
 function capsule(actor,radius,height){

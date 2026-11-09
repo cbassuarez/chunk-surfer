@@ -60,3 +60,15 @@ test('non-3D frames do not spend the policy budget',()=>{
  assert.deepEqual(h.outputs,[1]);h.ctx.RENDERER='3d';h.run(5.5);assert.deepEqual(h.outputs,[1]);
  h.run(2);assert.deepEqual(h.outputs,[1,.875]);
 });
+
+test('a playable borrowed Source renderer can adapt while its ordinary world is held',()=>{
+ const h=harness();let live=true;
+ h.ctx.scenes.top=()=>({get performanceWorldActive(){return live;}});
+ h.ctx.applyRenderScale('auto');h.setBlocked(true);h.setPresentation(true);
+ h.run(8);assert.deepEqual(h.outputs,[1,.875]);
+ live=false;const count=h.outputs.length;h.run(30);
+ assert.equal(h.outputs.length,count,'loading or authored transition holds remain protected');
+ live=true;h.setRecording(true);h.run(30);assert.equal(h.outputs.length,count,'recording still blocks resolution changes');
+ h.setRecording(false);h.setSlating(true);h.run(30);assert.equal(h.outputs.length,count,'slating remains protected');
+ h.setSlating(false);h.setFocus(false);h.run(30);assert.equal(h.outputs.length,count,'foreground focus remains authoritative');
+});

@@ -13,6 +13,8 @@ import {pressureInstances as pressureMeshes} from './pressure-volume.js';
 import {portalClipPlanes,transformPortalPlanes,portalMultiply,portalInverse,portalTransformPoint,portalTransformVector} from './source-mesh-portals.js';
 import {SOURCE_EARTHFALL} from '../data/source-earthfall.js';
 import {sourceContinuationFrame} from '../game/source-continuation.js';
+import {archipelagoExitReady} from '../game/source-archipelago-progress.js';
+import {ARCHIPELAGO_ISLANDS} from '../data/source-continuation-archipelago.js';
 import {sourceRestBenchProps,sourceRestCamera,sourceRestSeatForState,SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
 import {sourceRestScenery} from '../game/source-rest-scenery.js';
 import {sourceRestGeometryLibrary} from './source-rest-models.js';
@@ -38,10 +40,11 @@ import {SOURCE_REST_FLOOD_MESHES} from '../game/source-rest-flood.js';
 import {sourceRestFloodGeometryLibrary} from './source-rest-flood-models.js';
 import {sourceRestSeabedGeometryLibrary} from './source-rest-seabed-models.js';
 import {sourceConnectorGeometryLibrary,sourceConnectorRenderParts} from './source-connector-corridor.js';
+import {sourceExitPassageGeometryLibrary,sourceExitPassageRenderParts} from './source-exit-passage.js';
 import {createSourceRestNoteAsset} from '../game/source-rest-note-score.js';
 import {continuationCameraBasis,continuationCameraEye,continuationBodyBasis} from '../game/source-continuation-portals.js';
 import {continuationVoidCameraEye} from '../game/source-continuation-void.js';
-import {sourceContinuationVoidViews,sourceContinuationVoidCopies,sourceContinuationVoidInstance,sourceContinuationVoidInFrustum,sourceContinuationVoidAcousticPoint,SOURCE_VOID_VIEW_LIMITS} from './source-continuation-void.js';
+import {sourceContinuationVoidViews,sourceContinuationVoidCopies,sourceContinuationVoidInstance,sourceContinuationVoidVisibility,sourceContinuationVoidAcousticPoint,SOURCE_VOID_VIEW_LIMITS} from './source-continuation-void.js';
 import {sourceContinuationIslandProps,sourceContinuationIslandGeometryLibrary} from './source-continuation-islands.js';
 import {sourceContinuationBlackSunProps,sourceContinuationBlackSunGeometryLibrary} from './source-continuation-black-sun.js';
 import {sourceContinuationLeafFrame} from './source-continuation-leaves.js';
@@ -72,6 +75,14 @@ const multiply=(a,b)=>{const m=new Float32Array(16);for(let c=0;c<4;c++)for(let 
 const rotateX=a=>new Float32Array([1,0,0,0,0,Math.cos(a),Math.sin(a),0,0,-Math.sin(a),Math.cos(a),0,0,0,0,1]);
 const rotateZ=a=>new Float32Array([Math.cos(a),Math.sin(a),0,0,-Math.sin(a),Math.cos(a),0,0,0,0,1,0,0,0,0,1]);
 const transform=(m,p)=>[0,1,2].map(a=>m[a]*p[0]+m[a+4]*p[1]+m[a+8]*p[2]+m[a+12]);
+function planeTransforms(m){
+  // Every member of one aperture batch shares its finite clip/exclusion
+  // planes. Cache only for this transform in this frame, never across clocks.
+  const single=new WeakMap(),sets=new WeakMap();
+  const planes=value=>{if(!single.has(value))single.set(value,transformPortalPlanes(value,m));return single.get(value);};
+  const excludes=value=>{if(!sets.has(value))sets.set(value,value.map(planes));return sets.get(value);};
+  return{planes,excludes};
+}
 const positioned=(id,mesh,m,extra={})=>({id,mesh,x:m[12],y:m[13],z:m[14],matrix:m,chartId:0,zone:ZONE.sourceSpace,structural:true,...extra});
 const name=(phase,kind,id)=>`${PREFIX}${phase}-${kind}-${String(id).replace(/[^a-zA-Z0-9_-]/g,'-')}`;
 const boxFaces=[[0,3,2,1],[4,5,6,7],[0,4,7,3],[1,2,6,5],[0,1,5,4],[3,7,6,2]];
@@ -98,8 +109,35 @@ const catchFloor=level=>continuationData.continuationCatchFloor(level);
 const catchStage=level=>continuationData.CONTINUATION_CATCH_STAGES?.[level]||{level,y:catchFloor(level),center:SOURCE_CONTINUATION.catch.center};
 const regionOf=row=>row.region||row.phase||'wrong-return';
 const chartOf=value=>Math.max(0,Math.round(finite(value?.chartId)));
+const archipelagoOwned=value=>value?.archipelago===true||String(value?.id||'').startsWith('iii-');
 const dot3=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0);
 const basisMatrix=b=>[...b.right,0,...b.up,0,...b.forward.map(v=>-v),0,0,0,0,1];
+// Retain the complete canonical construction for portal and void images. Only
+// the newly expanded islands use this additional draw selection; an exact AABB
+// outside the camera cone cannot hide a nearby tread or a visible broad slab.
+function archipelagoVisible(prop,view,origin,toCurrent=null){
+  if(!prop.archipelago)return true;
+  const at=[prop.x-origin.x,prop.y-origin.y,prop.z-origin.z],radius=Math.max(.1,finite(prop.cullRadius,.6)),
+    source=prop.physicalBounds||{min:at.map(v=>v-radius),max:at.map(v=>v+radius)};
+  let min=source.min,max=source.max;
+  if(toCurrent){
+    const points=[];
+    for(const x of[min[0],max[0]])for(const y of[min[1],max[1]])for(const z of[min[2],max[2]])points.push(...portalTransformPoint(toCurrent,[x,y,z]));
+    ({min,max}=boundsOf(points));
+  }
+  const nearest=view.eye.map((v,k)=>Math.max(min[k],Math.min(max[k],v))),distance=Math.hypot(...nearest.map((v,k)=>v-view.eye[k]));
+  // Fine metal bearing strips and lantern fittings are subpixel dressing at
+  // this range. Broad supported decks, roots and architectural silhouettes
+  // retain the full scene range.
+  if(distance>(prop.architecturalJoint||prop.archipelagoPractical?80:SOURCE_CONTINUATION_ARCHITECTURE.far))return false;
+  if(distance<10)return true;
+  const {forward,right,up}=view.basis,tan=finite(view.tanHalfFov,.95),aspect=finite(view.aspect,16/9),planes=[];
+  for(const [axis,width]of[[right,tan*aspect],[up,tan]])for(const side of[-1,1]){
+    const normal=forward.map((v,k)=>v*width+axis[k]*side);planes.push([...normal,-dot3(normal,view.eye)]);
+  }
+  planes.push([...forward,-dot3(forward,view.eye)],...(view.planes||[]));
+  return planes.every(plane=>plane[3]+plane.slice(0,3).reduce((sum,v,k)=>sum+v*(v>=0?max[k]:min[k]),0)>=-.001);
+}
 // The cosmos has one simulation in chart0. These fixed images follow the
 // main tree's rigid gluing; cross-links may expose a different image of it.
 export const SOURCE_CONTINUATION_BACKDROP_ATLAS=Object.freeze((()=>{
@@ -193,7 +231,10 @@ function boxesGeometry(boxes){return boxes.reduce((g,b)=>appendGeometry(g,solidG
 // Only exposed edges of the support union get a rim. Internal rectangle joins
 // must not look like gaps, and the cap stays wholly inside the real footprint.
 export function sourceContinuationEdges(state={phase:'catch'}){
-  const rows=continuationSurfaces(state).filter(s=>s.kind==='rect'&&Number.isInteger(s.level)),segments=new Map(),epsilon=1e-5;
+  // Steel rims belong to the original spindle mechanism. The distant islands
+  // retain their stone/wood slab cuts and physical roots instead of inheriting
+  // a second machine rim on every stair elevation.
+  const rows=continuationSurfaces(state).filter(s=>s.kind==='rect'&&Number.isInteger(s.level)&&!archipelagoOwned(s)),segments=new Map(),epsilon=1e-5;
   for(const row of rows)for(const[axis,at,lo,hi,normal]of[['z',row.minX,row.minZ,row.maxZ,[-1,0]],['z',row.maxX,row.minZ,row.maxZ,[1,0]],['x',row.minZ,row.minX,row.maxX,[0,-1]],['x',row.maxZ,row.minX,row.maxX,[0,1]]]){
     const peers=rows.filter(p=>Math.abs(p.y-row.y)<epsilon),cuts=[lo,hi];
     for(const p of peers)for(const v of axis==='x'?[p.minX,p.maxX]:[p.minZ,p.maxZ])if(v>lo+epsilon&&v<hi-epsilon)cuts.push(v);
@@ -234,6 +275,7 @@ const canonical={
   ...sourceContinuationIslandGeometryLibrary(),
   ...sourceContinuationBlackSunGeometryLibrary(),
   ...sourceConnectorGeometryLibrary(),
+  ...sourceExitPassageGeometryLibrary(),
   'rest-judgment-lightning':{...cylinderGeometry(6),material:'linen',base:[.82,.89,.94,1],emissive:[1.2,1.4,1.6],roughness:1},
   block:{...solidGeometry({minX:-.5,maxX:.5,minY:0,maxY:1,minZ:-.5,maxZ:.5}),material:'metal'},
   'rift-slit':{...solidGeometry({minX:-.5,maxX:.5,minY:-.5,maxY:.5,minZ:-.5,maxZ:.5}),material:'dark',base:[.0015,.0015,.003,1],roughness:1},
@@ -268,15 +310,53 @@ const canonical={
 
 };
 
+const staticGeometry=new WeakMap();
 export function sourceContinuationGeometry(state={phase:'wrong-return'}){
   const phase=phaseOf(state),geometry=[];
-  for(const surface of continuationSurfaces())geometry.push({id:surface.id,name:name(regionOf(surface),'surface',surface.id),region:regionOf(surface),kind:'surface',material:surface.material||'source',role:surface.role,level:surface.level,descriptor:surface,...surfaceGeometry(surface)});
+  for(const surface of continuationSurfaces()){
+    if(!staticGeometry.has(surface))staticGeometry.set(surface,{id:surface.id,name:name(regionOf(surface),'surface',surface.id),region:regionOf(surface),kind:'surface',material:surface.material||'source',role:surface.role,level:surface.level,descriptor:surface,...surfaceGeometry(surface)});
+    geometry.push(staticGeometry.get(surface));
+  }
   const allSolids=new Map([...continuationSolids(),...continuationSolids({...state,chartId:0})].map(s=>[s.id,s]));
-  for(const solid of allSolids.values())if(solid.role!=='furniture')geometry.push({id:solid.id,name:name(regionOf(solid),'solid',solid.id),region:regionOf(solid),kind:'solid',material:solid.material||'source',role:solid.role,level:solid.level,descriptor:solid,...solidGeometry(solid)});
+  for(const solid of allSolids.values())if(solid.role!=='furniture'){
+    if(!staticGeometry.has(solid))staticGeometry.set(solid,{id:solid.id,name:name(regionOf(solid),'solid',solid.id),region:regionOf(solid),kind:'solid',material:solid.material||'source',role:solid.role,level:solid.level,descriptor:solid,...solidGeometry(solid)});
+    geometry.push(staticGeometry.get(solid));
+  }
   return geometry;
 }
-function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary(),...sourceContinuationAmbientFaultGeometry(),...sourceParserGeometryLibrary()];}
-const meshLibrary=allGeometry(),meshTriangles=meshLibrary.reduce((n,p)=>n+p.i.length/3,0),rimLibrary=meshLibrary.filter(p=>p.kind==='edge').map(p=>({...p,center:boundsOf(p.p).center}));
+function archipelagoFlightGeometry(){
+  const groups=new Map();
+  for(const row of continuationSurfaces())if(archipelagoOwned(row)&&row.role==='stair'){
+    if(!groups.has(row.stairId))groups.set(row.stairId,[]);groups.get(row.stairId).push(row);
+  }
+  return [...groups].map(([stairId,rows])=>{
+    const mesh={p:[],i:[]};for(const row of rows)appendGeometry(mesh,surfaceGeometry(row));
+    return{id:'archipelago-flight-'+stairId,name:PREFIX+'archipelago-flight-'+stairId,kind:'flight',stairId,region:'catch',material:'cold-stone',members:rows.map(row=>row.id),...mesh};
+  });
+}
+function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...archipelagoFlightGeometry(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary(),...sourceContinuationAmbientFaultGeometry(),...sourceParserGeometryLibrary()];}
+const meshLibrary=allGeometry(),meshTriangles=meshLibrary.reduce((n,p)=>n+p.i.length/3,0),rimLibrary=meshLibrary.filter(p=>p.kind==='edge').map(p=>({...p,center:boundsOf(p.p).center})),
+  flightLibrary=meshLibrary.filter(p=>p.kind==='flight').map(p=>({...p,bounds:boundsOf(p.p)})),flightByMember=new Map(flightLibrary.flatMap(piece=>piece.members.map(id=>[id,piece])));
+export const sourceContinuationFlightGeometry=()=>flightLibrary;
+function batchDistantArchipelagoFlights(props,view,origin){
+  const selected=new Map();
+  for(const prop of props){
+    if(!prop.archipelago||prop.portalDestination||prop.role!=='stair')continue;
+    const flight=flightByMember.get(prop.descriptorId);if(!flight)continue;
+    const distance=Math.hypot(...view.eye.map((v,k)=>v-Math.max(flight.bounds.min[k],Math.min(flight.bounds.max[k],v))));
+    if(distance>60)selected.set(flight.stairId,flight);
+  }
+  if(!selected.size)return;
+  const remove=new Set([...selected.values()].flatMap(flight=>flight.members));
+  const retained=props.filter(p=>p.portalDestination||!p.archipelago||!remove.has(p.descriptorId));
+  for(const flight of selected.values()){
+    const at=flight.bounds.center,member=props.find(p=>flight.members.includes(p.descriptorId));
+    retained.push(positioned(PREFIX+flight.id,flight.name,matrix(origin.x+at[0],origin.y+at[1],origin.z+at[2]),
+      {chartId:0,region:'catch',physicalKind:'surface',role:'stair',archipelago:true,archipelagoFlight:true,descriptorId:flight.id,stairId:flight.stairId,level:member?.level,portalExcludePlanes:member?.portalExcludePlanes||null,
+        physicalBounds:{min:flight.bounds.min,max:flight.bounds.max},cullRadius:Math.hypot(...flight.bounds.max.map((v,k)=>(v-flight.bounds.min[k])/2))}));
+  }
+  props.splice(0,props.length,...retained);
+}
 // Only meshes which already carry actual Source print may leave lettering.
 // Imported architecture opts in through its existing source-cut joint faces;
 // the glyph pass still checks each primitive, so native wood stays unprinted.
@@ -328,7 +408,7 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
     bind(0,data.positions,3);bind(1,data.normals,3);bind(2,data.uvs,2);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,data.indices,gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    const source=isSource(piece.material),walkway=source&&printed.blueprint===true&&sourceSilverWalkwaySurface(piece),catchWalkway=printed.blueprint===true&&sourceSilverCatchSurface(piece),silver=walkway||catchWalkway,sourceSurface=piece.kind==='surface'&&printed.blueprint,
+    const source=isSource(piece.material),walkway=source&&printed.blueprint===true&&sourceSilverWalkwaySurface(piece),catchWalkway=printed.blueprint===true&&sourceSilverCatchSurface(piece)&&!archipelagoOwned(piece.descriptor),silver=walkway||catchWalkway,sourceSurface=piece.kind==='surface'&&printed.blueprint,
       paleStock=piece.paleStock||piece.kind==='surface'&&piece.role!=='inherited-earthfall',
       stock=silver?(silverPrinted||=(maps?{...maps,blueprint:true}:{...sourcePrintMaps(gl,'silver-fracture'),blueprint:true})):sourceSurface?printed:paleStock?palePrinted:printed,
       base=piece.base||[...(paint[piece.material]||paint.source),1],
@@ -551,20 +631,22 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   // Every support remains in the same physical world. The overhead view makes
   // an explicit cutaway after submission, without changing this geometry.
   for(const piece of sourceContinuationGeometry(state)){
-    const row=piece.descriptor;if(row.role==='spindle'||row.role==='arch-pier')continue;
+    const row=piece.descriptor,archipelago=archipelagoOwned(row);if(row.exitPassage||row.role==='spindle'||row.role==='arch-pier'&&!archipelago)continue;
     if(globalThis.__scReviewCamera&&row.kind==='rect')continue;const b=boundsOf(piece.p),isSurface=piece.kind==='surface';
     const sw=(!globalThis.__scReviewCamera&&row.kind==='sector'&&regionOf(row)==='catch')?continuationData.continuationCrescentSway(row.level,finite(state.elapsed)):{x:0,z:0};
-    put(piece.id,piece.name,b.center[0]+sw.x,b.center[1],b.center[2]+sw.z,0,1,1,1,{continuation:true,physicalKind:piece.kind,descriptorId:row.id,region:regionOf(row),level:row.level,role:row.role,chartId:chartOf(row),...(row.role==='rest-alcove'?{restPlace:true}:{}),
+    put(piece.id,piece.name,b.center[0]+sw.x,b.center[1],b.center[2]+sw.z,0,1,1,1,{continuation:true,physicalKind:piece.kind,descriptorId:row.id,region:regionOf(row),level:row.level,role:row.role,chartId:chartOf(row),...(archipelago?{archipelago:true,islandId:row.islandId,cluster:row.cluster,construction:row.construction}:{}),...(row.role==='rest-alcove'?{restPlace:true}:{}),
       physicalBounds:{min:b.min,max:b.max},cullRadius:Math.hypot((b.max[0]-b.min[0])/2,(b.max[2]-b.min[2])/2)});
     if(Number.isInteger(row.level))shownLevels.add(row.level);
     if(isSurface&&row.kind!=='sector'&&row.role!=='stair'){
       const y=continuationData.continuationSurfaceY(row,(row.minX+row.maxX)/2,(row.minZ+row.maxZ)/2)-finite(row.thickness,.35)-.11;
       // Bearing courses show a real cut edge without doubling the top surface.
-      if(row.maxX-row.minX>2)put('cut-bearing-'+row.id,PREFIX+'worn-block',(row.minX+row.maxX)/2,y,row.minZ+.07,0,row.maxX-row.minX,.12,.14,{architecturalJoint:true,descriptorId:row.id,region:regionOf(row),chartId:chartOf(row)});
+      if(row.maxX-row.minX>2)put('cut-bearing-'+row.id,PREFIX+'worn-block',(row.minX+row.maxX)/2,y,row.minZ+.07,0,row.maxX-row.minX,.12,.14,{architecturalJoint:true,descriptorId:row.id,region:regionOf(row),chartId:chartOf(row),...(archipelago?{archipelago:true,islandId:row.islandId,cluster:row.cluster,physicalBounds:{min:[row.minX,y,row.minZ],max:[row.maxX,y+.12,row.minZ+.14]}}:{})});
     }
   }
   for(const part of sourceConnectorRenderParts(state))put(part.id,PREFIX+part.mesh,part.x,part.y,part.z,0,part.sx,part.sy,part.sz,
     {architecture:true,region:part.region,chartId:part.chartId,connector:true,cabinet:part.cabinet,physicalKind:'solid',descriptorId:part.id,physicalBounds:part.physicalBounds});
+  for(const part of sourceExitPassageRenderParts())put(part.id,PREFIX+part.mesh,part.x,part.y,part.z,0,part.sx,part.sy,part.sz,
+    {architecture:true,region:part.region,chartId:part.chartId,exitPassage:true,physicalKind:part.physicalKind,descriptorId:part.id,physicalBounds:part.physicalBounds,level:part.level});
   if(!globalThis.__scReviewCamera)for(const piece of rimLibrary.filter(piece=>piece.material==='edge-steel')){put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation});}
   // The four sectors are framed as four different fabricated objects. All
   // frames are below the exact support mesh, and the spindle is continuous.
@@ -591,6 +673,24 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     let m=multiply(matrix(row.x,row.y,row.z,finite(row.yaw)),multiply(rotateX(finite(row.pitch)),rotateZ(finite(row.roll))));
     m=multiply(m,matrix(0,0,0,0,finite(row.scaleX,row.scale??1),finite(row.scaleY,row.scale??1),finite(row.scaleZ,row.scale??1)));
     putMatrix('assembly-'+row.id,row.mesh,m,{architecture:true,region:row.region||'wrong-return',assemblyId:row.id,supportId:row.supportId,orientation:row.orientation||'upright',originalModel:row.mesh,cullRadius:32});
+  }
+  // Native fragments hang below the destination's actual supporting slabs.
+  // Their vertical or inverted faces give the districts their identity without
+  // advertising a second floor the body could try to stand on.
+  for(const island of ARCHIPELAGO_ISLANDS){
+    const flags={archipelago:true,islandId:island.id,cluster:island.cluster,region:'catch',chartId:0,level:island.level,archipelagoStock:true,structural:false,decorative:true,noCollision:true,belowDeck:true,cullRadius:26};
+    if(island.id==='iii-inverted-chapel'){
+      const m=multiply(matrix(island.minX-1,island.feet-1,island.z),multiply(rotateZ(Math.PI),matrix(0,0,0,0,.9,.9,.9)));
+      putMatrix('archipelago-inverted-chapel','source_ii_chapel_buttress',m,{...flags,orientation:'inverted'});
+    }else if(island.id==='iii-soundboard-harbour'){
+      const m=multiply(matrix(island.minX+7,island.feet-2-.9872348*12,island.z),multiply(rotateZ(Math.PI/2),matrix(0,0,0,0,12,8,12)));
+      putMatrix('archipelago-soundboard','source_ii_piano_soundboard',m,{...flags,orientation:'sideways'});
+    }else if(island.id==='iii-binding-garden'){
+      for(const side of[-1,1]){
+        const m=multiply(matrix(island.x+side*18,island.feet-1.3-.6401861*16,island.z),multiply(rotateZ(Math.PI/2),matrix(0,0,0,0,16,8,16)));
+        putMatrix('archipelago-split-case-'+side,side<0?'source_ii_case_floor':'source_ii_case_lid',m,{...flags,orientation:'sideways'});
+      }
+    }
   }
   // The narrow stairs have physically open sides. Their treads and stringers
   // remain real, without decorative rails that a jumping body passes through.
@@ -633,6 +733,11 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
         put('joint-lamp-'+row.id,PREFIX+'lamp',row.x+1.08,row.y+1.25,row.z,0,1,1,1,{journeyPractical:true,landmarkId:row.id,region:'wrong-return',chartId:chartOf(row)});
         lights.push({id:row.id+'-light',x:origin.x+row.x+1.04,y:origin.y+row.y+1.25,z:origin.z+row.z-.18,radius:5.5,intensity:1.3,color:[.83,.65,.36],penetration:0,attachedTo:row.id,region:'wrong-return',journeyPractical:true,chartId:chartOf(row)});
       }
+    }else if(row.kind==='archipelago-landmark'||row.kind==='archipelago-refuge'){
+      const refuge=row.kind==='archipelago-refuge',y=finite(row.feet,row.y),flags={archipelago:true,islandId:row.islandId,cluster:row.cluster,region:'catch',chartId:chartOf(row),level:row.level,structural:false,decorative:true,archipelagoPractical:true,cullRadius:2};
+      put(row.id+'-post',PREFIX+'rest-lamp-post',row.x,y,row.z,finite(row.yaw),1,1,1,flags);
+      put(row.id+'-light',PREFIX+'rest-lamp-light',row.x,y+1.19,row.z,0,.22,.16,.22,{...flags,practical:true,archipelagoRefuge:refuge});
+      lights.push({id:PREFIX+row.id+'-light',x:origin.x+row.x,y:origin.y+y+1.31,z:origin.z+row.z,radius:refuge?9:12,intensity:refuge?1.5:1.15,color:refuge?[.86,.66,.4]:row.construction==='soundboard'?[.76,.58,.36]:[.51,.68,.67],penetration:0,chartId:chartOf(row),region:'catch',archipelago:true,archipelagoRefuge:refuge,islandId:row.islandId});
     }else if(row.kind==='source-recording-cassette'){
       for(const part of sourceRecordingCassetteWorldProps(row))putMatrix('prop-'+part.id,part.mesh,part.matrix,
         {continuation:true,region:regionOf(row),chartId:chartOf(row),level:row.level,role:'recording-return',structural:false,decorative:true,noCollision:true,noReflection:true,
@@ -703,6 +808,15 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   // A pair of tall, lit gateposts marks the onward island from the stack.
   // Their warm verticals and the lit causeway read even in the overhead view.
   const destination=SOURCE_CONTINUATION.catch.finalDoor;
+  const latchHeld=!archipelagoExitReady(state),latchFlags={region:'catch',chartId:0,level:0,expeditionLatch:true,latchHeld,decorative:true,structural:false};
+  if(latchHeld){
+    for(let k=0;k<7;k++){
+      const z=destination.z-.78+k*.26;
+      beam('exit-chain-'+k,[destination.x-.13,destination.y+1.2,z],[destination.x-.13,destination.y+1.2,z+.21],.065,'worn-block',latchFlags);
+    }
+  }else beam('exit-chain-released',[destination.x-.13,destination.y+.3,destination.z+1.08],[destination.x-.13,destination.y+1.95,destination.z+1.08],.065,'worn-block',latchFlags);
+  const latchRoute=[[destination.x-.13,destination.y+1.2,destination.z+.91],[-143.55,destination.y+1.45,destination.z+.91],[-143.55,destination.y-5.5,destination.z+.91],[-155.5,destination.y-10.4,destination.z+8]];
+  for(let k=1;k<latchRoute.length;k++)beam('exit-counterweight-chain-'+k,latchRoute[k-1],latchRoute[k],.055,'worn-block',{...latchFlags,cullRadius:16});
   for(const side of [-1,1]){
     const z=destination.z+side*3.4;
     beam('door-island-beacon-'+side,[destination.x,destination.y,z],[destination.x,destination.y+7,z],.12,'worn-block',{architecture:true,region:'catch',level:0,islandBeacon:true});
@@ -733,12 +847,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   // doorway alignment: the current Earthfall exit becomes Source II entry z=3.5.
   put('upper-exit-remnant',goods.frameMesh,0,100,SOURCE_EARTHFALL.passage.upperExitZ+earthfallOffset,0,3/goods.opening.width,3.05/goods.opening.height,1,{architecture:true,inheritedRuins:true,upperRemnant:true,cullRadius:8});
   // The false Ellery is not among them: it came down with him in Earthfall.
-  // A finite service-road view carries the existing drive's destination
-  // language through the final open leaves. It begins beyond the completion
-  // plane; this is a preview of that handoff, not a replacement drive route.
-  const exit=SOURCE_CONTINUATION.catch.finalDoor;
-  put('onward-road-preview',PREFIX+'road-preview',exit.x+7,exit.y,exit.z,0,12,1,6.5,{onwardPreview:true,region:'catch',previewOf:'existing-source-drive',cullRadius:10});
-  for(const side of[-1,1])put('onward-road-kerb-'+side,PREFIX+'road-kerb',exit.x+7,exit.y,exit.z+side*3.35,0,12,1,.2,{onwardPreview:true,kerb:true,region:'catch'});
+  // The former road preview is now the supported exit passage above. Its end
+  // hands to the existing drive; the final door itself no longer cuts away.
   const worlds=['wrong-return','catch'].map(phase=>sourceSurroundingsFrame({...state,phase},{reducedMotion}));
   for(const world of worlds)props.push(...sourceSurroundingsProps(world,{origin}));
   const canonicalFall=props.filter(p=>p.surroundings&&p.world==='fall'),backdropOrigin=matrix(origin.x,origin.y,origin.z),backdropUnanchor=matrix(-origin.x,-origin.y,-origin.z);
@@ -834,20 +944,23 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     voidViews=sourceContinuationVoidViews(state,{...presentation,aspect:viewportAspect}),
     originMatrix=matrix(origin.x,origin.y,origin.z),unanchor=matrix(-origin.x,-origin.y,-origin.z),
     sourceExcludes=[...portalViews.map(v=>v.planes),...voidViews.excludes].map(p=>transformPortalPlanes(p,originMatrix)),allProps=[...props],allLights=[...lights],chartId=chartOf(state);
-  props.splice(0,props.length,...allProps.filter(p=>chartOf(p)===chartId).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
-  sourceCodeInstances.push(...canonicalCode.filter(p=>chartOf(p)===chartId).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
+  const islandView={...presentation,aspect:viewportAspect,tanHalfFov:viewportTanHalfFov};
+  props.splice(0,props.length,...allProps.filter(p=>chartOf(p)===chartId&&archipelagoVisible(p,islandView,origin)).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
+  if(!state.sourceRestView)batchDistantArchipelagoFlights(props,islandView,origin);
+  sourceCodeInstances.push(...canonicalCode.filter(p=>chartOf(p)===chartId&&archipelagoVisible(p,islandView,origin)).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
   lights.splice(0,lights.length,...allLights.filter(l=>chartOf(l)===chartId));
   const submitTransform=(p,m,extra={})=>{const q=transform(m,[p.x,p.y,p.z]);return{...p,...extra,matrix:multiply(m,p.matrix),x:q[0],y:q[1],z:q[2],...(p.surroundings?{sourceWorldMatrix:portalMultiply(m,p.sourceWorldMatrix||identity())}:{})};};
   for(const view of portalViews){const worldMap=portalMultiply(originMatrix,portalMultiply(view.toCurrent,unanchor)),planes=transformPortalPlanes(view.planes,originMatrix);
-    for(const p of allProps)if(chartOf(p)===view.destinationChart)props.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
-    for(const p of canonicalCode)if(chartOf(p)===view.destinationChart)sourceCodeInstances.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
+    for(const p of allProps)if(chartOf(p)===view.destinationChart&&archipelagoVisible(p,{...islandView,planes:view.planes},origin,view.toCurrent))props.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
+    for(const p of canonicalCode)if(chartOf(p)===view.destinationChart&&archipelagoVisible(p,{...islandView,planes:view.planes},origin,view.toCurrent))sourceCodeInstances.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
     for(const l of allLights)if(chartOf(l)===view.destinationChart){const q=transform(worldMap,[l.x,l.y,l.z]);lights.push({...l,id:l.id+':through:'+view.id,x:q[0],y:q[1],z:q[2],portalClipId:view.id});}
   }
   // Below all real floors, exact frustum rejection releases slots for the
   // receiving world's full visible architecture. This removes no visible
   // canonical mesh and avoids substituting a six-piece floor miniature.
   if(voidViews.domain){
-    const retained=props.filter(p=>p.portalDestination||sourceContinuationVoidInFrustum(p,{...presentation,aspect:viewportAspect},origin));
+    const visible=sourceContinuationVoidVisibility({...presentation,aspect:viewportAspect},origin),
+      retained=props.filter(p=>p.portalDestination||visible(p));
     props.splice(0,props.length,...retained);
   }
   const restReturn=applySourceRestReturn({props,lights,canonicalProps:[...allProps,...restReturnCanonical],canonicalLights:allLights,state,
@@ -934,16 +1047,16 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
       pressureInstances.push({...projected,portalFragment:'void-'+view.kind});
     }
   }
-  const compensate=portalMultiply(originMatrix,portalMultiply(presentation.compensation,unanchor));
+  const compensate=portalMultiply(originMatrix,portalMultiply(presentation.compensation,unanchor)),compensatedPlanes=planeTransforms(compensate);
   for(const impact of destruction.diagnostics.mistakeImpacts||[])impact.point=transform(compensate,impact.point);
-  for(let i=0;i<props.length;i++){const p=submitTransform(props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));props[i]=p;}
-  for(let i=0;i<sourceCodeInstances.length;i++){const p=submitTransform(sourceCodeInstances[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));sourceCodeInstances[i]=p;}
-  for(let i=0;i<parserArchitecture.props.length;i++){const p=submitTransform(parserArchitecture.props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));parserArchitecture.props[i]=p;}
+  for(let i=0;i<props.length;i++){const p=submitTransform(props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=compensatedPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=compensatedPlanes.excludes(p.portalExcludePlanes);props[i]=p;}
+  for(let i=0;i<sourceCodeInstances.length;i++){const p=submitTransform(sourceCodeInstances[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=compensatedPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=compensatedPlanes.excludes(p.portalExcludePlanes);sourceCodeInstances[i]=p;}
+  for(let i=0;i<parserArchitecture.props.length;i++){const p=submitTransform(parserArchitecture.props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=compensatedPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=compensatedPlanes.excludes(p.portalExcludePlanes);parserArchitecture.props[i]=p;}
   for(const l of lights){const q=transform(compensate,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}
-  for(const p of pressureInstances){p.matrix=portalMultiply(compensate,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));}
+  for(const p of pressureInstances){p.matrix=portalMultiply(compensate,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=compensatedPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=compensatedPlanes.excludes(p.portalExcludePlanes);}
   // Upright house-of-stairs images yield to the exact aperture views.
   const escherApertures=voidViews.domain?[...voidViews.lower,...voidViews.upper].map(v=>transformPortalPlanes(v.planes,originMatrix)):[];
-  for(let i=0;i<escher.props.length;i++){const p=submitTransform({...escher.props[i],portalExcludePlanes:escher.props[i].excludeVoidApertures&&escherApertures.length?escherApertures:null},compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));escher.props[i]=p;}
+  for(let i=0;i<escher.props.length;i++){const p=submitTransform({...escher.props[i],portalExcludePlanes:escher.props[i].excludeVoidApertures&&escherApertures.length?escherApertures:null},compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=compensatedPlanes.excludes(p.portalExcludePlanes);escher.props[i]=p;}
   for(let i=0;i<riftFaults.length;i++)riftFaults[i]=submitTransform(riftFaults[i],compensate);
   // Leaves ride the same presented world as everything they blow past.
   for(let i=0;i<leaves.props.length;i++)leaves.props[i]=submitTransform(leaves.props[i],compensate);
@@ -959,20 +1072,20 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   const ambientFaults=sourceContinuationAmbientFaultGeometry().filter(piece=>piece.phase===phaseOf(state)&&piece.chartId===chartId).map(piece=>{
     const [x,y,z]=boundsOf(piece.p).center,p=positioned(piece.id,piece.name,matrix(origin.x+x,origin.y+y,origin.z+z),
       {chartId,region:piece.phase,ambientFault:true,faultPalette:piece.palette,faultSheets:piece.sheetRanges.length,structural:false,collidable:false,noShadow:true,noReflection:true,cullRadius:90,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null});
-    const q=submitTransform(p,compensate);if(q.portalExcludePlanes)q.portalExcludePlanes=q.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));return q;
+    const q=submitTransform(p,compensate);if(q.portalExcludePlanes)q.portalExcludePlanes=compensatedPlanes.excludes(q.portalExcludePlanes);return q;
   });
   let eye=presentation.eye.map((v,k)=>v+[origin.x,origin.y,origin.z][k]),worldYaw=camera.yaw,
     aim=camera.aimTarget?.map((v,k)=>v+[origin.x,origin.y,origin.z][k])||null;
   const rotation=phaseOf(state)==='catch'?finite(studyRotation):0;
   if(rotation){const cx=origin.x+center.x,cz=origin.z+center.z,rigid=multiply(matrix(cx,0,cz,rotation),matrix(-cx,0,-cz));for(const p of props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.surroundings&&p.sourceWorldMatrix)p.sourceWorldMatrix=portalMultiply(rigid,portalMultiply(p.sourceWorldMatrix,portalInverse(rigid)));if(p.playerBody)p.heading=angle(p.heading+rotation);}for(const l of lights){const q=transform(rigid,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}eye=transform(rigid,eye);if(aim)aim=transform(rigid,aim);if(hush){const q=transform(rigid,[(hush.x+.5)*CELL,hush.floorH,(hush.y+.5)*CELL]);hush={...hush,x:q[0]/CELL-.5,y:q[2]/CELL-.5,floorH:q[1],performance:{...hush.performance,heading:angle(hush.performance.heading+rotation)}};}worldYaw=angle(worldYaw+rotation);}
   if(rotation){const gate=surroundings.gate,q=transform(multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z)),[gate.x,gate.y,gate.z]);gate.x=q[0];gate.z=q[2];gate.normalX=Math.cos(rotation);gate.normalZ=Math.sin(rotation);}
-  if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z));for(let i=0;i<ambientFaults.length;i++){const p=submitTransform(ambientFaults[i],rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));ambientFaults[i]=p;}}
-  if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z));
+  if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z)),rigidPlanes=planeTransforms(rigid);for(let i=0;i<ambientFaults.length;i++){const p=submitTransform(ambientFaults[i],rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=rigidPlanes.excludes(p.portalExcludePlanes);ambientFaults[i]=p;}}
+  if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z)),rigidPlanes=planeTransforms(rigid);
     for(const impact of destruction.diagnostics.mistakeImpacts||[])impact.point=transform(rigid,impact.point);
-    for(const p of props){if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
-    for(const p of pressureInstances){p.matrix=portalMultiply(rigid,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
-    for(const p of sourceCodeInstances){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.surroundings&&p.sourceWorldMatrix)p.sourceWorldMatrix=portalMultiply(rigid,portalMultiply(p.sourceWorldMatrix,portalInverse(rigid)));if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
-    for(const p of parserArchitecture.props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
+    for(const p of props){if(p.portalClipPlanes)p.portalClipPlanes=rigidPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=rigidPlanes.excludes(p.portalExcludePlanes);}
+    for(const p of pressureInstances){p.matrix=portalMultiply(rigid,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=rigidPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=rigidPlanes.excludes(p.portalExcludePlanes);}
+    for(const p of sourceCodeInstances){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.surroundings&&p.sourceWorldMatrix)p.sourceWorldMatrix=portalMultiply(rigid,portalMultiply(p.sourceWorldMatrix,portalInverse(rigid)));if(p.portalClipPlanes)p.portalClipPlanes=rigidPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=rigidPlanes.excludes(p.portalExcludePlanes);}
+    for(const p of parserArchitecture.props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.portalClipPlanes)p.portalClipPlanes=rigidPlanes.planes(p.portalClipPlanes);if(p.portalExcludePlanes)p.portalExcludePlanes=rigidPlanes.excludes(p.portalExcludePlanes);}
   }
   surroundings.props=props.filter(p=>p.surroundings).length;
   for(const impact of destruction.diagnostics.mistakeImpacts||[]){

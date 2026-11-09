@@ -17,7 +17,7 @@ const stations=[{id:'a',label:'DUET I',programme:'First cleared duet'},
 function fixture(){
   scenes.clear();let focused=true,ready=true,options=null,owner=null;
   const events=[],log=[],save={flags:{'opening.vehicle.pending':true},fieldKit:{},journal:[]};
-  const context={scenes,RENDERER:'3d',planName:'conservatory',CELL:.5,paused:false,actx:{state:'running'},musicGain:{id:'music'},sfxGain:{id:'sfx'},
+  const context={scenes,RENDERER:'3d',planName:'conservatory',CELL:.5,paused:false,gamepadTraceRecorder:null,actx:{state:'running'},musicGain:{id:'music'},sfxGain:{id:'sfx'},
     px:5,py:6,stepCount:0,OPENING_CAB_ASSET,OPENING_CAB_REQUIRED_MESHES,OPENING_CAB_RADIO_STATIONS:stations,
     getSave:()=>save,saveCommit:patch=>Object.assign(save,patch),params:()=>new URLSearchParams(),flagTest:id=>save.flags[id]===true,
     openingVehiclePending,gameplayInputLifecycleActive:()=>focused,ensureCtx:noop,resetMotionInput:noop,shakeMode:()=> 'full',
@@ -26,7 +26,7 @@ function fixture(){
     OPENING_AUTHORED_PROPS:[{id:'yard-van',x:16,y:8,yaw:Math.PI/2}],
     P3:{propMeshCatalog:()=>[...OPENING_CAB_REQUIRED_MESHES]},
     R3:{r3dVehicleInteriorStatus:()=>({loaded:ready}),r3dOpeningOvertureStatus:()=>({ready:true}),
-      r3dOpeningStreetReady:()=>true,r3dElleryPublicFrontReady:()=>true,r3dSetLookAngles:noop,r3dLookAngles:()=>({yaw:Math.PI/2})},
+      r3dOpeningStreetReady:()=>true,r3dElleryPublicFrontReady:()=>true,r3dSetLookAngles:noop,r3dFacing:()=>Math.PI/2,r3dLookAngles:()=>({yaw:Math.PI/2})},
     openingArrivalWorldView:frame=>frame,refreshWorldProps:noop,
     createOpeningArrivalAudio:()=>({prepare:()=>Promise.resolve(),update:noop,event:noop,dispose:()=>log.push('arrival-dispose'),stop:noop}),
     createOpeningCabRadio(value){
@@ -112,10 +112,10 @@ test('only deliberate audible tuning, power-on or raised volume earns the produc
 
 test('real native lifecycle callbacks hold the receiver immediately before the next scene or audio tick',()=>{
   const h=fixture();h.begin();h.tick();const c=h.context;
-  for(const name of['firstStrikeScene','firstStrikeAudio','studentStrikeScene','studentStrikeAudio','sourceRestBreath','sourceRestWeather','architectureDoorAudio','towerWarningAudio','pubRoomAudio',
+  for(const name of['openingPrologueScene','coastalHandsScene','firstStrikeScene','firstStrikeAudio','studentStrikeScene','studentStrikeAudio','sourceRestBreath','sourceRestWeather','architectureDoorAudio','towerWarningAudio','pubRoomAudio',
     'pubPressureAudio','sourcePubAudio','sourceContinuationAudio','academicGhostDispatch','sourceShoreAudio','activeRecordingSlate','bellPealPerformance',
     'getInDriveTeaserScene','sourceReturnFlashbackScene','sourceDriveSession','sourcePubScene','sourceContinuationScene','standingTearScene','coastalMemoryScene','sourceRecordingInspectionScene',
-    'outskirtsStreetAudio','towerBellDirector','towerPersonalHud','dialogGain','bodyGain','sfxDirectGain','whisperBed'])c[name]=null;
+    'outskirtsStreetAudio','towerBellDirector','towerPersonalHud','dialogGain','bodyGain','sfxDirectGain','hushStepBus','whisperBed'])c[name]=null;
   for(const name of['holdSourceRestEndingMusic','cancelLastExposure','cancelRecordingPressureAudio','cancelOutskirtDoorAnswer','cancelApparitionApplause',
     'setUiCueFocused','cancelControlScope','syncChapelTapeDemandTimelineHold','pauseTowerEndingRecording','saveSourceView','pauseOutskirtsLastLight',
     'lowerTowerPersonalRecorder','stopTowerPersonalWorldSignal','syncPointerMode','stopAllVoices','stopWorldLayerVoice','silenceAmbientDrone',

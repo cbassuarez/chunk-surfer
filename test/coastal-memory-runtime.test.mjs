@@ -5,7 +5,7 @@ import{normalizeTowerPersonalJourney,beginTowerPersonalJourney}from'../src/game/
 import{normalizeSourceStation,normalizeChunkSurfState,reduceChunkSurf,CHUNK_SURF_PHASE,SOURCE_FINALE_ROUTE,SOURCE_FINALE_STAGE}from'../src/game/chunk-surf-state.js';
 import{createSourceSpaceRuntime}from'../src/game/source-space-runtime.js';import{buildBellsGodPreset}from'../src/game/chunk-surf-god.js';
 import{cathedralBellCombatBattle,cathedralBellCombatDefinition}from'../src/data/combat-definitions.js';import{createCombatState}from'../src/game/combat-state.js';
-import{coastalMemoryRecordingBuffer}from'../src/audio/coastal-memory.js';import{TOWER_PERSONAL_TAKE,TOWER_PERSONAL_CUE,towerPersonalRecordingBuffer}from'../src/audio/tower-personal-recording.js';import*as PB from'../src/game/playback.js';
+import{coastalMemoryRecordingBuffer,loadCoastalMemoryRecording}from'../src/audio/coastal-memory.js';import{TOWER_PERSONAL_TAKE,TOWER_PERSONAL_CUE,towerPersonalRecordingBuffer}from'../src/audio/tower-personal-recording.js';import*as PB from'../src/game/playback.js';
 const back={x:12.125,y:-4200.0625,facing:.37,yaw:.3712,pitch:-.1245,floorH:1.28,eyeHeight:1.62},copy=x=>JSON.parse(JSON.stringify(x)),options={layout:L,runId:'coast-test'},make=(station={})=>createSourceSpaceRuntime({initialState:{...buildBellsGodPreset(440,{seed:31}).state,station}});
 function heard(value){const[x,z]=L.arrivalPath.at(-1),pose={x,z,feet:L.supportAt(x,z,L.musicBox.groundY).height,yaw:3.1,pitch:-.2};let s=normalizeCoastalMemory({...value,pose,sampledPose:pose},{layout:L});for(let i=0;i<36;i++)s=stepCoastalMemory(s,{dt:.25,recorderHeld:true,audioRunning:true,sourceReady:true,audibleSeconds:.25},{layout:L}).state;return s;}
 function readyReturn(value,reason='pier'){let s=requestCoastalReturn(value,{layout:L,reason});for(let i=0;i<4;i++)s=stepCoastalMemory(s,{dt:.25},{layout:L}).state;return s;}
@@ -22,4 +22,32 @@ test('coastal reward is one-shot, has its own reference provenance, and does not
 test('neither unheard completion nor heard retreat buys the quiet opening',()=>{for(const coastal of[finishPure(beginVisit(null,{...options,returnPose:back})),heard(beginVisit(null,{...options,returnPose:back}))]){let s=normalizeChunkSurfState({phase:CHUNK_SURF_PHASE.BELLS,station:{coastalMemory:coastal},finale:{route:SOURCE_FINALE_ROUTE.TOWER,stage:SOURCE_FINALE_STAGE.CATHEDRAL,cathedral:{alarm:4}}});s=reduceChunkSurf(s,{type:'CATHEDRAL_FIGHT_STARTED'});assert.equal(s.finale.cathedral.alarm,4);assert.equal(s.finale.cathedral.coastalOpening,undefined);assert.equal(s.station.coastalMemory.rewardConsumed,false);}});
 function audioContext(){const sources=[],param=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}}),node=(extra={})=>({connect(){},disconnect(){},...extra});return{sampleRate:256,currentTime:10,sources,createBuffer(channels,length,rate){const data=Array.from({length:channels},()=>new Float32Array(length));return{duration:length/rate,numberOfChannels:channels,getChannelData:i=>data[i]};},createGain(){return node({gain:param()});},createBufferSource(){const s=node({buffer:null,loop:false,start(when,offset=0){this.started={when,offset};},stop(){}});sources.push(s);return s;},createBiquadFilter(){return node({frequency:param(),Q:param()});}};}
 const pcmHash=b=>{const hash=createHash('sha256');for(let i=0;i<b.numberOfChannels;i++)hash.update(Buffer.from(b.getChannelData(i).buffer));return hash.digest('hex');};
-test('old and new authored tape cues replay their own immutable PCM after reload without identity substitution',()=>{PB.loadTakes([]);for(const[take,cue]of[[TOWER_PERSONAL_TAKE,TOWER_PERSONAL_CUE],[COASTAL_MEMORY_TAKE,COASTAL_MEMORY_CUE]])PB.archiveAuthoredTake({roomId:take,durationSeconds:14,discrete:[{cueId:cue,atSec:0,gain:1}]});const saved=copy(PB.serializeTakes()),play=(take,expected)=>{const ctx=audioContext();PB.playbackInit({ctx,bus:{},scheduleDiscrete:()=>{throw Error('Authored cue fell through');}});assert.ok(PB.playTake(take,{atHead:true}));const buffer=ctx.sources.find(s=>s.buffer&&s.buffer.duration===expected(ctx).duration)?.buffer;assert.ok(buffer);const hash=pcmHash(buffer);assert.equal(hash,pcmHash(expected(ctx)));PB.stopPlayback();return hash;};const old=play(TOWER_PERSONAL_TAKE,towerPersonalRecordingBuffer),coast=play(COASTAL_MEMORY_TAKE,coastalMemoryRecordingBuffer);assert.notEqual(old,coast);PB.loadTakes(saved);assert.equal(play(TOWER_PERSONAL_TAKE,towerPersonalRecordingBuffer),old);assert.equal(play(COASTAL_MEMORY_TAKE,coastalMemoryRecordingBuffer),coast);assert.equal(PB.takeFor(COASTAL_MEMORY_TAKE).counted,false);PB.loadTakes([]);});
+test('old and new authored tape cues replay their own decoded recording identity after reload', async () => {
+  PB.loadTakes([]);
+  for (const [take, cue] of [[TOWER_PERSONAL_TAKE, TOWER_PERSONAL_CUE], [COASTAL_MEMORY_TAKE, COASTAL_MEMORY_CUE]])
+    PB.archiveAuthoredTake({ roomId: take, durationSeconds: 14, discrete: [{ cueId: cue, atSec: 0, gain: 1 }] });
+  const saved = copy(PB.serializeTakes());
+  const play = async (take, expected) => {
+    const ctx = audioContext();
+    if (take === COASTAL_MEMORY_TAKE) {
+      // An explicit decoded-asset fixture replaces the old procedural box.
+      // This tests routing and ownership, not acoustic fidelity.
+      ctx.decodeAudioData = async () => ctx.createBuffer(2, Math.round(ctx.sampleRate * 46.3), ctx.sampleRate);
+      await loadCoastalMemoryRecording(ctx, { fetcher: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }) });
+    }
+    PB.playbackInit({ ctx, bus: {}, scheduleDiscrete: () => { throw Error('Authored cue fell through'); } });
+    assert.ok(PB.playTake(take, { atHead: true }));
+    const reference = expected(ctx);
+    assert.ok(reference, 'real coast asset is resolved before authored playback');
+    const buffer = ctx.sources.find(source => source.buffer === reference)?.buffer;
+    assert.ok(buffer, 'the correct authored source reaches playback unchanged');
+    const hash = pcmHash(buffer); assert.equal(hash, pcmHash(reference));
+    PB.stopPlayback(); return hash;
+  };
+  const old = await play(TOWER_PERSONAL_TAKE, towerPersonalRecordingBuffer);
+  const coast = await play(COASTAL_MEMORY_TAKE, coastalMemoryRecordingBuffer);
+  assert.notEqual(old, coast); PB.loadTakes(saved);
+  assert.equal(await play(TOWER_PERSONAL_TAKE, towerPersonalRecordingBuffer), old);
+  assert.equal(await play(COASTAL_MEMORY_TAKE, coastalMemoryRecordingBuffer), coast);
+  assert.equal(PB.takeFor(COASTAL_MEMORY_TAKE).counted, false); PB.loadTakes([]);
+});

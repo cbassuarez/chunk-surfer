@@ -68,7 +68,10 @@ assert.match(hushAvailabilityCopy({status:'ready'}).body,/cause the events your 
 // plain register as the rest of the post-run copy.
 assert.match(archive,/RUN HISTORY/);
 assert.match(main,/progressionEvents\.on\('\*',/,'causal capture subscribes through the progression event bus contract');
-assert.match(main,/function openTransferRoom\(\)\{[\s\S]{0,200}?scenes\.remove\('title'\)/,'the report fork cannot leave the title rendering underneath the transfer room');
+const transferOpen=main.slice(main.indexOf('function openTransferRoom(){'),main.indexOf('function makeTitle(',main.indexOf('function openTransferRoom(){')));
+assert.ok(!transferOpen.includes("scenes.remove('title')"),'extras retains the real title owner to return to');
+const transferScene=readFileSync('src/game/transfer-room.js','utf8');
+assert.ok(/if\(host\?\.sceneActive\?\.\(\)\)\{uiClear\(\);return;\}/.test(transferScene),'borrowed fields clear lower title/menu glyphs while they own the picture');
 assert.match(main,/sensoryProfile:worldView\?\.sensoryProfile\|\|'story'/,'camera rigs pass their explicit sensory profile into the renderer');
 assert.match(renderer,/const hushSense=sensoryProfile==='hush-prowl'\?1/,'Prowl has a dedicated renderer sensory treatment');
 assert.match(renderer,/uHushSense/,'the HUSH room-read remains separate from story lighting');

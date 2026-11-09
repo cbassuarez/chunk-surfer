@@ -26,6 +26,7 @@ const PACKS=Object.freeze(['assets/st-brendans-treatment.glb','assets/conservato
 
 export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{}}={}){
   let preparing=null,initialized=false,released=false,error=null,releaseRange=null,last=null,finish='bsod';
+  let prepareMs=null;const packTimings=[],clock=()=>globalThis.performance?.now?.()??Date.now();
   const rangeOwner=Symbol('horizon-approach');
   const required=[...new Set([...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY,...DEBRIS])];
   const catalog=()=>new Set(props.propMeshCatalog?.()||[]),resident=()=>{const c=catalog();return required.every(m=>c.has(m));};
@@ -37,20 +38,21 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
   }
   function prepare(){
     if(preparing)return preparing;
+    const began=clock();
     preparing=(async()=>{
       if(await renderer.r3dBasePropsReady?.()===false)throw Error('The base model catalog is unavailable.');
       if(released)return false;
       if(props.installAuthoredPropMeshes?.((gl,pack)=>installProceduralMeshes(gl,pack,[...horizonApproachGeometry(),...FIELD_ROWS()]))===false)throw Error('The approach meshes have no context.');
       for(const pack of PACKS){
         if(required.every(m=>catalog().has(m)))break;
-        await props.addPropPack(resolveAsset(pack));
+        const at=clock();await props.addPropPack(resolveAsset(pack));packTimings.push({pack,ms:clock()-at});
         if(released)return false;
       }
       props.installAuthoredPropMeshes?.((gl,pack)=>finishSourceContinuationArchitecture(gl,pack,{maps:sourceBlueprintMaps(gl)}));
       const missing=required.filter(m=>!catalog().has(m));
       if(missing.length)throw Error('Approach meshes missing: '+missing.join(', '));
       return true;
-    })().catch(reason=>{error=String(reason?.message||reason);preparing=null;throw reason;});
+    })().catch(reason=>{error=String(reason?.message||reason);preparing=null;throw reason;}).finally(()=>{prepareMs=clock()-began;});
     return preparing;
   }
   async function initialize(){
@@ -78,5 +80,5 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
   function setFinish(next){finish=next;if(initialized)renderer.r3dSetSourceFinish?.(finish);return finish;}
   function dispose(){if(released)return false;released=true;initialized=false;props.setCurvedSpaceFrame?.(null);clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
   return{prepare,initialize,render,dispose,setFinish,ready:()=>initialized&&!released&&resident()&&!error,prepared:()=>!released&&!error&&resident(),
-    diagnostics:()=>({ready:initialized&&!released&&!error,error,props:last?.props.length??0,finish})};
+    diagnostics:()=>({ready:initialized&&!released&&!error,error,props:last?.props.length??0,finish,prepareMs,packTimings:packTimings.map(row=>({...row}))})};
 }

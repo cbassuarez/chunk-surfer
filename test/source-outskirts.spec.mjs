@@ -24,6 +24,11 @@ import { buildChapelOutskirtsGodPreset, buildHorizonGodPreset, buildPreTapeGodPr
 import { DOOR_ARCHETYPES } from '../src/data/conservatory-doors.js';
 import { DOOR_FRAME_OPENINGS, DOOR_FIELD_PLANTING_MESHES } from '../src/data/source-door-fields.js';
 import { OUTSKIRTS_BUS_PASSAGE } from '../src/data/outskirts-bus-passage.js';
+import {VAN_WRECK_ASSET} from '../src/data/van-wreck.js';
+
+const wreckBytes=readFileSync(new URL('../public/'+VAN_WRECK_ASSET,import.meta.url));
+const wreckMeshes=new Set(JSON.parse(wreckBytes.subarray(20,20+wreckBytes.readUInt32LE(12))).meshes.map(m=>m.name));
+assert.ok(SOURCE_OUTSKIRTS_TOWN.packs.includes('/'+VAN_WRECK_ASSET),'the real optional wreck belongs to the declared street asset set');
 
 // ── STILL GROUND, THEN ONE ROAD THAT DOES NOT END ──────────────────────────
 {
@@ -44,6 +49,9 @@ import { OUTSKIRTS_BUS_PASSAGE } from '../src/data/outskirts-bus-passage.js';
       assert.ok(piece.busPassage&&piece.collision?.length, 'the hollow variant requires explicit panels');
     } else if (piece.mesh === 'outskirts_slack_lead') {
       assert.equal(piece.collision, 'none', 'the loose lead blocks the road');
+    } else if(piece.mesh==='van_wreck_hull'){
+      assert.ok(wreckMeshes.has(piece.mesh),'the actual dedicated wreck model is installed');
+      assert.equal(piece.fallbackMesh,'yard_van');assert.ok(PROP_BOUNDS[piece.fallbackMesh],'missing optional wreck keeps the complete van');
     } else assert.ok(PROP_BOUNDS[piece.mesh], `${piece.id} names ${piece.mesh}, which the prop pack does not build`);
   }
   assert.equal(new Set(layout.map((piece) => piece.id)).size, layout.length, 'a piece stands twice');

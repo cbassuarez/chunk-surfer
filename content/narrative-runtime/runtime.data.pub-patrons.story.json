@@ -139,11 +139,11 @@
     },
     "pubPatronConversation.choices": {
       "id": "pubPatronConversation.choices",
-      "type": "line",
-      "lines": [
+      "type": "choice",
+      "lines": [],
+      "choices": [
         {
-          "id": "pubPatronConversation.choices.l0",
-          "who": "leave",
+          "id": "pubPatronConversation.choices.c0",
           "text": "Leave them to their evening.",
           "source": "src/data/pub-patrons.js:28"
         }

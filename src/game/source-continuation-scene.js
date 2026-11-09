@@ -1,10 +1,10 @@
 import {createSceneRunKey} from './locomotion.js';
-import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sourceContinuationThreatTelemetry} from './source-continuation.js';
-import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
+import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sourceContinuationThreatTelemetry,sourceContinuationGait} from './source-continuation.js';
+import {SOURCE_CONTINUATION,continuationSupportAt} from '../data/source-continuation.js';
 import {portalTransformPoint} from '../render/source-mesh-portals.js';
 import {uiDraw,uiSize,uiText} from '../render/ui.js';
 import {recordNightClockTravel} from './night-clock-travel.js';
-import {continuationContactChapter,sourceContinuationContactFocus,sourceContinuationRecordingReturnProps} from './source-continuation-contact.js';
+import {continuationContactChapter,sourceContinuationContactFocus,sourceContinuationRecordingReturnProps,sourceContinuationCapturedContactReady} from './source-continuation-contact.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const movement=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
@@ -77,23 +77,37 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     if(!ordinary)return extra;if(!extra)return ordinary;
     return Math.hypot(state.x-ordinary.x,state.z-ordinary.z)<=extra.distance?ordinary:extra;
   }
-  function releaseContact({notice=true}={}){
+  function releaseContact({notice=true,won=false}={}){
     if(!contactHeld)return false;const kind=contactHeld;contactHeld=null;clear();
+    if(state.recovery?.contact==='pending'){
+      if(won&&continuationSupportAt(state.x,state.z,state,{minY:state.feet-.03,maxY:state.feet+.03})){
+        state.recovery=null;state.grace=SOURCE_CONTINUATION.graceSeconds;state.velocity={x:0,z:0};
+      }else state.recovery.contact='released';
+    }
     // A voluntary conversation cannot become an immediate catch when its text
     // closes. Use the follower's existing finite notice interval, not immunity.
-    if(notice&&kind==='source-contact'&&state.hush?.active){state.hush.mode='notice';state.hush.notice=SOURCE_CONTINUATION.hush.noticeSeconds;}
+    if(notice&&kind==='source-contact'&&state.hush?.active){state.hush.mode=won?'yield':'notice';state.hush.notice=SOURCE_CONTINUATION.hush.noticeSeconds;}
     save('contact-released');return true;
   }
   function requestContact(focus){
     if(!focus||contactHeld)return false;
     contactHeld=focus.type;clear();audio?.stop?.();const checkpoint=save(focus.type);
     try{
-      const value=focus.type==='source-contact'?onContact({chapter:focus.chapter,focus:copy(focus),checkpoint})
+      const value=focus.type==='source-contact'?onContact({chapter:focus.chapter,captured:focus.captured===true,focus:copy(focus),checkpoint})
         :onRecoverRecording({receiptId:focus.receiptId,chapter:focus.chapter,locationId:focus.locationId,checkpoint});
       Promise.resolve(value).then(ok=>{if(closed)return;if(focus.type!=='source-contact'||ok!==true)releaseContact({notice:false});})
         .catch(err=>{if(!closed){releaseContact({notice:false});onError(err);}});
     }catch(err){releaseContact({notice:false});onError(err);return false;}
     return true;
+  }
+  function offerCapturedContact(){
+    if(state.recovery?.contact!=='pending'||contactHeld||paused||!live())return false;
+    const chapter=continuationContactChapter(state),status=getContactStatus(chapter);
+    if(!status?.battleAvailable||!sourceContinuationCapturedContactReady(state)){
+      state.recovery.contact='released';save('capture-recovery');return false;
+    }
+    trace({type:'capture-dialogue-offered',chapter,elapsed:state.elapsed});
+    return requestContact({id:'source-captured-'+chapter,type:'source-contact',chapter,captured:true});
   }
   function dispatchFinish(kind){
     audio?.stop?.();handoff=null;
@@ -126,7 +140,8 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
   function apply(input){
     const focus=input.interact?interactionFocus():null,choice=focus?.id;
     if(focus&&['source-contact','source-recording-return'].includes(focus.type)){requestContact(focus);return;}
-    const result=stepSourceContinuation(state,input);state=result.state;
+    const status=getContactStatus(continuationContactChapter(state));
+    const result=stepSourceContinuation(state,{...input,offerHushContact:!!status?.battleAvailable&&!status.activeBattleId,hushDefeated:status?.won===true});state=result.state;
     if(result.acceptedTravelMetres>0)onAcceptedTravel(result.acceptedTravelMetres);
     const events=result.events|| (result.event?[result.event]:[]);
     for(const event of events){
@@ -141,10 +156,14 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     if(result.event?.type==='return'||events.some(e=>e.type==='return'))finish('return');
     else if(result.event?.type==='complete'||events.some(e=>e.type==='complete'))finish('complete');
     else if(events.some(e=>e.type==='rift-fault'))enterRift(events.find(e=>e.type==='rift-fault'));
-    else if(events.length)save('interaction');
+    else if(!offerCapturedContact()&&events.length)save('interaction');
   }
   const scene={
     id:'source-continuation',blocksWorld:true,blocksInput:true,suppressesHud:true,
+    get locomotionState(){return live()?{...sourceContinuationGait(state,{run:runKey.active()}),breath:state.breath,paused:paused||!!contactHeld||!!state.recovery}:null;},
+    // A normal jump/fall is still live traversal; only authored holds suspend
+    // Auto sampling. Source III can spend several seconds between supports.
+    get performanceWorldActive(){return live()&&!paused&&!contactHeld&&!state.recovery&&!state.reveal&&!state.cameraTransit&&!state.bodyTransit;},
     get allowsLook(){return live()&&!paused&&state.status!=='returned'&&state.status!=='completed';},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
     initialize(){
       if(initializing)return initializing;
@@ -172,12 +191,15 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       }
       if(leaving)return;
       if(!live()){clear();audio?.stop?.();return;}
+      // A saved interception restores the offer under the same body/route
+      // authority. It never restores the prior warning as fresh consent.
+      if(offerCapturedContact())return;
       onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
       const overhead=state.phase==='catch';
       const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
       apply({dt,forward,side,run:runKey.update(dt,keys.size>0),renderReady:true,environment:!!tides,anchored});
-      if(closed||leaving)return;
+      if(closed||leaving||contactHeld)return;
       const focus=interactionFocus();
       const soundFocus=focus&&overhead&&rotation&&typeof renderer.acousticFrame!=='function'?{...focus,...presented(focus.x,focus.z),
         position:focus.position?{...focus.position,...presented(focus.position.x,focus.position.z)}:undefined}:focus;
@@ -205,6 +227,14 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     stillnessPose:()=>({x:state.x,z:state.z,feet:state.feet,yaw:state.yaw,phase:state.phase,chartId:state.chartId??0,
       level:state.level,foldSerial:state.foldSerial||0,status:state.status,ready:live(),closed,paused,leaving,error,
       transitioning:!!(contactHeld||handoff||state.fall||state.recovery||state.reveal||state.cameraTransit||state.bodyTransit)}),
+    // Per-frame listeners need pose and immediate safety, never the complete
+    // saved pursuit trail. Keep the defensive full snapshot on view/serialize.
+    statusView:({focus=false}={})=>{const target=focus&&live()?interactionFocus():null;return{x:state.x,z:state.z,feet:state.feet,yaw:state.yaw,pitch:state.pitch,
+      phase:state.phase,chartId:state.chartId??0,level:state.level,status:state.status,elapsed:state.elapsed,
+      ready:live(),closed,paused,leaving,error,contactHeld,grace:state.grace,
+      fall:!!state.fall,recovery:!!state.recovery,reveal:!!state.reveal,
+      cameraTransit:!!state.cameraTransit,bodyTransit:!!state.bodyTransit,
+      ...(focus?{focus:target?copy(target):null}:{})};},
     view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,contactHeld,handoff:copy(handoff),focus:live()?interactionFocus():null,
       sourceContactProps:sourceContinuationRecordingReturnProps(state,getRecordingCustody())}),
     serialize:snapshot,checkpoint:()=>save('requested'),

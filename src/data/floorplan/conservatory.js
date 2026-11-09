@@ -49,6 +49,7 @@ import { TOWER_WARNING_LEVELS } from '../tower-warning.js';
 import {GLASS_COURT} from '../glass-court.js';
 import {YARD_PUBLIC_ROOM_LEVELS} from '../yard-public-rooms.js';
 import {YARD_JARDINS,YARD_JARDINS_LEVEL,YARD_JARDINS_NORTH_LEVEL} from '../yard-jardins.js';
+import {HALL_STAGE_SERVICE_STAIR} from '../atrium-circulation.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -218,9 +219,10 @@ function natatoriumRows(){
     // on the level below.
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'T';
     // A municipal bath admitted crowds, school groups and stretchers through a
-    // proper glazed pair. Two adjacent glyphs compile as one two-metre portal;
-    // the old single fire leaf made the entire public entrance read as a closet.
-    if(y===0&&(x===13||x===14))c='+';
+    // proper glazed run. The natatorium is its own building now, so its public
+    // front is four metres of glazing rather than a two-metre squeeze between
+    // the greenhouse and the changing block.
+    if(y===0&&x>=12&&x<=15)c='+';
     // Five metres of dry lead-in lets the room reveal itself before the pool.
     // A narrower 12 x 16m basin reads longitudinally instead of swallowing the
     // hall as soon as the lobby leaf opens.
@@ -282,7 +284,10 @@ function bathsApproachThreshold(id,x,z,widthAxis,zone){
     space:z<27?'front_atrium':'natatorium',renderGroup:'ground',origin:{x:baseX+dx,y:baseZ+dz},physicalOrigin:{x:baseX+dx,y:baseZ+dz},base:0,rows,
     profile:()=>({floor:0,ceil:3.4,zone,material:MATERIAL.wetTile,flags:F.DOOR})})));
 }
-const courtProfile=(x,z)=>({floor:0,ceil:x>=77&&x<94?40:9.5,zone:ZONE.civicCourt,material:MATERIAL.wetPaving,flags:F.SKY});
+// Both flanking courts are open to the sky. Splitting the height on x gave the
+// west court a 9.5 m lid while the east got 40 m, so walking the glasshouse
+// connector read as a slot between buildings instead of a walk through a yard.
+const courtProfile=(x,z)=>({floor:0,ceil:40,zone:ZONE.civicCourt,material:MATERIAL.wetPaving,flags:F.SKY});
 const BATHS_APPROACH_LEVELS=[
   ...GLASS_COURT.outdoorCourts.map(c=>({id:`baths-outdoor-court-${c.id}`,replace:true,layer:'ground',space:'baths_courtyard',renderGroup:'ground',
     origin:{x:c.x0,y:c.z0},physicalOrigin:{x:c.x0,y:c.z0},base:0,rows:Array(c.z1-c.z0).fill('Y'.repeat(c.x1-c.x0)),profile:(x,z)=>courtProfile(c.x0+x,c.z0+z)})),
@@ -316,7 +321,12 @@ function frontAtriumRows(){
     // where a municipal box office belongs, instead of forming a brick choke
     // point immediately in front of the concert-hall portal. The public counter
     // faces west; staff enter through the master-key leaf on the south wall.
-    if(x>=17&&y>=3&&y<=9)c=(x===17||x===w-1||y===3||y===9)?'#':'F';
+    // Keep two full metres of public cross aisle behind the office. Its old
+    // south wall left a single-metre slot at the service-to-hall decision.
+    if(x>=17&&x<=22&&y>=3&&y<=8)c=(x===17||x===22||y===3||y===8)?'#':'F';
+    // A real service passage reaches the stage leaf without opening the keyed
+    // office frontage or leaving a metre of uncut masonry before its frame.
+    if(x===23&&y>=3&&y<=10)c='F';
     // THE TICKET WINDOW IS SHUT, AND THE WALL HAS TO SAY SO.
     //
     // These two cells used to be open 'F', on the reasoning that the fitted
@@ -336,7 +346,7 @@ function frontAtriumRows(){
     // Verified: with these sealed, the key cabinet, the rekey ledger and the desk
     // all remain reachable from the atrium. test/box-office.spec.mjs holds both
     // halves of that, because a sealed room is as broken as an open frontage.
-    if(y===9&&x===20)c='+';
+    if(y===8&&x===20)c='+';
     // Acoustic lobby into the hall's rear cross aisle.
     if(x>=16&&y>=21&&y<=23)c='F';
     if(x===w-1&&(y===21||y===22))c='+';
@@ -349,7 +359,11 @@ function frontAtriumProfile(x,y,cell){
   // else receives the underside of the academic crown with a half-metre
   // structural gap before the 10m floor above.
   const gardenVoid=x>=5&&x<=14&&y>=5&&y<=17;
-  return{ceil:gardenVoid?17:9.5};
+  // The front atrium is INSIDE Ellery: it is the foyer, not the civic court.
+  // Left unzoned it inherited the outdoor default, which made the building
+  // exterior where it opens to the garden and let the hall doors be flanked by
+  // "outside".
+  return{ceil:gardenVoid?17:9.5,zone:ZONE.foyer};
 }
 
 export const ACADEMIC_ORIGIN=Object.freeze({x:0,y:240});
@@ -1037,6 +1051,12 @@ const EUCLIDEAN_ADDITIONS=[
   // the player up the bays without a connector — the seam the balconies need
   // exists only because their logical cells live somewhere else entirely.
   {id:'hall_stage',replace:true,layer:'hall_stage',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallStageRows(),profile:hallStageProfile},
+  {id:'hall_service_top_landing',replace:true,physicalReplace:true,layer:'hall_stage',space:'hall',renderGroup:'hall',
+   origin:{x:99,y:10},physicalOrigin:{x:99,y:10},base:0,rows:['H','H'],
+   profile:()=>({floor:0,ceil:15.5,zone:ZONE.hall})},
+  {id:'hall_service_steps',layer:'hall_stage',space:'hall',renderGroup:'hall',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
+   stairs:[{from:HALL_STAGE_SERVICE_STAIR.from,to:HALL_STAGE_SERVICE_STAIR.to,
+     fromH:0,toH:-1.5,width:1.5,ceil:15.5,zone:'hall',material:'woodVelvet'}]},
   {id:'hall_lower_balcony',layer:'hall_lower',space:'hall',renderGroup:'hall',origin:{x:0,y:40},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('L',{rear:false}),profile:balconyProfile(4.0,3.3)},
   {id:'hall_upper_balcony',layer:'hall_upper',space:'hall',renderGroup:'hall',origin:{x:0,y:82},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('U'),profile:balconyProfile(7.5,8.0)},
   // galleria_lower_stair is GONE, and nothing replaces it. It climbed -0.74 ->

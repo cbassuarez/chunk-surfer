@@ -13,6 +13,7 @@
 // Game logic stays untouched: movement is still discrete grid steps; this
 // module only owns facing (N/E/S/W) and the camera.
 
+import {createBoothTelevision} from './booth-tv.js';
 import { assetUrl } from '../platform/paths.js';
 import { CAB_RADIO_PACK } from '../data/cab-radio.js';
 import { CAB_DASH_PACK } from '../data/cab-dash.js';
@@ -48,7 +49,7 @@ import { ACADEMIC_ATRIUM_LIGHT_GLSL, academicAtriumLightEnabled } from './academ
 import { COASTAL_MEMORY_WATER_GLSL, coastalWaterUniforms } from './coastal-memory-water.js';
 import { localLightConeDescriptor, LOCAL_LIGHT_CONE_GLSL } from './local-light-cone.js';
 import { DIPPED_BEAM_GLSL } from './dipped-beam.js';
-import * as HZ from './horizon3d.js';
+import { UNRAVELLING_GLSL } from './source-unravelling-shader.js';
 import * as SHORE from './source-shore3d.js';
 import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
 import { homeRealmAcquisition } from './realm-pocket-geometry.js';
@@ -3366,6 +3367,11 @@ void main(){
   // film, or the lens, or the eye, and nothing here says which.
   float leakAmount=clamp(uLeak.x,0.0,1.0),blinding=clamp(uLeak.y,0.0,1.0),lensGoing=clamp(uLeakLens.x,0.0,1.0),afterSun=clamp(uLeakLens.y,0.0,1.0);
   if(leakAmount>.001||blinding>.001||uLeakWave.z>.001||lensGoing>.001||afterSun>.001){
+    // The transition's reduced white alone cannot tame the independent flare,
+    // highlight multiplier and lens bloom. Apply the existing flash policy to
+    // every contribution from this effect; ordinary scene exposure is untouched.
+    float cameraLightGain=mix(1.0,.25,clamp(uReduceFlash,0.0,1.0));
+    blinding*=cameraLightGain;lensGoing*=cameraLightGain;afterSun*=cameraLightGain;
     float leakAspect=uRes.x/uRes.y,leakSeed=uLeak.w;
     // A camera with a hand on it. Whatever happens to the film happens at twelve frames
     // a second. Reduce Flash runs it smooth.
@@ -3376,13 +3382,14 @@ void main(){
     float melt=max(blinding,lensGoing);
     if(melt>.001){
       vec3 soft=vec3(0.0);
-      float spread=.002+.034*melt;
+      float spread=.002+.034*melt,softWeightSum=0.0;
       for(int k=0;k<12;k++){
         float angle=float(k)*2.39996+leakSeed*6.0,reach=sqrt((float(k)+.5)/12.0)*spread;
         vec3 tap=texture(uSrc,uv+vec2(cos(angle)/leakAspect,sin(angle))*reach).rgb;
-        soft+=tap*(1.0+dot(tap,vec3(.2126,.7152,.0722))*3.2*melt);
+        float softWeight=1.0+dot(tap,vec3(.2126,.7152,.0722))*3.2*melt;
+        soft+=tap*softWeight;softWeightSum+=softWeight;
       }
-      c=mix(c,soft/12.0,smoothstep(.0,.3,melt));
+      c=mix(c,soft/mix(12.0,max(.001,softWeightSum),clamp(uReduceFlash,0.0,1.0)),smoothstep(.0,.3,melt));
       vec2 slip=vec2(sin(leakSeed*91.0+leakClock*3.7),cos(leakSeed*37.0+leakClock*2.9))*.022*melt;
       c=max(c,texture(uSrc,uv+slip).rgb*.72*melt);
     }
@@ -3408,7 +3415,7 @@ void main(){
         fog=mix(fog,vec3(1.0,.98,.90),smoothstep(.62,.98,amount));
         burn=max(burn,fog*pow(amount,.72));
       }
-      c=vec3(1.0)-(vec3(1.0)-clamp(c,0.0,1.0))*(vec3(1.0)-clamp(burn*min(1.0,leakAmount*1.7),0.0,1.0));
+      c=vec3(1.0)-(vec3(1.0)-clamp(c,0.0,1.0))*(vec3(1.0)-clamp(burn*min(1.0,leakAmount*1.7)*cameraLightGain,0.0,1.0));
       // Out-of-focus light, drifting across the lens: soft discs, a little brighter at the rim.
       for(int k=0;k<7;k++){
         float id=float(k)+leakSeed*17.0;
@@ -3416,7 +3423,7 @@ void main(){
         spot+=vec2(sin(leakClock*.31+id),cos(leakClock*.23+id*1.7))*.06;
         float size=.045+.13*fract(id*.3819),away=length(leakAspectUv-spot);
         float disc=(1.0-smoothstep(size*.86,size,away))*(.5+.5*smoothstep(size*.45,size*.92,away));
-        c+=mix(vec3(1.0,.46,.14),vec3(1.0,.84,.56),fract(id*.911))*disc*leakAmount*.2;
+        c+=mix(vec3(1.0,.46,.14),vec3(1.0,.84,.56),fract(id*.911))*disc*leakAmount*.2*cameraLightGain;
       }
     }
     if(uLeakWave.z>.001){
@@ -3426,8 +3433,8 @@ void main(){
       vec2 leakQ=(uv-uLeakWave.xy)*vec2(leakAspect,1.0);
       float leakR=length(leakQ),edge=(leakNoise(vec2(atan(leakQ.y,leakQ.x)*1.7+leakSeed,leakClock*.8))-.5)*.2*(.3+leakR);
       vec3 flare=1.0-smoothstep(vec3(front-band),vec3(front),vec3(leakR-.022,leakR,leakR+.03)+edge);
-      c=mix(c,vec3(1.0,.97,.90),flare*.94);
-      c+=vec3(.75,.14,.03)*smoothstep(front-band*1.7,front-band*.6,leakR+edge)*(1.0-smoothstep(front-band*.6,front+band*.3,leakR+edge))*.55;
+      c=mix(c,vec3(1.0,.97,.90),flare*.94*cameraLightGain);
+      c+=vec3(.75,.14,.03)*smoothstep(front-band*1.7,front-band*.6,leakR+edge)*(1.0-smoothstep(front-band*.6,front+band*.3,leakR+edge))*.55*cameraLightGain;
     }
     c=mix(c,vec3(1.0,.985,.93),smoothstep(.5,1.0,blinding));
     if(afterSun>.001){
@@ -3980,7 +3987,7 @@ vec3 driveSnow(vec3 ro,vec3 rd,float end){
  if(uDriveImpossibleWeather.y<=.001)return vec3(0.0);
  return max(driveSnowField(ro,rd,end,.85,0.0),driveSnowField(ro,rd,end,2.1,1.0));
 }
-`+RAIN_GLSL+HZ.UNRAVELLING_GLSL+COASTAL_MEMORY_WATER_GLSL+`
+`+RAIN_GLSL+UNRAVELLING_GLSL+COASTAL_MEMORY_WATER_GLSL+`
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes;
   vec2 screen=(uv*2.0-1.0)*vec2(uRes.x/uRes.y,1.0)*(uDriveSky.a>.5?.65:.95);
@@ -4281,99 +4288,9 @@ export function r3dPostShader(){ return POST_FRAG; }
 //               cheapest win in the pass.
 //   BURN        the edges fall off the way a projected frame does, without the
 //               hard circular vignette of a lens.
-const PROJECTION_FRAG = COMMON_GLSL + GRAIN_GLSL + `
-uniform sampler2D uSrc;
-uniform vec2 uRes;
-uniform float uTime;
-uniform float uHalation;   // warm bleed around bright fields
-uniform float uWeave;      // gate instability
-uniform float uGrain;      // emulsion density
-uniform float uBurn;       // edge falloff
-uniform float uCollapse;   // the tail of the tape, taking the picture with it
-uniform float uEdge;       // how far out of the frame the body has wandered
-uniform float uReduceMotion;
-out vec4 o;
-
-// Bayer 4x4, matching src/render/pixel-mesh/dither.js so the two agree.
-float bayer4(vec2 p){
-  int x=int(mod(p.x,4.0)), y=int(mod(p.y,4.0));
-  int i=y*4+x;
-  float m[16]=float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);
-  return m[i]/16.0;
-}
-
-void main(){
-  vec2 texel = 1.0 / uRes;
-  float still = 1.0 - clamp(uReduceMotion, 0.0, 1.0);
-
-  // GATE WEAVE. Two incommensurate rates so it never finds a loop, plus a rare
-  // larger jump — the frame catching in the gate rather than drifting in it.
-  float t = uTime;
-  float catchPhase = floor(t * 0.37);
-  float caught = step(0.86, h21(vec2(catchPhase, 3.7))) * (1.0 - smoothstep(0.0, 0.22, fract(t * 0.37)));
-  vec2 weave = vec2(
-    sin(t * 1.7) * 0.6 + sin(t * 0.41) * 0.4,
-    cos(t * 1.31) * 0.5 + sin(t * 0.27) * 0.5 + caught * 3.4
-  ) * uWeave * still * texel;
-  float roll = (sin(t * 0.23) * 0.6 + sin(t * 0.61) * 0.4) * uWeave * still * 0.0006;
-  vec2 uv = gl_FragCoord.xy * texel + weave;
-  vec2 centred = uv - 0.5;
-  uv = 0.5 + mat2(cos(roll), -sin(roll), sin(roll), cos(roll)) * centred;
-
-  vec3 c = texture(uSrc, uv).rgb;
-
-  // HALATION. A wide cross of taps weighted by their own brightness, so only
-  // hot areas bleed, and biased warm because that is what emulsion does.
-  if (uHalation > 0.001) {
-    vec3 bleed = vec3(0.0);
-    float wsum = 0.0;
-    for (int i = 1; i <= 4; i += 1) {
-      float r = float(i) * 2.5;
-      float w = 1.0 / (1.0 + r * 0.55);
-      bleed += texture(uSrc, uv + vec2(r, 0.0) * texel).rgb * w;
-      bleed += texture(uSrc, uv - vec2(r, 0.0) * texel).rgb * w;
-      bleed += texture(uSrc, uv + vec2(0.0, r) * texel).rgb * w;
-      bleed += texture(uSrc, uv - vec2(0.0, r) * texel).rgb * w;
-      wsum += w * 4.0;
-    }
-    bleed /= max(0.0001, wsum);
-    float hot = smoothstep(0.35, 0.95, dot(bleed, vec3(0.2126, 0.7152, 0.0722)));
-    c += bleed * vec3(1.0, 0.78, 0.52) * hot * uHalation;
-  }
-
-  // EMULSION. Midtone-weighted and black-protected: grain in the shadows is
-  // video noise, and this is not video.
-  float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  float density = smoothstep(0.02, 0.30, lum) * (1.0 - smoothstep(0.62, 1.0, lum));
-  float g = correlatedGrain(gl_FragCoord.xy, t * 14.0 * still, 0.55) - 0.5;
-  c += g * density * uGrain;
-
-  // BURN. Soft, rectangular-ish falloff — a projected frame going off at the
-  // edges, not a lens vignetting a circle.
-  vec2 e = abs(centred) * 2.0;
-  float burn = 1.0 - uBurn * (pow(max(e.x, 0.0), 3.2) * 0.55 + pow(max(e.y, 0.0), 2.6) * 0.75);
-  c *= clamp(burn, 0.0, 1.0);
-
-  // WANDERING OUT OF THE PICTURE. The burn closes in from the sides as the body
-  // leaves the lit part of the frame — the projected image running out at its
-  // own edge rather than the body meeting a wall, which is what is actually
-  // happening out there.
-  c *= 1.0 - clamp(uEdge, 0.0, 1.0) * 0.5 * smoothstep(0.15, 1.0, abs(centred.x) * 2.0);
-
-  // The tail. The void behind already dims and the splats already fade; this is
-  // the projector losing the lamp as well, so the collapse is one gesture.
-  c *= 1.0 - clamp(uCollapse, 0.0, 1.0) * 0.55;
-
-  // DITHER, last, against the 8-bit present. The tape is enormous smooth
-  // gradients and without this they band.
-  c += (bayer4(gl_FragCoord.xy) - 0.5) / 255.0;
-
-  o = vec4(c, 1.0);
-}`;
-
-// ── GL plumbing ──────────────────────────────────────────────────────────────
+// Shared live renderer state; independent of the retired projection pass.
 let gl = null, canvas = null;
-let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progSourceFault, progTextSpace, progCopy, progProjection, progSourceVoidPhysical;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progSourceFault, progTextSpace, progCopy, progSourceVoidPhysical;
 let progSourceRoomAcquisition,progSourceIdentity;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
@@ -4612,7 +4529,6 @@ let driveLandField=null,driveLandTex=null,driveLandLast=null;
 let sceneTex, sceneFbo, sceneDepthRb, fogTexture, surfaceTexture=null;
 let cinematicLensPass=null,activeCameraTanHalfFov=.95;
 export function r3dCinematicLensStatus(){return cinematicLensPass?.status()||{active:false,frames:0,error:null};}
-let horizonStreetTex=null;
 // Screen-space engraving, written beside the scene by the march (see oMark).
 let markTex=null;
 let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
@@ -4995,504 +4911,6 @@ export function r3dSourceShoreDebug(options={}) {
 
 // THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
 // never works out where on the tape the body is, it is told.
-let horizonState = {
-  active: false, slice: 0, lateral: 0, edge: 0, collapse: 0, exposure: 1,
-  // The walkable corridor, at the body and a hundred-odd metres on. The floor
-  // draws it (see drawHorizon); without it there is nothing out here telling
-  // anybody which way the recording goes.
-  band: null, bandAhead: null, bandLookahead: 110,
-};
-let horizonReadyState = false;
-
-export function r3dSetHorizon(frame = null) {
-  if (!frame?.active) { horizonState = { ...horizonState, active: false }; return false; }
-  horizonState = {
-    active: true,
-    slice: Number(frame.slice || 0) + Math.max(0, Math.min(1, Number(frame.sliceFraction) || 0)),
-    // Where across the corridor he is standing, in the tape's own metres. The
-    // pass needs this for the same reason it needs the slice: the tape is not
-    // in world space and the renderer is told, never works it out.
-    //
-    // THE CORRIDOR IS MAPPED ONTO THE PICTURE, NOT CONVERTED INTO IT.
-    //
-    // The two spaces do not share a scale, and it took getting this wrong twice
-    // to see why. On the Z axis one runtime CELL is one tape unit — forced by
-    // the slice mapping, since 512 cells and 512 tape units are both 256 slices
-    // — so treating lateral as metres and halving it was wrong, and it put the
-    // bust eighty-four units from the camera that was supposed to be beside him.
-    //
-    // But passing it straight through is wrong too: the walkable corridor is
-    // +-96 and the picture only +-64, so the body could walk clean off the side
-    // of the frame. The corridor is therefore SCALED onto the picture — walk to
-    // the edge of what you are allowed and you are at the edge of the image.
-    lateral: (Number(frame.lateral) || 0) * HORIZON_LATERAL_SCALE,
-    // How far outside the picture the body has strayed. The projector loses the
-    // frame at the edges rather than the world ending at a line.
-    edge: Math.max(0, Math.min(1, Number(frame.edge) || 0)),
-    collapse: Math.max(0, Math.min(1, Number(frame.collapse) || 0)),
-    exposure: Math.max(0, Math.min(2, Number(frame.exposure ?? 1))),
-    // The corridor comes across in CELLS and goes onto the floor in the tape's
-    // own units, through the same mapping the body's own lateral takes. Two
-    // spaces, one scale, applied in one place.
-    band: horizonBandInTape(frame.band),
-    bandAhead: horizonBandInTape(frame.bandAhead || frame.band),
-    bandLookahead: Math.max(1, Number(frame.bandLookahead) || 110),
-    towerPath: (frame.towerPath||[]).map(p=>({x:p.x*HORIZON_LATERAL_SCALE,depth:p.depth})),
-    onTowerPath: !!frame.onTowerPath,
-    dream: Math.max(0,Math.min(1,Number(frame.dream)||0)),
-    falling: Math.max(0,Math.min(1,Number(frame.falling)||0)),
-    worldOriginM: Array.isArray(frame.worldOriginM)?frame.worldOriginM.map(value=>Number(value)||0):null,
-    cellMetres: Math.max(.01,Number(frame.cellMetres)||CELL),
-    floorY: Number.isFinite(Number(frame.floorY))?Number(frame.floorY):null,
-    unravelling: frame.unravelling?.active?{
-      ...frame.unravelling,
-      active:true,
-      amount:Math.max(0,Math.min(1,Number(frame.unravelling.amount)||0)),
-      street:Math.max(0,Math.min(1,Number(frame.unravelling.street)||0)),
-      splats:Math.max(0,Math.min(1,Number(frame.unravelling.splats)||0)),
-      loss:Math.max(0,Math.min(1,Number(frame.unravelling.loss)||0)),
-    }:null,
-  };
-  return true;
-}
-
-function horizonBandInTape(band) {
-  if (!band) return null;
-  return {
-    centre: (Number(band.centre) || 0) * HORIZON_LATERAL_SCALE,
-    reach: Math.max(2, (Number(band.reach) || 24) * HORIZON_LATERAL_SCALE),
-    // THE OTHER TWO CHANNELS OF THE BAND, WHICH USED TO DIE HERE.
-    // horizonBand() has always measured the recording's own brightness and its
-    // macroblock damage off the bake and returned them every frame. This
-    // function copied the two geometric channels and dropped the two expressive
-    // ones on the floor, so the tape rendered at one flat exposure with one
-    // flat crawl from the first metre to the last. They are what gives the
-    // crossing its three acts.
-    lum: Math.max(0, Math.min(1, Number(band.lum ?? 0.5))),
-    mosh: Math.max(0, Math.min(1, Number(band.mosh ?? 0))),
-  };
-}
-
-export async function r3dLoadHorizon() {
-  if (horizonReadyState) return true;
-  try {
-    HZ.horizonInit(gl);
-    await HZ.horizonLoad({
-      bin: assetUrl('assets/horizon-tape.bin'),
-      json: assetUrl('assets/horizon-tape.json'),
-      bust: assetUrl('assets/horizon-bust.glb'),
-      bustLod1: assetUrl('assets/horizon-bust-lod1.glb'),
-      bustLod2: assetUrl('assets/horizon-bust-lod2.glb'),
-    });
-    horizonReadyState = HZ.horizonReady();
-    // He stands beside the walk, at the depth the runtime puts him. Built here
-    // because the tape's own scales and floor are only known once the manifest
-    // has landed.
-    if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonBustCentre(horizonBust.height) });
-  } catch (error) {
-    // The tape is a built asset. A run that has not baked it should still be
-    // playable — the horizon goes dark rather than taking the renderer down.
-    console.warn('horizon tape unavailable:', error?.message || error);
-    horizonReadyState = false;
-  }
-  return horizonReadyState;
-}
-
-export function r3dHorizonReady() { return horizonReadyState; }
-
-// What the horizon pass is actually being told, for the probe. The tape is
-// authored in its OWN space (see horizon-tape.json: floor, sliceMetres, span)
-// and the camera is fed from the world, so being able to read both at once is
-// the difference between diagnosing this and guessing at it.
-let horizonSuppress = false;
-export function r3dHorizonSuppress(v) { horizonSuppress = !!v; return horizonSuppress; }
-
-export function r3dHorizonDebug() {
-  const m = HZ.horizonManifest?.() || null;
-  return {
-    ...horizonState,
-    ready: horizonReadyState,
-    stats: { ...HZ.horizonStats }, suppressed: horizonSuppress,
-    bust: { ...horizonBust, rig:HZ.horizonBustRigDebug?.()||null, present: HZ.horizonBustPresent?.() || false, eyeY: horizonEyeHeight(), groundY: horizonGroundHeight() },
-    tape: m ? { slices: m.slices, floor: m.floor, sliceMetres: m.sliceMetres, span: m.span } : null,
-    cam: { camX, camY, camZ, CELL, worldX: camX * CELL, worldY: camY * CELL, worldZ: camZ * CELL,
-           yaw, planYaw, pitch },
-  };
-}
-
-// The void the tape hangs in. Not black: the recording's own tail collapses
-// through magenta into a very dark plum, and the ground it stands on should
-// already be that colour before he gets there.
-const HORIZON_VOID = [0.035, 0.008, 0.042];
-// Where the eye sits up the frame, as a fraction of its height. Slightly under
-// half: dead centre reads as a screen, and a little low keeps some of the sense
-// that the recording is taller than you are without burying you under it.
-// IT USED TO BE 0.44, AND THAT IS WHY THERE WAS NO FLOOR.
-//
-// The picture is forty metres tall and hangs with its bottom edge on the tier
-// floor, so putting the eye 44% up it stood the body seventeen and a half metres
-// in the air. Nothing was drawn down there — there was nothing to draw — and the
-// result reads exactly as reported: a video at full height with no ground under
-// it and no sense of scale anywhere in the frame.
-//
-// Low enough that the tape's bottom edge is under the feet rather than under a
-// ledge, high enough that the recording still towers. The floor is drawn at the
-// feet (drawHorizon) and the tape below it is cut, so the picture rises out of
-// the ground instead of hanging in front of it.
-const HORIZON_EYE_AT = 0.115;
-// Live tuning surface for the horizon's feel, so the values can be found by
-// looking rather than by rebuilding. See __probe.horizonTune().
-const horizonTune = {
-  // NEARFADE IS THE AURORA DIAL. Every slice inside this distance is drawn
-  // translucent, so a pixel is the sum of that many veils rather than one splat
-  // on a wall — which is the difference between walking through hanging light
-  // and walking between two painted surfaces. Nine gave a dozen; the crossing
-  // wants curtains it can see through, so it gets twice that.
-  //
-  // `reach` is how far down the tube is drawn, and it is what the far end is
-  // made of: more slices converging is more wormhole. It costs draws, so it is
-  // raised rather than opened.
-  nearFade: 18, reach: 56, eyeAt: HORIZON_EYE_AT,
-  // How much taller the flat fields are drawn than they were measured, how far
-  // they drift, and how opaque they are allowed to get. See uCurtain, uShimmer
-  // and uVeil in horizon3d.js. Veil under 1 is the whole aurora idea: the
-  // picture arrives by a dozen translucent depths summing rather than by the
-  // nearest slice covering everything behind it.
-  curtain: 2.1, shimmer: 0.85, veil: 0.9,
-  // How much of the tape the corridor takes out of its own volume, and how tall
-  // that corridor is. See the bore note in horizon3d.js.
-  //
-  // 0.96 EMPTIED THE CORRIDOR IT WAS SUPPOSED TO CLEAR. At that amount every
-  // splat inside the tube is multiplied to 4%, so the run down the middle ended
-  // in a black point and the far end — "the whole point of the crossing and the
-  // one thing you could not see" — was still the one thing you could not see,
-  // because the carve had deleted it. Thinned rather than emptied, the picture
-  // stays visible down the length of the corridor and the crossing has
-  // somewhere to be going.
-  bore: 0.72, boreHeight: 34,
-};
-// The projection's own look. Not a `glass` block and not a `vfd` block: those
-// describe an instrument, and this describes a lamp and a strip of film.
-const HORIZON_PROJECTION = { halation: 0.34, weave: 0.9, grain: 0.055, burn: 0.30 };
-
-// Where the bust stands, in TAPE metres. Mirrors HORIZON_BUST_DEPTH / _LATERAL
-// in source-space-runtime.js, converted from cells; r3dSetHorizonBust lets the
-// runtime correct it rather than leaving two constants to drift.
-// Picture half-width over corridor half-width: 64 / 96.
-const HORIZON_LATERAL_SCALE = 64 / 96;
-let horizonBust = { x: -26 * HORIZON_LATERAL_SCALE, depth: 168, height: 6.5, eyes: false, eyeMode: 'untouched' };
-let horizonBustReturn = null;
-export function r3dSetHorizonBustReturn(frame=null) {
-  horizonBustReturn=frame?{...frame}:null;
-  if(horizonBustReturn)r3dSetHorizonBust(frame);
-  return !!horizonBustReturn;
-}
-// The height the view is centred on, in tape units — where the bust has to live
-// if he is to be looked at rather than looked over.
-function horizonEyeHeight() {
-  const tape = HZ.horizonManifest();
-  return (Number(tape?.floor) || 0) + (Number(tape?.span?.y) || 40) * horizonTune.eyeAt;
-}
-
-// Where the floor is, in tape units — the standing eye less a standing body.
-// The ground is drawn here and the tape is cut here, so they are the same
-// number by construction rather than by two people remembering.
-function horizonGroundHeight() {
-  return horizonEyeHeight() - EYE_METERS;
-}
-
-// HE STANDS ON IT, RATHER THAN BEING CENTRED ON THE EYE.
-//
-// horizonSetBust centres the figure on whatever it is handed, and it used to be
-// handed the eye height — which was fine while the eye sat halfway up a picture
-// hanging in a void and nothing had a floor. Now there is a floor, and a
-// 6.5-metre bust centred on a 1.62m eye is buried in the recording.
-function horizonBustCentre(height) {
-  return horizonGroundHeight() + (Number(height) || 6.5) * 0.5;
-}
-
-export function r3dSetHorizonBust({ lateral = null, depth = null, height = null, eyes = null, eyeMode = null, performance = null } = {}) {
-  horizonBust = {
-    ...horizonBust,
-    ...(lateral == null ? {} : { x: lateral * HORIZON_LATERAL_SCALE }),
-    ...(depth == null ? {} : { depth }),
-    ...(height == null ? {} : { height }),
-    ...(eyes == null ? {} : { eyes: !!eyes }),
-    ...(eyeMode == null ? {} : { eyeMode: String(eyeMode) }),
-    ...(performance == null ? {} : { performance }),
-  };
-  if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonBustCentre(horizonBust.height) });
-  return { ...horizonBust };
-}
-export function r3dHorizonProjection(next = {}) { Object.assign(HORIZON_PROJECTION, next); return { ...HORIZON_PROJECTION }; }
-
-function presentProjection(texture, now) {
-  gl.useProgram(progProjection);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, canvas.width, canvas.height);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  const u = (name) => gl.getUniformLocation(progProjection, name);
-  gl.uniform1i(u('uSrc'), 0);
-  gl.uniform2f(u('uRes'), canvas.width, canvas.height);
-  gl.uniform1f(u('uTime'), now);
-  gl.uniform1f(u('uHalation'), HORIZON_PROJECTION.halation);
-  gl.uniform1f(u('uWeave'), HORIZON_PROJECTION.weave);
-  gl.uniform1f(u('uGrain'), HORIZON_PROJECTION.grain);
-  gl.uniform1f(u('uBurn'), HORIZON_PROJECTION.burn);
-  // The edge reads as the same failure as the tail, because it is the same
-  // failure: the recording running out. One rides depth, one rides sideways.
-  gl.uniform1f(u('uCollapse'), Math.max(horizonState.collapse, horizonState.edge * 0.72));
-  gl.uniform1f(u('uEdge'), horizonState.edge);
-  gl.uniform1f(u('uReduceMotion'), pixelMeshSettings.reduceMotion ? 1 : 0);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
-}
-export function r3dHorizonTune(next = {}) { Object.assign(horizonTune, next); return { ...horizonTune }; }
-
-// The recording can tear and retain whole image packets. The sculpture must
-// remain a physical, readable object within that recording. Composite it
-// after the datamosh but into the scene target, before the common projection
-// grade, grain and dither. Drawing on the default framebuffer skipped the
-// projector; drawing before datamosh shredded the portrait's small features.
-function composeHorizonBustForProjection(sourceTex,frame,exposure=.78){
-  if(!frame||!HZ.horizonBustPresent?.())return sourceTex;
-  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.NONE]);
-  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
-  if(sourceTex!==sceneTex){
-    gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
-    gl.useProgram(progCopy);
-    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sourceTex);
-    gl.uniform1i(gl.getUniformLocation(progCopy,'uSrc'),0);
-    gl.uniform2f(gl.getUniformLocation(progCopy,'uRes'),uniforms.sceneW,uniforms.sceneH);
-    gl.drawArrays(gl.TRIANGLES,0,3);
-  }
-  gl.depthMask(true);
-  gl.clear(gl.DEPTH_BUFFER_BIT);
-  HZ.horizonRenderBust({...frame,exposure});
-  gl.disable(gl.BLEND);
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
-  return sceneTex;
-}
-
-function unravellingTorchTransmission(entryMetres){
-  const swallowed=Math.max(0,Math.min(1,(entryMetres+18)/16));
-  const returning=Math.max(0,Math.min(1,(entryMetres-125)/45));
-  const s=swallowed*swallowed*(3-2*swallowed);
-  const r=returning*returning*(3-2*returning);
-  return Math.max(1-s,.22*r);
-}
-
-function drawUnravelling(now, physical) {
-  const unravelling=horizonState.unravelling;
-  const entryMetres=horizonState.worldOriginM[2]-camZ*CELL;
-  // The street, tape and bust share the actual world camera. The old tape-only
-  // camera scaled the body's X/Z and made the seam a change of room.
-  drawSourceVoidPhysical(now,{...physical,present:false,unravelling});
-  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
-  gl.clearBufferfv(gl.COLOR,1,new Float32Array(4));
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.NONE]);
-  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
-  gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,horizonStreetTex);
-  gl.copyTexSubImage2D(gl.TEXTURE_2D,0,0,0,0,0,uniforms.sceneW,uniforms.sceneH);
-  // Bust triangles need a clean depth buffer; the street's own real depth is
-  // sampled explicitly by the splats, including its missing chunks.
-  gl.depthMask(true);gl.clear(gl.DEPTH_BUFFER_BIT);
-  if(horizonReadyState&&!horizonSuppress){
-    const tape=HZ.horizonManifest(),worldTransform=HZ.horizonWorldTransform(horizonState,tape);
-    const entryReveal=HZ.horizonEntryDiffusion(entryMetres);
-    const {view,projection}=HZ.horizonCamera({
-      camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,
-      yaw:physical.worldYaw,pitch,aspect:uniforms.sceneW/Math.max(1,uniforms.sceneH),
-    });
-    // Fade the physical sculpture into the same scene target as the street.
-    // The pixel-mesh pass below then dithers its stone, inlay and eyes too.
-    const reveal=Math.max(0,Math.min(1,(unravelling.amount-.14)/.22));
-    const bustAlpha=reveal*reveal*(3-2*reveal)
-      *Math.max(0,Math.min(1,(entryReveal-.68)/.24))**2;
-    const targets=P3.propTargets();
-    HZ.horizonRender({
-      view,projection,worldTransform,unravelling,
-      entryReveal,
-      street:{color:horizonStreetTex,depth:targets.depth,near:targets.near,far:targets.far,width:uniforms.sceneW,height:uniforms.sceneH},
-      slice:horizonState.slice,reach:horizonTune.reach,behind:horizonTune.reach,
-      floorCut:horizonState.floorY??horizonState.worldOriginM[1],
-      // Short, broken image packets replace the street; no vaulted bore,
-      // stretched curtains or moving corridor is carved into the recording.
-      bore:{amount:0},dream:0,curtain:1,shimmer:0,
-      mosh:0,boil:pixelMeshSettings.reduceMotion?0:now*.6,nearFade:5,veil:.68,
-      exposure:unravelling.splats*.48,collapse:0,
-      bustExposure:.78,bustAlpha,
-    });
-    if(horizonState.towerPath.length===4){
-      const localFloor=(horizonState.floorY-worldTransform.offset[1])/worldTransform.scale[1];
-      HZ.horizonGround({view,projection,worldTransform,camZ:-horizonState.slice*(Number(tape.sliceMetres)||2),
-        floorY:localFloor+.035,exposure:1,collapse:0,far:180,near:180,
-        towerPath:horizonState.towerPath,pathOnly:true});
-    }
-  }
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
-  // Let the game's existing image become colour over time, through one post
-  // chain. At onset this is exactly the telephone street's presentation.
-  const encoded=runPixelMeshPass(physical.voidState,now);
-  presentThroughPost(encoded,{torchPower:physical.torchPower*unravellingTorchTransmission(entryMetres),sourceTorchMode:physical.sourceTorchMode,
-    unravellingColour:Math.max(0,Math.min(1,(unravelling.amount-.04)/.40)),unravellingScene:sceneTex});
-  lastPostSourceFbo=sceneFbo;
-}
-
-function drawHorizon(now,physical={}) {
-  if(horizonState.unravelling?.active&&horizonState.worldOriginM){drawUnravelling(now,physical);return;}
-  let bustFrame=null;
-  gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
-  gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
-  // THE ENGRAVING TARGET IS NOT WANTED OUT HERE.
-  //
-  // sceneFbo is MRT — colour plus the mark/engraving buffer the march writes so
-  // downstream passes can recover a surface. Nothing past the perimeter is made
-  // of the building, so there is no surface to recover, and leaving both draw
-  // buffers live meant ~29k blended instances paid for a second write nobody
-  // reads. The shader still declares both outputs (it must, or the draws are
-  // rejected outright); this stops the second one costing bandwidth.
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.NONE]);
-  const dim = (1 - horizonState.collapse * 0.85)*(1-horizonState.falling*.96);
-  gl.clearColor(HORIZON_VOID[0] * dim, HORIZON_VOID[1] * dim, HORIZON_VOID[2] * dim, 1);
-  gl.depthMask(true);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  if (horizonReadyState && !horizonSuppress) {
-    // THE TAPE IS NOT IN WORLD SPACE.
-    //
-    // It is baked in its own metres: x across the corridor about zero, z running
-    // 0 to -512 back from the head of the tape, and y up from the tier floor
-    // (build-horizon-tape.mjs, FLOOR = SOURCE_TIER_BY_ID.horizon.height — which
-    // is why the height, alone of the three, IS the world's).
-    //
-    // This passed the world camera straight in. Measured at the head of the
-    // tape, that put the eye at z = -298.75 while the slice it was meant to be
-    // standing on sat at z = -6, so the entire recording was 293 metres behind a
-    // far plane of 120 and not one splat was ever inside the frustum. The
-    // horizon has never drawn; what everyone saw was the void clear behind it.
-    const tape = HZ.horizonManifest();
-    const sliceMetres = Number(tape?.sliceMetres) || 2;
-    // STAND IN THE PICTURE, NOT UNDERNEATH IT.
-    //
-    // The bake hangs the frame with its BOTTOM edge on the tier floor and makes
-    // it forty metres tall, while the eye sits 1.62m up. So the centre of the
-    // picture was 18.4 metres overhead at every distance and the body walked
-    // along beneath it seeing the bottom sliver — which is exactly what the
-    // first screenshots showed: picture in the upper third, void below.
-    //
-    // Lifting the tape camera is render-side and costs nothing; re-hanging the
-    // frame would mean a re-bake. The standing eye height comes off first and
-    // the wanted height up the frame goes back on, so head bob and any crouch
-    // still move the view.
-    const spanY = Number(tape?.span?.y) || 40;
-    const eyeUpTheFrame = spanY * horizonTune.eyeAt;
-    const tapeCamY = camY * CELL - EYE_METERS + eyeUpTheFrame;
-    const tapeCamZ = -horizonState.slice * sliceMetres;
-    const { view, projection } = HZ.horizonCamera({
-      camX: horizonState.lateral,
-      camY: tapeCamY,
-      camZ: tapeCamZ,
-      yaw: yaw + planYaw, pitch,
-      aspect: uniforms.sceneW / Math.max(1, uniforms.sceneH),
-    });
-    bustFrame={view,projection};
-    // THE GROUND, FIRST, AND THE CORRIDOR ON IT.
-    //
-    // Under the feet, not under the picture's bottom edge — the recording is
-    // allowed to be buried in it and the body is not allowed to be standing on
-    // air. Drawn before the splats and without depth, so the tape composites
-    // over it in the same painter's order everything else out here uses.
-    const feetY = tapeCamY - EYE_METERS;
-    HZ.horizonGround({
-      view, projection,
-      camZ: tapeCamZ,
-      floorY: feetY,
-      collapse: horizonState.collapse,
-      exposure: horizonState.exposure,
-      band: horizonState.band,
-      bandAhead: horizonState.bandAhead,
-      // Cells along the tape are tape metres, so the lookahead needs no scale.
-      aheadZ: horizonState.bandLookahead,
-      far: horizonTune.reach * sliceMetres,
-      near: horizonTune.reach * sliceMetres,
-      towerPath:horizonState.towerPath,
-    });
-    const band = horizonState.band || { centre: 0, reach: 24, lum: 0.5, mosh: 0 };
-    const bandAhead = horizonState.bandAhead || band;
-    HZ.horizonRender({
-      // The tape is cut off at the ground. Without this the buried bottom of
-      // every slice is drawn over the floor it is supposed to be standing in,
-      // and the floor stops being a floor again.
-      floorCut: feetY,
-      // And a corridor is carved out of it along the walking band, so the tape
-      // becomes the walls of a passage rather than the inside of a box.
-      bore: {
-        centre: band.centre, centreAhead: bandAhead.centre,
-        reach: band.reach, reachAhead: bandAhead.reach,
-        z: tapeCamZ, aheadZ: horizonState.bandLookahead,
-        axisY: tapeCamY, height: horizonTune.boreHeight, amount: horizonTune.bore,
-      },
-      // How hard the damage crawls here. See uMosh in horizon3d.js.
-      mosh: band.mosh,
-      dream:horizonState.dream,
-      curtain: horizonTune.curtain,
-      shimmer: horizonTune.shimmer,
-      veil: horizonTune.veil,
-      view, projection,
-      slice: horizonState.slice,
-      collapse: horizonState.collapse,
-      exposure: horizonState.exposure*(horizonState.onTowerPath?Math.max(0,Math.min(1,(512-horizonState.slice*2)/90))*.6:1),
-      nearFade: horizonTune.nearFade,
-      reach: horizonTune.reach,
-      boil: now * 0.6,
-      bustAlpha:0,
-    });
-    if(horizonState.towerPath.length===4)HZ.horizonGround({
-      view,projection,camZ:tapeCamZ,floorY:feetY,exposure:1,collapse:0,
-      band:horizonState.band,bandAhead:horizonState.bandAhead,
-      aheadZ:horizonState.bandLookahead,far:horizonTune.reach*sliceMetres,
-      near:horizonTune.reach*sliceMetres,towerPath:horizonState.towerPath,pathOnly:true,
-    });
-  }
-  // The VFD never runs out here. This is the one place in the game that is in
-  // colour and the halftone would take it straight back off again.
-  pixelMeshStatus.enabled = false;
-  // Hand the framebuffer back the way every other pass expects to find it.
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
-  const resolved = runDatamoshPass(sceneTex, now);
-  // Out through the projector, not through a texture copy. See PROJECTION_FRAG.
-  presentProjection(composeHorizonBustForProjection(resolved,bustFrame), now);
-  lastPostSourceFbo = sceneFbo;
-}
-
-function drawHorizonBustReturn(now){
-  let returnBustFrame=null;
-  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
-  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.NONE]);
-  gl.clearColor(...HORIZON_VOID,1);
-  gl.depthMask(true);
-  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-  if(horizonReadyState&&HZ.horizonBustPresent?.()){
-    const eyeY=horizonGroundHeight()+EYE_METERS;
-    const camZ=-horizonBust.depth+12;
-    const {view,projection}=HZ.horizonCamera({
-      camX:horizonBust.x+1.3,camY:eyeY,camZ,
-      yaw:yaw+planYaw,pitch,
-      aspect:uniforms.sceneW/Math.max(1,uniforms.sceneH),
-    });
-    returnBustFrame={view,projection};
-    const band={centre:horizonBust.x,reach:23,lum:.35,mosh:.12};
-    HZ.horizonGround({view,projection,camZ,floorY:horizonGroundHeight(),
-      exposure:.8,band,bandAhead:band,aheadZ:35,far:70,near:30});
-  }
-  pixelMeshStatus.enabled=false;
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
-  presentProjection(composeHorizonBustForProjection(runDatamoshPass(sceneTex,now),returnBustFrame,.9),now);
-  lastPostSourceFbo=sceneFbo;
-}
 let sourceWeather = { rain: 0, moon: 1, clouds: 1, leaves: 0 };
 const pixelMeshUniformCache = new Map();
 const postUniformCache = new Map();
@@ -6306,9 +5724,8 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.depthFunc(gl.LEQUAL);
   // Out here there is almost nothing for the beam to land on, so what it does
   // reach it lights hard and far.
-  const entryMetres=unravelling?.active&&horizonState.worldOriginM
-    ?horizonState.worldOriginM[2]-eyeZ:-100;
-  const entryTorch=unravellingTorchTransmission(entryMetres);
+  const entryMetres=-100;
+  const entryTorch=1;
   const coastalFoot=coastal.active&&!drive;
   const voidTorch=Math.min(1.6,Math.max(0,Number(torchPower)||0)*(coastalFoot?.50:1.35))*entryTorch;
   // Standing in the tower doorway the belfry is all there is: no rain, no sky.
@@ -6353,8 +5770,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
     torch:{power:voidTorch,color:torchColor,reach:coastalFoot?torchReach:Math.min(3,torchReach*2.3),coneInner:torchConeInner,coneOuter:torchConeOuter,spill:Math.max(.08,torchSpill),shoulder:coastalFoot?.9:.65},
     // The old constant fill kept the outskirts props nearly as legible when
     // the torch died. Retain a small night floor there; bells keep their fill.
-    ambientColor:physicalLighting?lightingAmbientColor:[.66,.73,.80],ambientIntensity:sourceBusInterior?.active?.045:physicalLighting?lightingAmbientIntensity:(horizonState.active
-      ? .028+.15*Math.min(1,voidTorch) : .19)*(1-.78*busCover)*(1+flash*5),
+    ambientColor:physicalLighting?lightingAmbientColor:[.66,.73,.80],ambientIntensity:sourceBusInterior?.active?.045:physicalLighting?lightingAmbientIntensity:.19*(1-.78*busCover)*(1+flash*5),
     // Empty ground has no architectural occluder. Real props retain their own
     // depth test and flashlight shadow; no corridor plan is sampled here.
     planTexture:null,planSize:[0,0],planOrigin:[0,0],
@@ -6425,7 +5841,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniformMatrix4fv(sourceVoidPhysicalU('uDriveVolumeShadowMatrix'),false,targets.shadowMatrix);gl.uniform1f(sourceVoidPhysicalU('uDriveVolumeShadowReady'),targets.shadowReady?1:0);
   gl.uniform1f(sourceVoidPhysicalU('uVoidDawn'),sourceVoidDawn);
   gl.uniform4f(sourceVoidPhysicalU('uUnravelling'),unravelling?.amount||0,unravelling?.street||0,unravelling?.loss||0,unravelling?.active?1:0);
-  gl.uniform3fv(sourceVoidPhysicalU('uUnravelOrigin'),horizonState.worldOriginM||[0,0,0]);
+  gl.uniform3fv(sourceVoidPhysicalU('uUnravelOrigin'),[0,0,0]);
   const beacon=sourceVoidBeacon,beaconRange=Math.max(1,Number(beacon?.distanceM)||1);
   gl.uniform4f(sourceVoidPhysicalU('uBeacon'),
     beacon?beacon.bearing:0,
@@ -6510,7 +5926,10 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   // — bare PBR in a void. It goes through the pixel mesh and the post upscale
   // now, like the building. Still no datamosh history and no Source fault: those
   // belong to the text field, not to these physical objects.
-  if(present)presentThroughPost(runPixelMeshPass(voidState,now,{physicalAcquisitionWeight}),{torchPower,sourceTorchMode});
+  // The opening carries the same world-anchored hole into its physical drive.
+  // Acquire its lens here too, before quantization; the room-memory path alone
+  // cannot serve a camera that never leaves this physical renderer.
+  if(present){runSourceRestHorizonPass();presentThroughPost(runPixelMeshPass(voidState,now,{physicalAcquisitionWeight}),{torchPower,sourceTorchMode});}
   lastPostSourceFbo=sceneFbo;
 }
 
@@ -6991,6 +6410,7 @@ function runSourceRestHorizonPass(){
   gl.uniform3f(U('uHorizonEye'),camX*CELL,camY*CELL,camZ*CELL);gl.uniform1f(U('uHorizonTan'),activeCameraTanHalfFov);
   gl.uniform4fv(U('uHorizonCentre'),q.centre);gl.uniform4fv(U('uHorizonSpin'),q.spin);gl.uniform4fv(U('uHorizonParams'),q.params);
   gl.uniform3fv(U('uHorizonRingNormal[0]'),q.normals);gl.uniform4fv(U('uHorizonRing[0]'),q.rings);gl.uniform1fv(U('uHorizonEyeAge[0]'),q.ages);
+  gl.uniform2fv(U('uHorizonEyes'),q.eyes);
   gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   sourceRestHorizonStatus.drawn=true;return true;
 }
@@ -7282,7 +6702,10 @@ function loadDataTexture(url){
   });
 }
 
+let boothTelevision=null;
+export function r3dBoothTelevisionStatus(){return boothTelevision?.snapshot()||{ready:false,playing:false,uploads:0};}
 export function r3dInit(mapEl) {
+  boothTelevision?.dispose();boothTelevision=createBoothTelevision({upload:(name,video)=>P3.setWorldVideoFrame(name,video)});
   outcomeExposure.clear();
   const crowdLoadGeneration=streetCrowdPacks.reset();
   const peopleGeneration=++exteriorPeopleLoadGeneration;exteriorPeopleStatus={boothProps:false,boothCharacter:false,ambientProps:false,errors:[]};
@@ -7317,7 +6740,6 @@ export function r3dInit(mapEl) {
   SHORE.sourceShoreInit(gl);
   sourceVoidPhysicalUniformCache.clear();
   canvas.dataset.sourceVoidPhysicalShader='ready';
-  progProjection = program(PROJECTION_FRAG);
   try { progBurst = program(BURST_FRAG); } catch (_) { progBurst = null; }
   progTextSpace = program(TEXT_SPACE_FRAG);
   progSourceRoomAcquisition=program(SOURCE_ROOM_ACQUISITION_FRAG);
@@ -7416,7 +6838,7 @@ export function r3dInit(mapEl) {
       void P3.addPropPack(assetUrl('assets/source-outskirts-graffiti.glb')).catch(err=>console.warn('Source street graffiti unavailable',err));
       void streetCrowdPacks.load(crowdLoadGeneration);
       for(const[kind,file,names]of[
-        ['boothProps','booth-guard-props.glb',['yard_booth_interior','booth_guard_pen','booth_guard_key','booth_guard_cup']],
+        ['boothProps','booth-guard-props.glb',['yard_booth_interior','yard_booth_workplace','yard_booth_tv_screen','booth_guard_pen','booth_guard_key','booth_guard_cup']],
         ['ambientProps','exterior-ambient-people-props.glb',['exterior_cycle_equipment','exterior_cycle_crank','exterior_walker_dog']],
       ])void P3.addPropPack(assetUrl('assets/'+file)).then(()=>{
         if(peopleGeneration!==exteriorPeopleLoadGeneration)return;
@@ -7608,7 +7030,6 @@ function resize() {
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   pressureFinishFbo=makeFbo(pressureFinishTex,[pressureIdentityTex]);
-  if(horizonStreetTex)gl.deleteTexture(horizonStreetTex);
   if (markTex) { gl.deleteTexture(markTex); markTex = null; }
   if (meshTexA) {
     gl.deleteTexture(meshTexA); gl.deleteTexture(meshTexB);
@@ -7623,7 +7044,6 @@ function resize() {
   // crawl sideways as the camera changed angle. RGB is explicitly clamped in
   // the raymarch shader, so this precision upgrade does not alter exposure.
   sceneTex = makeTex(sw, sh, null, 'rgba16f');
-  horizonStreetTex = makeTex(sw,sh,null,'rgba16f');
   // RGBA8, not the scene's rgba16f: density, a doubled-angle direction and a
   // coherence all live in 0..1, and test/mark-field.spec.mjs shows eight bits
   // resolve the grain to about a tenth of a degree, far finer than the warp
@@ -8340,11 +7760,12 @@ function updateWaterField(water, dt) {
 //          chunks:[{x,y,r,act,col}], key:{x,y}|null, door:{x,y}|null,
 //          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
+  if(state.textSpace||state.sourceVoidPhysical||state.driveStudy?.active||state.boothTelevisionSuspended||state.paused)boothTelevision?.suspend();
   P3.setGlassCourtRainFrame?.(state.glassCourtRain?.shader||null);
-  natatoriumMetric=normalizeNatatoriumMetric(!pixelMeshSettings.reduceMotion&&!state.authoredCamera&&!state.textSpace&&!state.sourceVoidPhysical&&!state.driveStudy?.active&&!horizonState.active&&!towerCaptureInProgress&&!sourceTowerView&&!sourceCrossing
+  natatoriumMetric=normalizeNatatoriumMetric(!pixelMeshSettings.reduceMotion&&!state.authoredCamera&&!state.textSpace&&!state.sourceVoidPhysical&&!state.driveStudy?.active&&!towerCaptureInProgress&&!sourceTowerView&&!sourceCrossing
     ?state.natatoriumCoffeeMetric:null);
   P3.setNatatoriumMetricFrame(natatoriumMetric);
-  if(!towerCaptureInProgress&&!state.textSpace&&!state.sourceVoidPhysical&&!horizonState.active)lastBuildingViewState=state;
+  if(!towerCaptureInProgress&&!state.textSpace&&!state.sourceVoidPhysical)lastBuildingViewState=state;
   driveFrameActive=state?.driveStudy?.active===true;
   if(!driveFrameActive)P3.setDriveStudyFrame(null);
   if (!gl) return;
@@ -8515,7 +7936,7 @@ export function r3dFrame(state) {
   textSpaceActive = !!state.textSpace;
   const roomMemoryFlag = textSpaceActive&&sourceLook.roomMemoryActive?'true':'false';
   if(canvas.dataset.sourceRoomMemory!==roomMemoryFlag)canvas.dataset.sourceRoomMemory=roomMemoryFlag;
-  sourceVoidPhysicalActive=!!state.sourceVoidPhysical&&!horizonState.active;
+  sourceVoidPhysicalActive=!!state.sourceVoidPhysical;
   sourceVoidDawn=Math.max(0,Math.min(1,Number(state.sourceVoidDawn)||0));
   sourceVoidBeacon=state.sourceVoidBeacon&&Number.isFinite(state.sourceVoidBeacon.bearing)?state.sourceVoidBeacon:null;
   sourceVoidRain=Math.max(0,Math.min(1,Number(state.sourceVoidRain)||0));
@@ -8527,16 +7948,9 @@ export function r3dFrame(state) {
   // Beyond the telephone street, its physical props and recorded splats share
   // one camera, ground and gradually failing image. The building's raymarch
   // is bypassed; the existing street's post look dissolves progressively too.
-  if(horizonBustReturn){drawHorizonBustReturn(now);return;}
   if (SHORE.sourceShoreRenderActive(sourceShoreState)) {
     drawSourceShore(now,{voidState:state,worldYaw,torchPower,torchColor,torchReach,
       torchConeInner,torchConeOuter,torchSpill,torchShoulder,
-      torchYawOffset:Math.max(-.4,Math.min(.4,Number(torch.yawOffset)||0))});
-    return;
-  }
-
-  if (horizonState.active) {
-    drawHorizon(now,{voidState:state,worldYaw,torchPower,torchColor,torchReach,torchConeInner,torchConeOuter,torchSpill,sourceTorchMode,
       torchYawOffset:Math.max(-.4,Math.min(.4,Number(torch.yawOffset)||0))});
     return;
   }
@@ -8596,6 +8010,7 @@ export function r3dFrame(state) {
   gl.bindTexture(gl.TEXTURE_2D, rdTex);
   gl.generateMipmap(gl.TEXTURE_2D);
   const waterTex = updateWaterField(state.water, dt);
+  boothTelevision?.update({eye:[camX*CELL,camY*CELL,camZ*CELL],now,active:!textSpaceActive&&!sourceVoidPhysicalActive&&!driveFrameActive&&!state.boothTelevisionSuspended&&!state.paused});
 
   P3.renderPropPass({
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
@@ -9212,3 +8627,4 @@ export function r3dExteriorInfrastructureReady(){return ['lyric_service_camera',
 // Explicit offline frame-review tools can compile the exact production source
 // without booting a second world or changing any gameplay/render state.
 export function r3dLightingShaderSources(){return {vertex:VERT,march:MARCH_FRAG};}
+export function r3dPostShaderSources(){return {vertex:VERT,fragment:POST_FRAG};}

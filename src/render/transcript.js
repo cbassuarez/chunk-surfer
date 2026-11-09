@@ -817,6 +817,7 @@ export function layoutTranscriptChoices(view, width, { lane = null, label = null
           `${part}`,
         selected,
         spent,
+        disabled: choice.disabled === true,
         archiveSignal: !!choice.archiveSignal,
       });
     });
@@ -910,11 +911,11 @@ export function drawTranscriptChoices(layout, {
         0.74,
       );
     } else {
-      const cls = row.selected ? 'ui-amber'
+      const cls = row.disabled ? 'ui-secondary' : row.selected ? 'ui-amber'
         : row.spent ? 'ui-secondary'
         : row.archiveSignal ? 'ui-blue' : 'ui-primary';
 
-      const alpha = row.selected ? 1 : row.spent ? 0.48 : row.archiveSignal ? 0.9 : 0.82;
+      const alpha = row.disabled ? 0.34 : row.selected ? 1 : row.spent ? 0.48 : row.archiveSignal ? 0.9 : 0.82;
 
       const gutterWidth = row.gutterWidth || layout.gutterWidth
         || Math.max(5, String((row.choiceIndex ?? 0) + 1).length + 3);
@@ -922,7 +923,7 @@ export function drawTranscriptChoices(layout, {
       // glass as the changing response, never a physical cap above the cover.
       if (row.firstLine && Number.isInteger(row.choiceIndex)) {
         const number = String(row.choiceIndex + 1);
-        if (row.selected) uiText(laneX, cy, '▸', 'ui-amber', 1);
+        if (row.selected) uiText(laneX, cy, '▸', cls, alpha);
         uiText(laneX + gutterWidth - 2 - number.length, cy, number, cls, alpha);
         if (row.archiveSignal) uiText(laneX + gutterWidth - 2, cy, '◆', 'ui-blue', .9);
       }

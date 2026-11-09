@@ -10,7 +10,7 @@ export const SOURCE_REST_MUSIC_URL='audio/source-rest/seb-bach-chaconne-105.mp3'
 export const SOURCE_REST_MUSIC_MIX=Object.freeze({reverbSeconds:6.8,dry:.72,wet:.86,signalScale:8});
 
 export function createSourceRestMusic({getAudio=()=>null,protectedAudio=()=>false,
-  createElement=()=>document.createElement('audio'),urlFor=assetUrl,onError=()=>{}}={}){
+  createElement=()=>document.createElement('audio'),urlFor=assetUrl,url=SOURCE_REST_MUSIC_URL,mix=SOURCE_REST_MUSIC_MIX,onError=()=>{}}={}){
   let element=null,source=null,context=null,destination=null,desired=false,held=false,
     playing=false,failed=null,pending=false,disposed=false,version=0,listeners=[],
     completedFirstPass=false,playedSeconds=0,finishAtEnd=false,ended=false,
@@ -37,7 +37,7 @@ export function createSourceRestMusic({getAudio=()=>null,protectedAudio=()=>fals
     if(!playing||!element||element.paused||held||protectedNow()||!analyser||!signalSamples){signal=0;lastSignalAt=null;return 0;}
     try{analyser.getFloatTimeDomainData(signalSamples);}catch{signal=0;lastSignalAt=null;return 0;}
     let sum=0;for(const sample of signalSamples)sum+=sample*sample;
-    const target=Math.min(1,Math.sqrt(sum/signalSamples.length)*SOURCE_REST_MUSIC_MIX.signalScale),now=Number(context?.currentTime);
+    const target=Math.min(1,Math.sqrt(sum/signalSamples.length)*mix.signalScale),now=Number(context?.currentTime);
     const dt=Number.isFinite(now)&&lastSignalAt!==null?Math.max(0,Math.min(1,now-lastSignalAt)):.05;
     if(Number.isFinite(now))lastSignalAt=now;
     signal+=(target-signal)*(1-Math.exp(-dt/(target>signal?.08:.4)));
@@ -51,11 +51,11 @@ export function createSourceRestMusic({getAudio=()=>null,protectedAudio=()=>fals
     const ctx=pair?.ctx||pair?.context,out=pair?.destination||pair?.musicGain;
     if(!ctx||!out||typeof ctx.createMediaElementSource!=='function')return false;
     const media=createElement();if(!media||typeof media.play!=='function'||typeof media.pause!=='function')throw Error('Streaming audio is unavailable.');
-    media.preload='auto';media.loop=false;media.src=urlFor(SOURCE_REST_MUSIC_URL);
+    media.preload='auto';media.loop=false;media.src=urlFor(url);
     const node=ctx.createMediaElementSource(media);
     if(typeof ctx.createGain==='function'){
       outputGate=ctx.createGain();outputGate.gain.value=1;outputGate.connect(out);graphNodes.push(outputGate);
-      const dry=ctx.createGain();dry.gain.value=SOURCE_REST_MUSIC_MIX.dry;graphNodes.push(dry);
+      const dry=ctx.createGain();dry.gain.value=mix.dry;graphNodes.push(dry);
       let feed=node;
       if(typeof ctx.createAnalyser==='function'){
         analyser=ctx.createAnalyser();analyser.fftSize=1024;signalSamples=new Float32Array(analyser.fftSize);
@@ -69,8 +69,8 @@ export function createSourceRestMusic({getAudio=()=>null,protectedAudio=()=>fals
       if(typeof ctx.createConvolver==='function'&&typeof ctx.createBuffer==='function'){
         try{
           convolver=ctx.createConvolver();wetGain=ctx.createGain();graphNodes.push(convolver,wetGain);
-          impulse=createStandingTearImpulse(ctx,{decaySeconds:SOURCE_REST_MUSIC_MIX.reverbSeconds});
-          convolver.normalize=false;convolver.buffer=impulse;wetGain.gain.value=SOURCE_REST_MUSIC_MIX.wet;
+          impulse=createStandingTearImpulse(ctx,{decaySeconds:mix.reverbSeconds});
+          convolver.normalize=false;convolver.buffer=impulse;wetGain.gain.value=mix.wet;
           feed.connect(convolver);convolver.connect(wetGain);wetGain.connect(outputGate);
         }catch{
           // The original performance remains available if this device cannot
@@ -108,7 +108,7 @@ export function createSourceRestMusic({getAudio=()=>null,protectedAudio=()=>fals
     if(element&&(context!==ctx||destination!==out)){const position=Number(element.currentTime)||0;sampleProgress();detach();try{if(!create(pair))return false;element.currentTime=position;transport.resetSampling();}catch(error){notify(error);return false;}}
     try{if(!element&&!create(pair))return false;}catch(error){notify(error);return false;}
     if(convolver&&!convolver.buffer&&impulse)convolver.buffer=impulse;
-    if(wetGain)wetGain.gain.value=SOURCE_REST_MUSIC_MIX.wet;
+    if(wetGain)wetGain.gain.value=mix.wet;
     // The browser can expose ended before dispatching its event. Never call
     // play() on that terminal element: doing so would start the piece again.
     if(element.ended){ended=true;playing=false;pending=false;transport.resetSampling();completedFirstPass=true;endAffliction();return false;}
@@ -147,7 +147,7 @@ export function createSourceRestMusic({getAudio=()=>null,protectedAudio=()=>fals
   function snapshot(){const protectedState=protectedNow(),audible=!!(playing&&element&&!element.paused&&!held&&!protectedState&&!buffering&&!element.seeking);
     const level=audible?measuredSignal():0;
     return {active:desired,playing:audible,paused:!!(desired&&(held||protectedState)),protected:protectedState,signal:level,
-      atmosphere:!!convolver,reverbSeconds:convolver?SOURCE_REST_MUSIC_MIX.reverbSeconds:0,affliction:affliction?.snapshot()||{supported:false,enabled:afflictionWanted},
+      atmosphere:!!convolver,reverbSeconds:convolver?mix.reverbSeconds:0,affliction:affliction?.snapshot()||{supported:false,enabled:afflictionWanted},
       loading:!!(desired&&!failed&&!ended&&!audible&&!held&&!protectedState),buffering,pending,failed,disposed,ended,finishAtEnd,completedFirstPass,completedFirstCycle:completedFirstPass,playedSeconds,
     ...transport.snapshot(),audioTime:Number(context?.currentTime)||0,currentTime:Number.isFinite(element?.currentTime)?element.currentTime:null,
     duration:Number.isFinite(element?.duration)?element.duration:null,loop:!!element?.loop};}

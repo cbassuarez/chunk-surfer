@@ -14,7 +14,7 @@ import { corridorDressing } from '../world/corridor-dressing.js';
 import { architectureFittings } from '../world/architecture-fittings.js';
 import * as PROP_GEOMETRY from '../data/generated/prop-geometry.js';
 import { batchBuildingDressingInstances } from '../world/building-dressing-batches.js';
-import { isExteriorObserver } from './prop-visibility.js';
+import { isExteriorObserver,isExteriorHiddenWallDisplay } from './prop-visibility.js';
 import {exteriorStreetWallServiceInstances} from '../data/exterior-street-fabric.js';
 import { EXTERIOR_FACADE_MESHES, exteriorFacadeCanOccupy, exteriorFacadeCanStep } from '../world/exterior-facade-collision.js';
 import { leavesPropOverlap } from '../world/prop-body-contact.js';
@@ -450,6 +450,7 @@ export function propWithinVerticalReach(px,py,p){
   return Math.abs(playerFloor-p.floor)<=reach;
 }
 export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight=1.58}={}){
+  const observerZone=floorplan?.zoneAt?.(px,py);
   const physicalNavigation=!!(floorplan?.nearPhysicalNavigationAt?.(px,py)||floorplan?.usesPhysicalNavigationAt?.(px,py));
   const at=physicalNavigation?floorplan.logicalToPhysical(px,py):null;
   const mx=at?(at.x+.5)*CELL:meters(px+.5),mz=at?(at.z+.5)*CELL:meters(py+.5);
@@ -463,6 +464,7 @@ export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight
   let best=null,bestScore=Infinity;
   for(const p of instances){
     if(p.interactive===false)continue;
+    if(isExteriorHiddenWallDisplay(p,observerZone))continue;
     if(!propWithinVerticalReach(px,py,p))continue;
     const target=physicalNavigation?(floorplan.logicalPointToPhysical||floorplan.logicalToPhysical)(
       (p.interactionX??p.x)/CELL,(p.interactionY??p.y)/CELL):null;

@@ -28,7 +28,6 @@ import { resolve } from 'node:path';
 
 import { ROOT, citationReader } from '../shared.mjs';
 
-import { HORIZON_TRANSPORT_DIALS, HORIZON_TRANSPORT_LABELS, HORIZON_TRANSPORT_OPTIONS } from '../../../src/game/horizon-transport.js';
 import { POWER_CIRCUITS } from '../../../src/game/conservatory-power.js';
 import { KEY_CABINET_RING } from '../../../src/game/key-cabinet.js';
 import { MARBLE_HEAD_BUST, MARBLE_HEAD_PHASE } from '../../../src/game/marble-head.js';
@@ -56,24 +55,6 @@ const list = (values) => values.join(' · ');
 const KIND = Object.freeze({ PUZZLE: 'puzzle', MICROGAME: 'microgame' });
 
 export const PUZZLES = Object.freeze([
-  {
-    id: 'horizon-transport',
-    kind: KIND.PUZZLE,
-    title: 'The transport at the edge of the field',
-    room: 'The pad at the end of the source, before the crossing.',
-    asks: 'Thread three dials — run length, where the picture sits, where it breaks up — to match a tape you have already watched.',
-    solved: 'All three dials agree with the truth derived from the recording itself, so the answer cannot be typed in beside the puzzle.',
-    fails: 'Nothing. It simply does not thread, and you can go on turning dials.',
-    assist: 'The readings are legible off the tape; the machine re-derives its own truth so the two can never drift apart.',
-    gates: 'The POINT OF NO RETURN crossing. Nothing else starts it.',
-    live: () => [
-      ['Dials', list(HORIZON_TRANSPORT_DIALS.map((dial) => HORIZON_TRANSPORT_LABELS[dial] || dial))],
-      ['Settings each', list(HORIZON_TRANSPORT_DIALS.map((dial) => `${dial} ${HORIZON_TRANSPORT_OPTIONS[dial].length}`))],
-      ['Combinations', String(HORIZON_TRANSPORT_DIALS.reduce((n, dial) => n * HORIZON_TRANSPORT_OPTIONS[dial].length, 1))],
-    ],
-    cite: at('src/game/horizon-transport.js', 'export function horizonTransportThreaded'),
-    spec: 'test/horizon-transport.spec.mjs',
-  },
   {
     id: 'aperture',
     kind: KIND.PUZZLE,

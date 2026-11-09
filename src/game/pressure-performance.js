@@ -6,7 +6,7 @@ import { hushDensityUsesRole, normalizeHushDensityPose, stepHushDensityPose,
 // authority. Positions use the renderer's physical half-metre cells; floorH is
 // metres. No camera, wall clock, renderer or persistence is read here.
 export const PRESSURE_ROLES = Object.freeze(['live-pressure', 'source-rear', 'source-front', 'court-trace', 'tenant',
-  'plant-hallucination', 'recording-hallucination', 'legacy-pressure', 'dock-tableau', 'plant-tableau']);
+  'b3-optical-visit', 'plant-hallucination', 'recording-hallucination', 'legacy-pressure', 'dock-tableau', 'plant-tableau']);
 export const PRESSURE_CLIPS = Object.freeze(['pressure_idle', 'pressure_approach', 'pressure_hold', 'pressure_limp', 'pressure_listen',
   'pressure_load', 'pressure_advance', 'pressure_pivot', 'pressure_arrest']);
 export const PRESSURE_MOTIONS = Object.freeze(['idle', 'hunt', 'listen', 'limp', 'investigate']);
@@ -18,7 +18,7 @@ const angle = value => Math.atan2(Math.sin(finite(value)), Math.cos(finite(value
 const clone = value => value == null ? null : JSON.parse(JSON.stringify(value));
 const enumValue = (value, values, fallback) => values.includes(value) ? value : fallback;
 const staticRoles = new Set(['tenant', 'plant-hallucination', 'recording-hallucination']);
-const authoredRoles = new Set(['source-rear', 'source-front', 'court-trace', 'dock-tableau', 'plant-tableau']);
+const authoredRoles = new Set(['source-rear', 'source-front', 'court-trace', 'dock-tableau', 'plant-tableau', 'b3-optical-visit']);
 // A set piece's figure doesn't arrive or leave. It is there, then it isn't.
 const abrupt = id => typeof id === 'string' && id.startsWith('set-piece:');
 

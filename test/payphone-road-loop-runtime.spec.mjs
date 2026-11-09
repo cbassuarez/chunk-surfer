@@ -47,6 +47,16 @@ function rebase(f){const plan=planPayphoneRoadLoop({along:f.runtime.payphoneRoad
   f.position={...f.position,y:f.position.y+plan.deltaRuntimeY};
   f.runtime.setPlayerPosition(f.position);assert.ok(f.runtime.rebasePayphoneRoadLoop(plan));return plan;}
 
+test('the compulsory telephone return has one readable ground-level encounter with no folded scenery',()=>{
+  const f=fixture(route.start+12),rows=f.runtime.propInstances(f.position.x,f.position.y,{time:77,reducedMotion:true,viewYaw:0});
+  assert.equal(rows.some(p=>Number.isFinite(p.outskirtsFoldVisibility)),false,'prefetched lateral returns cannot cover the quiet phone loop');
+  assert.equal(rows.some(p=>p.id.includes('fold-overhead')),false);
+  for(const id of['r13-phone-box','r13-phone-box:apparatus','r13-phone-box:door','r13-phone-box:handset'])
+    assert.equal(rows.filter(p=>p.id===id).length,1,`${id}: one actual component owner`);
+  const signatures=rows.map(p=>`${p.mesh}:${Array.from(p.matrix||[]).map(v=>Math.round(v*1e4)).join(',')}`);
+  assert.equal(new Set(signatures).size,signatures.length,'the production encounter does not submit duplicate mesh poses');
+});
+
 test('the actual full visible set, lamp pools, collision and bed placement are congruent after rebasing',()=>{
   const f=fixture();f.runtime.outskirtsBeatFrame({viewYaw:0,reducedMotion:true});
   const beforeScene=scene(f.runtime,f.position), beforePools=relativePools(f.runtime,f.position), beforeCollision=collision(f.runtime,f.position);

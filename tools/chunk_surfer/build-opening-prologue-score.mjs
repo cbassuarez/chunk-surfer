@@ -1,0 +1,66 @@
+// Scene-led derivatives only. The shared music-box masters and old overture
+// remain untouched. Candidate exits are waveform minima, not auditioned phrases.
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+
+const root=join(dirname(fileURLToPath(import.meta.url)),'../..');
+const out=join(root,'public/audio/opening-prologue');
+const rate=32000,channels=2;
+mkdirSync(out,{recursive:true});
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+const sources=[
+  {phase:'recognition',file:'assets/music-box/clair-de-lune-worn.wav',start:0,end:46.3,
+    label:'Supplied Sankyo recording; complete retained 46.3-second excerpt, not a certified cylinder cycle.',
+    provenance:'assets/music-box/reference-performance.json'},
+  {phase:'ellery',file:'public/audio/source-rest/seb-bach-chaconne-105.mp3',start:27,end:100,
+    label:'Seb\'s prepared Bach marimba performance; the source interval used in the old overture.'},
+  {phase:'personal',file:'artifacts/couperin-live12/audio/Couperin-human-reference.wav',start:100,end:182,
+    label:'Retained Couperin human-reference recording; the source interval used in the old overture.'},
+  {phase:'return',file:'assets/music-box/clair-de-lune-worn.wav',start:32,end:46.3,
+    label:'Later portion of the same supplied Sankyo excerpt, preserving unchanged pitch and timing.',
+    provenance:'assets/music-box/reference-performance.json'},
+];
+const manifest={version:1,identity:['recognition','ellery','personal','return'],sampleRate:rate,channels,
+  provenanceNote:'User-recorded Sankyo and Bach are retained project sources; Couperin reference performer/source attribution still needs reconciliation. No new performance or measured room response is claimed.',
+  editorialNote:'Finite source statements followed by explicit quiet holds. Waveform-minimum exits are machine-selected release candidates, not musician-approved phrase boundaries. No human audition or Live 12 session is claimed.',
+  processing:['Sample-accurate source trim; timestamps reset','32 kHz stereo MP3, 128 kb/s','One fixed gain per clip to RMS 0.05 with peak <= 0.85','35 ms head and 180 ms tail protection; no pitch/time change, loop or invented notes'],
+  phases:{}};
+
+for(const item of sources){
+  const src=join(root,item.file),sourceHash=sha(readFileSync(src));
+  const decoded=spawnSync('ffmpeg',['-v','error','-i',src,'-af',`atrim=start=${item.start}:end=${item.end},asetpts=PTS-STARTPTS`,'-ac',String(channels),'-ar',String(rate),'-f','f32le','pipe:1'],{maxBuffer:80*1024*1024});
+  if(decoded.status!==0)throw Error('Decode failed: '+item.phase+' '+decoded.stderr?.toString());
+  const raw=decoded.stdout,frames=raw.length/(4*channels),pcm=new Float32Array(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength));
+  let sum=0,peak=0;for(const x of pcm){sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+  const rms=Math.sqrt(sum/Math.max(1,pcm.length)),gain=Math.min(.05/Math.max(1e-7,rms),.85/Math.max(1e-7,peak));
+  // Release candidates are the quietest 80 ms region in each four-second
+  // interval. Retain measured levels, so later listening can replace a mark.
+  const windows=[];
+  for(let start=2;start<frames/rate-1;start+=4){
+    let best=null;
+    for(let t=start;t<Math.min(start+4,frames/rate-.5);t+=.04){
+      const a=Math.floor(t*rate),b=Math.min(frames,a+Math.floor(.08*rate));let e=0;
+      for(let f=a;f<b;f++)for(let c=0;c<channels;c++)e+=pcm[f*channels+c]**2;
+      e=Math.sqrt(e/Math.max(1,(b-a)*channels));if(!best||e<best.rms)best={at:Number(t.toFixed(3)),rms:e};
+    }
+    if(best)windows.push({at:best.at,rmsDbFS:Number((20*Math.log10(Math.max(1e-9,best.rms))).toFixed(2))});
+  }
+  for(let f=0;f<frames;f++){
+    const t=f/rate,envelope=Math.min(1,t/.035,(frames/rate-t)/.18);
+    for(let c=0;c<channels;c++)pcm[f*channels+c]*=gain*Math.max(0,envelope);
+  }
+  const delivered=join(out,item.phase+'.mp3');
+  const encoded=spawnSync('ffmpeg',['-y','-v','error','-f','f32le','-ar',String(rate),'-ac',String(channels),'-i','pipe:0','-c:a','libmp3lame','-b:a','128k',delivered],{input:Buffer.from(pcm.buffer),maxBuffer:1024*1024});
+  if(encoded.status!==0)throw Error('Encode failed: '+item.phase+' '+encoded.stderr?.toString());
+  manifest.phases[item.phase]={asset:'audio/opening-prologue/'+item.phase+'.mp3',duration:frames/rate,
+    source:{file:item.file,sha256:sourceHash,inSeconds:item.start,outSeconds:item.end,...(item.provenance?{provenance:item.provenance}:{}),note:item.label},
+    deliveredSha256:sha(readFileSync(delivered)),fixedGainDb:Number((20*Math.log10(gain)).toFixed(3)),
+    sourceRmsDbFS:Number((20*Math.log10(Math.max(1e-9,rms))).toFixed(3)),
+    exitCandidates:windows,gain:1};
+}
+writeFileSync(join(out,'sources.json'),JSON.stringify(manifest,null,2)+'\n');
+writeFileSync(join(root,'src/data/opening-prologue-score.js'),'// Generated by tools/chunk_surfer/build-opening-prologue-score.mjs.\n// Release marks are waveform candidates, not auditioned musical phrase claims.\nexport const OPENING_PROLOGUE_SCORE = Object.freeze('+JSON.stringify(manifest,null,2)+');\n');
+console.log(JSON.stringify({phases:Object.fromEntries(Object.entries(manifest.phases).map(([id,row])=>[id,{seconds:row.duration,bytes:readFileSync(join(root,'public',row.asset)).length,exits:row.exitCandidates.length}]))},null,2));

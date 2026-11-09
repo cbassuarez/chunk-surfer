@@ -16,6 +16,14 @@ import {createThunderVoice} from './thunder.js';
 const clamp=(v,lo=0,hi=1)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):0));
 const smooth=t=>{const k=clamp(t);return k*k*(3-2*k);};
 
+// Conversation exposes the live speech handle's progress. Zero includes a
+// queued first syllable; null means that this line has finished sounding.
+// Reading speed and caption length do not describe a speaking mouth.
+export function openingPrologueSpeechActive(view={}){
+  return view.who==='unknown'&&typeof view.voice==='number'
+    &&Number.isFinite(view.voice)&&view.voice>=0&&view.voice<1;
+}
+
 export const OPENING_PROLOGUE_AUDIO=Object.freeze({
   // Seconds of the film with no music at all, however fast the talk is read.
   roadOnlySeconds:16,
@@ -38,8 +46,6 @@ export const OPENING_PROLOGUE_AUDIO=Object.freeze({
   ]),
   // Heard from inside a van: the roof takes the top off.
   roofBands:Object.freeze({low:1,mid:.82,high:.34}),
-  // A steady cruise, and wipers on their slow setting.
-  cruise:Object.freeze({speed:15,engineLoad:.34,throttle:.28,gear:4,wiperPeriod:1.35,wiperSweep:1.15}),
 });
 
 /**
@@ -74,7 +80,12 @@ export function openingPrologueThunderDue(from,to,A=OPENING_PROLOGUE_AUDIO){
  * what the recording's player plays into.
  */
 export function createOpeningPrologueAudio({getAudio=()=>null,createCab=createOpeningArrivalAudio,createThunder=createThunderVoice}={},A=OPENING_PROLOGUE_AUDIO){
-  let ctx=null,graph=null,cab=null,thunder=null,elapsed=0,openedAt=null,stageMusic=0,ending=0,last=null,disposed=false,wiperClock=0;
+  let ctx=null,graph=null,cab=null,thunder=null,elapsed=0,openedAt=null,stageMusic=0,ending=0,last=null,disposed=false,held=false;
+  function prepareThunder(){
+    if(thunder||!ctx||!graph)return;
+    thunder=createThunder({context:ctx,destination:graph.thunderBus});
+    for(const strike of A.thunder)if(strike.at>=elapsed)try{thunder.prepare(strike);}catch{}
+  }
   function build(){
     if(graph||disposed)return graph;
     let pair;try{pair=getAudio();}catch{return null;}
@@ -94,15 +105,22 @@ export function createOpeningPrologueAudio({getAudio=()=>null,createCab=createOp
     const cabBus=own(ctx.createGain()),thunderBus=own(ctx.createGain());cabBus.gain.value=0;cabBus.connect(sfx);thunderBus.connect(sfx);
     graph={nodes,input,master,radioGain,openLp,openGain,cabBus,thunderBus,music,sfx};
     cab=createCab({getAudio:()=>({ctx,destination:cabBus})});
-    thunder=createThunder({context:ctx,destination:thunderBus});
-    for(const strike of A.thunder)try{thunder.prepare(strike);}catch{}
+    prepareThunder();
     return graph;
   }
   const ramp=(param,value,seconds=.25)=>{try{param.cancelScheduledValues(ctx.currentTime);param.setTargetAtTime(value,ctx.currentTime,seconds);}catch{}};
-  function update({dt=0,stageMusic:level=stageMusic,spoken=false,speaking=false,veil=0,paused=false}={}){
+  function update({dt=0,stageMusic:level=stageMusic,spoken=false,speaking=false,veil=0,paused=false,ready=true,protectedAudio=false,
+    drive:physicalDrive=null,weather:physicalWeather=null,wiperHeld=false}={}){
     if(disposed)return last;
     if(!build())return last;
-    if(paused){ramp(graph.master.gain,0,.15);ramp(graph.cabBus.gain,0,.15);cab?.update?.({paused:true});return last;}
+    let protection;try{protection=typeof protectedAudio==='function'?!!protectedAudio():!!protectedAudio;}catch{protection=true;}
+    if(paused||!ready||protection){
+      // A recording/focus hold must not retain an old thunder or reflection
+      // tail which reappears when control returns.
+      for(const param of [graph.master.gain,graph.cabBus.gain,graph.thunderBus.gain])try{param.cancelScheduledValues(ctx.currentTime);param.setValueAtTime(0,ctx.currentTime);}catch{}
+      cab?.update?.({paused:true});if(!held){thunder?.stop?.();thunder=null;}held=true;return last;
+    }
+    if(held){held=false;prepareThunder();}ramp(graph.thunderBus.gain,1,.03);
     const step=Math.max(0,Math.min(.25,Number(dt)||0)),before=elapsed;elapsed+=step;stageMusic=clamp(level);ending=clamp(veil);
     if(spoken&&openedAt==null)openedAt=elapsed;
     const mix=openingPrologueMix({elapsed,stageMusic,openedAt,speaking,ending},A);
@@ -110,25 +128,30 @@ export function createOpeningPrologueAudio({getAudio=()=>null,createCab=createOp
     ramp(graph.radioGain.gain,mix.radio,.4);ramp(graph.openGain.gain,1-mix.radio,.4);
     ramp(graph.openLp.frequency,A.radioBand.lp+(A.openLp-A.radioBand.lp)*Math.pow(1-mix.radio,2),.5);
     ramp(graph.cabBus.gain,mix.cab,.5);
-    wiperClock+=mix.wipers?step:0;
-    const C=A.cruise,angle=Math.sin(wiperClock*2*Math.PI/C.wiperPeriod)*C.wiperSweep;
-    const drive={speed:C.speed,engineLoad:C.engineLoad,throttle:C.throttle,gear:C.gear,engineOn:true,surface:'road',elapsed,
-      wiperMoving:mix.wipers,wiperAngles:[angle,angle]};
-    cab?.update?.({dt:step,state:{phase:'driving',drive,rain:1,doorOpen:0},weather:{rain:1,roadWetness:.9,wiperMoving:mix.wipers,wiperAngles:[angle,angle]},ready:true});
+    // The same submitted vehicle and blade pose produce the sound. A held
+    // blade remains at that angle; no private oscillator keeps sweeping it.
+    const raw=physicalDrive?.driveState||physicalDrive?.drive||physicalDrive,
+      weather=physicalWeather||physicalDrive?.weather||{},angles=weather.wiperAngles||raw?.wiperAngles||null,
+      moving=!!raw&&!wiperHeld&&!!(weather.wiperMoving??raw?.wiperMoving),
+      drive=raw?{...raw,wiperMoving:moving,...(angles?{wiperAngles:[...angles]}:{})}:null,
+      rain=clamp(weather.rain??physicalDrive?.rain??1);
+    cab?.update?.({dt:step,state:drive?{phase:'driving',drive,rain,doorOpen:0}:null,
+      weather:{...weather,rain,wiperMoving:moving,...(angles?{wiperAngles:[...angles]}:{})},ready:!!drive});
     for(const strike of openingPrologueThunderDue(before,elapsed,A))try{thunder?.strike({...strike,bands:A.roofBands});}catch{}
-    last={...mix,elapsed,openedAt};return last;
+    last={...mix,elapsed,openedAt,physical:drive?{speed:Number(drive.speed)||0,gear:drive.gear,
+      wiperMoving:moving,wiperHeld:!!wiperHeld,wiperAngles:angles?[...angles]:null}:null};return last;
   }
   function dispose(){
     if(disposed)return;disposed=true;
     if(graph&&ctx){
       // Let go over a moment, so the drive that follows does not start on a cut.
-      ramp(graph.master.gain,0,.25);ramp(graph.cabBus.gain,0,.35);
+      ramp(graph.master.gain,0,.25);ramp(graph.cabBus.gain,0,.35);ramp(graph.thunderBus.gain,0,.2);
       const g=graph;setTimeout(()=>{cab?.dispose?.();thunder?.stop?.();for(const node of g.nodes)try{node.disconnect();}catch{}},1600);
     }else{cab?.dispose?.();thunder?.stop?.();}
   }
   return{
     musicPair:()=>build()?{ctx,destination:graph.input}:null,
     update,dispose,
-    snapshot:()=>({elapsed,openedAt,stageMusic,ending,built:!!graph,disposed,mix:last?{...last}:null,cab:cab?.snapshot?.()||null}),
+    snapshot:()=>({elapsed,openedAt,stageMusic,ending,built:!!graph,disposed,held,mix:last?{...last,physical:last.physical?{...last.physical,wiperAngles:last.physical.wiperAngles?[...last.physical.wiperAngles]:null}:null}:null,cab:cab?.snapshot?.()||null}),
   };
 }

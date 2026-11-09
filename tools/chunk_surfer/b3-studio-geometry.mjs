@@ -1,41 +1,34 @@
+import {B3_CONSOLE_LAYOUT as DESK,b3ConsoleChannelX,b3ConsoleUpperSurfaceY} from '../../src/data/b3-console-layout.js';
+
 // The studio was packed for a return, not abandoned in the middle of a take.
 // All dimensions are metres, Y up. The console's operator is on local +Z and
 // looks toward local -Z; its lamps are deliberately unpowered.
 export function buildB3StudioGeometry({mesh,MAT,addBox,addCylinder,addCylinderX,addBeam,addLegs}){
   {
     const m=mesh('b3_mixing_console');
-    // Solid console furniture and recessed meter bridge: 16 channel strips and
-    // a separate master section, with physical tracks, fader caps and controls.
-    addBox(m,[0,.63,0],[2.30,.40,.90],MAT.black);
-    // A low shelf between the legs makes the spares tin physically supported.
+    // Lightweight fallback of the same 1985 split-monitor desk. The dedicated
+    // pack owns final surfaces, but these tracks cannot disagree with its caps.
+    addBox(m,[0,.77,-.015],[2.15,.13,.88],MAT.black);
+    addBox(m,[0,.85,.28],[2.15,.10,.34],MAT.steel);
+    addBox(m,[0,.95,-.10],[2.15,.10,.56],MAT.steel,0,.28);
+    for(const x of[-1.112,1.112])addBox(m,[x,.83,-.005],[.076,.20,.95],MAT.wood);
     addBox(m,[0,.16,0],[1.98,.035,.65],MAT.wood);
-    addBox(m,[0,.85,0],[2.20,.10,.88],MAT.steel);
-    for(const x of[-1.13,1.13])addBox(m,[x,.84,0],[.07,.15,.96],MAT.wood);
-    addBox(m,[0,.94,-.34],[2.16,.17,.19],MAT.black);
-    for(let i=0;i<16;i++){
-      const x=-.97+i*.112;
-      addBox(m,[x,.905,.19],[.024,.008,.27],MAT.black);
-      for(let k=0;k<4;k++)addCylinder(m,[x,.92,-.12+k*.067],.016,.025,k===1?MAT.brass:MAT.black,6);
-      addBox(m,[x,.907,.34],[.065,.009,.045],MAT.paper);
-      addBox(m,[x,.947,-.439],[.065,.055,.008],MAT.paper);
-      addBox(m,[x,.950,-.446],[.005,.028,.005],MAT.black);
+    addBox(m,[0,.897,.438],[2.18,.076,.068],MAT.black);
+    addBox(m,[0,1.175,-.405],[2.17,.252,.14],MAT.black);
+    for(let i=0;i<DESK.channels;i++){
+      const x=b3ConsoleChannelX(i);
+      addBox(m,[x,DESK.trackSurfaceY,DESK.trackCentreZ],[.006,.006,DESK.faderTrack],MAT.black);
+      for(const z of[DESK.gainZ,...DESK.eqRows,...DESK.auxRows,DESK.panZ])addCylinder(m,[x,b3ConsoleUpperSurfaceY(z)+.012,z],.010,.021,MAT.black,6);
+      addBox(m,[x,.904,.378],[.052,.003,.024],MAT.paper);
+      addBox(m,[-.995+i*.071,1.181,-.325],[.041,.174,.012],MAT.cone);
     }
-    // Two small unpowered nearfields on the meter bridge. The existing damaged
-    // cabinet remains separately in the booth as stored equipment.
-    for(const x of[-.93,.93]){
-      addBox(m,[x,1.14,-.33],[.22,.34,.20],MAT.black);
-      addBox(m,[x,1.14,-.226],[.19,.30,.012],MAT.cone);
-      addBox(m,[x,1.20,-.218],[.09,.09,.008],MAT.steel);
-      addBox(m,[x,1.08,-.218],[.14,.14,.008],MAT.steel);
+    for(let i=0;i<DESK.groupCount;i++){
+      const x=DESK.groupStartX+i*DESK.groupPitch;
+      for(const z of[-.29,-.22,-.14,-.07,.01,.08])addCylinder(m,[x,b3ConsoleUpperSurfaceY(z)+.012,z],.010,.021,MAT.black,6);
+      addBox(m,[x,.901,.27],[.006,.006,.10],MAT.black);addBox(m,[x,.918,.252],[.045,.026,.032],MAT.ivory);
     }
-    // Master faders, transport and monitoring section; no glowing pilots.
-    for(let k=0;k<2;k++){
-      const x=.88+k*.11;
-      addBox(m,[x,.905,.16],[.026,.008,.30],MAT.black);
-      addBox(m,[x,.918,.13+k*.04],[.06,.026,.04],MAT.ivory);
-      for(let j=0;j<3;j++)addCylinder(m,[x,.92,-.11+j*.065],.022,.025,MAT.black,8);
-    }
-    for(let i=0;i<3;i++)addBox(m,[.86+i*.065,.91,-.28],[.045,.018,.035],i===2?MAT.safetyRed:MAT.ivory);
+    for(const x of[.49,.88]){addBox(m,[x,1.178,-.32],[.335,.172,.022],MAT.steel);addBox(m,[x,1.187,-.302],[.279,.095,.003],MAT.paper);}
+    for(const x of DESK.masterXs){for(const z of[-.27,-.17,-.07,.04,.14])addCylinder(m,[x,b3ConsoleUpperSurfaceY(z)+.012,z],.016,.021,MAT.black,8);addBox(m,[x,.918,.26],[.055,.026,.036],MAT.ivory);}
     addLegs(m,0,0,2.02,.64,.02,.42,MAT.steel,.027);
   }
   {

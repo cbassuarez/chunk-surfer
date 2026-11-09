@@ -28,6 +28,13 @@ node test/narrative-studio.spec.mjs
 
 - Pick a document from the left index. Endings, battles, radio trees, room
   listens, playback scenes, and legacy material are all searchable.
+- The index also includes dialogue still authored in game modules. Search a
+  spoken sentence or choice to open its source beat. Those documents are
+  read-only references; edit the indicated module to change the game.
+- Source edits refresh those references automatically, including imported line
+  constructors and conditional variants. Unsaved Studio stories, media and
+  audio edits stay in place. Ordinary external authoring edits still ask for a
+  reload so they cannot silently overwrite your work.
 - Drag nodes or use **Auto-layout**. Layout changes are stored separately from
   prose so visual organization does not create dialogue merge conflicts.
 - Connect a choice handle to another node to change its `goto` target.

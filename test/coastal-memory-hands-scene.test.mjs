@@ -19,13 +19,14 @@ test('look orbits the box; crank and shake drive the winding while handling', ()
   assert.ok(turned.state.boxYaw > 0);
   assert.ok(turned.state.boxPitch > 0);
   // Crank advances the tune.
-  const cranked = stepHandsInteraction(turned.state, { pinHeld: true, crankDelta: 0.5 }, 0.25);
+  let cranked = stepHandsInteraction(turned.state, { pinHeld: true, crankDelta: 0.5 }, 0.25),events=[...cranked.events];
+  for(let i=0;i<3;i++){cranked=stepHandsInteraction(cranked.state,{pinHeld:true,crankDelta:.25},.25);events.push(...cranked.events);}
   assert.ok(cranked.state.hands.winding.score > 0);
-  assert.ok(cranked.events.some((e) => e.type === 'pluck'));
+  assert.ok(events.some((e) => e.type === 'pluck'));
   // Shake jostles the train.
   const shaken = stepHandsInteraction(cranked.state, { pinHeld: false, crankDelta: 0, shake: 1 }, 0.25);
   assert.ok(shaken.events.some((e) => e.type === 'shake'));
-  assert.ok(shaken.state.hands.winding.wear > 0);
+  assert.equal(shaken.state.hands.winding.wear, cranked.state.hands.winding.wear, 'normal handling must not progressively destroy the box');
 });
 
 test('putting the box down releases the pin and slams the winding', () => {
@@ -61,9 +62,12 @@ test('the held box floats in front of the eye and stays rigid', () => {
   const eye = [10, 2, 5];
   const held = coastalHandsHeldLocal({ eye, yaw: 0, pitch: 0, boxPose: {}, worldFromLocal: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] });
   assert.equal(held.length, 16);
+  // The MESH ORIGIN sits half the scaled box height below the view point, so the
+  // object's volumetric centre is what floats in front of the eye.
+  const pivotY = 0.046 * 0.5;
   assert.ok(Math.abs(held[12] - eye[0]) < 1e-9);
-  assert.ok(Math.abs(held[13] - (eye[1] - 0.12)) < 1e-9);
-  assert.ok(Math.abs(held[14] - (eye[2] - 0.42)) < 1e-9);
+  assert.ok(Math.abs(held[13] - (eye[1] - pivotY)) < 1e-9);
+  assert.ok(Math.abs(held[14] - (eye[2] - 0.14)) < 1e-9);
   // Rotation columns are orthonormal (rigid, no scale).
   const cols = [[held[0], held[1], held[2]], [held[4], held[5], held[6]], [held[8], held[9], held[10]]];
   for (const c of cols) assert.ok(Math.abs(Math.hypot(...c) - 1) < 1e-9);
@@ -84,7 +88,8 @@ test('a rotated world frame is inverted so the held box lands at the eye', () =>
   // Apply worldFromLocal to heldLocal: the box must land at eye + (0, -0.12, -0.42).
   const boxWorld = [0, 0, 0];
   for (let r = 0; r < 3; r++) boxWorld[r] = worldFromLocal[0 * 4 + r] * held[12] + worldFromLocal[1 * 4 + r] * held[13] + worldFromLocal[2 * 4 + r] * held[14] + worldFromLocal[3 * 4 + r];
+  const pivotY = 0.046 * 0.5;
   assert.ok(Math.abs(boxWorld[0] - 110) < 1e-6);
-  assert.ok(Math.abs(boxWorld[1] - (2 - 0.12)) < 1e-6);
-  assert.ok(Math.abs(boxWorld[2] - (5 - 0.42)) < 1e-6);
+  assert.ok(Math.abs(boxWorld[1] - (2 - pivotY)) < 1e-6);
+  assert.ok(Math.abs(boxWorld[2] - (5 - 0.14)) < 1e-6);
 });

@@ -125,6 +125,7 @@ export function createConversation({
   let deferredUtterance = null;
   let stopped = false;
   let reviewSuspended = false;
+  let presentationPaused = false;
   const line = () => activeLine || sourceLine();
 
   function updateStoryArtShot(l = line()) {
@@ -231,7 +232,7 @@ export function createConversation({
     // Authored line hooks can hand control to a physical action. The line is
     // selected once, but its mouth and typewriter wait until that action gives
     // the conversation back. Re-entering utter() would fire the action twice.
-    if (!isActive()) { deferredUtterance = l; return; }
+    if (presentationPaused || !isActive()) { deferredUtterance = l; return; }
     startLineAudio(l);
   }
 
@@ -414,6 +415,9 @@ export function createConversation({
   }
   function choose(c) {
     if (!c) return;
+    // An unavailable answer remains readable in the bank, but no input path
+    // may execute it: numbers, confirm and pointer activation all arrive here.
+    if (c.disabled === true) return;
     // "Say it" is not a branch. It is permission for the line to happen.
     if (c.say) {
       const l = pending.line;
@@ -436,6 +440,7 @@ export function createConversation({
     start() {
       stopped = false;
       reviewSuspended = false;
+      presentationPaused = false;
       if (mode === 'beats') { if (!visibleBeats().length) { finish(); return; } }
       else visited.add(nodeId);
       beginLine();
@@ -458,12 +463,30 @@ export function createConversation({
       reviewSuspended = false;
       refreshReview();
     },
+    // A presentation hold preserves the same mouth, caption and node. Unlike
+    // text review it must not complete the line or re-fire its authored hooks.
+    presentationPause() {
+      if(presentationPaused)return false;
+      presentationPaused=true;handle?.pause?.();audio?.stopTyping?.();
+      accelerateHeld=false;accelerateStartedAt=0;return true;
+    },
+    presentationResume() {
+      if(!presentationPaused)return false;
+      presentationPaused=false;
+      if(stopped||finished||reviewSuspended)return false;
+      handle?.resume?.();
+      if(!handle&&!pending&&!deferredUtterance&&activeLine&&typed<textOf(activeLine).length&&!activeLine.mask){
+        const who=whoOf(activeLine),bed=TYPE_GAIN*(TYPE_LEVEL[who==='direction'?'direction':'thought']||1);
+        audio?.startTyping?.({gain:bed});
+      }
+      return true;
+    },
 
     // ── the frame loop ───────────────────────────────────────────────────────
     // Nothing here advances anything. It only reveals letters.
     update(dt) {
       refreshReview();
-      if (pending || finished || stopped || reviewSuspended || !isActive()) return;
+      if (pending || finished || stopped || reviewSuspended || presentationPaused || !isActive()) return;
       if (deferredUtterance) {
         const ready = deferredUtterance;
         deferredUtterance = null;
@@ -501,7 +524,7 @@ export function createConversation({
     // ── input ────────────────────────────────────────────────────────────────
     key(e) {
       refreshReview();
-      if (finished || stopped || reviewSuspended || !isActive() || deferredUtterance) return true;
+      if (finished || stopped || reviewSuspended || presentationPaused || !isActive() || deferredUtterance) return true;
 
       if (pending) {
         const cs = visibleOptions();
@@ -551,7 +574,7 @@ export function createConversation({
 
     keyup(e) {
       refreshReview();
-      if (finished || stopped || reviewSuspended || !isActive()) return false;
+      if (finished || stopped || reviewSuspended || presentationPaused || !isActive()) return false;
       if (!(e.key === ' ' || e.key === 'Enter' || e.key === 'z')) return false;
       if (!accelerateHeld) return false;
       const heldMs = performance.now() - accelerateStartedAt;
@@ -573,7 +596,7 @@ export function createConversation({
       refreshReview();
       const l = line();
       return {
-        mode, nodeId, finished,
+        mode, nodeId, finished, presentationPaused,
         speaker: mode === 'nodes' ? (node()?.speaker || '') : '',
         history: history.map(entry => {
           const field = entry.reviewTarget?.fields[0];

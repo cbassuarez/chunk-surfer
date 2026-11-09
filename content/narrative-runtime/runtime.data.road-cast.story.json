@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.road-cast",
+  "title": "Runtime · data/road-cast.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "ROAD_CAST_BOARD_COPY.boards.first",
+  "entries": [
+    "ROAD_CAST_BOARD_COPY.boards.first",
+    "ROAD_CAST_BOARD_COPY.boards.coffee",
+    "ROAD_CAST_BOARD_COPY.boards.hot",
+    "ROAD_CAST_BOARD_COPY.boards.night",
+    "ROAD_CAST_BOARD_COPY.boards.need",
+    "ROAD_CAST_BOARD_COPY.boards.thanks",
+    "ROAD_CAST_BOARD_COPY.lit.pole",
+    "ROAD_CAST_BOARD_COPY.lit.roof",
+    "ROAD_CAST_BOARD_COPY.lit.menu"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/road-cast.js",
+  "notes": "Generated from src/data/road-cast.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "ROAD_CAST_BOARD_COPY.boards.first": {
+      "id": "ROAD_CAST_BOARD_COPY.boards.first",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.first.l0",
+          "who": "thought",
+          "text": "THE HAPPY RETURN",
+          "source": "src/data/road-cast.js:31"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.first.l1",
+          "who": "thought",
+          "text": "HOT FOOD  TEAS",
+          "source": "src/data/road-cast.js:31"
+        }
+      ],
+      "source": "src/data/road-cast.js:31"
+    },
+    "ROAD_CAST_BOARD_COPY.boards.coffee": {
+      "id": "ROAD_CAST_BOARD_COPY.boards.coffee",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.coffee.l0",
+          "who": "thought",
+          "text": "THERE'S COFFEE",
+          "source": "src/data/road-cast.js:32"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.coffee.l1",
+          "who": "thought",
+          "text": "IF YOU WANT IT",
+          "source": "src/data/road-cast.js:32"
+        }
+      ],
+      "source": "src/data/road-cast.js:32"
+    },
+    "ROAD_CAST_BOARD_COPY.boards.hot": {
+      "id": "ROAD_CAST_BOARD_COPY.boards.hot",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.hot.l0",
+          "who": "thought",
+          "text": "IT'S NOT GOOD",
+          "source": "src/data/road-cast.js:33"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.hot.l1",
+          "who": "thought",
+          "text": "BUT IT'S HOT",
+          "source": "src/data/road-cast.js:33"
+        }
+      ],
+      "source": "src/data/road-cast.js:33"
+    },
+    "ROAD_CAST_BOARD_COPY.boards.night": {
+      "id": "ROAD_CAST_BOARD_COPY.boards.night",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.night.l0",
+          "who": "thought",
+          "text": "IT'S A LONG NIGHT",
+          "source": "src/data/road-cast.js:34"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.night.l1",
+          "who": "thought",
+          "text": "YOU HAVE AHEAD",
+          "source": "src/data/road-cast.js:34"
+        }
+      ],
+      "source": "src/data/road-cast.js:34"
+    },
+    "ROAD_CAST_BOARD_COPY.boards.need": {
+      "id": "ROAD_CAST_BOARD_COPY.boards.need",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.need.l0",
+          "who": "thought",
+          "text": "YOU LOOK LIKE",
+          "source": "src/data/road-cast.js:35"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.need.l1",
+          "who": "thought",
+          "text": "YOU NEED IT",
+          "source": "src/data/road-cast.js:35"
+        }
+      ],
+      "source": "src/data/road-cast.js:35"
+    },
+    "ROAD_CAST_BOARD_COPY.boards.thanks": {
+      "id": "ROAD_CAST_BOARD_COPY.boards.thanks",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.thanks.l0",
+          "who": "thought",
+          "text": "THANK YOU",
+          "source": "src/data/road-cast.js:36"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.boards.thanks.l1",
+          "who": "thought",
+          "text": "MANY HAPPY RETURNS",
+          "source": "src/data/road-cast.js:36"
+        }
+      ],
+      "source": "src/data/road-cast.js:36"
+    },
+    "ROAD_CAST_BOARD_COPY.lit.pole": {
+      "id": "ROAD_CAST_BOARD_COPY.lit.pole",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.pole.l0",
+          "who": "thought",
+          "text": "THE HAPPY",
+          "source": "src/data/road-cast.js:40"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.pole.l1",
+          "who": "thought",
+          "text": "RETURN",
+          "source": "src/data/road-cast.js:40"
+        }
+      ],
+      "source": "src/data/road-cast.js:40"
+    },
+    "ROAD_CAST_BOARD_COPY.lit.roof": {
+      "id": "ROAD_CAST_BOARD_COPY.lit.roof",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.roof.l0",
+          "who": "thought",
+          "text": "THE HAPPY RETURN",
+          "source": "src/data/road-cast.js:41"
+        }
+      ],
+      "source": "src/data/road-cast.js:41"
+    },
+    "ROAD_CAST_BOARD_COPY.lit.menu": {
+      "id": "ROAD_CAST_BOARD_COPY.lit.menu",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.menu.l0",
+          "who": "thought",
+          "text": "TEA",
+          "source": "src/data/road-cast.js:42"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.menu.l1",
+          "who": "thought",
+          "text": "COFFEE",
+          "source": "src/data/road-cast.js:42"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.menu.l2",
+          "who": "thought",
+          "text": "BACON ROLL",
+          "source": "src/data/road-cast.js:42"
+        },
+        {
+          "id": "ROAD_CAST_BOARD_COPY.lit.menu.l3",
+          "who": "thought",
+          "text": "CHIPS",
+          "source": "src/data/road-cast.js:42"
+        }
+      ],
+      "source": "src/data/road-cast.js:42"
+    }
+  }
+}

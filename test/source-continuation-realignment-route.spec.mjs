@@ -12,6 +12,8 @@ import {freshMeta, freshRunRecord} from '../src/progression/schema.js';
 import {sourceContinuationGeometry, sourceContinuationMeshPayload, sourceContinuationRenderFrame, installSourceContinuationMeshes} from '../src/render/source-continuation-renderer.js';
 import {JOURNEY_ROUTES,JOURNEY_PORTALS,JOURNEY_SIGHTLINES} from '../src/data/source-continuation-journey.js';
 import {SOURCE_CONNECTOR_CORRIDOR as CORRIDOR} from '../src/data/source-connector-corridor.js';
+import {ARCHIPELAGO_MAIN_ROUTE,SOURCE_III_ARCHIPELAGO} from '../src/data/source-continuation-archipelago.js';
+import {SOURCE_EXIT_PASSAGE} from '../src/data/source-exit-passage.js';
 import {SOURCE_SURROUNDINGS_EMITTER_ALIASES} from '../src/render/source-surroundings-geometry.js';
 
 // Independent route acceptance: the only initial fixture is the chapter's
@@ -152,7 +154,7 @@ function walkTo(state, x, z, {events = [], maxFrames = 2400, context = 'walk'} =
     assert.equal(state.fall, null, `${context}: ordinary walking cannot secretly drop the body`);
     assert.equal(state.recovery, null, `${context}: this planned ordinary walk was interrupted before reaching ${x},${z}`);
     // The planned walks jog so the route arrives before the Hush clock does.
-    const speed=Math.min(1,distance/(2.6*.05));
+    const speed=Math.min(1,distance/(controller.sourceContinuationGait(state,{run:true}).speed*.05));
     state = tick(state, {forward:speed,run:true,look:{yaw:Math.atan2(dx,-dz)}}, events);
     assert.ok([state.x, state.z, state.feet].every(Number.isFinite), `${context}: finite physical pose`);
   }
@@ -169,7 +171,7 @@ function waitForFall(state, events) {
 
 test('arbitrary Space jumps and unmarked step-offs at every II height and Catch shelf land on actual submitted tops',()=>{
   const stagePoint=level=>{const s=layout.continuationStage(level),a=(s.startAngle+s.endAngle)/2;return{...layout.continuationRadialPoint((s.innerRadius+s.outerRadius)/2,a),feet:s.y,phase:'catch',level};},
-    cases=[{x:8,z:-3,feet:0},{x:3,z:-20,feet:4.2},{x:0,z:-19,feet:8.4},...Array.from({length:4},(_,level)=>stagePoint(level))];
+    cases=[{x:8,z:-3,feet:0},{x:3,z:-20,feet:4.2},{x:0,z:-19,feet:8.4},...Array.from({length:C.catch.levels},(_,level)=>stagePoint(level))];
   const bounded=(p,id)=>{const fresh=controller.freshSourceContinuation({runId:id});return controller.normalizeSourceContinuation({...fresh,...p,status:'active',lastSafe:{...p,yaw:0,pitch:0,phase:p.phase||'wrong-return'},hush:{...fresh.hush,active:false}});};
   for(const[p,index]of cases.map((p,index)=>[p,index])){
     let state=bounded(p,`submitted-free-jump-${index}`),highest=state,events=[];assertSubmittedSupport(state,`free jump ${index} launch`);
@@ -292,13 +294,13 @@ test('each shelf refuge has a supported approach, protected waiting pocket and u
   }
 });
 
-test('a complete ordinary controller route explores II, crosses its real door and walks every distinct Catch to one onward delivery', t => {
+test('a complete ordinary controller route explores II, crosses its real door and visits every principal island before one onward delivery', t => {
   const runtime = createSourceSpaceRuntime({initialState: {...initialField(), edgeDoorOpen: true}});
   const before = protectedFields(runtime.state());
   const entry = runtime.sourceContinuationEntry('forward', {runId: 'realignment-whole-route'});
   assert.ok(entry?.checkpoint, 'the existing Source authority supplies the chapter entry');
   let state = controller.resumeSourceContinuation(entry.checkpoint);
-  const events = [], observedStageSupports = new Set();
+  const events = [], observedIslands = new Set();
   const routes = layout.SOURCE_CONTINUATION_ROUTES;
   assert.ok(routes?.main && routes.groundBranch, 'the authored network exposes a main route and an optional rejoining ground route');
 
@@ -327,38 +329,27 @@ test('a complete ordinary controller route explores II, crosses its real door an
   assert.equal(state.phase,'catch');assert.equal(events.filter(event=>event.type==='phase'&&event.phase==='catch').length,1);
   assert.equal(state.counterweight.active,false,'receiving architecture remains inspectable before voluntary descent');assertSubmittedSupport(state,'first Catch receiving support');
 
-  // Two choices at every required lip lead to genuine lower supports. This
-  // continuous route chooses one, while the companion test below exercises both.
-  for (let level = 0; level < C.catch.levels; level++) {
-    assert.equal(state.level, level);
-    observedStageSupports.add(layout.continuationStage(level).id);
-    if (level === C.catch.levels - 1) break;
-    const lip = layout.CONTINUATION_DROP_LIPS[level];
-    state = catchArc(state, lip.approachAngle, {events, context: `stage ${level} release approach`});
-    state = walkTo(state, lip.x, lip.z, {events, context: `stage ${level} release edge`});
-    assert.equal(controller.continuationFocus(state)?.id, lip.id);
-    assertSubmittedSupport(state, `stage ${level} release support`);
-    state = tick(state, {interact: true}, events);
-    assert.ok(state.fall, 'a deliberate physical release begins gravity');
-    state = waitForFall(state, events);
-    assert.equal(state.level, level + 1);
-    close(state.feet, layout.continuationCatchFloor(level + 1), 1e-6, 'the actual receiving stage height');
-    assertSubmittedSupport(state, `stage ${level + 1} actual landing`);
+  // The main expedition now explores islands and walks their actual flights.
+  // Retained spindle drops remain independently exercised below; they cannot
+  // substitute for the spatial arrivals required by the onward threshold.
+  for(const waypoint of ARCHIPELAGO_MAIN_ROUTE){
+    state=walkTo(state,waypoint.x,waypoint.z,{events,context:'actual island expedition'});
+    close(state.feet,waypoint.feet,1e-6,'physical island route elevation');
+    assert.equal(state.level,waypoint.level,'route level follows the real supporting slab');
+    if(waypoint.islandId){observedIslands.add(waypoint.islandId);assertSubmittedSupport(state,waypoint.islandId+' actual landing');}
   }
-  assert.equal(observedStageSupports.size, C.catch.levels, 'every receiving stage has a distinct construction identity');
-  assert.equal(events.filter(event => event.type === 'counterweight-warning' && event.reason === 'first-voluntary-descent').length, 1);
-
-  state = catchArc(state, 0, {events, context: 'final threshold approach'});
-  state = walkTo(state, C.catch.finalApproach.x, C.catch.finalApproach.z, {events, context: 'final supported balcony'});
+  assert.ok(SOURCE_III_ARCHIPELAGO.mainIslandIds.every(id=>observedIslands.has(id)&&state.expedition.visited.includes(id)),'every required island is physically visited on its own actual support');
   state = tick(state, {look: {yaw: C.catch.finalApproach.yaw, pitch: 0}}, events);
   assert.equal(controller.continuationFocus(state)?.id, 'catch-final');
   for(let frame=0;frame<25;frame++)state=tick(state,{},events);
   assert.equal(state.doorOpen['catch-final'],true,'the final approach opens its physical leaves without E');
   assert.equal(state.completed, false, 'an opening is not onward travel');
-  for (let frame = 0; frame < 150 && !state.completed; frame++) state = tick(state, {forward: 1}, events);
-  assert.equal(state.completed, true, 'the full body crosses the real final threshold');
+  const exitTarget=SOURCE_EXIT_PASSAGE.completionX+1;
+  for (let frame = 0; frame < 150 && !state.completed; frame++) state = tick(state, {forward:Math.min(1,(exitTarget-state.x)/(controller.sourceContinuationGait(state,{}).speed*.05))}, events);
+  assert.equal(state.completed, true, 'the full body crosses the supported service passage completion plane');
   assert.equal(events.filter(event => event.type === 'complete').length, 1);
-  assert.ok(state.x > C.catch.finalDoor.x, 'the completed body is on the onward side');
+  assert.ok(state.x > SOURCE_EXIT_PASSAGE.completionX+C.bodyRadius, 'the complete body traversed the passage beyond its final physical plane');
+  assertSubmittedSupport(state,'actual final service-road passage');
   assert.equal(controller.stepSourceContinuation(state, {dt: .2, interact: true, forward: 1}).events.length, 0);
   assert.equal(events.filter(event=>event.type==='capture').length,0,'the demonstrated full puzzle/chase route is completable with Hush enabled');
 
@@ -376,7 +367,7 @@ test('a complete ordinary controller route explores II, crosses its real door an
   t.diagnostic(JSON.stringify({
     proof: 'Authored controller traversal, not uninformed-player discovery or human completion time',
     simulatedSeconds: Math.round(state.elapsed * 1000) / 1000,
-    distinctReceivingStages: [...observedStageSupports],
+    distinctIslands: [...observedIslands],
     ordinaryCaptures: events.filter(event => event.type === 'capture').length,
     physicalDrops: events.filter(event => event.type === 'drop').length,
     physicalLandings: events.filter(event => event.type === 'land').length,
@@ -386,10 +377,10 @@ test('a complete ordinary controller route explores II, crosses its real door an
   }));
 });
 
-test('both releases of every partial receiving stage land on real next-stage support without air correction', () => {
+test('every authored release on each retained receiving stage lands on real next-stage support without air correction', () => {
   for (let level = 0; level < C.catch.levels - 1; level++) {
     const lips = layout.continuationDropLips({level});
-    assert.equal(lips.length, 2, 'the alternatives are physically available, rather than a hidden binary answer');
+    assert.equal(lips.length,1+layout.CONTINUATION_ALTERNATE_LIPS.filter(lip=>lip.level===level).length,'every authored alternative is physically available');
     for (const lip of lips) {
       let state = controller.resumeSourceContinuation(controller.freshSourceContinuation({runId: `release-${lip.id}`}));
       // Explicit bounded release fixture: the full unwarped route is checked
@@ -582,7 +573,7 @@ test('the original lower doorway has a robust 205-pose view through actual split
   assert.ok(blockers([6,sightline.eye.y,3]).some(blocker => blocker.descriptorId === 'wrong-false-porch'), 'the negative control still hits the real porch floor; this is not a floorless or x-ray view');
 });
 
-test('old six-ring progress migrates monotonically onto the four distinct stages and remains idempotent', () => {
+test('old six-ring progress migrates monotonically onto the expanded stages and remains idempotent', () => {
   let previousLevel = -1;
   for (let oldLevel = 0; oldLevel <= 5; oldLevel++) {
     const runId = `legacy-six-ring-${oldLevel}`;
@@ -594,7 +585,7 @@ test('old six-ring progress migrates monotonically onto the four distinct stages
     };
     const state = controller.normalizeSourceContinuation(old);
     assert.equal(state.layoutVersion, C.layoutVersion);
-    assert.equal(state.level, Math.round(oldLevel * 3 / 5));
+    assert.equal(state.level, Math.round(oldLevel * (C.catch.levels-1) / 5));
     assert.ok(state.level >= previousLevel, 'more earned old progress never maps backward');
     previousLevel = state.level;
     assert.ok(state.knowledge.includes('earned-case-reference'));
@@ -612,13 +603,15 @@ test('old six-ring progress migrates monotonically onto the four distinct stages
   });
   assert.equal(completed.completed, true);
   assert.equal(completed.status, 'completed');
-  assert.equal(completed.level, C.catch.levels - 1, 'earned completion remains on the onward receiving stage');
+  assert.equal(completed.level,0,'migrated completion retains the actual high exit-island level');
   close(completed.feet, C.catch.finalApproach.feet, 1e-6, 'earned completion retains the final threshold height');
+  assert.ok(layout.continuationSupportAt(completed.x,completed.z,completed),'migrated completion stands on the actual exit island');
   assert.deepEqual(completed.exitReceipt, receipt);
   assert.deepEqual(controller.normalizeSourceContinuation(completed), completed);
   const reverse = controller.resumeSourceContinuation(completed, {reverse: true});
   assert.equal(reverse.level, C.catch.levels - 1, 'reverse entry starts at the actual final threshold level');
   close(reverse.feet, C.catch.finalApproach.feet, 1e-6, 'reverse entry physical height');
+  assert.ok(layout.continuationSupportAt(reverse.x,reverse.z,reverse),'reverse entry stands on the same actual threshold support');
 });
 
 test('II closing structure follows its witnessed return, grants its full interval and leaves the actual refuge safe', () => {

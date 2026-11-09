@@ -7,7 +7,7 @@ import * as FP from '../src/world/floorplan.js';
 
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
-function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,rendererOK=true,audioError=null,onRestore=null,onDoorsClose=null,onReturnTick=null}={}){
+function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,rendererOK=true,audioError=null,onRestore=null,onDoorsClose=null,onReturnTick=null,returnToBlack=false}={}){
  const calls=[],counts={fetch:0,rendererInitialize:0,rendererDispose:0,render:0,readout:0,audioCreate:0,audioInitialize:0,audioDispose:0,controllerStart:0,controllerDispose:0,restore:0,close:0,done:0,exit:0,pause:0,joint:0},errors=[],completed=[],covers=[];
  const state={held:false,time:0,started:false,controllerPaused:false,audioPaused:null,disposed:false,rejectRender:false},context={id:'existing-context'},destination={id:'existing-monitor'},metrics={id:'owned-metrics'};
  const mark=(event,detail)=>calls.push({event,time:state.time,detail});
@@ -31,7 +31,7 @@ function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,r
   frame(value){assert.equal(value,metrics);const returned=state.time>=C.impactStart;return{phase:phase(),timeSec:state.time,paused:state.controllerPaused,worldOwner:returned?'return':'drive',finished:state.time>=C.duration,coverAlpha:state.time<C.soundLeadEnd||returned&&state.time<C.returnStart?1:returned?Math.max(0,1-(state.time-C.returnStart)/(C.duration-C.returnStart)):0,renderFrame:returned?null:{driveState:{speed:7,time:state.time},scene:{cut:{sources:[]},predicaments:{sources:[]}},weather:{},evolution:{}}};},
   dispose(){counts.controllerDispose++;state.disposed=true;mark('controller-dispose');},
  };
- const scene=makeGetInDriveTeaserScene({context,destination,
+ const scene=makeGetInDriveTeaserScene({context,destination,returnToBlack,
   fetcher:async url=>{counts.fetch++;mark('fetch',url);if(fetchGate)await fetchGate.promise;return{ok:fetchOK,json:async()=>metrics};},
   createRenderer:()=>renderer,createController:()=>controller,
   createAcoustics:options=>{assert.equal(options.context,context);assert.equal(options.destination,destination);assert.equal(options.gain,.5);assert.equal(options.tapeTransport,undefined);counts.audioCreate++;mark('audio-create');return audio;},
@@ -84,6 +84,20 @@ test('impact restores under opaque cover and emits one door-close edge before th
  const rendered=h.counts.render,restoreIndex=h.calls.findIndex(c=>c.event==='restore');h.advance(C.duration);assert.equal(h.counts.render,rendered,'the retired drive renderer never overwrites the returned room');
  assert.equal(h.counts.restore,1);assert.equal(h.counts.close,1);assert.equal(h.counts.joint,1);assert.equal(h.counts.done,1);assert.ok(!h.calls.slice(restoreIndex+1).some(c=>c.event==='audio-pause'&&c.detail===false),'van audio remains paused through the return');
  h.scene.exit();assert.equal(h.counts.rendererDispose,1);assert.equal(h.counts.audioDispose,1);assert.equal(h.counts.controllerDispose,1);
+});
+
+test('post-crash title path never reveals the returned room between the wreck and its black aftermath',async()=>{
+ const h=fixture({returnToBlack:true});await h.prepare();h.advance(C.impactStart+.15);h.scene.render();
+ assert.equal(h.counts.restore,0);assert.equal(h.scene.worldPresentation,'hidden');
+ assert.ok(h.covers.at(-1).alpha<.02,'the final actually rendered wreck image remains available at the start of the slow fade');
+ const t=h.state.time,rendered=h.counts.render;h.advance(1.1);h.scene.render();
+ assert.ok(h.covers.at(-1).alpha>.35&&h.covers.at(-1).alpha<.6);assert.equal(h.state.time,t,'the physical memory is held, not moved through a wall or slowed');
+ assert.ok(h.counts.render>rendered,'the same last real pose is re-presented by the existing renderer during the slow fade');
+ h.state.held=true;h.advance(2);h.scene.render();const fade=h.scene.view().crashDissolve.elapsed;
+ h.advance(1);assert.equal(h.scene.view().crashDissolve.elapsed,fade,'native focus/pause freezes the closing fade');
+ h.state.held=false;h.advance(1.4);assert.equal(h.counts.restore,1);assert.equal(h.counts.close,1);
+ h.advance(C.duration);h.scene.render();
+ assert.equal(h.covers.at(-1).alpha,1);assert.equal(h.scene.worldPresentation,'hidden');assert.equal(h.counts.done,1);h.scene.exit();
 });
 
 test('cancellation during fetch cannot acquire a late renderer, start a clock or complete the handoff twice',async()=>{

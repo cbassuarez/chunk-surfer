@@ -56,7 +56,7 @@ test('the cab presents eight connected belongings while preparation equipment re
   assert.deepEqual(OPENING_CAB_VISIBLE_OBJECTS.map(object=>object.id),ids);
   for(const yaw of[0,Math.PI/2,-1.1,Math.PI]){
     const anchor={x:16,y:.2,z:8,yaw},eye=openingVehiclePoint(anchor,OPENING_VEHICLE.eye),props=openingCabInstances(anchor),targets=openingCabTargets(anchor);
-    assert.deepEqual(targets.map(object=>object.id),ids);assert.equal(props.length,8);
+    assert.deepEqual(targets.map(object=>object.id),ids);assert.equal(props.length,9,'the eight belongings include a separate music-box winding key');
     assert.ok(props.every(p=>!['case','recorder','headphones','microphone','flashlight','amp'].includes(p.objectId)));
     for(const target of targets){
       const frame=aim({phase:'parked',anchor,eye},target.position),focus=openingCabFocus(frame);
@@ -115,6 +115,9 @@ test('new cab objects are actual visible surfaces in the resident geometry with 
     assert.ok(nearest);assert.ok(target.meshIds.includes(nearest.mesh),target.id+' is occluded by '+nearest.mesh);
   }
   const shown=OPENING_CAB_GEOMETRY.meshes.filter(mesh=>names.has(mesh.mesh));
-  assert.ok(shown.reduce((sum,mesh)=>sum+mesh.triangles,0)<1500);
+  assert.ok(shown.filter(mesh=>mesh.objectId!=='music-box').reduce((sum,mesh)=>sum+mesh.triangles,0)<1500,
+    'the existing papers and cab dressing retain their bounded geometry');
+  const stats=JSON.parse(readFileSync(new URL('../public/assets/opening-cab-objects.stats.json',import.meta.url),'utf8'));
+  assert.ok(shown.reduce((sum,mesh)=>sum+mesh.triangles,0)<stats.limits.maxDisplayedTriangles,'the two-part keepsake stays within the cab display budget');
   for(const mesh of shown.filter(m=>/note$|programme$|clipboard$/.test(m.mesh)))assert.ok(mesh.primitives<=3,mesh.mesh+' must merge strokes into bounded material submissions');
 });

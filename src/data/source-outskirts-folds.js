@@ -1,11 +1,12 @@
-// The remembered arrival has several incompatible gravities. Each return is a
-// rigid copy of one real street strip: doors, glass, lamps and van stay attached
-// to their own road. Only the player's ground datum remains trustworthy.
+// A few lateral glimpses give the remembered arrival incompatible gravities.
+// Each is a rigid street strip with its fixtures still attached to its road.
+// The walked street keeps an open sky: another whole street above every return
+// buried the telephone encounter beneath repetitive scenery.
 import { PROP_BOUNDS } from './generated/prop-geometry.js';
 import { outskirtsTownPlacement, SOURCE_OUTSKIRTS_TOWN } from './source-outskirts-town.js';
 
 export const OUTSKIRTS_FOLDING = Object.freeze({
-  firstPass: 3, lastPass: 19, sideAcross: 21, ceilingHeight: 12.4,
+  firstPass: 3, lastPass: 19, sideAcross: 21,
   // No upper street is submitted during the two ordinary learning passes.
   revealFrom: 6 + 2 * SOURCE_OUTSKIRTS_TOWN.periodMetres + 10,
   revealTo: 6 + 3 * SOURCE_OUTSKIRTS_TOWN.periodMetres - 4,
@@ -65,7 +66,6 @@ export function outskirtsFoldLayout(k, originals) {
     frames.push({ id: left ? 'west-return' : 'east-return', roll: left ? -Math.PI / 2 : Math.PI / 2,
       across: (left ? -1 : 1) * OUTSKIRTS_FOLDING.sideAcross });
   }
-  if (k >= 5) frames.push({ id: 'overhead', roll: Math.PI, across: 0, y: OUTSKIRTS_FOLDING.ceilingHeight });
   const result = frames.flatMap(frame => {
     const cr = Math.cos(frame.roll), sr = Math.sin(frame.roll);
     let set = strip.map(p => {
@@ -84,8 +84,7 @@ export function outskirtsFoldLayout(k, originals) {
         ...(p.glow ? { glow: [p.glow[0], p.glow[1], p.glow[2], p.glow[3] * .18] } : {}) };
       return { ...piece, bounds: bounds(piece) };
     });
-    // Side streets meet the ground beyond the traversable verge. The inverted
-    // street has a 3.2m minimum headroom even below the actual stable's roof.
+    // Side streets meet the ground beyond the traversable verge.
     const lift = frame.y ?? (.12 - Math.min(...set.map(p => p.bounds.y0)));
     set = set.map(p => Object.freeze({ ...p, y: p.y + lift,
       bounds: Object.freeze({ ...p.bounds, y0: p.bounds.y0 + lift, y1: p.bounds.y1 + lift }) }));

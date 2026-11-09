@@ -14,6 +14,7 @@ import {createSourceSpaceRuntime} from '../src/game/source-space-runtime.js';
 import {PROP_INSTANCE_FLOATS} from '../src/render/prop-instance-layout.js';
 import {parseGlb} from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 import {readExteriorAccessor} from '../tools/chunk_surfer/build-exterior-collision.mjs';
+import {portalBatchKey} from '../src/render/source-mesh-portals.js';
 
 const all=Array.from({length:20},(_,k)=>outskirtsFoldLayout(k,OUTSKIRT_STRETCH));
 const transform=(m,p)=>[0,1,2].map(row=>m[row]*p[0]+m[4+row]*p[1]+m[8+row]*p[2]+m[12+row]);
@@ -70,12 +71,14 @@ function route(pieces){
   return false;
 }
 
-test('the first two returns stay ordinary; the third reveals a recognizable rigid arrival on other gravities by returns four and five',()=>{
+test('ordinary learning returns lead to sparse lateral impossibility with no repeated overhead street',()=>{
   for(const k of[-1,0,1,2,20,28,Infinity,NaN,3.5])assert.deepEqual(outskirtsFoldLayout(k,OUTSKIRT_STRETCH),[]);
   assert.equal(F.firstPass,3);assert.equal(F.lastPass,19);
   assert.ok(all[3].every(p=>p.foldFrame==='west-return'&&p.foldRoll===-Math.PI/2));
   assert.ok(all[4].every(p=>p.foldFrame==='east-return'&&p.foldRoll===Math.PI/2));
-  assert.ok(all[5].every(p=>p.foldFrame==='overhead'&&p.foldRoll===Math.PI));
+  assert.deepEqual(all[5],[],'the former first overhead street no longer covers the road');
+  assert.ok(all.flat().every(p=>p.foldFrame!=='overhead'&&Math.abs(p.foldRoll)===Math.PI/2));
+  assert.deepEqual(all[13],[],'the compulsory phone return has no copied street');
   for(let along=0;along<=START+2*PERIOD;along+=.5)assert.equal(outskirtsFoldVisibility(along),0,'no prefetched upper street is visible in learning returns1–2');
   assert.equal(outskirtsFoldVisibility(F.revealFrom),0);assert.equal(outskirtsFoldVisibility(F.revealTo),1);
   const ramp=Array.from({length:21},(_,i)=>outskirtsFoldVisibility(F.revealFrom+(F.revealTo-F.revealFrom)*i/20));
@@ -90,7 +93,7 @@ test('all copied objects keep one full rigid frame, original model and scale; so
   const before=structuredClone(OUTSKIRT_STRETCH),originals=new Map([...OUTSKIRT_STRETCH,{...outskirtsTownPlacement('yard-former-stables'),id:'stables'}].map(p=>[p.id,p]));
   for(const pieces of all.slice(3)){
     for(const frame of new Set(pieces.map(p=>p.foldFrame))){let translation=null;
-      for(const p of pieces.filter(p=>p.foldFrame===frame&&originals.has(p.foldSource))){const source=originals.get(p.foldSource);assert.equal(p.mesh,source.mesh);assert.equal(p.yaw,source.yaw);for(const key of['scale','scaleX','scaleY','scaleZ'])assert.equal(p[key],source[key]);
+      for(const p of pieces.filter(p=>p.foldFrame===frame&&originals.has(p.foldSource))){const source=originals.get(p.foldSource);assert.equal(p.mesh,source.fallbackMesh||source.mesh);assert.equal(p.yaw,source.yaw);for(const key of['scale','scaleX','scaleY','scaleZ'])assert.equal(p[key],source[key]);
         const c=Math.cos(p.foldRoll),s=Math.sin(p.foldRoll),delta=[p.across-(source.across*c-source.y*s),p.y-(source.across*s+source.y*c),p.along-source.along];if(!translation)translation=delta;else delta.forEach((v,i)=>near(v,translation[i],'a shared road-frame translation',1e-9));
       }
     }
@@ -114,7 +117,7 @@ test('actual installed vertices and triangle interiors stay clear of the complet
   t.diagnostic(JSON.stringify({packedVertices:testedVertices,packedTriangles:testedTriangles,foldedInstances:all.flat().length,passIndices:[F.firstPass,F.lastPass],bodyCentreAcross:[-11.25,11.25],bodyRadius:OUTSKIRTS_BODY_RADIUS,actualBodyAcross:[-11.25-OUTSKIRTS_BODY_RADIUS,11.25+OUTSKIRTS_BODY_RADIUS],bodyHeight:[.45,1.7]}));
 });
 
-test('the original street furniture remains traversable beneath side and ceiling copies',()=>{
+test('the original street furniture remains traversable beside the lateral copies',()=>{
   for(const k of[0,1,2,3,4,5,6,7,10,13,19])assert.ok(route(outskirtsPassLayout(k)),`the ordinary level street dead-ends at pass ${k}`);
 });
 
@@ -123,12 +126,18 @@ test('production submission suppresses early copies, ramps during return three, 
   const during=runtimeAt((F.revealFrom+F.revealTo)/2),partial=during.runtime.propInstances(during.position.x,during.position.y).filter(i=>Number.isFinite(i.outskirtsFoldVisibility));assert.ok(partial.length);for(const i of partial){near(i.outskirtsFoldVisibility,.5,'shared reveal');assert.equal(i.noShadow,true,'invisible/partial banks cannot cast a premature shadow');}
   let checked=0;
   for(const k of[3,4,5,6,18,19]){const{runtime,position}=runtimeAt(START+k*PERIOD+8),instances=runtime.propInstances(position.x,position.y);const ordinary=instances.find(i=>i.id===`r${k}-road`),rawOrdinary=runtime.outskirtsPiece(ordinary?.id);assert.ok(ordinary&&rawOrdinary,'the trusted floor remains in the production submission');const ground=ordinary.matrix[13]-(rawOrdinary.y||0);
-    for(const instance of instances.filter(i=>i.id.startsWith(`r${k}-fold-`))){const pose=runtime.outskirtsPiece(instance.id),p=outskirtsPassLayout(k).find(p=>`r${k}-${p.id}`===instance.id),m=instance.matrix;assert.ok(p?.folded&&pose);assert.equal(instance.zone,ZONE.sourceSpace);assert.equal(instance.sourceStructure,'outskirts');assert.equal(instance.outskirtsFoldVisibility,1);assert.equal(instance.noShadow,false);assert.equal(instance.apparitionVariant,undefined);assert.equal(instance.materialOverride,undefined);
+    for(const instance of instances.filter(i=>i.id.startsWith(`r${k}-fold-`)&&!i.paintOf)){const pose=runtime.outskirtsPiece(instance.id),p=outskirtsPassLayout(k).find(p=>`r${k}-${p.id}`===instance.id),m=instance.matrix;assert.ok(p?.folded&&pose);assert.equal(instance.zone,ZONE.sourceSpace);assert.equal(instance.sourceStructure,'outskirts');assert.equal(instance.outskirtsFoldVisibility,1);assert.equal(instance.noShadow,false);assert.equal(instance.apparitionVariant,undefined);assert.equal(instance.materialOverride,undefined);
       for(const local of[[0,0,0],[1,0,0],[0,1,0],[0,0,1],[.7,1.3,-.9]]){const q=transform(m,local),expected=outskirtsFoldPoint(p,local);near(q[0],pose.x+expected.across-p.across,'rigid across');near(q[1],ground+expected.y,'rigid height');near(q[2],pose.z-(expected.along-p.along),'rigid world longitudinal axis');}
       checked++;
     }
+    for(const mark of instances.filter(i=>i.id.startsWith(`r${k}-fold-`)&&i.paintOf)){
+      const host=instances.find(i=>i.id===mark.paintOf);assert.ok(host);
+      assert.deepEqual(mark.matrix,host.matrix,'service paint keeps its actual folded host matrix');
+      assert.equal(mark.outskirtsFoldVisibility,host.outskirtsFoldVisibility);assert.equal(mark.noShadow,true);
+    }
   }
-  assert.ok(checked>=6*16,'real runtime matrices for each side and overhead return were exercised');
+  assert.equal(checked,[3,4,5,6,18,19].reduce((sum,k)=>sum+all[k].length,0));
+  assert.ok(checked>=4*16,'real runtime matrices for both lateral orientations were exercised');
 });
 
 test('the fold appearance stays in ordinary opaque materials and final dither with isolated batch extinction',()=>{
@@ -136,7 +145,7 @@ test('the fold appearance stays in ordinary opaque materials and final dither wi
   const source=fs.readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
   const fragment=source.match(/if\(uOutskirtsFold\.x>\.5\)\{[\s\S]*?\n  \}/)?.[0];assert.ok(fragment);assert.match(fragment,/col\*=night\*uOutskirtsFold\.y/);assert.doesNotMatch(fragment,/discard|gl_FragDepth|alpha|texture/,'extinction does not replace actual depth, textures, coverage or materials');assert.ok(source.indexOf(fragment)<source.indexOf('col=col/(1.0+col*.30)'));
   const pass=source.slice(source.indexOf('const SOURCE_DOOR_SCENERY='),source.indexOf('\nfunction uploadInstances('));
-  const skip=source.match(/const REFLECTION_SKIP=new Set\([^;]+;/)?.[0];const context={staticInstances:[{mesh:'yard_van'},{mesh:'yard_van',outskirtsFoldVisibility:.5}],dynamicInstances:[],roofWatcherInstances:[],emergencyShadowInstances:[],diagnosticInstances:[],propDiagnosticsEnabled:false,propDiagnosticOptions:null,propInstanceVisible:()=>true,resolvedMeshName:p=>p.mesh};vm.createContext(context);vm.runInContext(`${skip}\n${pass}\nvar plain=visibleGroups([0,0,0],90);var reflected=visibleGroups([0,0,0],90,{reflection:true});`,context);
+  const skip=source.match(/const REFLECTION_SKIP=new Set\([^;]+;/)?.[0];const context={staticInstances:[{mesh:'yard_van'},{mesh:'yard_van',outskirtsFoldVisibility:.5}],dynamicInstances:[],roofWatcherInstances:[],emergencyShadowInstances:[],stillnessReliefDrawInstances:[],pressureSurfaceInstances:[],diagnosticInstances:[],propDiagnosticsEnabled:false,propDiagnosticOptions:null,propInstanceVisible:()=>true,resolvedMeshName:p=>p.mesh,pack:{catalog:new Map()},portalBatchKey};vm.createContext(context);vm.runInContext(`${skip}\n${pass}\nvar plain=visibleGroups([0,0,0],90);var reflected=visibleGroups([0,0,0],90,{reflection:true});`,context);
   for(const groups of[context.plain,context.reflected]){assert.equal(groups.size,2);assert.equal(groups.get('yard_van').length,1);assert.equal(groups.get('yard_van\0outskirts-fold').length,1,'the same original mesh cannot inherit its folded copy extinction');}
   const assign=source.match(/const fold=list\[0\]\.outskirtsFoldVisibility;gl\.uniform2f\(U\('uOutskirtsFold'\),[^;]+;/)?.[0];assert.ok(assign);const calls=[],apply=new Function('list','gl','U',assign),gl={uniform2f:(...args)=>calls.push(args)};apply([{outskirtsFoldVisibility:.5}],gl,key=>key);apply([{}],gl,key=>key);assert.deepEqual(calls,[['uOutskirtsFold',1,.5],['uOutskirtsFold',0,1]],'every following ordinary group explicitly resets the fold uniform');
   const dither=fs.readFileSync(new URL('../src/render/pixel-mesh/shader.js',import.meta.url),'utf8');assert.doesNotMatch(dither,/uOutskirtsFold|outskirtsFoldVisibility/,'the fold passes through the normal final acquisition');

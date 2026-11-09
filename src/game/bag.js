@@ -57,6 +57,7 @@ export function makeBagScene({
   sectionIds = null,
   sceneId = 'bag',
   readOnly = false,
+  mapReadOnly = false,
   equipment = [],
   job = EMPTY_JOB,
   map = null,
@@ -104,7 +105,7 @@ export function makeBagScene({
   embeddedHost = false,
 } = {}) {
   const mapOnly=Array.isArray(sectionIds)&&sectionIds.length>0&&sectionIds.every(id=>normalizeBagSectionId(id)==='map');
-  const readOnlyMap=mapOnly&&readOnly===true;
+  const readOnlyMap=readOnly===true||mapReadOnly===true;
   const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
   const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
   const jobSource = typeof getJob === 'function' ? getJob : () => job;
@@ -388,7 +389,7 @@ export function makeBagScene({
     const top=currentRoute();
     if(top===route)routes.pop();
     syncActionPresentation();
-    if(readOnlyMap)return;
+    if(readOnly)return;
     const doc=route.document;
     const tree=sheetDialogueFor(doc?.id);
     if(tree&&!sheetInsightComplete(sheetInsightSource(),doc.id))openImportantSheetDialogue(doc);
@@ -398,7 +399,7 @@ export function makeBagScene({
     if(!doc)return false;
     // Progression observes the inspection immediately, exactly as it did when
     // the old document scene was pushed. Presentation now stays inside the bag.
-    if(!readOnlyMap)readDocument(doc);
+    if(!readOnly)readDocument(doc);
     const route={type:'sheet-reader',document:doc,reader:null};
     route.reader=makeEmbeddedDocumentReader(doc,{
       initialPage:sheetPages[doc.id]||0,

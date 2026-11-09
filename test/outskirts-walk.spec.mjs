@@ -3,6 +3,8 @@
 // gate: it proves that the actual street can be walked, remembers its approach,
 // and submits its authored changes throughout the full route.
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {VAN_WRECK_ASSET} from '../src/data/van-wreck.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { SOURCE_PRE_TAPE } from '../src/data/source-level.js';
 import { buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
@@ -16,7 +18,10 @@ import { OUTSKIRTS_BUS_PASSAGE as BUS, busPassageLocal, busPassageRoadPoint } fr
 import { BUS_BODY_CORRIDOR, busBodyCorridorCentre } from '../src/game/bus-body-corridor.js';
 
 const layout = outskirtsArrivalLayout();
+const wreckBytes=readFileSync(new URL('../public/'+VAN_WRECK_ASSET,import.meta.url));
+const wreckMeshes=new Set(JSON.parse(wreckBytes.subarray(20,20+wreckBytes.readUInt32LE(12))).meshes.map(m=>m.name));
 for (const piece of layout) assert.ok(PROP_BOUNDS[piece.mesh]
+  || (piece.mesh==='van_wreck_hull'&&wreckMeshes.has(piece.mesh)&&piece.fallbackMesh==='yard_van'&&PROP_BOUNDS[piece.fallbackMesh])
   || (piece.mesh === BUS.mesh && piece.busPassage && piece.collision?.length)
   || (['outskirts_fold_guard', 'outskirts_overprint_body', 'outskirts_dog_handler', 'outskirts_vacant_dog'].includes(piece.mesh) && piece.collision?.length)
   || (piece.mesh === 'outskirts_slack_lead' && piece.collision === 'none'), `${piece.mesh} has not been generated`);

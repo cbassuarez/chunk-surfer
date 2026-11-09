@@ -3,6 +3,7 @@
 // Coordinates below are PHYSICAL metres. Upper-floor logical/save addresses
 // remain distinct; no floorplan, collision or interaction is added here.
 import {institutionPoster, INSTITUTION_POSTER_CASE_MESH} from './institution-posters.js';
+import {isOutdoorZone} from './floorplan/legend.js';
 
 const frozen=value=>{
   if(value&&typeof value==='object'&&!Object.isFrozen(value)){
@@ -115,13 +116,17 @@ const instance=(site,position,yaw,mesh,scale=1)=>({
   scale,blocks:false,interactive:false,structural:true,posterSiteId:site.id,
 });
 
-export function applyInstitutionPosters(hostInstances,{group='ground'}={}){
+export function applyInstitutionPosters(hostInstances,{group='ground',observerZone=null}={}){
   const hosts=hostInstances.filter(host=>!String(host.id).startsWith('institution-poster:')).map(host=>{
     const fix=INSTITUTION_POSTER_HOST_CORRECTIONS[host.id];
     return fix?{...host,...fix}:host;
   });
   const byId=new Map(hosts.map(host=>[host.id,host]));
   const additions=[];
+  // A render group is a storey, not an occupied room. Ground also contains
+  // every street and yard, so adding its indoor papers from there left their
+  // frames suspended outside after the main envelope filter had already run.
+  if(isOutdoorZone(observerZone))return hosts;
   for(const site of INSTITUTION_POSTER_SITES){
     const art=institutionPoster(site.design);if(!art)continue;
     const mesh=site.finish==='taped'?art.tapedMesh:art.flatMesh;

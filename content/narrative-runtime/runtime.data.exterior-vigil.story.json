@@ -142,7 +142,8 @@
           "source": "src/data/exterior-vigil.js:101"
         }
       ],
-      "source": "src/data/exterior-vigil.js:101"
+      "source": "src/data/exterior-vigil.js:101",
+      "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.start"
     },
     "VIGIL_VOICES.vigil-ruth-mallory.tree.rota": {
       "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.rota",
@@ -180,7 +181,8 @@
           "source": "src/data/exterior-vigil.js:106"
         }
       ],
-      "source": "src/data/exterior-vigil.js:106"
+      "source": "src/data/exterior-vigil.js:106",
+      "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.start"
     },
     "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit",
@@ -357,7 +359,8 @@
           "source": "src/data/exterior-vigil.js:138"
         }
       ],
-      "source": "src/data/exterior-vigil.js:138"
+      "source": "src/data/exterior-vigil.js:138",
+      "goto": "VIGIL_VOICES.vigil-leila-hart.tree.start"
     },
     "VIGIL_VOICES.vigil-leila-hart.tree.tonight": {
       "id": "VIGIL_VOICES.vigil-leila-hart.tree.tonight",
@@ -389,7 +392,8 @@
           "source": "src/data/exterior-vigil.js:143"
         }
       ],
-      "source": "src/data/exterior-vigil.js:143"
+      "source": "src/data/exterior-vigil.js:143",
+      "goto": "VIGIL_VOICES.vigil-leila-hart.tree.start"
     },
     "VIGIL_VOICES.vigil-leila-hart.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-leila-hart.tree.revisit",
@@ -578,7 +582,8 @@
           "source": "src/data/exterior-vigil.js:176"
         }
       ],
-      "source": "src/data/exterior-vigil.js:176"
+      "source": "src/data/exterior-vigil.js:176",
+      "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.start"
     },
     "VIGIL_VOICES.vigil-owen-pryce.tree.shut": {
       "id": "VIGIL_VOICES.vigil-owen-pryce.tree.shut",
@@ -610,7 +615,8 @@
           "source": "src/data/exterior-vigil.js:181"
         }
       ],
-      "source": "src/data/exterior-vigil.js:181"
+      "source": "src/data/exterior-vigil.js:181",
+      "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.start"
     },
     "VIGIL_VOICES.vigil-owen-pryce.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-owen-pryce.tree.revisit",
@@ -799,7 +805,8 @@
           "source": "src/data/exterior-vigil.js:214"
         }
       ],
-      "source": "src/data/exterior-vigil.js:214"
+      "source": "src/data/exterior-vigil.js:214",
+      "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.start"
     },
     "VIGIL_VOICES.vigil-denise-okafor.tree.after": {
       "id": "VIGIL_VOICES.vigil-denise-okafor.tree.after",
@@ -831,7 +838,8 @@
           "source": "src/data/exterior-vigil.js:219"
         }
       ],
-      "source": "src/data/exterior-vigil.js:219"
+      "source": "src/data/exterior-vigil.js:219",
+      "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.start"
     },
     "VIGIL_VOICES.vigil-denise-okafor.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-denise-okafor.tree.revisit",
@@ -1020,7 +1028,8 @@
           "source": "src/data/exterior-vigil.js:252"
         }
       ],
-      "source": "src/data/exterior-vigil.js:252"
+      "source": "src/data/exterior-vigil.js:252",
+      "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.start"
     },
     "VIGIL_VOICES.vigil-malcolm-vey.tree.theory": {
       "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.theory",
@@ -1064,7 +1073,8 @@
           "source": "src/data/exterior-vigil.js:257"
         }
       ],
-      "source": "src/data/exterior-vigil.js:257"
+      "source": "src/data/exterior-vigil.js:257",
+      "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.start"
     },
     "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit",
@@ -1260,7 +1270,8 @@
           "source": "src/data/exterior-vigil.js:299"
         }
       ],
-      "source": "src/data/exterior-vigil.js:299"
+      "source": "src/data/exterior-vigil.js:299",
+      "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.start"
     },
     "VIGIL_VOICES.vigil-kit-renshaw.tree.theory": {
       "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.theory",
@@ -1292,7 +1303,8 @@
           "source": "src/data/exterior-vigil.js:306"
         }
       ],
-      "source": "src/data/exterior-vigil.js:306"
+      "source": "src/data/exterior-vigil.js:306",
+      "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.start"
     },
     "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit",

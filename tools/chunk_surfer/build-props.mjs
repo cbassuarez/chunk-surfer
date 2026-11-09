@@ -31,6 +31,7 @@ import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
 import { buildArchitectureFittings } from './architecture-fittings-geometry.mjs';
 import { buildInstitutionOccupation } from './institution-occupation-geometry.mjs';
 import { buildBuildingAmenities } from './building-amenities-geometry.mjs';
+import { buildHallServiceStair } from './hall-service-stair-geometry.mjs';
 import { buildOrganConsole } from './organ-console-geometry.mjs';
 import { buildB3StudioGeometry } from './b3-studio-geometry.mjs';
 import { buildTowerShutterWinch } from './tower-shutter-linkage-geometry.mjs';
@@ -1978,6 +1979,7 @@ buildAcademicRoofDressing({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCyl
 const exteriorApi={mesh,materials,addBox,addBeam,addCylinder,addQuad,addTriangle};
 buildExteriorForeground(exteriorApi);
 for(const build of [buildArchitectureFittings,buildInstitutionOccupation,buildBuildingAmenities,buildBuildingWindows])build({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
+buildHallServiceStair({mesh,MAT,addBox,addBeam});
 {
   const m=mesh('academic_frieze');
   addBox(m,[0,.42,0],[5.2,.84,.12],MAT.plaster);

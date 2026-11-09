@@ -3,7 +3,7 @@ import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './to
 // Its geometry is fixed in world metres. Only the receiving deck moves. The
 // existing prop pack lends its real grating, rails and lift hardware;
 // this pass never mutates or disposes those shared mesh buffers.
-import { horizonCamera } from './horizon3d.js';
+import { sourceViewCamera } from './source-view-camera.js';
 import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
 import { sourcePrintTexture } from './physical-source-print.js';
 import { PRINTED_SURFACE_GLSL, printedSurfaceDescriptor } from './printed-surface.js';
@@ -399,7 +399,7 @@ function drawImportedPrimitive(primitive){
 export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,height:h,torch={},boundaryOnly=false,recordingExposure=1}={}){
   if(!(boundaryOnly?sourceShoreBoundaryVisible(frame):sourceShoreRenderActive(frame))||!materialProgram)return false;
   resize(w,h);uploadGeometry(frame,boundaryOnly);
-  const camera=horizonCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
+  const camera=sourceViewCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
   const lamp=resolveTorchFrame({eye:[camX,camY,camZ],yaw,pitch,yawOffset:Number(torch.yawOffset)||0}),forward=lamp.forward;
   torch={...torch,...normalizeTorchOptics(torch)};
   gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
@@ -428,7 +428,7 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
 export function sourceShoreCodeDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,height:h,boundaryOnly=false,bindCommon,camera:codeCamera=null}={}){
   if(!(boundaryOnly?sourceShoreBoundaryVisible(frame):sourceShoreRenderActive(frame))||!codeProgram||!bindCommon)return false;
   uploadGeometry(frame,boundaryOnly);
-  const camera=horizonCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
+  const camera=sourceViewCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
   gl.useProgram(codeProgram);bindCommon(codeU,{glyphLinear:1,view:camera.view});
   gl.uniformMatrix4fv(codeU('uView'),false,camera.view);gl.uniformMatrix4fv(codeU('uProjection'),false,camera.projection);
   gl.uniformMatrix4fv(codeU('uModel'),false,IDENTITY);gl.uniform1f(codeU('uImported'),0);gl.uniform1f(codeU('uMoving'),0);

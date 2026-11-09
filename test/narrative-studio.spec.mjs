@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import { createServer } from 'node:net';
 import { transform } from 'esbuild';
 import { applyMutations, evaluateCondition, interpolateStoryText } from '../src/narrative/conditions.js';
@@ -339,9 +341,10 @@ const port = await new Promise((resolve, reject) => {
     probe.close((error) => error ? reject(error) : resolve(address.port));
   });
 });
+const sessionDirectory=await mkdtemp(join(tmpdir(),'chunk-surfer-studio-session-'));
 const studio = spawn(process.execPath, ['tools/narrative-studio/server.mjs'], {
   cwd: process.cwd(),
-  env: { ...process.env, STUDIO_PORT: String(port), STUDIO_NO_OPEN: '1' },
+  env: { ...process.env, STUDIO_PORT: String(port), STUDIO_NO_OPEN: '1',STUDIO_SESSION_FILE:join(sessionDirectory,'session.json') },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 let studioOutput = '';
@@ -349,7 +352,7 @@ studio.stdout.on('data', (chunk) => { studioOutput += chunk; });
 studio.stderr.on('data', (chunk) => { studioOutput += chunk; });
 try {
   await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`studio did not start\n${studioOutput}`)), 10_000);
+    const timeout = setTimeout(() => reject(new Error(`studio did not start\n${studioOutput}`)), 30_000);
     const poll = setInterval(() => {
       if (!studioOutput.includes('Narrative Studio:')) return;
       clearTimeout(timeout); clearInterval(poll); resolve();
@@ -366,12 +369,25 @@ try {
   const moduleResponse = await fetch(`http://127.0.0.1:${port}/src/App.tsx`);
   assert.equal(moduleResponse.status, 200, 'studio transforms the development App module');
   await transform(await moduleResponse.text(), { loader: 'js', sourcefile: 'App.tsx' });
+  const session=JSON.parse(await readFile(join(sessionDirectory,'session.json'),'utf8'));
+  const snapshotResponse=await fetch(`http://127.0.0.1:${port}/api/project`,{headers:{'x-studio-token':session.token}});
+  assert.equal(snapshotResponse.status,200);
+  const snapshot=await snapshotResponse.json();
+  const fromCode=snapshot.documents.filter(item=>item.readOnly);
+  const social=fromCode.find(item=>item.module==='src/data/academic-bouncer-society.js');
+  assert.ok(social,'the real studio API includes recent code-built academic conversations');
+  assert.ok(Object.values(social.document.nodes).some(node=>node.lines.some(line=>line.text==='Agathe wanted a time for the opening.')));
+  assert.ok(fromCode.some(item=>item.module==='src/data/b3-investigation-dialogue.js'),'current investigation dialogue is included without editing the project manifest');
+  const writeResponse=await fetch(`http://127.0.0.1:${port}/api/document`,{method:'PUT',headers:{'content-type':'application/json','x-studio-token':session.token},body:JSON.stringify({path:social.path,data:social.document,revision:social.revision})});
+  assert.notEqual(writeResponse.status,200,'derived source dialogue remains read-only');
+  assert.match((await writeResponse.json()).error,/outside the authoring roots/);
 } finally {
   if (studio.exitCode === null && studio.signalCode === null) {
     const exited = new Promise((resolve) => studio.once('exit', resolve));
     studio.kill('SIGTERM');
     await exited;
   }
+  await rm(sessionDirectory,{recursive:true,force:true});
 }
 
 console.log('narrative studio contracts tests ok');

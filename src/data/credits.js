@@ -14,6 +14,7 @@ import {STILLNESS_ANATOMY} from './generated/stillness-anatomy.js';
 import {sourceRestCouperinCreditLines} from './source-rest-couperin-source.js';
 import {openingCabRadioCreditLines} from './opening-cab-radio-source.js';
 import {b3StudioPropCreditLines} from './b3-studio-props.js';
+import {b3SpeakerMusicCreditLines} from './b3-speaker-source.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -89,6 +90,10 @@ export const CREDITS = Object.freeze([
       STILLNESS_ANATOMY.source.licenseUrl,
       STILLNESS_ANATOMY.attribution,
     ]),
+  }),
+  Object.freeze({
+    heading: 'Studio B3 — Speaker Recording',
+    lines: Object.freeze(b3SpeakerMusicCreditLines()),
   }),
   Object.freeze({
     heading: 'Studio B3 — Equipment Models',

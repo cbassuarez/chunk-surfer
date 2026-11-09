@@ -6,6 +6,9 @@
 import { assetUrl } from '../platform/paths.js';
 
 const MAX_CLIPS = 4;
+// One common output trim covers heel, scrape, room return and synthetic weight.
+// Gameplay hearing and the monitor needle keep their existing authority.
+export const HUSH_FOOTSTEP_OUTPUT_GAIN = 10 ** (-10 / 20);
 // The bank's floors are recorded at very different levels. Its weight shouldn't be.
 const HEEL_PEAK_DB = -8, MAX_TRIM = 3;
 
@@ -51,6 +54,7 @@ export function createHushFootstepPlayer({ getContext, getDestination, fetcher =
       const room = ctx.createConvolver(); room.buffer = roomAnswer(ctx);
       wetSend.connect(room); room.connect(output);
     }
+    output.gain.value = HUSH_FOOTSTEP_OUTPUT_GAIN;
     output.connect(destination);
     chain = { ctx, destination, input, highpass, lowpass, wetSend, panner, stereo };
     return chain;

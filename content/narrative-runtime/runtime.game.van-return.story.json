@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.van-return",
+  "title": "Runtime · game/van-return.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "vanReturnConversation.start",
+  "entries": [
+    "vanReturnConversation.start",
+    "vanReturnConversation.choice",
+    "vanReturnConversation.leave"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/van-return.js",
+  "notes": "Generated from src/game/van-return.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "vanReturnConversation.start": {
+      "id": "vanReturnConversation.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "vanReturnConversation.start.l0",
+          "who": "direction",
+          "text": "The cab still smells of wet wool and warm wiring. The door settles into its seals.",
+          "source": "src/game/van-return.js:33"
+        },
+        {
+          "id": "vanReturnConversation.start.l1",
+          "who": "you",
+          "text": "The key is still here. I can still turn it. / He said there was no job. I could take him at his word.",
+          "source": "src/game/van-return.js:33"
+        }
+      ],
+      "source": "src/game/van-return.js:33",
+      "goto": "vanReturnConversation.choice"
+    },
+    "vanReturnConversation.choice": {
+      "id": "vanReturnConversation.choice",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "vanReturnConversation.choice.c0",
+          "text": "Drive away. Come back when I am ready.",
+          "source": "src/game/van-return.js:34",
+          "goto": "vanReturnConversation.leave"
+        },
+        {
+          "id": "vanReturnConversation.choice.c1",
+          "text": "Leave the key alone. Get back out.",
+          "source": "src/game/van-return.js:34",
+          "targetName": "stay"
+        }
+      ],
+      "source": "src/game/van-return.js:34"
+    },
+    "vanReturnConversation.leave": {
+      "id": "vanReturnConversation.leave",
+      "type": "line",
+      "lines": [
+        {
+          "id": "vanReturnConversation.leave.l0",
+          "who": "direction",
+          "text": "You turn the key. For a moment the building is only something in the rear-view mirror.",
+          "source": "src/game/van-return.js:35"
+        }
+      ],
+      "source": "src/game/van-return.js:35",
+      "targetName": "done"
+    }
+  }
+}

@@ -1,14 +1,14 @@
 {
-  "revision": "endowed-school-yard-clearance-4",
-  "sha256": "c4be70cc9402577defb8db9b366f8abf8cfa4a6ec6d8921bbfd1222931b3c454",
-  "bytes": 5082156,
+  "revision": "endowed-school-yard-clearance-5",
+  "sha256": "350a707335e5af660bcd6497d8390aa43d10e661abe7d13d97eabcb1bf709ec5",
+  "bytes": 5094504,
   "baselineHeroBytes": 4586756,
-  "addedBytes": 495400,
+  "addedBytes": 507748,
   "addedTriangles": 3656,
-  "totalTriangles": 20985,
+  "totalTriangles": 20986,
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
+    "sha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
     "unchangedDuringBuild": true,
     "meshCount": 625
   },
@@ -16,7 +16,7 @@
     "name": "conservatory_west_elevation",
     "fingerprint": "0bbee88d9932239ddb772588618967329bc0c0eea822705cee68bf44d397c34f",
     "triangles": 17829,
-    "retainedTriangles": 17617,
+    "retainedTriangles": 17618,
     "occupiedAirClips": [
       {
         "physicalMin": [
@@ -61,24 +61,46 @@
           5.5,
           24.5
         ]
+      },
+      {
+        "physicalMin": [
+          74,
+          9.44,
+          0
+        ],
+        "physicalMax": [
+          98,
+          14,
+          4
+        ],
+        "min": [
+          24,
+          9.44,
+          -7.5
+        ],
+        "max": [
+          48,
+          14,
+          -3.5
+        ]
       }
     ],
     "clip": [
       {
         "material": "chapel stone",
         "inputTriangles": 8623,
-        "unchangedTriangles": 8269,
-        "changedTriangles": 354,
-        "removedTriangles": 282,
-        "clippedTriangles": 108
+        "unchangedTriangles": 8195,
+        "changedTriangles": 428,
+        "removedTriangles": 316,
+        "clippedTriangles": 168
       },
       {
         "material": "painted steel",
         "inputTriangles": 2888,
-        "unchangedTriangles": 2840,
-        "changedTriangles": 48,
-        "removedTriangles": 16,
-        "clippedTriangles": 48
+        "unchangedTriangles": 2830,
+        "changedTriangles": 58,
+        "removedTriangles": 41,
+        "clippedTriangles": 29
       },
       {
         "material": "board marked concrete",
@@ -107,26 +129,26 @@
       {
         "material": "ellery red brick",
         "inputTriangles": 608,
-        "unchangedTriangles": 588,
-        "changedTriangles": 20,
-        "removedTriangles": 12,
-        "clippedTriangles": 17
+        "unchangedTriangles": 584,
+        "changedTriangles": 24,
+        "removedTriangles": 13,
+        "clippedTriangles": 26
       },
       {
         "material": "municipal glazed brick",
         "inputTriangles": 368,
-        "unchangedTriangles": 360,
-        "changedTriangles": 8,
-        "removedTriangles": 0,
-        "clippedTriangles": 17
+        "unchangedTriangles": 334,
+        "changedTriangles": 34,
+        "removedTriangles": 2,
+        "clippedTriangles": 64
       },
       {
         "material": "wet slate",
         "inputTriangles": 756,
-        "unchangedTriangles": 756,
-        "changedTriangles": 0,
+        "unchangedTriangles": 744,
+        "changedTriangles": 12,
         "removedTriangles": 0,
-        "clippedTriangles": 0
+        "clippedTriangles": 30
       },
       {
         "material": "aged white paint",
@@ -801,7 +823,7 @@
   },
   "meshes": {
     "conservatory_west_elevation": {
-      "triangles": 17617,
+      "triangles": 17618,
       "primitives": 15
     },
     "ellery_public_front": {
@@ -818,8 +840,8 @@
     }
   },
   "sourceHashes": {
-    "src/data/ellery-public-front.js": "b77ddf363822165abbed28e27509fb8576be007ca1f144038c4e72969b35f54c",
-    "src/data/glass-court-sightlines.js": "7f2791f88a5d6f5ff39b59042d4a6d703791386b006b848f44df21aeb9c9fce6",
+    "src/data/ellery-public-front.js": "696471d8780f7a17d9dd8810227e9875d69b5fa475f47920d46535e8974fca25",
+    "src/data/glass-court-sightlines.js": "526461e1c6e47d90178a6d7915401d80b8aca9b0fe18e743e58a0e5b9450534d",
     "tools/chunk_surfer/ellery-public-front-geometry.mjs": "8bca13953cf613d1206c649b33f1852cc3db0e72561cf80b897b9f645f6c4a65",
     "tools/chunk_surfer/ellery-yard-repair.mjs": "5bd17acd5383c92bae94f9947d744ee4b71435b061b6fc7e5a8ffc9bae5489e3",
     "tools/chunk_surfer/build-ellery-public-front.mjs": "c4e40feaec6c1f5fc79e5ccfe6504224aaaf29d480e8c570a281d9a8a84ba61f"

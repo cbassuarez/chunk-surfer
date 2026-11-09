@@ -499,7 +499,7 @@
       "process": "volunteer brush paint on tensioned cloth",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000035,
+      "reliefM": 3.5e-05,
       "finish": {
         "substrate": "woven banner cloth",
         "coating": "absorbed opaque brush paint",
@@ -508,7 +508,7 @@
         "fieldM": 0.21,
         "variation": 0.04,
         "roughnessVariation": 0.06,
-        "microReliefM": 0.000018,
+        "microReliefM": 1.8e-05,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -527,7 +527,7 @@
           "contact": "lower",
           "exposure": "exterior"
         },
-        "fabricationReliefM": 0.000035,
+        "fabricationReliefM": 3.5e-05,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -547,7 +547,7 @@
         "physicalScalesM": {
           "field": 0.21,
           "minimumNormalPeriod": 0.012652608213096559,
-          "inkRelief": 0.000035
+          "inkRelief": 3.5e-05
         },
         "structure": {
           "kind": "weave",
@@ -847,7 +847,7 @@
       "process": "transport timetable letterpress on paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -856,7 +856,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -875,7 +875,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -895,7 +895,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.004689075630252101,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -1229,7 +1229,7 @@
       "process": "typed rekey entry on clipped ledger paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -1238,7 +1238,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -1257,7 +1257,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -1277,7 +1277,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.006328125,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -1520,7 +1520,7 @@
       "process": "ceramic mosaic inscription",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "small ceramic tesserae and mineral joints",
         "coating": "fired solid ceramic lettering",
@@ -1529,7 +1529,7 @@
         "fieldM": 0.17,
         "variation": 0.025,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000005,
+        "microReliefM": 5e-06,
         "deposit": 0.03,
         "edgeLoss": 0,
         "sequence": [
@@ -1548,7 +1548,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -1568,7 +1568,7 @@
         "physicalScalesM": {
           "field": 0.17,
           "minimumNormalPeriod": 0.007040816326530612,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "ceramic tessera",
@@ -1704,7 +1704,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -1713,7 +1713,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -1732,7 +1732,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -1752,7 +1752,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -2136,7 +2136,7 @@
       "process": "institutional directory print on paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -2145,7 +2145,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -2164,7 +2164,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -2184,7 +2184,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.00603515625,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -3289,7 +3289,7 @@
       "process": "typed isolation card with later annotation",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -3298,7 +3298,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -3317,7 +3317,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -3337,7 +3337,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.00603515625,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -3464,7 +3464,7 @@
       "process": "printed visitors form with earlier pen entries",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -3473,7 +3473,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -3492,7 +3492,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -3512,7 +3512,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0025025510204081634,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -3688,7 +3688,7 @@
       "process": "printed visitors form with earlier pen entries",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -3697,7 +3697,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -3716,7 +3716,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -3736,7 +3736,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0025025510204081634,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -3948,7 +3948,7 @@
       "process": "removal-tag ink on paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -3957,7 +3957,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -3976,7 +3976,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -3996,7 +3996,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0017631578947368423,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -4202,7 +4202,7 @@
       "process": "printed stock tray legend",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -4211,7 +4211,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -4230,7 +4230,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -4250,7 +4250,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0015130434782608694,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -4457,7 +4457,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -4466,7 +4466,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -4485,7 +4485,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -4505,7 +4505,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -4712,7 +4712,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -4721,7 +4721,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -4740,7 +4740,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -4760,7 +4760,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -4967,7 +4967,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -4976,7 +4976,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -4995,7 +4995,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -5015,7 +5015,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -5222,7 +5222,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -5231,7 +5231,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -5250,7 +5250,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -5270,7 +5270,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -5477,7 +5477,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -5486,7 +5486,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -5505,7 +5505,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -5525,7 +5525,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -5732,7 +5732,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -5741,7 +5741,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -5760,7 +5760,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -5780,7 +5780,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -5987,7 +5987,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -5996,7 +5996,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -6015,7 +6015,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -6035,7 +6035,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -6336,7 +6336,7 @@
         "fieldM": 0.23,
         "variation": 0.035,
         "roughnessVariation": 0.05,
-        "microReliefM": 0.00001,
+        "microReliefM": 1e-05,
         "deposit": 0.045,
         "edgeLoss": 0,
         "sequence": [
@@ -6748,7 +6748,7 @@
         "fieldM": 0.23,
         "variation": 0.035,
         "roughnessVariation": 0.05,
-        "microReliefM": 0.00001,
+        "microReliefM": 1e-05,
         "deposit": 0.045,
         "edgeLoss": 0,
         "sequence": [
@@ -7351,7 +7351,7 @@
       "process": "foundry commemorative plaque lettering",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "copper-alloy plate or key tag",
         "coating": "die-stamped or engraved dark legend",
@@ -7361,7 +7361,7 @@
         "fieldM": 0.035,
         "variation": 0.055,
         "roughnessVariation": 0.12,
-        "microReliefM": 0.000003,
+        "microReliefM": 3e-06,
         "deposit": 0.035,
         "edgeLoss": 0,
         "sequence": [
@@ -7380,7 +7380,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -7400,7 +7400,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.006680161943319839,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -7527,7 +7527,7 @@
       "process": "printed visitors form with fresh biro signature",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -7536,7 +7536,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -7555,7 +7555,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -7575,7 +7575,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0025025510204081634,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -7751,7 +7751,7 @@
       "process": "printed visitors form with fresh biro signature",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -7760,7 +7760,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -7779,7 +7779,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -7799,7 +7799,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0025025510204081634,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -7993,7 +7993,7 @@
       "process": "printed stock tray legend",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -8002,7 +8002,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -8021,7 +8021,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -8041,7 +8041,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0015130434782608694,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -8181,7 +8181,7 @@
       "process": "bridged maintenance stencil on concrete",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "concrete or blockwork repair finish",
         "coating": "bridged opaque maintenance paint",
@@ -8190,7 +8190,7 @@
         "fieldM": 0.12,
         "variation": 0.035,
         "roughnessVariation": 0.06,
-        "microReliefM": 0.000012,
+        "microReliefM": 1.2e-05,
         "deposit": 0.04,
         "edgeLoss": 0,
         "sequence": [
@@ -8209,7 +8209,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -8229,7 +8229,7 @@
         "physicalScalesM": {
           "field": 0.12,
           "minimumNormalPeriod": 0.011250000000000001,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -8363,7 +8363,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -8372,7 +8372,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -8391,7 +8391,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -8411,7 +8411,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -8613,7 +8613,7 @@
       "process": "volunteer broad-nib paint on card",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000035,
+      "reliefM": 3.5e-05,
       "finish": {
         "substrate": "uncoated card",
         "coating": "opaque volunteer brush paint",
@@ -8622,7 +8622,7 @@
         "fieldM": 0.13,
         "variation": 0.045,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000015,
+        "microReliefM": 1.5e-05,
         "deposit": 0.045,
         "edgeLoss": 0.045,
         "sequence": [
@@ -8641,7 +8641,7 @@
           "contact": "lower",
           "exposure": "exterior"
         },
-        "fabricationReliefM": 0.000035,
+        "fabricationReliefM": 3.5e-05,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -8661,7 +8661,7 @@
         "physicalScalesM": {
           "field": 0.13,
           "minimumNormalPeriod": 0.008375,
-          "inkRelief": 0.000035
+          "inkRelief": 3.5e-05
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -9031,7 +9031,7 @@
       "process": "thermal receipt print on existing uncut paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -9040,7 +9040,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -9059,7 +9059,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -9079,7 +9079,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -9563,7 +9563,7 @@
       "process": "contractor notice print on weathered board",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -9572,7 +9572,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -9591,7 +9591,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -9611,7 +9611,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.012669322709163348,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -9817,7 +9817,7 @@
       "process": "vitreous-enamel screen print",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -9826,7 +9826,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -9845,7 +9845,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -9865,7 +9865,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.015321637426900583,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -10126,7 +10126,7 @@
       "process": "institutional enamel lettering",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -10135,7 +10135,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -10154,7 +10154,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -10174,7 +10174,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.008638743455497384,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -10371,7 +10371,7 @@
       "process": "volunteer broad-nib paint on card",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000035,
+      "reliefM": 3.5e-05,
       "finish": {
         "substrate": "uncoated card",
         "coating": "opaque volunteer brush paint",
@@ -10380,7 +10380,7 @@
         "fieldM": 0.13,
         "variation": 0.045,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000015,
+        "microReliefM": 1.5e-05,
         "deposit": 0.045,
         "edgeLoss": 0.045,
         "sequence": [
@@ -10399,7 +10399,7 @@
           "contact": "lower",
           "exposure": "exterior"
         },
-        "fabricationReliefM": 0.000035,
+        "fabricationReliefM": 3.5e-05,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -10419,7 +10419,7 @@
         "physicalScalesM": {
           "field": 0.13,
           "minimumNormalPeriod": 0.011585014409221902,
-          "inkRelief": 0.000035
+          "inkRelief": 3.5e-05
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -10607,7 +10607,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -10616,7 +10616,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -10635,7 +10635,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -10655,7 +10655,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015000000000000005,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -10795,7 +10795,7 @@
       "process": "bridged maintenance stencil on a blockwork repair patch",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "concrete or blockwork repair finish",
         "coating": "bridged opaque maintenance paint",
@@ -10804,7 +10804,7 @@
         "fieldM": 0.12,
         "variation": 0.035,
         "roughnessVariation": 0.06,
-        "microReliefM": 0.000012,
+        "microReliefM": 1.2e-05,
         "deposit": 0.04,
         "edgeLoss": 0,
         "sequence": [
@@ -10823,7 +10823,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -10843,7 +10843,7 @@
         "physicalScalesM": {
           "field": 0.12,
           "minimumNormalPeriod": 0.011294117647058824,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -10977,7 +10977,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -10986,7 +10986,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -11005,7 +11005,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -11025,7 +11025,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -11159,7 +11159,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -11168,7 +11168,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -11187,7 +11187,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -11207,7 +11207,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -11549,7 +11549,7 @@
         "fieldM": 0.055,
         "variation": 0.018,
         "roughnessVariation": 0.045,
-        "microReliefM": 0.000003,
+        "microReliefM": 3e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -11785,7 +11785,7 @@
       "process": "volunteer broad-nib paint on card",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000035,
+      "reliefM": 3.5e-05,
       "finish": {
         "substrate": "uncoated card",
         "coating": "opaque volunteer brush paint",
@@ -11794,7 +11794,7 @@
         "fieldM": 0.13,
         "variation": 0.045,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000015,
+        "microReliefM": 1.5e-05,
         "deposit": 0.045,
         "edgeLoss": 0.045,
         "sequence": [
@@ -11813,7 +11813,7 @@
           "contact": "lower",
           "exposure": "exterior"
         },
-        "fabricationReliefM": 0.000035,
+        "fabricationReliefM": 3.5e-05,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -11833,7 +11833,7 @@
         "physicalScalesM": {
           "field": 0.13,
           "minimumNormalPeriod": 0.011585014409221902,
-          "inkRelief": 0.000035
+          "inkRelief": 3.5e-05
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -12030,7 +12030,7 @@
       "process": "volunteer broad-nib paint on card",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000035,
+      "reliefM": 3.5e-05,
       "finish": {
         "substrate": "uncoated card",
         "coating": "opaque volunteer brush paint",
@@ -12039,7 +12039,7 @@
         "fieldM": 0.13,
         "variation": 0.045,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000015,
+        "microReliefM": 1.5e-05,
         "deposit": 0.045,
         "edgeLoss": 0.045,
         "sequence": [
@@ -12058,7 +12058,7 @@
           "contact": "lower",
           "exposure": "exterior"
         },
-        "fabricationReliefM": 0.000035,
+        "fabricationReliefM": 3.5e-05,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -12078,7 +12078,7 @@
         "physicalScalesM": {
           "field": 0.13,
           "minimumNormalPeriod": 0.011585014409221902,
-          "inkRelief": 0.000035
+          "inkRelief": 3.5e-05
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -12297,7 +12297,7 @@
       "process": "institutional enamel lettering",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -12306,7 +12306,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -12325,7 +12325,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -12345,7 +12345,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.008823529411764707,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -12558,7 +12558,7 @@
       "process": "institutional enamel lettering",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -12567,7 +12567,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -12586,7 +12586,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -12606,7 +12606,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.008823529411764707,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -12840,7 +12840,7 @@
         "fieldM": 0.23,
         "variation": 0.035,
         "roughnessVariation": 0.05,
-        "microReliefM": 0.00001,
+        "microReliefM": 1e-05,
         "deposit": 0.045,
         "edgeLoss": 0,
         "sequence": [
@@ -13074,7 +13074,7 @@
       "process": "institutional enamel lettering",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -13083,7 +13083,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -13102,7 +13102,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -13122,7 +13122,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.009375000000000001,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -13290,7 +13290,7 @@
       "process": "volunteer broad-nib paint on card",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000035,
+      "reliefM": 3.5e-05,
       "finish": {
         "substrate": "uncoated card",
         "coating": "opaque volunteer brush paint",
@@ -13299,7 +13299,7 @@
         "fieldM": 0.13,
         "variation": 0.045,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000015,
+        "microReliefM": 1.5e-05,
         "deposit": 0.045,
         "edgeLoss": 0.045,
         "sequence": [
@@ -13318,7 +13318,7 @@
           "contact": "lower",
           "exposure": "exterior"
         },
-        "fabricationReliefM": 0.000035,
+        "fabricationReliefM": 3.5e-05,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -13338,7 +13338,7 @@
         "physicalScalesM": {
           "field": 0.13,
           "minimumNormalPeriod": 0.012663316582914573,
-          "inkRelief": 0.000035
+          "inkRelief": 3.5e-05
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -13539,7 +13539,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -13548,7 +13548,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -13567,7 +13567,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -13587,7 +13587,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.008354430379746836,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -13788,7 +13788,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -13797,7 +13797,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -13816,7 +13816,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -13836,7 +13836,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.008354430379746836,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -14037,7 +14037,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -14046,7 +14046,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -14065,7 +14065,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -14085,7 +14085,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.008354430379746836,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -14316,7 +14316,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -14325,7 +14325,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -14344,7 +14344,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -14364,7 +14364,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.00910344827586207,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -14571,7 +14571,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -14580,7 +14580,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -14599,7 +14599,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -14619,7 +14619,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -14765,7 +14765,7 @@
       "process": "carbon ink on paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -14774,7 +14774,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -14793,7 +14793,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -14813,7 +14813,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.001977804878048781,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -14947,7 +14947,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -14956,7 +14956,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -14975,7 +14975,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -14995,7 +14995,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -15129,7 +15129,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -15138,7 +15138,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -15157,7 +15157,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -15177,7 +15177,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -15311,7 +15311,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -15320,7 +15320,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -15339,7 +15339,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -15359,7 +15359,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -15511,7 +15511,7 @@
       "process": "biro correction on ivory key tag",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -15520,7 +15520,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -15539,7 +15539,7 @@
           "contact": "handled",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -15559,7 +15559,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -15794,7 +15794,7 @@
         "fieldM": 0.035,
         "variation": 0.055,
         "roughnessVariation": 0.12,
-        "microReliefM": 0.000003,
+        "microReliefM": 3e-06,
         "deposit": 0.035,
         "edgeLoss": 0,
         "sequence": [
@@ -16116,7 +16116,7 @@
         "fieldM": 0.035,
         "variation": 0.055,
         "roughnessVariation": 0.12,
-        "microReliefM": 0.000003,
+        "microReliefM": 3e-06,
         "deposit": 0.035,
         "edgeLoss": 0,
         "sequence": [
@@ -16328,7 +16328,7 @@
         "fieldM": 0.055,
         "variation": 0.018,
         "roughnessVariation": 0.045,
-        "microReliefM": 0.000003,
+        "microReliefM": 3e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -16567,7 +16567,7 @@
       "process": "vitreous-enamel screen print",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -16576,7 +16576,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -16595,7 +16595,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -16615,7 +16615,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.015310344827586204,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -16779,7 +16779,7 @@
       "process": "accession ink on existing paper label",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -16788,7 +16788,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -16807,7 +16807,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -16827,7 +16827,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -17063,7 +17063,7 @@
       "process": "printed stock tray legend",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -17072,7 +17072,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -17091,7 +17091,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -17111,7 +17111,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0024279947916666664,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -17263,7 +17263,7 @@
       "process": "registration enamel screen print",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "painted transport board or glazed paper destination",
         "coating": "opaque transport sign print",
@@ -17272,7 +17272,7 @@
         "fieldM": 0.14,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000005,
+        "microReliefM": 5e-06,
         "deposit": 0.04,
         "edgeLoss": 0.04,
         "sequence": [
@@ -17291,7 +17291,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -17311,7 +17311,7 @@
         "physicalScalesM": {
           "field": 0.14,
           "minimumNormalPeriod": 0.004698795180722892,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -17463,7 +17463,7 @@
       "process": "registration enamel screen print",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "painted transport board or glazed paper destination",
         "coating": "opaque transport sign print",
@@ -17472,7 +17472,7 @@
         "fieldM": 0.14,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000005,
+        "microReliefM": 5e-06,
         "deposit": 0.04,
         "edgeLoss": 0.04,
         "sequence": [
@@ -17491,7 +17491,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -17511,7 +17511,7 @@
         "physicalScalesM": {
           "field": 0.14,
           "minimumNormalPeriod": 0.00450402144772118,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -17681,7 +17681,7 @@
       "process": "existing returns-tray stencil",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original equipment finish",
         "coating": "maintenance stencil paint",
@@ -17690,7 +17690,7 @@
         "fieldM": 0.045,
         "variation": 0.018,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -17709,7 +17709,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -17729,7 +17729,7 @@
         "physicalScalesM": {
           "field": 0.045,
           "minimumNormalPeriod": 0.003,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -17929,7 +17929,7 @@
       "process": "printed stock tray legend",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -17938,7 +17938,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -17957,7 +17957,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -17977,7 +17977,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0015130434782608694,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -18183,7 +18183,7 @@
       "process": "printed stock tray legend",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -18192,7 +18192,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -18211,7 +18211,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -18231,7 +18231,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0015130434782608694,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -18462,7 +18462,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -18471,7 +18471,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -18490,7 +18490,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -18510,7 +18510,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.00910344827586207,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -18656,7 +18656,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -18665,7 +18665,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -18684,7 +18684,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -18704,7 +18704,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -18941,7 +18941,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -18950,7 +18950,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -18969,7 +18969,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -18989,7 +18989,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010058823529411764,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -19171,7 +19171,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -19180,7 +19180,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -19199,7 +19199,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -19219,7 +19219,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010058823529411764,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -19401,7 +19401,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -19410,7 +19410,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -19429,7 +19429,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -19449,7 +19449,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010058823529411764,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -19656,7 +19656,7 @@
       "process": "institutional opaque room-name stencil on existing paper-faced label plate",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -19665,7 +19665,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -19684,7 +19684,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -19704,7 +19704,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.010076335877862596,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -19850,7 +19850,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -19859,7 +19859,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -19878,7 +19878,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -19898,7 +19898,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -20038,7 +20038,7 @@
       "process": "bridged maintenance stencil on a blockwork repair patch",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "concrete or blockwork repair finish",
         "coating": "bridged opaque maintenance paint",
@@ -20047,7 +20047,7 @@
         "fieldM": 0.12,
         "variation": 0.035,
         "roughnessVariation": 0.06,
-        "microReliefM": 0.000012,
+        "microReliefM": 1.2e-05,
         "deposit": 0.04,
         "edgeLoss": 0,
         "sequence": [
@@ -20066,7 +20066,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -20086,7 +20086,7 @@
         "physicalScalesM": {
           "field": 0.12,
           "minimumNormalPeriod": 0.011294117647058824,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -20226,7 +20226,7 @@
       "process": "bridged maintenance stencil on a blockwork repair patch",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "concrete or blockwork repair finish",
         "coating": "bridged opaque maintenance paint",
@@ -20235,7 +20235,7 @@
         "fieldM": 0.12,
         "variation": 0.035,
         "roughnessVariation": 0.06,
-        "microReliefM": 0.000012,
+        "microReliefM": 1.2e-05,
         "deposit": 0.04,
         "edgeLoss": 0,
         "sequence": [
@@ -20254,7 +20254,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -20274,7 +20274,7 @@
         "physicalScalesM": {
           "field": 0.12,
           "minimumNormalPeriod": 0.011294117647058824,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -20414,7 +20414,7 @@
       "process": "bridged maintenance stencil on a blockwork repair patch",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "concrete or blockwork repair finish",
         "coating": "bridged opaque maintenance paint",
@@ -20423,7 +20423,7 @@
         "fieldM": 0.12,
         "variation": 0.035,
         "roughnessVariation": 0.06,
-        "microReliefM": 0.000012,
+        "microReliefM": 1.2e-05,
         "deposit": 0.04,
         "edgeLoss": 0,
         "sequence": [
@@ -20442,7 +20442,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -20462,7 +20462,7 @@
         "physicalScalesM": {
           "field": 0.12,
           "minimumNormalPeriod": 0.011294117647058824,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -20626,7 +20626,7 @@
       "process": "carbon ink on paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -20635,7 +20635,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -20654,7 +20654,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -20674,7 +20674,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -20801,7 +20801,7 @@
       "process": "fresh pen signature on ledger paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -20810,7 +20810,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -20829,7 +20829,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -20849,7 +20849,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.006818181818181818,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -20983,7 +20983,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -20992,7 +20992,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -21011,7 +21011,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -21031,7 +21031,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -21165,7 +21165,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -21174,7 +21174,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -21193,7 +21193,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -21213,7 +21213,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -21347,7 +21347,7 @@
       "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -21356,7 +21356,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -21375,7 +21375,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -21395,7 +21395,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -21547,7 +21547,7 @@
       "process": "fresh pen name on ledger paper",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -21556,7 +21556,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -21575,7 +21575,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -21595,7 +21595,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.005244755244755245,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -21771,7 +21771,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -21780,7 +21780,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -21798,7 +21798,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -21818,7 +21818,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -22001,7 +22001,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -22010,7 +22010,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -22028,7 +22028,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -22048,7 +22048,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -22231,7 +22231,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -22240,7 +22240,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -22258,7 +22258,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -22278,7 +22278,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -22449,7 +22449,7 @@
       "process": "service-panel identification stencil",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original equipment finish",
         "coating": "maintenance stencil paint",
@@ -22458,7 +22458,7 @@
         "fieldM": 0.045,
         "variation": 0.018,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -22477,7 +22477,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -22497,7 +22497,7 @@
         "physicalScalesM": {
           "field": 0.045,
           "minimumNormalPeriod": 0.0036176470588235293,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -22668,7 +22668,7 @@
       "process": "service-panel identification stencil",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original equipment finish",
         "coating": "maintenance stencil paint",
@@ -22677,7 +22677,7 @@
         "fieldM": 0.045,
         "variation": 0.018,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -22696,7 +22696,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -22716,7 +22716,7 @@
         "physicalScalesM": {
           "field": 0.045,
           "minimumNormalPeriod": 0.0036176470588235293,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -22887,7 +22887,7 @@
       "process": "service-panel identification stencil",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original equipment finish",
         "coating": "maintenance stencil paint",
@@ -22896,7 +22896,7 @@
         "fieldM": 0.045,
         "variation": 0.018,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -22915,7 +22915,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -22935,7 +22935,7 @@
         "physicalScalesM": {
           "field": 0.045,
           "minimumNormalPeriod": 0.0036176470588235293,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -23118,7 +23118,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -23127,7 +23127,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -23145,7 +23145,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -23165,7 +23165,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -23342,7 +23342,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -23351,7 +23351,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -23369,7 +23369,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -23389,7 +23389,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -23432,7 +23432,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -23475,7 +23475,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -23566,7 +23566,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -23575,7 +23575,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -23593,7 +23593,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -23613,7 +23613,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -23656,7 +23656,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -23699,7 +23699,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -23784,7 +23784,7 @@
       "process": "service-panel identification stencil",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original equipment finish",
         "coating": "maintenance stencil paint",
@@ -23793,7 +23793,7 @@
         "fieldM": 0.045,
         "variation": 0.018,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -23812,7 +23812,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -23832,7 +23832,7 @@
         "physicalScalesM": {
           "field": 0.045,
           "minimumNormalPeriod": 0.0036176470588235293,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -24003,7 +24003,7 @@
       "process": "service-panel identification stencil",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original equipment finish",
         "coating": "maintenance stencil paint",
@@ -24012,7 +24012,7 @@
         "fieldM": 0.045,
         "variation": 0.018,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -24031,7 +24031,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -24051,7 +24051,7 @@
         "physicalScalesM": {
           "field": 0.045,
           "minimumNormalPeriod": 0.0036176470588235293,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -24228,7 +24228,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -24237,7 +24237,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -24255,7 +24255,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -24275,7 +24275,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -24318,7 +24318,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -24361,7 +24361,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -24452,7 +24452,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -24461,7 +24461,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -24479,7 +24479,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -24499,7 +24499,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -24542,7 +24542,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -24585,7 +24585,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -24676,7 +24676,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -24685,7 +24685,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -24703,7 +24703,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -24723,7 +24723,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -24766,7 +24766,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -24809,7 +24809,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -24900,7 +24900,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -24909,7 +24909,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -24927,7 +24927,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -24947,7 +24947,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -24990,7 +24990,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -25033,7 +25033,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -25124,7 +25124,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -25133,7 +25133,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -25151,7 +25151,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -25171,7 +25171,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -25214,7 +25214,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -25257,7 +25257,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -25348,7 +25348,7 @@
       "process": "old inventory ink stamp on original wood",
       "polarity": "dark-on-light",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "original sampled finished wood",
         "coating": "thin inventory ink",
@@ -25357,7 +25357,7 @@
         "fieldM": 0.035,
         "variation": 0.015,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0,
         "edgeLoss": 0,
         "sequence": [
@@ -25375,7 +25375,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -25395,7 +25395,7 @@
         "physicalScalesM": {
           "field": 0.035,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -25438,7 +25438,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -25481,7 +25481,7 @@
           0
         ],
         "up": [
-          -0.0000696,
+          -6.96e-05,
           -0.0018987,
           0.9999982
         ],
@@ -25584,7 +25584,7 @@
       "process": "black screen print on opal telephone glass",
       "polarity": "dark-on-light",
       "emission": "substrate",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "opal telephone glass",
         "coating": "black fired or screen-printed legend",
@@ -25593,7 +25593,7 @@
         "fieldM": 0.08,
         "variation": 0.008,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0.012,
         "edgeLoss": 0,
         "sequence": [
@@ -25612,7 +25612,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -25632,7 +25632,7 @@
         "physicalScalesM": {
           "field": 0.08,
           "minimumNormalPeriod": 0.004952380952380952,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -25814,7 +25814,7 @@
       "process": "black screen print on opal telephone glass",
       "polarity": "dark-on-light",
       "emission": "substrate",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "opal telephone glass",
         "coating": "black fired or screen-printed legend",
@@ -25823,7 +25823,7 @@
         "fieldM": 0.08,
         "variation": 0.008,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0.012,
         "edgeLoss": 0,
         "sequence": [
@@ -25842,7 +25842,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -25862,7 +25862,7 @@
         "physicalScalesM": {
           "field": 0.08,
           "minimumNormalPeriod": 0.004952380952380952,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -26044,7 +26044,7 @@
       "process": "black screen print on opal telephone glass",
       "polarity": "dark-on-light",
       "emission": "substrate",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "opal telephone glass",
         "coating": "black fired or screen-printed legend",
@@ -26053,7 +26053,7 @@
         "fieldM": 0.08,
         "variation": 0.008,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0.012,
         "edgeLoss": 0,
         "sequence": [
@@ -26072,7 +26072,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -26092,7 +26092,7 @@
         "physicalScalesM": {
           "field": 0.08,
           "minimumNormalPeriod": 0.004952380952380952,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -26274,7 +26274,7 @@
       "process": "black screen print on opal telephone glass",
       "polarity": "dark-on-light",
       "emission": "substrate",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "opal telephone glass",
         "coating": "black fired or screen-printed legend",
@@ -26283,7 +26283,7 @@
         "fieldM": 0.08,
         "variation": 0.008,
         "roughnessVariation": 0.03,
-        "microReliefM": 0.000002,
+        "microReliefM": 2e-06,
         "deposit": 0.012,
         "edgeLoss": 0,
         "sequence": [
@@ -26302,7 +26302,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -26322,7 +26322,7 @@
         "physicalScalesM": {
           "field": 0.08,
           "minimumNormalPeriod": 0.004952380952380952,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -26577,7 +26577,7 @@
       "process": "institutional enamel lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -26586,7 +26586,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -26605,7 +26605,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -26625,7 +26625,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.007031249999999999,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -27061,7 +27061,7 @@
       "process": "institutional sign with later hand-painted addition",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -27070,7 +27070,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -27089,7 +27089,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -27109,7 +27109,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.007031249999999999,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -27639,7 +27639,7 @@
       "process": "gilt house lettering on dark enamel",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "dark enamel or painted board",
         "coating": "solid gold-coloured leaf or metallic house lettering",
@@ -27649,7 +27649,7 @@
         "fieldM": 0.16,
         "variation": 0.018,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.035,
         "edgeLoss": 0.018,
         "sequence": [
@@ -27668,7 +27668,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -27688,7 +27688,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0083984375,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -27882,7 +27882,7 @@
       "process": "aged gilt pub fascia lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "dark enamel or painted board",
         "coating": "solid gold-coloured leaf or metallic house lettering",
@@ -27892,7 +27892,7 @@
         "fieldM": 0.16,
         "variation": 0.018,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.035,
         "edgeLoss": 0.018,
         "sequence": [
@@ -27911,7 +27911,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -27931,7 +27931,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0263671875,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -28107,7 +28107,7 @@
       "process": "aged gilt pub fascia lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "dark enamel or painted board",
         "coating": "solid gold-coloured leaf or metallic house lettering",
@@ -28117,7 +28117,7 @@
         "fieldM": 0.16,
         "variation": 0.018,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.035,
         "edgeLoss": 0.018,
         "sequence": [
@@ -28136,7 +28136,7 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -28156,7 +28156,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0263671875,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -28354,7 +28354,7 @@
       "process": "telephone instruction-card screen print",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "paper stock",
         "coating": "absorbed print or pen ink",
@@ -28363,7 +28363,7 @@
         "fieldM": 0.095,
         "variation": 0.027,
         "roughnessVariation": 0.035,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.025,
         "edgeLoss": 0,
         "sequence": [
@@ -28382,7 +28382,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -28402,7 +28402,7 @@
         "physicalScalesM": {
           "field": 0.095,
           "minimumNormalPeriod": 0.0015,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -28584,7 +28584,7 @@
       "process": "painted service room lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -28593,7 +28593,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -28612,7 +28612,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -28632,7 +28632,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.00874439461883408,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -28838,7 +28838,7 @@
       "process": "painted service room lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -28847,7 +28847,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -28866,7 +28866,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -28886,7 +28886,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.00874439461883408,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -29092,7 +29092,7 @@
       "process": "painted service room lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -29101,7 +29101,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -29120,7 +29120,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -29140,7 +29140,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.00874439461883408,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -29340,7 +29340,7 @@
       "process": "institutional enamel landing lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -29349,7 +29349,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -29368,7 +29368,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -29388,7 +29388,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0178125,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -29606,7 +29606,7 @@
       "process": "institutional enamel landing lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -29615,7 +29615,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -29634,7 +29634,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -29654,7 +29654,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0178125,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -29818,7 +29818,7 @@
       "process": "institutional enamel landing lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -29827,7 +29827,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -29846,7 +29846,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -29866,7 +29866,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0178125,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -30066,7 +30066,7 @@
       "process": "institutional enamel landing lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -30075,7 +30075,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -30094,7 +30094,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -30114,7 +30114,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.0178125,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -30285,7 +30285,7 @@
       "process": "bridged paint stencil on woven rope mat",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "woven rope mat",
         "coating": "opaque paint on raised fibres",
@@ -30294,7 +30294,7 @@
         "fieldM": 0.08,
         "variation": 0.035,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000025,
+        "microReliefM": 2.5e-05,
         "deposit": 0.04,
         "edgeLoss": 0,
         "sequence": [
@@ -30313,7 +30313,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -30333,7 +30333,7 @@
         "physicalScalesM": {
           "field": 0.08,
           "minimumNormalPeriod": 0.015609756097560976,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "weave",
@@ -31086,7 +31086,7 @@
       "process": "aged gilt peal-board lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "dark enamel or painted board",
         "coating": "solid gold-coloured leaf or metallic house lettering",
@@ -31096,7 +31096,7 @@
         "fieldM": 0.16,
         "variation": 0.018,
         "roughnessVariation": 0.065,
-        "microReliefM": 0.000004,
+        "microReliefM": 4e-06,
         "deposit": 0.035,
         "edgeLoss": 0.018,
         "sequence": [
@@ -31115,7 +31115,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -31135,7 +31135,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.00813299232736573,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -31299,7 +31299,7 @@
       "process": "gatehouse painted timber lettering",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -31308,7 +31308,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -31327,7 +31327,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -31347,7 +31347,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.008128342245989306,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -31511,7 +31511,7 @@
       "process": "opaque linen destination-roll print",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "painted transport board or glazed paper destination",
         "coating": "opaque transport sign print",
@@ -31520,7 +31520,7 @@
         "fieldM": 0.14,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000005,
+        "microReliefM": 5e-06,
         "deposit": 0.04,
         "edgeLoss": 0.04,
         "sequence": [
@@ -31539,7 +31539,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -31559,7 +31559,7 @@
         "physicalScalesM": {
           "field": 0.14,
           "minimumNormalPeriod": 0.010657894736842106,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -31735,7 +31735,7 @@
       "process": "removable hymn-board numeral print",
       "polarity": "light-on-dark",
       "emission": "none",
-      "reliefM": 0.000007,
+      "reliefM": 7e-06,
       "finish": {
         "substrate": "metal support with fired vitreous-enamel face",
         "coating": "screen-fired dielectric lettering",
@@ -31744,7 +31744,7 @@
         "fieldM": 0.16,
         "variation": 0.024,
         "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
+        "microReliefM": 6e-06,
         "deposit": 0.055,
         "edgeLoss": 0.1,
         "sequence": [
@@ -31763,7 +31763,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "fabricationReliefM": 0.000007,
+        "fabricationReliefM": 7e-06,
         "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
         "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
         "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
@@ -31783,7 +31783,7 @@
         "physicalScalesM": {
           "field": 0.16,
           "minimumNormalPeriod": 0.006253101736972705,
-          "inkRelief": 0.000007
+          "inkRelief": 7e-06
         },
         "structure": {
           "kind": "subpixel manufacture",
@@ -31882,7 +31882,7 @@
   "gutterPx": 16,
   "packing": "MaxRects BSSF; four stable orders; 8px bin-width and bounded 16px bin-height search; tight NPOT envelope; no rotation/resampling",
   "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake.",
-  "packSha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
+  "packSha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
   "sourceHashes": {
     "public/assets/items/headphones-reference.glb": "ac4b5e54bf5489980ac071b5ffcf7bcb142b1936786d4d8ccae425fde89ee86c",
     "public/assets/items/headphones-closed.glb": "f8d07a880c7109cd9d7a5aec8aadc56f2bedad4cb926abbebd95ce63fa21efb1",
@@ -35817,7 +35817,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -35862,7 +35862,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -35907,7 +35907,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -35952,7 +35952,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -35997,7 +35997,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -36042,7 +36042,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -36087,7 +36087,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -36132,7 +36132,7 @@
         0
       ],
       "up": [
-        -0.0000696,
+        -6.96e-05,
         -0.0018987,
         0.9999982
       ],
@@ -38531,5 +38531,25 @@
     "door_stencil",
     "atrium_formal_banner",
     "yard_markings"
-  ]
+  ],
+  "currentAssetReconciliation": {
+    "previousPackSha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
+    "packSha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+    "reason": "Selected atrium circulation update. All other logical mesh bytes, full material definitions, all embedded images, original nodes and roots are independently preserved. Only this revision's source hashes are reconciled; other pre-existing producer drift remains explicit.",
+    "unchangedMeshes": 620,
+    "preservedPrintedEntries": 120,
+    "embeddedImagesPreserved": 69,
+    "proof": "/artifacts/atrium-access/selected-owner-comparison.json",
+    "sourceHashes": {
+      "src/data/building-amenities.js": "a46f19cc50430f87ff39ae8278f4be16818facaf8aae20686c345b9586f4460c",
+      "tools/chunk_surfer/building-amenities-geometry.mjs": "759899aeb01ee6bbb805c01da4c09785de8a60e718febba98bc83d8d3227a620",
+      "tools/chunk_surfer/build-props.mjs": "9c4a2a4a368d2c2deaa83e5c43c54168d1018f2d8bf05257d4348e1961c97f23",
+      "src/data/conservatory-props.js": "38ec45e5e1206d36e69ef114e871510d31c9a733740fa1d6ab4cda5fddc855dc",
+      "src/data/floorplan/conservatory.js": "b7b75d8e2b548966f1bbec305413d924d9be86424deb5902519cd50dc3440b1d",
+      "src/data/conservatory-doors.js": "feea287160ca84f35ee503f608c3215ee3cfb946ae253f69fbcc218ec723ade3",
+      "src/data/institution-occupation.js": "79300ce2f3bef164a4b27e71703480d4b89a8a9398291a9ec3709b2c4004cdce",
+      "src/data/atrium-circulation.js": "80e6fddc932f3f524bf8476721f2d7ae67e721b83fa23c0cd34ece12db0f81de",
+      "tools/chunk_surfer/hall-service-stair-geometry.mjs": "a004e16a0bb676fd7598c2110ae4290fdc96115bdb9b8701914ff404415a6705"
+    }
+  }
 }

@@ -33,9 +33,15 @@ export const OPENING_CAB_REHEARSAL_NOTES=Object.freeze([
 ]);
 // Looking at Lyle's box, whole, before the drive.
 export const OPENING_CAB_MUSIC_BOX_LINES=Object.freeze([
-  'Dark wood, a brass key in the side, the lid shut. Clair de lune: the first eight bars, then the spring runs out.',
-  'Lyle gave it to you before his big piano break. So you’d have something to remember him by.',
+  'Cream case, a little rubbed at the corners. Debussy on the front; a brass winding key on the dark back plate. Clair de lune.',
+  'Lyle — one of the pianists — gave it to you before his big break. So you’d have something to remember him by.',
 ]);
+// The approach gives the name a human connection before the player can inspect
+// the box. A thought over the real drive, not another modal conversation.
+export const OPENING_CAB_ARRIVAL_RECOLLECTION=Object.freeze({
+  from:1.0,to:6.4,
+  text:'Lyle’s one of the pianists. He gave me that box before his big break.',
+});
 export const OPENING_CAB_PAPERS=Object.freeze([
   {id:'opening-cab-practice-note',title:'Rebook the practice room',byline:'A reminder in blue ink',
     body:['REBOOK THE PRACTICE ROOM'],worldLines:['REBOOK THE','PRACTICE','ROOM'],stock:'#d5c47e'},

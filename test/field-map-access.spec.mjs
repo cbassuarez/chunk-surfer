@@ -68,13 +68,16 @@ test('standalone survey selection does not replace the full case navigation memo
 });
 
 test('host map shortcut permits a public survey before optional shift selection while preserving owned-map loss',()=>{
-  const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),start=source.indexOf('function openFieldMap(){'),end=source.indexOf('function syncDroppedRadioProp()',start);
+  const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),start=source.indexOf("function openArrivalNotes(sectionId='journal'){"),end=source.indexOf('function syncDroppedRadioProp()',start);
   assert.ok(start>=0&&end>start);
   const host=source.slice(start,end),save={flags:{},difficulty:null},stack=[],operations=[];let missing=false;
   const canonical=model(),dependencies={
     scenes:{top:()=>stack.at(-1),push:scene=>stack.push(scene),remove:scene=>{const at=stack.indexOf(scene);if(at>=0)stack.splice(at,1);}},
     storyMode:true,inRogue:true,REC:{isRecording:()=>false},flagTest:key=>!!save.flags[key],mapAcquired,mapAvailable,
-    getSave:()=>save,itemLost:()=>missing,makeBagScene:options=>({id:options.sceneId,options}),getJob:()=>job,bagJob:()=>job,
+    getSave:()=>save,itemLost:()=>missing,makeBagScene:options=>{
+      let sectionId=options.focus.sectionId;
+      return{id:options.sceneId,options,selectSection:id=>{sectionId=id;},debugState:()=>({nav:{sectionId}})};
+    },getJob:()=>job,bagJob:()=>job,bagJournal:()=>[],
     currentFacilityMapModel:()=>canonical,markRoom:()=>operations.push('mark-room'),markMapSpace:()=>operations.push('mark-space'),
     setMapTarget:()=>operations.push('set-target'),clearMapTarget:()=>operations.push('clear-target'),
     resetMotionInput:()=>operations.push('clear-input'),openMapFromBag:()=>true,
@@ -83,7 +86,8 @@ test('host map shortcut permits a public survey before optional shift selection 
   const open=Function(...Object.keys(dependencies),host+'; return openFieldMap;')(...Object.values(dependencies));
   const initial=structuredClone(save);assert.equal(open(),true);
   let options=stack.at(-1).options;assert.equal(stack.at(-1).id,'field-map');assert.equal(options.readOnly,true);
-  assert.deepEqual(options.sectionIds,['map']);assert.equal(options.getMap(),canonical);
+  assert.deepEqual(options.sectionIds,['map','journal']);assert.equal(options.getMap(),canonical);
+  assert.deepEqual(options.getJob(),{rooms:[],unfiled:[],done:0,total:0});assert.deepEqual(options.getJournal(),[]);
   assert.equal(options.setMapTarget,undefined);assert.equal(options.markRoom,undefined);assert.deepEqual(save,initial);
   assert.equal(open(),true);assert.equal(stack.length,0,'the same shortcut closes its own map');
   save.flags['map.taken']=true;assert.equal(open(),true);options=stack.at(-1).options;
@@ -93,4 +97,25 @@ test('host map shortcut permits a public survey before optional shift selection 
   assert.equal(save.flags['bag.taken'],undefined);assert.equal(save.difficulty,null);assert.deepEqual(operations,[]);
   open();save.flags['bag.taken']=true;missing=false;assert.equal(open(),true);assert.equal(stack.at(-1).id,'bag');
   assert.deepEqual(operations,['open-bag']);
+});
+
+test('arrival journal shares the real surfaces without equipment, work-order leaks or map writes',()=>{
+  const original=model(),commits=[];
+  const scene=makeBagScene({sectionIds:['map','journal'],sceneId:'field-map',readOnly:true,
+    focus:{sectionId:'journal'},memory:null,map:original,
+    job:{rooms:[],unfiled:[],done:0,total:0},equipment:['recorder'],hasRig:()=>true,
+    journal:[{id:'quest:arrival',title:'The van',summary:'The van is where I left it.',state:'active',nature:'lead',trackable:false}],
+    setMapTarget:()=>commits.push('target'),clearMapTarget:()=>commits.push('clear'),onApplySkills:()=>commits.push('skills')});
+  scenes.push(scene);
+  try{
+    assert.deepEqual(scene.debugState().model.sections.map(s=>s.id),['map','journal']);
+    assert.equal(scene.debugState().nav.sectionId,'journal');
+    scene.key({key:'m',code:'KeyM'});assert.equal(scene.debugState().nav.sectionId,'map');
+    assert.equal(scene.debugState().model.map.policy.readOnly,true);
+    assert.ok(scene.debugState().model.map.spaces.every(s=>!s.waypointable));
+    scene.key({key:'Enter',code:'Enter'});scene.key({key:'Delete',code:'Delete'});
+    scene.selectSection('kit');assert.notEqual(scene.debugState().nav.sectionId,'kit');
+    scene.key({key:'Escape',code:'Escape'});assert.notEqual(scenes.top(),scene);
+    assert.deepEqual(commits,[]);assert.equal(original.policy.readOnly,undefined);
+  }finally{scenes.remove(scene);}
 });

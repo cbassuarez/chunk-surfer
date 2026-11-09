@@ -1,0 +1,31 @@
+{
+  "title": "Harmonia artificioso-ariosa, Partia III in A major, C 64 — Allemande",
+  "composer": "Heinrich Ignaz Franz Biber",
+  "performer": "Hofkapelle München; Rüdiger Lotter (director)",
+  "recordist": "Julia Chen",
+  "recordingYear": 2025,
+  "instrumentation": "Two scordatura violins and basso continuo",
+  "cueTag": "biber",
+  "licence": "CC BY 4.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "sourceUrl": "https://openmusic.academy/docs/PWQCUZQKefvy4LmPWCqyyW/tanzen-mit-biber",
+  "scoreSourceUrl": "https://imslp.org/wiki/Harmonia_artificioso-ariosa_(Biber,_Heinrich_Ignaz_Franz_von)",
+  "originalUrl": "https://cdn.openmusic.academy/media-library/biber-allemande-3KnPn8Q8vDDFqW2BcdNDWY.wav",
+  "originalSha256": "ad0dc13d2c1263ca318d8544e9c00f1880d8cd4d8129738ab9aecd821fbd0f91",
+  "originalDurationSeconds": 129.911646,
+  "asset": "audio/b3/biber-harmonia-iii-allemande.mp3",
+  "durationSeconds": 129.911633,
+  "sha256": "78993411a07fdb95e513c67dc8e892486562d0b0c72baa83ece916a6c11fc8fc",
+  "changes": "Complete Allemande with both repeated strains retained; mono fold-down, +1.26 dB fixed gain, 25 ms opening and 350 ms ending fades; 44.1 kHz 128 kbps MP3. Runtime cabinet EQ, spatial attenuation and loop playback; no pitch, tempo or arrangement change.",
+  "adaptationLicence": "This audio adaptation is distributed under CC BY 4.0. Other game content retains its own licence.",
+  "credit": "Heinrich Ignaz Franz Biber, Harmonia artificioso-ariosa, Partia III in A major, C 64 — Allemande. Hofkapelle München, directed by Rüdiger Lotter; recording: Julia Chen. © Hofkapelle München, 2025. Source: Open Music Academy. CC BY 4.0. Mono, level and edge-fade adaptation by Chunk Surfer.",
+  "verification": "Recording-specific credit and CC BY 4.0 verified on the Open Music Academy producer page on 2026-11-08; downloaded its linked full WAV. SHA-256 records the downloaded original for reproducibility; the producer does not publish a comparison checksum.",
+  "offlineMeasurements": {
+    "integratedLufs": -18.49,
+    "truePeakDbtp": -2.56,
+    "loudnessRangeLu": 3.4,
+    "sampleRateHz": 44100,
+    "channels": 1,
+    "playbackAuditioned": false
+  }
+}

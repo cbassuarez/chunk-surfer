@@ -1,0 +1,17 @@
+{
+  "title": "Trio Sonata 11 — I",
+  "composer": "Arcangelo Corelli",
+  "performer": "RP and E Goldstein",
+  "licence": "CC BY-SA 2.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Corelli-Trio_Sonata_11-1.ogg",
+  "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/6/63/Corelli-Trio_Sonata_11-1.ogg",
+  "originalSha1": "bec16a1a198cfe1e5e6a84d53166baa88cf81b04",
+  "asset": "audio/b3/corelli-trio-sonata-11-i.mp3",
+  "durationSeconds": 69.32898,
+  "sha256": "846a9a6da3aa6ce3b7112cb7bd496afa661c54c7c8537429f7a098ec7a66bf95",
+  "changes": "Complete first movement; mono fold-down, -18 LUFS loudness target with -2 dBTP ceiling, 25 ms opening and 350 ms ending fades; 44.1 kHz 128 kbps MP3. Runtime cabinet EQ, spatial attenuation and loop playback; no pitch or time change.",
+  "adaptationLicence": "CC BY-SA 2.0 applies to this audio adaptation. Other game content retains its own licence.",
+  "credit": "Arcangelo Corelli, Trio Sonata 11 — I, performed by RP and E Goldstein. Source: Wikimedia Commons / Al Goldstein collection. CC BY-SA 2.0. Mono, level and edge-fade adaptation by Chunk Surfer; audio adaptation distributed under CC BY-SA 2.0.",
+  "verification": "Recording-specific licence and attribution checked on Commons 2026-11-08; downloaded original matches Commons SHA-1."
+}

@@ -141,6 +141,7 @@ function noteTakeEvent(kind, level, { ratio = null, cause = null } = {}) {
 }
 
 function handleRecordingNoise(level, reason, meta = {}) {
+  if (protectedTakeSource && meta.sourceId !== protectedTakeSource) return;
   if (state.phase !== 'recording' || state.stalled || state.slating) return;
   const threshold = spoilThreshold();
   const inputLevel = recordingInputLevel(level);
@@ -517,8 +518,10 @@ export function stopListening() {
 
 // ROLL. The room drops out, the hiss comes up, and the forty-five seconds
 // begin. Only reachable from LISTEN.
-export function startRecording({ slate = false, keepLight = false } = {}) {
+let protectedTakeSource = null;
+export function startRecording({ slate = false, keepLight = false, protectedSourceId = null } = {}) {
   if (state.phase !== 'listening') return false;
+  protectedTakeSource = protectedSourceId ? String(protectedSourceId) : null;
   state.takeDurationSeconds = configuredTakeDuration();
   state.phase = 'recording';
   if (!keepLight) state.light = false;
@@ -556,6 +559,7 @@ export function stopRecording() {
   const durationSeconds = takeDuration();
   const completed = usableTake();
   state.phase = 'idle';
+  protectedTakeSource = null;
   // The light does NOT come back by itself. Reaching for it is a decision you
   // make in the dark, every time, knowing what it costs.
   const result = { completed, elapsed: state.takeElapsed, tapeElapsed:state.takeTapeElapsed||0, durationSeconds, spoiled: state.spoiled, reason: state.spoilReason, spoilMeta:state.spoilMeta?{...state.spoilMeta}:null };
@@ -568,6 +572,7 @@ export function stopRecording() {
 }
 
 function spoil(reason, meta = {}) {
+  if (protectedTakeSource && meta.sourceId !== protectedTakeSource) return;
   if (state.spoiled) return;
   state.spoiled = true;
   state.spoilReason = reason;

@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {CONSERVATORY_PROPS,PROP_MESH} from '../src/data/conservatory-props.js';
-import {BUILDING_AMENITY_PROPS,PUBLIC_SANITARY_CORE,PUBLIC_SANITARY_PARTITIONS} from '../src/data/building-amenities.js';
+import {BUILDING_AMENITY_PROPS,PUBLIC_SANITARY_CORE,PUBLIC_SANITARY_PARTITIONS,publicSanitaryPoint} from '../src/data/building-amenities.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {segmentHitsTriangle} from './helpers/packed-prop-mesh.mjs';
+import {clipCourtyardArchitecture} from '../tools/chunk_surfer/courtyard-architecture-geometry.mjs';
 
 const fixture=JSON.parse(readFileSync(new URL('./fixtures/atrium-wc-radiator-baseline.json',import.meta.url)));
 const builder=readFileSync(new URL('../tools/chunk_surfer/build-props.mjs',import.meta.url),'utf8');
@@ -37,7 +38,8 @@ function packed(name){const m=gltf.meshes.find(m=>m.name===name);assert.ok(m,`mi
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors});
 PROPS.propsInit(FP);const draws=new Map(PROPS.renderInstances({inscriptions:false}).map(p=>[p.id,p]));
 const renderer=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
-const matrix=new Function(renderer.slice(renderer.indexOf('function identity(){'),renderer.indexOf('function perspective(aspect)'))+';return modelMatrix;')();
+const matrixSource=renderer.slice(renderer.indexOf('function identity(){'),renderer.indexOf('function perspective(aspect)'));
+const matrix=new Function(matrixSource.replace(/^export (?=function)/gm,'')+';return modelMatrix;')();
 const transform=(p,m)=>[0,1,2].map(i=>m[i]*p[0]+m[i+4]*p[1]+m[i+8]*p[2]+m[i+12]);
 const world=(tris,draw)=>{const m=matrix(draw);return tris.map(t=>t.vertices.map(v=>transform(v.position,m)));};
 const bounds=tri=>({min:[0,1,2].map(i=>Math.min(...tri.map(p=>p[i]))),max:[0,1,2].map(i=>Math.max(...tri.map(p=>p[i])))});
@@ -52,18 +54,21 @@ test('remove exactly the obsolete southwest radiator; every other actual atrium 
   assert.ok(!nowTriangles.some(removed),'no orphan radiator fin or mounting foot may remain inside the approved core');
 });
 
-test('actual old radiator crosses the real WC bowl; repaired assembly has no WC triangle crossing',()=>{
+test('the historical radiator crossing is reproduced; retained fittings clear the relocated actual WC',()=>{
   const atrium=draws.get('atrium-public-fittings'),wc=draws.get('amenity-standard-wc');
   assert.deepEqual([atrium.x,atrium.y,atrium.z,atrium.yaw],[85.5,0,15,0]);
-  const toilet=world(triangles(packed(wc.mesh)),wc),oldHits=crossings(world(obsolete,atrium),toilet),newHits=crossings(world(nowTriangles,atrium),toilet);
+  const bowl=triangles(packed(wc.mesh)),toilet=world(bowl,wc);
+  const historical=world(bowl,{...wc,x:79.1,z:26.33,yaw:Math.PI});
+  const oldHits=crossings(world(obsolete,atrium),historical),newHits=crossings(world(nowTriangles,atrium),toilet);
   assert.ok(oldHits>0,'negative control: actual original radiator must reproduce the measured bowl crossing');
   assert.equal(newHits,0,'all remaining atrium component triangles must clear the real scaled WC');
 });
 
 test('approved core plan, WC pose, working approach and the nonblocking atrium instance remain intact',()=>{
   const authored=BUILDING_AMENITY_PROPS.find(p=>p.id==='amenity-standard-wc');
-  assert.deepEqual([authored.x,authored.y,authored.yaw,authored.scale,authored.blocks],[79.1,26.33,Math.PI,.88,true]);
-  assert.deepEqual([PUBLIC_SANITARY_CORE.x0,PUBLIC_SANITARY_CORE.x1,PUBLIC_SANITARY_CORE.y0,PUBLIC_SANITARY_CORE.y1],[75,82,23.5,27]);
+  assert.ok(Math.abs(authored.x-75.67)<1e-9);assert.ok(Math.abs(authored.y-9.1)<1e-9);
+  assert.deepEqual([authored.yaw,authored.scale,authored.blocks],[Math.PI*1.5,.88,true]);
+  assert.deepEqual([PUBLIC_SANITARY_CORE.x0,PUBLIC_SANITARY_CORE.x1,PUBLIC_SANITARY_CORE.y0,PUBLIC_SANITARY_CORE.y1],[75,78.5,5,12]);
   assert.equal(PUBLIC_SANITARY_PARTITIONS.length,9);
   const atrium=CONSERVATORY_PROPS.find(p=>p.id==='atrium-public-fittings');assert.deepEqual([atrium.x,atrium.y,atrium.yaw],[85.5,15,0]);
   assert.equal(atrium.interactive,false);assert.equal(PROP_MESH.atrium_public_fittings.blocks,false);
@@ -71,7 +76,8 @@ test('approved core plan, WC pose, working approach and the nonblocking atrium i
   // The existing WC route is tested with the real current compiled floor and
   // prop-body query; removing a decorative radiator must require no plan change.
   for(let y=24.9;y<=25.25;y+=.05)for(const[dx,dz]of[[0,0],[-.2,0],[.2,0],[0,-.2],[0,.2]]){
-    const rx=(79.25+dx-.25)*2,ry=(y+dz-.25)*2;
+    const point=publicSanitaryPoint(79.25+dx,y+dz);
+    const rx=(point.x-.25)*2,ry=(point.y-.25)*2;
     assert.equal(FP.isSolid(rx,ry),false,`WC approach wall at ${dx},${y+dz}`);
     assert.equal(PROPS.propCanOccupy(rx,ry),true,`WC approach prop at ${dx},${y+dz}`);
   }
@@ -88,6 +94,13 @@ test('installed actual GLB includes the removal rather than retaining source-onl
     return {...g,material:matches[0]};
   });
   const actual=triangles(groups);
-  assert.equal(actual.length,nowTriangles.length,'rebake required: installed atrium still contains obsolete sanitary-bay radiator geometry');
-  assert.equal(digest(actual),digest(nowTriangles),'installed atrium must match every executed production triangle/material/normal/UV');
+  // Production removes the old south-room fittings where the baths courts
+  // are now open air. Apply that real final factory stage before comparing;
+  // the raw radiator fixture above intentionally remains historical evidence.
+  const clipped={name:current.name,groups:new Map([...current.groups].map(([mat,g])=>[mat,structuredClone(g)]))};
+  clipCourtyardArchitecture(new Map([[clipped.name,clipped]]));
+  clipCourtyardArchitecture(new Map([[clipped.name,clipped]]));
+  const expected=triangles([...clipped.groups].map(([material,g])=>({material,...g})));
+  assert.equal(actual.length,expected.length,'installed atrium must include both radiator removal and the actual courtyard cuts');
+  assert.equal(digest(actual),digest(expected),'installed atrium must match every executed production triangle/material/normal/UV');
 });

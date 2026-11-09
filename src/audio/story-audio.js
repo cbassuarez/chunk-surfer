@@ -115,6 +115,12 @@ const pending = new Map();
 let soundtrack = null; // { src, gain, startedAt, stopping, track }
 let soundtrackGeneration = 0;
 let openingOverture = null, openingOvertureGeneration = 0;
+let openingThresholdTag = null;
+// The final four attacks are 96.03, 96.53, 97.03 and 97.53 seconds in the
+// supplied recording (120 BPM). Begin just ahead of the first transient and
+// retain the complete recorded decay through the file's natural end.
+export const OPENING_TITLE_TAG = Object.freeze({sourceStart:95.98, sourceEnd:104.019592,
+  crossfadeSeconds:.06, durationSeconds:8.039592, source:'audio/game/title_song.mp3'});
 let openingOverturePreparationError = null;
 export const OPENING_OVERTURE_SOURCE_OFFSET_SECONDS = 2.32;
 let openingBed = null; // { src, hp, lp, gain, startedAt, downbeatAt, stopping, target }
@@ -240,6 +246,9 @@ export function musicVolume() { return musicScale; }
 // which is what makes this safe to call from a scene's enter() every time.
 export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at = null, offset = 0, openingOwner = null } = {}) {
   if (!ctx || !bus) return null;
+  // The door has committed to the recorded cadence. A guard/room request in
+  // that short interval cannot resurrect the looping title underneath it.
+  if(openingThresholdTag&&track==='title')return openingThresholdTag.voice;
   if (openingOverture && track !== 'title') stopOpeningOvertureScore({ fade: .02 });
   if (openingOverture && track === 'title' && openingOwner !== openingOverture.epoch && (openingOverture.paused || openingOverture.pending)) return null;
   const generation = ++soundtrackGeneration, context = ctx;
@@ -358,6 +367,11 @@ export function startOpeningOvertureScore({ fade = .12, offset = 0, sourceOffset
   return openingOvertureScoreState();
 }
 export function pauseOpeningOvertureScore() {
+  if(openingThresholdTag){
+    const tag=openingThresholdTag;
+    if(!tag.paused){tag.offset=thresholdTagPosition(tag);tag.paused=true;retireThresholdTagVoice(tag);}
+    return openingThresholdTagState();
+  }
   const owner = openingOverture;
   if (!owner || owner.paused) return openingOvertureScoreState();
   owner.offset = overturePosition(owner); owner.paused = true;
@@ -366,10 +380,16 @@ export function pauseOpeningOvertureScore() {
   return openingOvertureScoreState();
 }
 export function resumeOpeningOvertureScore() {
+  if(openingThresholdTag){
+    const tag=openingThresholdTag;
+    if(tag.paused){tag.paused=false;tag.startedAt=null;playThresholdTag(tag);}
+    return openingThresholdTagState();
+  }
   if (openingOverture) { openingOverture.paused = false; playOpeningOverture(openingOverture); }
   return openingOvertureScoreState();
 }
 export function stopOpeningOvertureScore({ fade = .05 } = {}) {
+  if(openingThresholdTag){const tag=openingThresholdTag;openingThresholdTag=null;retireThresholdTagVoice(tag);}
   const owner = openingOverture; openingOverture = null; openingOvertureGeneration++;
   if (owner?.voice && soundtrack === owner.voice) {
     if (fade <= 0) stopSoundtrackNow(); else fadeSoundtrack({ fade });
@@ -377,9 +397,67 @@ export function stopOpeningOvertureScore({ fade = .05 } = {}) {
   return openingOvertureScoreState();
 }
 
+function thresholdTagPosition(tag=openingThresholdTag){
+  return tag?Math.min(OPENING_TITLE_TAG.durationSeconds,tag.offset+(tag.paused||tag.startedAt==null?0:Math.max(0,(ctx?.currentTime||0)-tag.startedAt))):0;
+}
+export function openingThresholdTagState(){
+  const tag=openingThresholdTag,position=thresholdTagPosition(tag);
+  return{active:!!tag,paused:!!tag?.paused,playing:!!tag?.voice&&!tag.paused,pending:!!tag?.pending,
+    positionSeconds:position,durationSeconds:OPENING_TITLE_TAG.durationSeconds,
+    sourcePositionSeconds:OPENING_TITLE_TAG.sourceStart+position};
+}
+function retireThresholdTagVoice(tag){
+  const voice=tag?.voice;if(!voice)return;tag.voice=null;
+  voice.retired=true;
+  if(soundtrack===voice)soundtrack=null;
+  try{voice.src.stop();}catch(_){}
+  try{voice.src.disconnect();voice.gain.disconnect();}catch(_){}
+}
+function playThresholdTag(tag){
+  if(tag!==openingThresholdTag||tag.paused||tag.voice||!ctx||ctx.state!=='running')return;
+  const buffer=buffers.get(STORY_AUDIO.title);
+  if(!buffer){
+    if(tag.pending)return;
+    tag.pending=true;preload(STORY_AUDIO.title).then(loaded=>{
+      if(tag!==openingThresholdTag)return;tag.pending=false;if(loaded)playThresholdTag(tag);else openingThresholdTag=null;
+    });return;
+  }
+  const position=thresholdTagPosition(tag),offset=OPENING_TITLE_TAG.sourceStart+position;
+  if(position>=OPENING_TITLE_TAG.durationSeconds||offset>=buffer.duration){openingThresholdTag=null;return;}
+  const source=ctx.createBufferSource(),gain=ctx.createGain(),at=ctx.currentTime;
+  tag.startedAt=at;
+  source.buffer=buffer;source.loop=false;gain.gain.setValueAtTime(0,at);
+  source.connect(gain);gain.connect(outBus('music'));
+  const voice={src:source,gain,context:ctx,startedAt:at,offset,stopping:false,track:'title'};
+  tag.voice=voice;soundtrack=voice;
+  setGainAt(gain,SOUNDTRACK_GAIN*musicScale,at,OPENING_TITLE_TAG.crossfadeSeconds);
+  source.onended=()=>{try{source.disconnect();gain.disconnect();}catch(_){}
+    if(tag.voice===voice)tag.voice=null;if(soundtrack===voice)soundtrack=null;
+    if(!voice.retired&&openingThresholdTag===tag&&!tag.paused)openingThresholdTag=null;
+  };
+  try{source.start(at,offset,Math.max(0,Math.min(buffer.duration,OPENING_TITLE_TAG.sourceEnd)-offset));}
+  catch(_){retireThresholdTagVoice(tag);if(openingThresholdTag===tag)openingThresholdTag=null;}
+}
+
+// A door press replaces the bed with its actual final bar and recorded tail.
+// It is finite, uses the music bus/settings, and is cancelled by stopAll.
+export function commitOpeningOvertureToTag(){
+  if(openingThresholdTag)return openingThresholdTagState();
+  openingOverture=null;openingOvertureGeneration++;soundtrackGeneration++;
+  stopOpeningSceneBed({fade:OPENING_TITLE_TAG.crossfadeSeconds});
+  const previous=soundtrack;soundtrack=null;
+  if(previous){
+    previous.stopping=true;setGain(previous.gain,0,OPENING_TITLE_TAG.crossfadeSeconds);
+    try{previous.src.stop((ctx?.currentTime||0)+OPENING_TITLE_TAG.crossfadeSeconds+.008);}catch(_){}
+  }
+  if(!ctx||!bus)return{active:false,durationSeconds:OPENING_TITLE_TAG.durationSeconds,reason:'no-context'};
+  openingThresholdTag={offset:0,startedAt:null,paused:false,pending:false,voice:null};
+  playThresholdTag(openingThresholdTag);return openingThresholdTagState();
+}
+
 
 export function startOpeningSceneBed({ gain = OPENING_BED_GAIN, fade = 1.8 } = {}) {
-  if (openingOverture) return null;
+  if (openingOverture||openingThresholdTag) return null;
   if (!ctx || !bus || openingBed) return openingBed;
   openingBedWanted = true;
   const generation = openingBedGeneration;
@@ -498,6 +576,7 @@ function hardStopOpeningSceneBedAt(at) {
 }
 
 export function commitOpeningSceneBedToColdOpenTitle({ fade = 0.012 } = {}) {
+  if(openingThresholdTag)return{scheduled:false,at:ctx?.currentTime||0,delaySeconds:0,reason:'door-cadence-committed'};
   if (openingOverture) return { scheduled: false, at: ctx?.currentTime || 0, delaySeconds: 0, reason: 'overture-continuing' };
   if (!ctx || !bus) {
     startSoundtrack({ track: 'title', fade: 0.04 });
@@ -528,6 +607,7 @@ export function commitOpeningSceneBedToColdOpenTitle({ fade = 0.012 } = {}) {
 }
 
 export function fadeSoundtrack({ fade = 7.0 } = {}) {
+  if(openingThresholdTag){openingThresholdTag=null;}
   soundtrackGeneration++;
   openingOverture = null; openingOvertureGeneration++;
   if (!ctx || !soundtrack) return;

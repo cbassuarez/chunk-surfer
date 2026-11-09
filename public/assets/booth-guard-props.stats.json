@@ -1,9 +1,9 @@
 {
-  "revision": "public-window-work-v1",
+  "revision": "west-facing-workplace-v2",
   "source": "public/assets/conservatory-props.glb",
-  "sourceSHA256": "52bd50b152dfa68a59e2dd25f305874e140bcd9e3be7d7a603151c215273554f",
-  "sha256": "bf538d8dcfcc62a897b01f19d0ead97fe11470f5622296606c1768430a7dd7eb",
-  "bytes": 217516,
+  "sourceSHA256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
+  "sha256": "35285a4c4e909fbace4afae6f081bbf2a58601a32eb7d574ff6ced3bd1221252",
+  "bytes": 316368,
   "meshes": [
     {
       "name": "yard_booth_glazing",
@@ -39,6 +39,16 @@
       "name": "booth_guard_cup",
       "triangles": 640,
       "primitives": 2
+    },
+    {
+      "name": "yard_booth_workplace",
+      "triangles": 1008,
+      "primitives": 9
+    },
+    {
+      "name": "yard_booth_tv_screen",
+      "triangles": 192,
+      "primitives": 1
     }
   ],
   "originalMaterialEvidence": {
@@ -363,6 +373,14 @@
     {
       "name": "booth_guard_cup",
       "triangles": 640
+    },
+    {
+      "name": "yard_booth_workplace",
+      "triangles": 1008
+    },
+    {
+      "name": "yard_booth_tv_screen",
+      "triangles": 192
     }
   ],
   "pending": [

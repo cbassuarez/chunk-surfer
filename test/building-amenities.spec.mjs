@@ -8,6 +8,7 @@ import {
   PUBLIC_SANITARY_CORE, PUBLIC_SANITARY_PARTITIONS, BUILDING_AMENITY_LEVELS,
   BUILDING_AMENITY_DOORS, BUILDING_AMENITY_COLLIDERS, BUILDING_AMENITY_MESHES,
   BUILDING_AMENITY_PROPS, BUILDING_AMENITY_SURVEY_NODES,
+  publicSanitaryPoint,
 } from '../src/data/building-amenities.js';
 import { buildBuildingAmenities } from '../tools/chunk_surfer/building-amenities-geometry.mjs';
 
@@ -39,6 +40,8 @@ const walk = (points) => {
     }
   }
 };
+const corePoint=(x,y)=>{const p=publicSanitaryPoint(x,y);return[p.x,p.y];};
+const walkCore=points=>walk(points.map(([x,y])=>corePoint(x,y)));
 
 test('approved public core compiles as lower service accommodation with two real unlocked doors', () => {
   for (const door of BUILDING_AMENITY_DOORS) {
@@ -46,7 +49,7 @@ test('approved public core compiles as lower service accommodation with two real
     assert.ok(actual, door.id); assert.equal(actual.keyId, null); assert.equal(actual.open, true);
     assert.equal(actual.closer, 'none'); assert.equal(actual.mesh, DOOR_ARCHETYPES[door.archetype].mesh);
   }
-  for (const [x, y] of [[75.75, 24.75], [77.25, 25.75], [80.75, 26.25]]) {
+  for (const [x, y] of [[75.75, 24.75], [77.25, 25.75], [80.75, 26.25]].map(([x,y])=>corePoint(x,y))) {
     assert.equal(FP.floorAt(rt(x), rt(y)), 0);
     assert.equal(FP.cellAt(rt(x), rt(y)).ceil, 3.5);
     assert.equal(FP.materialAt(rt(x), rt(y)), MATERIAL.wetTile);
@@ -56,25 +59,26 @@ test('approved public core compiles as lower service accommodation with two real
 });
 
 test('both WC cubicles and the open washroom are entered by actual body paths', () => {
-  walk([[76.75, 22.75], [76.75, 24.75], [76.75, 25.0]]);
-  walk([[80.75, 22.75], [80.75, 24.25], [79.25, 24.25], [79.25, 25.25]]);
+  walkCore([[76.75, 22.75], [76.75, 24.75], [76.75, 25.0]]);
+  walkCore([[80.75, 22.75], [80.75, 24.25], [79.25, 24.25], [79.25, 25.25]]);
   // Closing either real leaf refuses its throat and reopening restores it.
-  for (const [id, x, y] of [['public-wc-large', 76.75, 23.75], ['public-wc-standard', 79.25, 24.75]]) {
+  for (const [id, oldX, oldY] of [['public-wc-large', 76.75, 23.75], ['public-wc-standard', 79.25, 24.75]]) {
+    const[x,y]=corePoint(oldX,oldY);
     FP.setDoorOpen(id, false); assert.equal(canStand(x, y), false, `${id}: closed`);
     FP.setDoorOpen(id, true); assert.equal(canStand(x, y), true, `${id}: reopened`);
   }
-  assert.equal(canStand(78.25, 25.25), false, 'cubicle divider is body-solid');
-  assert.equal(canStand(81.75, 25.25), false, 'outside side wall is body-solid');
-  assert.equal(canStand(76.25, 26.0), false, 'toilet pedestal/bowl has collision');
+  assert.equal(canStand(...corePoint(78.25,25.25)),false,'cubicle divider is body-solid');
+  assert.equal(canStand(...corePoint(81.75,25.25)),false,'outside side wall is body-solid');
+  assert.equal(canStand(...corePoint(76.25,26.0)),false,'toilet pedestal/bowl has collision');
 });
 
 test('approved circulation, pool washing and story-counter approach remain clear', () => {
-  walk([[75.75, 22.25], [95.25, 22.25]]);
-  walk([[85.25, 22.25], [85.25, 26.25]]);
+  walk([[75.25,12.25],[96.75,12.25]]);
+  walk([[75.25,13.75],[96.75,13.75]]);
   walk([[74.25, 31.75], [74.25, 30.25], [72.75, 30.25]]);
   walk([[17.25, 272.75], [17.25, 271.25], [17.25, 270.75]]);
-  assert.equal(canStand(80.46,25.75),false,'parked cupboard leaf blocks a body before it reaches the visible panel');
-  walk([[80.95,24.25],[80.95,25.50],[80.95,25.85]]);
+  assert.equal(canStand(...corePoint(80.46,25.75)),false,'parked cupboard leaf blocks a body before it reaches the visible panel');
+  walkCore([[80.95,24.25],[80.95,25.50],[80.95,25.85]]);
   for (const p of PUBLIC_SANITARY_PARTITIONS) {
     assert.ok(p.x - p.width / 2 >= PUBLIC_SANITARY_CORE.x0 - 1e-8);
     assert.ok(p.x + p.width / 2 <= PUBLIC_SANITARY_CORE.x1 + 1e-8);
@@ -117,7 +121,7 @@ test('every amenity mesh is constructed, finite and made of functional visible p
   assert.equal(leafBody.depth,parkedLeaf.args[1][2]+leafBody.bodyMargin*2);
   assert.equal(leafBody.minElevation,leafCentre[1]-parkedLeaf.args[1][1]/2);
   assert.equal(leafBody.maxElevation,leafCentre[1]+parkedLeaf.args[1][1]/2);
-  assert.ok(leafBody.x+leafBody.width/2<80.75,'the cupboard leaf does not claim the washroom approach lane');
+  assert.ok(leafBody.x+leafBody.depth/2<77.25,'the turned cupboard leaf does not claim the washroom approach lane');
   const slopStart = cupboard.findIndex((p) => p.kind === 'quad');
   const mopHandle = cupboard.findIndex((p) => p.kind === 'beam' && p.args[0][0] > .20 && p.args[1][1] > 1.5);
   assert.ok(slopStart >= 0 && mopHandle > slopStart, 'maintenance washing occupies the existing lower bay before the retained mop');
@@ -164,11 +168,11 @@ test('every amenity mesh is constructed, finite and made of functional visible p
       : placed.y + localX * Math.sin(yaw) + localZ * Math.cos(yaw);
     assert.ok(Math.abs(world - wall) <= .026, `${id}: mounting surface is ${(Math.abs(world - wall) * 100).toFixed(1)}cm off actual wall`);
   };
-  wallContact('amenity-large-wc', .47, 'y', 26.68);
-  wallContact('amenity-standard-wc', .47, 'y', 26.68);
-  wallContact('amenity-public-washbasin', .56, 'x', 81.68);
-  wallContact('amenity-large-wc-mirror-soap', .62, 'x', 78.18);
-  wallContact('amenity-pool-mirror-soap', .62, 'y', 28);
+  wallContact('amenity-large-wc', .47, 'x', 75.32);
+  wallContact('amenity-standard-wc', .47, 'x', 75.32);
+  wallContact('amenity-public-washbasin', .56, 'y', 11.68);
+  wallContact('amenity-large-wc-mirror-soap', .62, 'y', 8.18);
+  wallContact('amenity-pool-mirror-soap', .62, 'y', 37.93);
   wallContact('amenity-public-drinking-fountain', .56, 'x', 97);
   wallContact('amenity-staff-coat-lockers', 1.4, 'x', 19);
   assert.ok(materials.every((m) => !m.emissiveFactor), 'powered-off amenities invent no glowing pilots');

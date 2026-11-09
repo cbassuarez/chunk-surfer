@@ -28,13 +28,21 @@ try{
   await page.waitForFunction(()=>window.__probe?.testRun&&['eula','opening-credits','title'].includes(window.__scenes?.top()?.id),{timeout:90000});
   await page.evaluate(async()=>{
     await window.__probe.testRun();window.__probe.tutSkip();
-    const url=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/render/props3d.js')?.name;
-    window.__boothRenderer=await import(url||'/src/render/props3d.js');
+    // Read through the existing main -> R3 -> P3 graph. Importing the first
+    // historical resource URL can silently inspect an obsolete HMR singleton.
+    // hushBody()'s character field is an existing read-only renderer diagnostic;
+    // it returns the complete character catalogue/poses, not only HUSH.
+    window.__boothRenderer={characterStats:()=>window.__probe.hushBody().character,
+      propPackStats:()=>window.__probe.props().pack};
     window.__probe.setFlags(['van.closed','kit.fitted']);
     window.__probe.storyCapturePreset('arrival-lodge');
-    window.__probe.warpCell(75.6,214,0);
-    window.__probe.lookAtWorld(-Math.PI/2,-.02);
+    window.__probe.warpCell(71,212.5,1);
+    window.__probe.lookAtWorld(Math.PI/2,-.02);
   });
+  // Reassert a safe frame after setup. Diagnostic reconnects must themselves
+  // use defaultViewport:null; Puppeteer's800x600 default triggers a real hold.
+  await page.setViewport({width:1440,height:900,deviceScaleFactor:1});
+  await page.evaluate(()=>window.dispatchEvent(new Event('resize')));
   await page.waitForFunction(()=>window.__boothRenderer.characterStats().poses.some(p=>p.id==='yard-booth-guard-idle'&&p.mesh==='overworld_booth_guard'),{timeout:90000});
   await sleep(900);
   async function capture(name){

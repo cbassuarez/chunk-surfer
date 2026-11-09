@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-02T05:50:30.569Z",
-  "bytes": 64405332,
-  "totalTriangles": 890425,
+  "generatedAt": "2026-11-09T00:19:33.063Z",
+  "bytes": 64509688,
+  "totalTriangles": 891133,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -2196,12 +2196,12 @@
       "vertices": 1419
     },
     "baseboard_ground": {
-      "triangles": 4104,
-      "vertices": 8208
+      "triangles": 4152,
+      "vertices": 8304
     },
     "baseboard_hall": {
-      "triangles": 1740,
-      "vertices": 3480
+      "triangles": 1896,
+      "vertices": 3792
     },
     "baseboard_basement": {
       "triangles": 2244,
@@ -2212,8 +2212,8 @@
       "vertices": 2616
     },
     "baseboard_academic": {
-      "triangles": 1368,
-      "vertices": 2736
+      "triangles": 1272,
+      "vertices": 2544
     },
     "baseboard_tower": {
       "triangles": 4392,
@@ -2224,8 +2224,8 @@
       "vertices": 2496
     },
     "baseboard_academicRoof": {
-      "triangles": 1476,
-      "vertices": 2952
+      "triangles": 1404,
+      "vertices": 2808
     },
     "park_marble_eyes": {
       "triangles": 2392,
@@ -2502,6 +2502,10 @@
     "building_dressing_batch_hall": {
       "triangles": 6588,
       "vertices": 10358
+    },
+    "hall_stage_service_steps": {
+      "triangles": 672,
+      "vertices": 1344
     }
   },
   "courtyardArchitecture": [
@@ -4800,7 +4804,7 @@
       "max": [
         3.509,
         3.5,
-        16.55
+        1.759
       ]
     },
     "amenity_pool_wash_screens": {
@@ -10033,6 +10037,18 @@
         14,
         17,
         36
+      ]
+    },
+    "hall_stage_service_steps": {
+      "min": [
+        0,
+        -1.68,
+        -1.028
+      ],
+      "max": [
+        5,
+        0.977,
+        1.028
       ]
     }
   },

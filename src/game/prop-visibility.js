@@ -35,6 +35,15 @@ const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
   'getin_sightline_shell',
 ]);
 
+// These are indoor display holders, even when a later courtyard conversion
+// gives their supporting cell an outdoor zone. Real shop signs and the public
+// closure notice are part of their exterior architecture, not these holders.
+const INTERIOR_WALL_DISPLAY_MESHES=new Set(['portrait_frame','notice_board']);
+export function isExteriorHiddenWallDisplay(instance,observerZone){
+  return isOutdoorZone(observerZone)&&!isLoadingBaySightlineProp(instance)
+    &&(INTERIOR_WALL_DISPLAY_MESHES.has(instance?.mesh)||!!instance?.posterSiteId);
+}
+
 // WHICH SIDE OF THE ENVELOPE THE OBSERVER IS ON, asked of the ZONE.
 //
 // This used to be a bounding box on x/z, and the loading bay apron broke it: the
@@ -86,6 +95,7 @@ export function isLoadingBaySightlineProp(instance){
 }
 
 export function shouldHideCrossEnvelopeProp(instance,{observerZone=null,exteriorWindow=null}={}){
+  if(isExteriorHiddenWallDisplay(instance,observerZone))return true;
   if(['occupation-baths-service-entry','occupation-baths-rainwater'].includes(instance?.id))return false;
   if(String(instance?.id||'').startsWith('building-window-unit-')||instance?.id==='natatorium-end-window')return false;
   if(!isExteriorObserver({zone:observerZone})){

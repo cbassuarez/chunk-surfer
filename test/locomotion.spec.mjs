@@ -5,19 +5,33 @@ import {
   GAIT_ORDER, GAIT_SPEED, GAIT_NOISE, PLACE_GAITS, BREATH,
   chooseGait, gaitsForPlace, gaitSpeed, gaitNoise, applySpeedFactors,
   cellIntervalMs, stepIntervalMs, sprintSeconds, freshBreath, stepBreath, breathExertion,
+  sceneWalkSpeed, createSceneRunKey,
 } from '../src/game/locomotion.js';
+import { SOURCE_IV } from '../src/data/source-iv.js';
+import { freshSourceIV, stepSourceIV } from '../src/game/source-iv.js';
+import { SOURCE_PUB } from '../src/data/source-pub.js';
+import { sourcePubEntry, stepSourcePub } from '../src/game/source-pub.js';
+import { SOURCE_CONTINUATION } from '../src/data/source-continuation.js';
+import { FIRST_STRIKE } from '../src/data/first-strike.js';
+import { packFirstStrikeConstruction, restoreFirstStrikeConstruction } from '../src/game/first-strike-entry.js';
+import { walkCoastalMemoryPose } from '../src/game/coastal-memory-scene.js';
+import { COASTAL_MEMORY_LAYOUT } from '../src/data/coastal-memory.js';
+import { freshSourceContinuation, resumeSourceContinuation, stepSourceContinuation } from '../src/game/source-continuation.js';
+import { sourceTideField } from '../src/game/source-continuation-tides.js';
+import { freshFirstStrike, stepFirstStrike } from '../src/game/first-strike-scene.js';
 
-test('the ladder is ordered, human and priced', () => {
+test('the faster exploration ladder is ordered and priced', () => {
   assert.deepEqual(GAIT_ORDER, ['crawl', 'walk', 'jog', 'run', 'sprint']);
-  assert.deepEqual(GAIT_ORDER.map(g => GAIT_SPEED[g]), [0.7, 2.0, 2.6, 4.0, 6.0]);
+  assert.deepEqual(GAIT_ORDER.map(g => GAIT_SPEED[g]), [0.7, 2.6, 3.6, 5.2, 7.5]);
   assert.deepEqual(GAIT_ORDER.map(g => GAIT_NOISE[g]), [0.06, 0.12, 0.22, 0.32, 0.45]);
   for (let i = 1; i < GAIT_ORDER.length; i++) {
     assert.ok(GAIT_SPEED[GAIT_ORDER[i]] > GAIT_SPEED[GAIT_ORDER[i - 1]]);
     assert.ok(GAIT_NOISE[GAIT_ORDER[i]] > GAIT_NOISE[GAIT_ORDER[i - 1]]);
   }
-  // A comfortable human walk, and the walk-to-run transition between walk and jog.
-  assert.ok(GAIT_SPEED.walk >= 1.9 && GAIT_SPEED.walk <= 2.1);
-  assert.ok(GAIT_SPEED.walk < 2.6 && GAIT_SPEED.jog > 2.0);
+  // Deliberate footing keeps its old pace; exploration and pursuit are faster.
+  assert.equal(GAIT_SPEED.crawl, 0.7);
+  assert.ok(GAIT_SPEED.walk / 2.0 >= 1.3);
+  assert.ok(GAIT_SPEED.jog / 2.6 > 1.3);
 });
 
 test('every place offers exactly two speeds, and all five gaits appear somewhere', () => {
@@ -55,7 +69,7 @@ test('the run key moves one rung; a winded sprint is a run', () => {
 test('speed factors only slow, and nothing escapes the floor or the sprint', () => {
   assert.equal(applySpeedFactors(1.4, [0.5]), 0.7);
   assert.equal(applySpeedFactors(1.4, [0.01]), 0.25);
-  assert.equal(applySpeedFactors(9, []), 6);
+  assert.equal(applySpeedFactors(9, []), 7.5);
   assert.equal(applySpeedFactors(1.4, [0, NaN, -1]), 1.4);
 });
 
@@ -86,6 +100,30 @@ test('a walk stays a walk however far he goes: the procedural world never slows 
   // The real slow-downs still ride on top.
   const wrench = locomotionSandbox({ ...tired, PLANT: { heavyWrenchDragging: () => true } });
   assert.ok(Math.abs(wrench.locomotion().speed - GAIT_SPEED.walk * 0.65) < 1e-9);
+});
+
+test('the live world uses faster floor paces and chase sprint without a legacy timing cap', () => {
+  const hunting = { publicSnapshot: () => ({ active: true, x: 12, y: 10, behaviorMode: 'chase' }) };
+  for (const exterior of [false, true]) {
+    const world = locomotionSandbox({ isOutdoorZone: () => exterior });
+    assert.equal(world.locomotion().speed, 2.6);
+    assert.equal(world.interval(), 192);
+    world.setRun(true);
+    assert.equal(world.locomotion().speed, exterior ? 5.2 : 3.6);
+    assert.equal(world.interval(), exterior ? 96 : 139);
+
+    const chase = locomotionSandbox({ PRES: hunting, isOutdoorZone: () => exterior }, {
+      extra: '\nglobalThis.windPlayer=()=>{playerBreath={reserve:0,winded:true,sprinting:false};};',
+    });
+    chase.setRun(true);
+    assert.equal(chase.locomotion().gait, 'sprint');
+    assert.equal(chase.locomotion().speed, 7.5);
+    assert.equal(chase.interval(), 67);
+    chase.windPlayer();
+    assert.equal(chase.locomotion().gait, 'run');
+    assert.equal(chase.locomotion().speed, 5.2);
+    assert.equal(chase.interval(), 96);
+  }
 });
 
 test('a sprint lasts six to eight seconds, fear spends it faster, the run is free', () => {
@@ -125,4 +163,128 @@ test('the breath is heard only once it is being spent, and loudest winded', () =
   // A huge frame cannot spend a whole sprint at once.
   const lurch = stepBreath(freshBreath(), 10, { gait: 'sprint' });
   assert.ok(lurch.reserve > 0.9);
+});
+
+test('self-contained scenes use their actual place pair unless their pursuit opts into sprint', () => {
+  for (const [place, slow, fast] of [
+    ['tight', 'crawl', 'walk'], ['interior', 'walk', 'jog'],
+    ['exterior', 'walk', 'run'], ['authored', 'walk', 'walk'],
+  ]) {
+    assert.equal(sceneWalkSpeed(place, false), GAIT_SPEED[slow]);
+    assert.equal(sceneWalkSpeed(place, true), GAIT_SPEED[fast]);
+  }
+  assert.equal(SOURCE_IV.place, 'exterior');
+  assert.equal(SOURCE_PUB.place, 'interior');
+  assert.equal(SOURCE_CONTINUATION.place, 'interior');
+  assert.equal(SOURCE_CONTINUATION.hush.speed, GAIT_SPEED.jog);
+  assert.equal(SOURCE_CONTINUATION.hush.teachingSpeed, GAIT_SPEED.walk * .9);
+  assert.equal(FIRST_STRIKE.clearanceSpeed, GAIT_SPEED.run);
+  assert.ok(Math.abs(SOURCE_PUB.barrelSpeed / SOURCE_PUB.walkSpeed - 1.30 / 2.35) < 1e-12);
+});
+
+test('self-contained pursuits share sprint, winded fallback and tight-space restrictions', () => {
+  for (const place of ['interior', 'exterior']) {
+    assert.equal(sceneWalkSpeed(place, false, { chase: true }), GAIT_SPEED.walk);
+    assert.equal(sceneWalkSpeed(place, true, { chase: true }), GAIT_SPEED.sprint);
+    assert.equal(sceneWalkSpeed(place, true, { chase: true, winded: true }), GAIT_SPEED.run);
+    assert.equal(sceneWalkSpeed(place, true, { winded: true }), sceneWalkSpeed(place, true));
+  }
+  assert.equal(sceneWalkSpeed('tight', true, { chase: true }), GAIT_SPEED.walk);
+  assert.equal(sceneWalkSpeed('tight', false, { chase: true }), GAIT_SPEED.crawl);
+  assert.equal(sceneWalkSpeed('authored', true, { chase: true }), GAIT_SPEED.walk);
+});
+
+test('scene Shift keys remain independent and release without changing the pad latch', () => {
+  const key = createSceneRunKey();
+  assert.equal(key.key({ key: 'w' }), false);
+  assert.equal(key.active(), false);
+  assert.equal(key.key({ key: 'Shift', code: 'ShiftLeft' }), true);
+  assert.equal(key.key({ key: 'Shift', code: 'ShiftRight' }), true);
+  key.keyup({ key: 'Shift', code: 'ShiftLeft' });
+  assert.equal(key.active(), true);
+  key.keyup({ key: 'Shift', code: 'ShiftRight' });
+  assert.equal(key.active(), false);
+  key.key({ controllerAction: 'run' });
+  key.key({ key: 'Shift', code: 'ShiftLeft' });
+  key.keyup({ key: 'Shift', code: 'ShiftLeft' });
+  assert.equal(key.active(), true);
+});
+
+test('scene pad run toggles once, ignores repeats, rests, and clears on interruption', () => {
+  const key = createSceneRunKey();
+  key.key({ controllerAction: 'run' });
+  key.key({ controllerAction: 'run', repeat: true });
+  assert.equal(key.active(), true);
+  assert.equal(key.update(2, true), true);
+  assert.equal(key.update(.21, false), true);
+  assert.equal(key.update(.02, false), false);
+  key.key({ controllerAction: 'run' });
+  key.key({ controllerAction: 'run' });
+  assert.equal(key.active(), false);
+  key.key({ controllerAction: 'run' });
+  key.key({ key: 'Shift', code: 'ShiftLeft' });
+  key.clear();
+  assert.equal(key.active(), false);
+  assert.equal(key.update(.1, true), false);
+});
+
+test('Source IV, pub and coast actually travel farther on their faster gait', () => {
+  const iv = freshSourceIV({ runId: 'gait' });
+  const ivWalk = stepSourceIV(iv, { dt: .25, forward: 1 }).state;
+  const ivRun = stepSourceIV(iv, { dt: .25, forward: 1, run: true }).state;
+  const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  assert.ok(Math.abs(distance(iv, ivWalk) - GAIT_SPEED.walk * .25) < 1e-9);
+  assert.ok(Math.abs(distance(iv, ivRun) - GAIT_SPEED.run * .25) < 1e-9);
+  const pub = sourcePubEntry({ flags: { [SOURCE_PUB.unlockFlag]: true }, runId: 'gait', returnPose: { x: 1, y: 2 } });
+  const pubWalk = stepSourcePub(pub, { dt: .25, side: 1 }).state;
+  const pubRun = stepSourcePub(pub, { dt: .25, side: 1, run: true }).state;
+  assert.ok(distance(pub, pubRun) > distance(pub, pubWalk));
+  assert.ok(Math.abs(distance(pub, pubRun) / distance(pub, pubWalk) - GAIT_SPEED.jog / GAIT_SPEED.walk) < 1e-9);
+  const pose = { ...COASTAL_MEMORY_LAYOUT.spawn };
+  const coastWalk = walkCoastalMemoryPose(pose, { dt: .25, forward: 1 });
+  const coastRun = walkCoastalMemoryPose(pose, { dt: .25, forward: 1, run: true });
+  assert.ok(distance(pose, coastRun) > distance(pose, coastWalk));
+});
+
+test('first strike construction preserves its place when resuming', () => {
+  const entry = { origin: { x: 0, y: 0, z: 0 }, place: 'exterior', walkCells: [], route: [] };
+  const saved = packFirstStrikeConstruction(entry);
+  assert.equal(saved.place, 'exterior');
+  assert.equal(restoreFirstStrikeConstruction(entry, JSON.parse(JSON.stringify(saved))).place, 'exterior');
+});
+
+test('first strike actually uses the exterior or interior faster gait of its entry', () => {
+  for (const [place, gait] of [['interior', 'jog'], ['exterior', 'run']]) {
+    const entry = { origin: { x: 0, y: 0, z: 0 }, place,
+      walkCells: [{ x: 0, z: 0, floor: 0, ceil: 20, cellSize: 40 }],
+      route: [{ x: 0, z: 0 }, { x: 15, z: 0 }] };
+    const result = stepFirstStrike(freshFirstStrike(entry), entry, { dt: .25, side: 1, run: true });
+    assert.ok(Math.abs(result.state.x - GAIT_SPEED[gait] * .25) < 1e-9);
+    assert.ok(Math.abs(result.travel - GAIT_SPEED[gait] * .25) < 1e-9);
+  }
+});
+
+test('both continuation gaits cross the existing half-metre split on a real jump', () => {
+  for (const run of [false, true]) {
+    const fresh = resumeSourceContinuation(freshSourceContinuation({ runId: 'gait-jump' }));
+    let state = { ...fresh, phase: 'wrong-return', x: 4.05, z: -12, feet: 8.4, yaw: Math.PI / 2,
+      hush: { ...fresh.hush, active: false }, lastSafe: { x: 4.05, z: -12, feet: 8.4, phase: 'wrong-return' } };
+    state = stepSourceContinuation(state, { jump: true, forward: 1, run }).state;
+    assert.ok(state.fall);
+    for (let i = 0; i < 240 && state.fall; i++) state = stepSourceContinuation(state, { dt: 1 / 120 }).state;
+    assert.equal(state.fall, null);
+    assert.ok(state.x > 5 && Math.abs(state.feet - 8.4) < 1e-8);
+    assert.equal(state.recovery, null);
+  }
+});
+
+test('walking can oppose the combined moving tide and gust in either Source', () => {
+  for (const phase of ['wrong-return', 'catch']) {
+    let strongest = 0;
+    for (let t = 0; t <= 600; t += .5) {
+      const field = sourceTideField({ phase, chartId: 0, x: 0, z: 0, elapsed: t }, { moving: true, time: t });
+      strongest = Math.max(strongest, Math.hypot(field.x, field.z));
+    }
+    assert.ok(strongest < sceneWalkSpeed('interior', false), `${phase}: ${strongest}`);
+  }
 });

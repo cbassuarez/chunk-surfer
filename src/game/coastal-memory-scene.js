@@ -75,7 +75,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
     return { ...value, ready: renderReady(), closed, paused, hidden, leaving, error, recorderHeld, noteOpen,
       coverAlpha: Math.max(entryCover, value.returnCover),
       ui: { instruction: !noteOpen && value.canInspectNote && value.status === 'active' ? 'E · READ NOTE' : null,
-        pickup: !noteOpen && value.canPickUp && value.status === 'active' ? 'F · PICK UP THE BOX' : null,
+        pickup: null,
         noteOpen, noteCopy: noteOpen ? COASTAL_NOTE_COPY : null, noteClose: noteOpen ? 'E · CLOSE' : null,
         error, canReturn: errorReturn, errorReturn: errorReturn ? 'X · RETURN' : null,
         canRetryReturn: returnFailed, recorderHeld },
@@ -213,6 +213,17 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
         recorderHeld, noteOpen, wreckNoticed: state.wreckNoticed, wreckLightsElapsed: state.wreckLightsElapsed }); }
     },
     view: frame, serialize: snapshot, snapshot, checkpoint: () => save('requested'),
+    setHandlingMonitor(value) { if(closed||!paused)return false;recorderHeld=value===true;return true; },
+    hearHandledBox(sample={}) {
+      // Handling borrows the coast's body and renderer. Only its real routed
+      // melody can feed the existing receipt; rotation/rattle and elapsed game
+      // time cannot grant listening progress.
+      if(closed||!paused||state.status!=='active'||!coastalMemoryFrame(state,{layout}).canPickUp)return false;
+      recorderHeld=sample.recorderHeld===true;
+      apply({dt:0,recorderHeld,audioRunning:sample.audioRunning===true,sourceReady:sample.sourceReady===true,
+        audibleSeconds:recorderHeld?clamp(sample.audibleSeconds,0,.25):0,recordingOffset:sample.recordingOffset});
+      return true;
+    },
     lookAngles: () => ({ yaw: state.pose.yaw, pitch: state.pose.pitch }),
     lookBy(yawDelta = 0, pitchDelta = 0) { return look({ yaw: state.pose.yaw + finite(yawDelta), pitch: state.pose.pitch + finite(pitchDelta) }); },
     setLook: look,
@@ -292,6 +303,9 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
     },
     render() {
       if (closed) return false; syncVisibility();
+      // The handling scene borrows this renderer. Its picture must be drawn
+      // once, without a second plinth frame or its prompts underneath it.
+      if (paused) return ready;
       let value = frame();
       if (renderReady()) {
         try { if (renderer.render(value, { time: clock, recorderHeld }) === false) throw Error('The coastal view is unavailable.'); }

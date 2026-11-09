@@ -14,6 +14,8 @@ import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { ELLERY_FLORA_PROPS } from './ellery-flora.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
 import {B3_STUDIO_PROPS_MESHES} from './b3-studio-props.js';
+import {B3_CONSOLE_LAYOUT,b3ConsoleChannelX} from './b3-console-layout.js';
+import {HALL_STAGE_SERVICE_STAIR,HALL_STAGE_SERVICE_RAIL_COLLIDERS} from './atrium-circulation.js';
 import { CATHEDRAL_DESCENT_BLOCKERS, CHURCH_COLLIDERS } from './st-brendans.js';
 import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
 import { ACADEMIC_ROOF_MESHES, ACADEMIC_ROOF_PROPS } from './academic-roof.js';
@@ -210,6 +212,7 @@ export const PROP_MESH = Object.freeze({
   hall_entrance_sign:{w:2.75,d:.12,h:.48,blocks:false},
   hall_entry_sconce:{w:.34,d:.24,h:.52,blocks:false,mount:'portal'},
   atrium_public_fittings:{w:22,d:23,h:4.6,blocks:false},
+  hall_stage_service_steps:{w:5,d:2,h:2.7,blocks:false},
   atrium_entry_closure:{w:2.35,d:1.10,h:1.72,blocks:false},
   atrium_formal_banner:{w:2.05,d:.14,h:3.95,blocks:false,mount:'wall'},
   atrium_suspended_lantern:{w:1.55,d:1.55,h:16.75,blocks:false,mount:'floor'},
@@ -274,6 +277,7 @@ export const PROP_MESH = Object.freeze({
   yard_dock_access:{w:4.4,d:9.2,h:2.0,blocks:false},
   yard_booth:{w:3.4,d:3.0,blocks:false}, yard_booth_glazing:{w:3.1,d:2.7,blocks:false},
   yard_booth_interior:{w:2.7,d:2.4,blocks:false}, yard_booth_practicals:{w:2,d:2,blocks:false},
+  yard_booth_workplace:{w:2.7,d:2.4,blocks:false}, yard_booth_tv_screen:{w:.51,d:.03,blocks:false},
   yard_booth_guard_idle:{w:.7,d:.7,blocks:false}, yard_booth_guard_ledger:{w:.8,d:.8,blocks:false},
   yard_booth_guard_handoff:{w:1.2,d:1,blocks:false}, yard_booth_handoff:{w:.7,d:.4,blocks:false},
   yard_fence_run:{w:.7,d:24.4,blocks:false},
@@ -450,6 +454,7 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
       width:.55,depth:.55,yaw:0,minElevation:0,maxElevation:4,
       spaceId:'exterior_civic_block',colliderGroup:'street-pilot'})),
   ...BUILDING_AMENITY_COLLIDERS,
+  ...HALL_STAGE_SERVICE_RAIL_COLLIDERS,
   ...PUB_COLLIDERS,
   ...STATIONERS_COLLIDERS,
   ...ARRIVAL_COURT_COLLIDERS,
@@ -680,10 +685,14 @@ export const CONSERVATORY_PROPS = [
   // THE LODGE, which is the only thing in the game you talk to a person through.
   // `inspectAt` is the window rather than the middle of the building, so the
   // reticle and the walk-up both land where his face is.
-  P('yard-booth','yard_booth',74.0,214.0,Math.PI/2,{
+  P('yard-booth','yard_booth',74.0,214.0,-Math.PI/2,{
     structural:true,blocks:true,action:'gate-lodge',label:'the lodge window',
     inspectAt:{x:72.3,y:214.0},
   }),
+  // The shell retains its original -Z face; the repaired workplace uses +Z.
+  // Their opposite yaws put the public opening and guard on the same west side.
+  P('yard-booth-workplace','yard_booth_workplace',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-tv-screen','yard_booth_tv_screen',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
   P('yard-booth-interior','yard_booth_interior',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
   P('yard-booth-practicals','yard_booth_practicals',74.0,214.0,Math.PI/2,{interactive:false,structural:true,lightColor:[1,.76,.48],lightMaintained:true}),
   P('yard-booth-glazing','yard_booth_glazing',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
@@ -1143,7 +1152,7 @@ export const CONSERVATORY_PROPS = [
 
   // Loading dock / foyer: work furniture, not a showroom.
   P('foyer-pew-1','pew',83.0,5.5,0,{inspect:inspect('One chapel pew never made it upstairs. A paper removal tag is still tied to it.','The tag says RETURN TO CHAPEL.')}),
-  P('foyer-cart-1','equipment_cart',95.2,15.4,Math.PI/2,{inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
+  P('foyer-cart-1','equipment_cart',86.5,4.75,Math.PI/2,{renderOffsetZ:-.25,inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
   P('foyer-portrait-titian','portrait_frame',80.5,4.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.35,portraitIndex:0,inspect:inspect('Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.','The sitter keeps looking past the entrance.')}),
   P('foyer-portrait-greco','portrait_frame',82.5,4.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.35,portraitIndex:1,inspect:inspect('El Greco. Portrait of an Old Man. Someone has polished the glass more often than the frame.','His eyes catch the corridor light first.')}),
   P('atrium-sign-main-exit','public_exit_sign',77.5,4.0,0,{
@@ -1166,8 +1175,8 @@ export const CONSERVATORY_PROPS = [
   P('box-office-chair','chair',93.55,10.05,0,{inspect:inspect('A staff chair tucked under the ticket desk, not abandoned in the queue path.','Its casters have made a small grey ring.')}),
   P('box-office-program-stack','program_stack',89.65,9.92,Math.PI/2,{on:'box-office-counter',scale:.8,renderOffsetX:.35,renderOffsetY:-.0208,inspect:inspect('A stack of folded programmes for a season that never opened.','The top programme has curled at both corners.')}),
   P('box-office-cash-terminal','cash_terminal',89.65,10.72,Math.PI/2,{on:'box-office-counter',scale:.6,renderOffsetX:.35,renderOffsetY:-.012,inspect:inspect('A dead card terminal beside a cash drawer. The receipt paper is still threaded.','No signal. No float.')}),
-  P('box-office-ledger','rekey_ledger',92.25,11.5,Math.PI,{mount:'wall',mountNormal:{nx:0,ny:-1},elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT LOCK. C-17.')}),
-  P('box-office-key-cabinet','chapel_key_cabinet',96.25,9.45,Math.PI/2,{
+  P('box-office-ledger','rekey_ledger',92.25,10.5,Math.PI,{mount:'wall',mountNormal:{nx:0,ny:-1},elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT LOCK. C-17.')}),
+  P('box-office-key-cabinet','chapel_key_cabinet',95.25,9.45,Math.PI/2,{
     mount:'wall',elevation:1.0,blocks:false,structural:true,
     interaction:'action',action:'key-cabinet-board',label:'key cabinet',
     // The cabinet frames the question and does not answer it. Three rings, three
@@ -1179,7 +1188,7 @@ export const CONSERVATORY_PROPS = [
       'The empty hooks are labelled too. Whoever kept this expected the keys back.',
     ),
   }),
-  P('box-office-key-ring-ch04','chapel_key_ring_ch04',96.25,9.45,Math.PI/2,{
+  P('box-office-key-ring-ch04','chapel_key_ring_ch04',95.25,9.45,Math.PI/2,{
     mount:'wall',renderOffsetZ:-.24,elevation:1.62,blocks:false,interaction:'action',action:'chapel-key-ring',keyTag:'CH-04',label:'CH-04 key ring',
     // THE THREE TAGS ARE THE PUZZLE. Without them the cabinet is a one-in-three
     // guess with the answer printed on a ledger two metres away, and there is
@@ -1193,7 +1202,7 @@ export const CONSERVATORY_PROPS = [
       again:'CH-04. The chapel door this was cut for is still there. The lock in it is not.',
     },
   }),
-  P('box-office-key-ring-c17','chapel_key_ring_c17',96.25,9.45,Math.PI/2,{
+  P('box-office-key-ring-c17','chapel_key_ring_c17',95.25,9.45,Math.PI/2,{
     mount:'wall',renderOffsetZ:.24,elevation:1.62,blocks:false,interaction:'action',action:'chapel-key-ring',keyTag:'C-17',label:'C-17 key ring',
     // The answer, and it does not announce itself: a cabinet number in biro over
     // a scratched-out one. It matches the ledger's REPLACEMENT LOCK line, and it
@@ -1203,7 +1212,7 @@ export const CONSERVATORY_PROPS = [
       again:'C-17. Newer than the ring it is on, and nobody has stamped it yet.',
     },
   }),
-  P('box-office-key-ring-fohm','chapel_key_ring_fohm',96.25,9.45,Math.PI/2,{
+  P('box-office-key-ring-fohm','chapel_key_ring_fohm',95.25,9.45,Math.PI/2,{
     mount:'wall',renderOffsetZ:-.24,elevation:1.15,blocks:false,interaction:'action',action:'chapel-key-ring',keyTag:'FOH-M',label:'FOH-M key ring',
     // Honest about its own limits, which is what makes it the easy one to rule
     // out — and the one the recordist is already carrying the equivalent of.
@@ -1212,8 +1221,8 @@ export const CONSERVATORY_PROPS = [
       again:'FOH-M. It opens everything on this side of the doors and nothing past them.',
     },
   }),
-  P('box-office-shelf','equipment_rack',95.1,11.3,0,{scale:.82,inspect:inspect('Programmes, float envelopes, and ticket stock boxed by week.','The labels are more orderly than the room.')}),
-  P('box-office-notice-board','notice_board',96.2,7.65,Math.PI/2,{mount:'wall',elevation:1.15,inspect:inspect('A notice board with staffing rotas, emergency contacts, and one hand-written refund policy.','The refund policy is underlined twice.')}),
+  P('box-office-shelf','equipment_rack',92.75,7.5,0,{scale:.82,renderOffsetX:-.25,inspect:inspect('Programmes, float envelopes, and ticket stock boxed by week.','The labels are more orderly than the room.')}),
+  P('box-office-notice-board','notice_board',95.2,7.65,Math.PI/2,{mount:'wall',elevation:1.15,inspect:inspect('A notice board with staffing rotas, emergency contacts, and one hand-written refund policy.','The refund policy is underlined twice.')}),
   // Matching rope ends meet between posts; neither rope passes into the grille.
   ...[[88,9.5],[88,11.5],[89,9.5],[89,11.5]].map(([x,y],i)=>
     P(`box-office-queue-${i+1}`,'queue_stanchion',x,y,i>=2?Math.PI:0,{renderOffsetX:i>=2?-.16:0,renderOffsetY:-.02,inspect:inspect('A brass queue post with its rope still clipped in.','The rope sags towards the ticket window.')})),
@@ -1238,7 +1247,7 @@ export const CONSERVATORY_PROPS = [
   // about why. box-office.spec.mjs counts them for that reason.
   P('foh-poster-last-night','portrait_frame',90.6,7.1,Math.PI/2,{mount:'wall',elevation:1.72,inspect:inspect('A poster still in its frame: the last thing that was on. A Sunday, and nothing after it.','Nobody took it down. There was no Monday to take it down on.')}),
   P('foh-price-list','notice_board',90.6,11.4,Math.PI/2,{mount:'wall',elevation:1.44,scale:.82,inspect:inspect('A price list under glass. Stalls, circle, restricted view, and a concessions line with three conditions on it.','Restricted view is the cheapest seat and the only one that says what it is.')}),
-  P('foh-bin','district_bin_cluster',88.6,12.6,0,{inspect:inspect('A bin by the doors, lined and never used. Someone put the bag in and that was the last of it.','Clean, which out of everything in here is the strange part.')}),
+  P('foh-bin','wastebasket',90.5,6.5,0,{inspect:inspect('A bin by the doors, lined and never used. Someone put the bag in and that was the last of it.','Clean, which out of everything in here is the strange part.')}),
 
   // On the counter, behind the grille.
   P('box-office-unsold-roll','loose_pages',89.65,10.9,Math.PI/2,{on:'box-office-counter',scale:.35,renderOffsetX:.35,renderOffsetY:-.0007,inspect:inspect('A roll of unsold tickets, still joined, still numbered. It stops in the middle of a Sunday.','The tear is clean. Nobody hurried at the end of it.')}),
@@ -1252,10 +1261,13 @@ export const CONSERVATORY_PROPS = [
   // Public-room fabric stays on the perimeter. It gives the atrium a civic use
   // and a closing-day history without filling the ruined garden or narrowing
   // the broad route from public entrance to concert-hall portal.
-  P('atrium-public-bench-west','pew',75.8,10.5,Math.PI/2,{renderOffsetZ:-.25,
-    inspect:inspect('A municipal waiting bench beneath the directory. Its varnish is worn at regular shoulder-width intervals.','People waited here facing the ticket window.'),
+  P('atrium-public-bench-west','pew',87.75,6.0,0,{renderOffsetX:-.25,
+    inspect:inspect('A municipal waiting bench beside the ticket window. Its varnish is worn at regular shoulder-width intervals.','People waited here facing the ticket window.'),
   }),
-  P('atrium-public-directory','notice_board',74.75,8.1,-Math.PI/2,{mount:'wall',elevation:1.3,
+  // The service core's public east face is real thin mesh, rather than a DDA
+  // wall: keep this flush explicit pose instead of snapping it into the WC.
+  P('atrium-public-directory','notice_board',78.5,8.75,-Math.PI/2,{mount:'partition',elevation:1.3,
+    renderOffsetX:-.125,renderOffsetZ:-.25,inspectAt:{x:78.9,y:8.75},
     inspect:inspect('PUBLIC ROOMS: HALL, BATHS, CHAPEL, PRACTICE WING. Several arrows have been amended in three different hands.','The building kept changing after the sign was made.'),
   }),
   P('atrium-closing-notice','notice_board',96.25,18.0,Math.PI/2,{mount:'wall',elevation:1.25,
@@ -1462,6 +1474,9 @@ export const CONSERVATORY_PROPS = [
   // both render groups because the threshold is literally where they meet.
   // Register the public face with the compiled outer wall at x97.0. The
   // acoustic pair is recessed at x98.25; its centre is not the casing face.
+  P(HALL_STAGE_SERVICE_STAIR.id,HALL_STAGE_SERVICE_STAIR.mesh,99,11,0,{
+    floorOverride:0,renderGroups:['ground','hall'],interactive:false,structural:true,blocks:false,
+  }),
   P('hall-entrance-portal','hall_entrance_portal',98.5,25.5,Math.PI/2,{
     renderOffsetX:-1.20,renderOffsetZ:-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
   }),
@@ -1483,13 +1498,13 @@ export const CONSERVATORY_PROPS = [
   // The one piece of the ruined garden you may put a hand in. Everything else
   // here is deliberately mute; this planter is where a patch lead has been
   // sitting in the soil since somebody worked on a head out here (see PIN_HOSTS).
-  P('academic-garden-planter-west','academic_planter',80.5,11.0,.08,{renderGroups:['ground','academic'],
+  P('academic-garden-planter-west','academic_planter',84.5,7.5,.08,{renderGroups:['ground','academic'],
     inspect:inspect('Dry soil in a stone planter, packed hard and full of old leaf. Something black is coiled half down in it.','The soil keeps the shape your hand left in it.')}),
   P('academic-garden-planter-east','academic_planter',91.0,20.0,-.08,{renderGroups:['ground','academic'],interactive:false}),
   // The ruined ground garden now opens beside the longitudinal baths link.
   // Keep its basin in the west court, clear of the Ellery-side door landing.
   P('academic-garden-basin','academic_dry_basin',79.5,19.0,0,{renderGroups:['ground','academic'],interactive:false}),
-  P('academic-garden-tree-west','academic_dead_tree',80.4,11.0,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66}),
+  P('academic-garden-tree-west','academic_dead_tree',84.4,7.5,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66,renderOffsetX:-.1}),
   P('academic-garden-tree-east','academic_dead_tree_b',91.1,20.0,.28,{fallbackMesh:VEGETATION_FALLBACKS.academic_dead_tree_b,renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
   P('academic-garden-leaves-north','academic_leaf_litter',83.0,9.0,.22,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
@@ -1652,19 +1667,19 @@ export const CONSERVATORY_PROPS = [
   P('b3-session-boom-2','b3_boom_microphone',14.6,13.8,-.38,{interactive:false}),
   P('b3-session-folded-mic','b3_folded_mic_stand',8.4,9.2,.15,{interactive:false}),
   P('b3-session-snake','b3_stage_snake',15.8,9.3,.1,{inspect:inspect('The numbered stage box and its heavy multicore, coiled for the control room. The free end is unplugged.','They meant to wire it up again.')}),
-  P('b3-control-console','b3_mixing_console',20.4,10.5,-Math.PI/2,{action:'b3-console',label:'mixing console',inspectAt:{x:20.85,y:10.5},interactionHeight:.93,interactionPriority:4,inspect:inspect('A sixteen-channel mixing desk facing the live room. Faders, equalisation, the meter bridge and master controls are all where the engineer left them.','No pilot lights. No mains. The positions still mean something.')}),
+  P('b3-control-console','b3_mixing_console',20.4,10.5,-Math.PI/2,{action:'b3-console',label:'mixing console',inspectAt:{x:20.85,y:10.5},interactionHeight:.93,interactionPriority:4,inspect:inspect('A Soundcraft Series 600, the sixteen-input version. Eight groups, a separate bank of tape monitors and a bridge of dark bar meters above the faders. The twin VU windows face the engineer.','No pilot lights. No mains. The positions still mean something.')}),
   // Sixteen separate caps occupy the actual tracks. The console's local +Z
   // is physical +X at this yaw. `syncB3FaderProps` moves the caps visually,
   // leaving the console, interaction point and collision untouched.
   ...Array.from({length:16},(_,i)=>P(`b3-console-fader-${String(i+1).padStart(2,'0')}`,'b3_fader_cap',20.4,10.5,-Math.PI/2,{
-    elevation:.918,renderOffsetX:.1225,renderOffsetZ:.97-i*.112,blocks:false,interactive:false,
+    elevation:B3_CONSOLE_LAYOUT.faderHeight,renderOffsetX:B3_CONSOLE_LAYOUT.workingFaderZ,renderOffsetZ:-b3ConsoleChannelX(i),blocks:false,interactive:false,
   })),
   P('b3-rack-1','b3_outboard_rack',23.5,15.8,Math.PI/2,{fallbackMesh:'equipment_rack',inspect:inspect('The rack is powered down. Three channels are still labelled in pencil.','No mains. No pilot lights.')}),
   // The closed spares tin sits on the desk's low shelf, under the operator edge.
   P('b3-spare-cell-tin','b3_spares_tin',20.5,10.0,0,{elevation:.18,renderOffsetX:.27,renderOffsetZ:-.20,blocks:false,action:'take-b3-spare-cell',interaction:'action',interactionPriority:2,label:'spare torch cell',inspectAt:{x:20.77,y:9.8},inspect:inspect('A closed metal spares tin on the shelf beneath the console, labelled for torch cells. One usable cell is inside.','The spares tin under the console.')}),
   // The note lies on the console, not on a school desk or suspended in space.
   P('b3-session-card','b3_session_card',20.5,11.0,.12,{elevation:.91,blocks:false,label:'session card',inspectAt:{x:20.5,y:11.0},interactionPriority:1,inspect:inspect('A session card on the console. One: voice. Two: room. Three has been carefully crossed out, but its fader is still set. In the margin, two chairs and fine lines to the glass.','The third channel is crossed out. Its fader is still set.')}),
-  P('b3-speaker-1','speaker_cabinet',20.0,7.0,Math.PI/2,{inspect:inspect('A nearfield monitor with its cone pushed in and pulled back out.','The cone remembers a thumb.')}),
+  P('b3-speaker-1','speaker_cabinet',16.0,7.0,Math.PI/2,{inspect:inspect('A nearfield monitor with its cone pushed in and pulled back out.','The cone remembers a thumb.')}),
   // Foam: north wall (yaw 0), west wall (PI/2), east wall (-PI/2), 2.4 m panels.
   // The side walls stop two metres short of the south one: a sixth panel runs
   // into the masonry and propsInit drops it, and the stand leans in that gap.

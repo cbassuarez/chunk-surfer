@@ -72,10 +72,10 @@ test('box-office papers sit wholly on the actual counter and all four grounded q
  assert.ok(91-counter.bounds.max[0]>=.9,'actual staff lane before the retained physical office wall');
 });
 
-test('the retained waiting pew clears the façade plinth and keeps the adjacent door approach open',()=>{
- const p=model('atrium-public-bench-west'),facade=model('bay-west-elevation'),old=placedMesh({...byId.get(p.id),z:9.5},pack.mesh('pew'));
+test('the retained waiting pew clears the façade plinth and keeps a usable public front',()=>{
+ const p=model('atrium-public-bench-west'),facade=model('bay-west-elevation'),old=placedMesh({...byId.get(p.id),x:75.8,z:9.5,yaw:Math.PI/2},pack.mesh('pew'));
  assert.ok(crosses(old,facade));assert.equal(crosses(p,facade),false);assert.ok(Math.abs(p.bounds.min[1])<1e-8);
- for(const[x,z]of[[77,10.5],[77,11.5],[77,12.75],[76.5,12.75]])probe(x,z,{floor:0,group:'ground'});
+ for(const[x,z]of[[87.25,7.0],[87.75,7.0],[88.25,7.0],[88.25,7.5]])probe(x,z,{floor:0,group:'ground'});
 });
 
 test('both playable hall instruments clear the built choir tiers and portal, remain on the actual flat stage and keep reachable approaches',()=>{

@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {NodeIO} from '@gltf-transform/core';
 import {buildB3StudioProps} from '../tools/chunk_surfer/build-b3-studio-props.mjs';
+import {B3_CONSOLE_REFERENCE,B3_CONSOLE_LAYOUT as DESK,b3ConsoleChannelX,b3ConsoleFaderZ,b3ConsoleUpperSurfaceY} from '../src/data/b3-console-layout.js';
 import {B3_STUDIO_PROPS_ASSET,B3_STUDIO_PROPS_MESHES} from '../src/data/b3-studio-props.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),asset=path.join(root,'public',B3_STUDIO_PROPS_ASSET);
@@ -35,16 +36,16 @@ test('dedicated B3 pack is reproducible, finite, opaque and within its bounded r
 
 test('all sixteen moving channel caps retain clear travel over the actual exported tracks',()=>{
  for(let channel=0;channel<16;channel++)for(const value of[0,.75,1]){
-  const x=-.97+channel*.112,z=.1225+.27*(.75-value),hit=intersections('b3_mixing_console',[x,2,z],[0,-1,0]);
+  const x=b3ConsoleChannelX(channel),z=b3ConsoleFaderZ(value),hit=intersections('b3_mixing_console',[x,2,z],[0,-1,0]);
   assert.ok(hit.length,'track has physical support');const top=2-hit[0];assert.ok(top<.9051,`channel ${channel+1} value ${value}: top ${top} intersects moving cap`);assert.ok(top>.89);
  }
  const cap=stats.meshes.find(m=>m.name==='b3_fader_cap');assert.ok(cap.bounds.min[1]>=-.01301);assert.ok(cap.bounds.max[1]<=.01411);
 });
 
 test('raked EQ knob tops are physically visible from the actual operator side',()=>{
- const eye=[0,1.6,1.2],surface=z=>.955+.05/Math.cos(.28)-Math.tan(.28)*(z+.185);
- for(const channel of[0,7,15])for(const row of[0,1,2,3]){
-  const z=-.025-row*.077,target=[-.97+channel*.112,surface(z)+.012+.0155,z],delta=sub(target,eye),distance=Math.hypot(...delta),ray=delta.map(v=>v/distance),hits=intersections('b3_mixing_console',eye,ray);
+ const eye=[0,1.6,1.2],surface=b3ConsoleUpperSurfaceY;
+ for(const channel of[0,7,15])for(const row of[0,1,2,3,4]){
+  const z=DESK.eqRows[row],target=[b3ConsoleChannelX(channel),surface(z)+.012+.0155,z],delta=sub(target,eye),distance=Math.hypot(...delta),ray=delta.map(v=>v/distance),hits=intersections('b3_mixing_console',eye,ray);
   assert.ok(hits.length,`channel ${channel+1} EQ ${row+1} has a surface`);
   assert.ok(hits[0]>distance-.025&&hits[0]<distance+.004,`channel ${channel+1} EQ ${row+1}: first surface ${hits[0]}, knob top ${distance}; unrelated desk geometry must not bury the control`);
  }
@@ -65,4 +66,40 @@ test('engineer seat has a real sitting surface with no central pedestal protrusi
 test('reused public source files match recording-specific CC0 provenance and source hashes',()=>{
  const sources=JSON.parse(fs.readFileSync(path.join(root,'assets/third-party/b3-studio/sources.json'),'utf8')).sources;
  assert.equal(sources.length,4);for(const s of sources){assert.equal(s.licence,'CC0-1.0');assert.match(s.provenance,/AI-assisted/);assert.equal(sha(fs.readFileSync(path.join(root,s.file))),s.sha256);}
+});
+
+
+test('retained cap footprint has clearance along the complete 100mm track, including the bank edges',()=>{
+ for(const channel of[0,2,7,15])for(let value=0;value<=1.00001;value+=.1){
+  const x=b3ConsoleChannelX(channel),z=b3ConsoleFaderZ(value);
+  for(const dx of[-.027,0,.027])for(const dz of[-.017,0,.017]){
+   const hits=intersections('b3_mixing_console',[x+dx,2,z+dz],[0,-1,0]);
+   assert.ok(hits.length,`supported cap footprint ${channel+1}:${value}`);
+   const top=2-hits[0];assert.ok(top<=DESK.faderHeight-.013+.0001,`clear cap footprint ${channel+1}:${value} / ${dx},${dz}: ${top}`);
+  }
+ }
+});
+
+test('period reference topology is represented in the shipped asset rather than a title alone',()=>{
+ assert.equal(B3_CONSOLE_REFERENCE.year,1985);assert.match(B3_CONSOLE_REFERENCE.model,/600/);
+ assert.equal(DESK.channels,16);assert.equal(DESK.groupCount,8);assert.equal(DESK.monitorCount,16);
+ assert.equal(stats.reference.model,B3_CONSOLE_REFERENCE.model);
+ assert.equal(stats.contract.barMeters,16);assert.equal(stats.contract.stereoVuMeters,2);
+ assert.equal(stats.contract.groupModules,8);assert.equal(stats.contract.monitorPaths,16);
+ assert.equal(stats.contract.travelMetres,.10);assert.equal(stats.contract.capNominalY,DESK.faderHeight);
+ const console=stats.meshes.find(m=>m.name==='b3_mixing_console');assert.deepEqual(console.sources,[],'the desk is authored from documentation, not the old source console');
+ assert.ok(console.bounds.max[0]-console.bounds.min[0]<=2.301);assert.ok(console.bounds.max[2]-console.bounds.min[2]<=.961);
+ assert.ok(console.bounds.max[1]<=1.311);
+});
+
+test('lightweight fallback emits valid scalar rotations and the same sixteen support tracks',async()=>{
+ const {buildB3StudioGeometry}=await import('../tools/chunk_surfer/b3-studio-geometry.mjs');
+ const boxes=[],valid=(value)=>{if(Array.isArray(value))return value.every(valid);return typeof value!=='number'||Number.isFinite(value);};
+ const check=(...args)=>assert.ok(args.every(valid));
+ buildB3StudioGeometry({mesh:name=>({name}),MAT:new Proxy({},{get:(_,key)=>key}),
+  addBox:(m,c,s,mat,yaw=0,pitch=0)=>{check(c,s,yaw,pitch);assert.equal(typeof yaw,'number');assert.equal(typeof pitch,'number');boxes.push({name:m.name,c,s});},
+  addCylinder:check,addCylinderX:check,addBeam:check,addLegs:check});
+ const tracks=boxes.filter(b=>b.name==='b3_mixing_console'&&b.s[0]===.006&&b.s[1]===.006&&b.s[2]===DESK.faderTrack&&b.c[0]<.05);
+ assert.equal(tracks.length,16);
+ for(let i=0;i<16;i++){assert.equal(tracks[i].c[0],b3ConsoleChannelX(i));assert.equal(tracks[i].c[2],DESK.trackCentreZ);}
 });

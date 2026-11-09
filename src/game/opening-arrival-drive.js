@@ -3,7 +3,7 @@ import {DRIVE_BODY_FOOTPRINT,driveBodyCorners,resolveVehicleContacts} from './so
 
 export const OPENING_ARRIVAL_FOOTPRINT=DRIVE_BODY_FOOTPRINT;
 export const OPENING_ARRIVAL_DRIVE=Object.freeze({maxSpeed:5,maxReverse:2,parkingLongitudinal:1.4,parkingLateral:.8,parkingAngle:Math.PI/12,parkingSpeed:.2,settleSeconds:.25,
-  arrivalSpeed:1.2,arrivalThrottle:.45,arrivalLeadSeconds:.95,autoApproachMetres:9,autoApproachSide:2,autoCruiseSpeed:2.5,autoBrakeMetres:1.1});
+  arrivalSpeed:1.2,arrivalThrottle:.45,arrivalLeadSeconds:3.0,autoApproachMetres:15,autoApproachSide:2,autoCruiseSpeed:2.5,autoBrakeMetres:1.1});
 const finite=(n,f=0)=>Number.isFinite(Number(n))?Number(n):f;
 const angle=n=>Math.atan2(Math.sin(n),Math.cos(n));
 const pose=s=>({x:s.x,y:s.roadHeight,z:s.z,yaw:s.heading,heading:s.heading});

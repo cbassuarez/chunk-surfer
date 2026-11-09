@@ -78,6 +78,15 @@ assert.equal(getInSessionAction({atGetIn:true,flags:{...pendingFlags,'opening.dr
   'an interrupted or completed consumed memory does not replay on CONTINUE');
 assert.equal(getInSessionAction({atGetIn:true,flags:arrivalFlags,handoffStarted:true}),'complete');
 assert.equal(getInSessionAction({atGetIn:true,flags:arrivalFlags,setupComplete:true}),'complete');
+const newPending={...arrivalFlags,'opening.title.pending':true,'opening.driveTeaser.pending':true};
+assert.equal(getInEntryHasHappened({flags:newPending}),true,'the accepted physical threshold cannot be entered twice');
+assert.equal(getInSessionAction({atGetIn:true,flags:newPending}),'drive','new pending title first resumes the flashback');
+assert.equal(getInSessionAction({atGetIn:true,flags:{...newPending,'opening.driveTeaser.consumed':true}}),'post-crash',
+  'an interrupted flashback resumes its aftermath/title rather than replaying the crash');
+assert.equal(getInSessionAction({atGetIn:false,flags:newPending}),'outside');
+assert.equal(getInSessionAction({atGetIn:true,flags:newPending,setupComplete:true}),'complete','advanced setup supersedes stale pending presentation');
+assert.equal(getInSessionAction({atGetIn:true,flags:newPending,hasRealTake:true}),'tutorial','a real credited take cannot be displaced by an old pending title');
+assert.equal(getInSessionAction({atGetIn:true,flags:{'opening.title.pending':true}}),'outside','presentation flags cannot stand in for the accepted guard route');
 
 const outside={x:grey.cx-4,y:grey.cy};
 const opened=FP.interactDoor(outside.x,outside.y,[1,0],new Set(['master']));

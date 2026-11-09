@@ -1,6 +1,4 @@
-import { createBustPerformanceState, beginBustRecognition, beginBustRitual, advanceBustPerformance, describeBustPerformance, settleBustPerformance } from './bust-performance.js';
 import {sourceEarlyFaultFrame} from './source-early-faults.js';
-import { BUST_RELIQUARY_RIG } from '../data/bust-reliquary-rig.js';
 import { SOURCE_HANGING_SHORE, SOURCE_SHORE_DIRECT_SECONDS, sourceShoreBounds, sourceShoreContains, sourceShoreDistance, sourceShorePieceAt } from '../data/source-hanging-shore.js';
 import { busWomanInstances, busWomanPerformance } from './bus-woman-presentation.js';
 import { busWomanStepProgress } from '../render/bus-woman-performance.js';
@@ -9,6 +7,7 @@ import { SOURCE_EXPOSED_STRATA, sourceStrataCollisionAt, sourceStrataEntryAt } f
 import { createSourceHangingShore } from './source-hanging-shore.js';
 import { createSourceHushFollow } from './source-hush-follow.js';
 import { freshSourceContinuation, normalizeSourceContinuation, resumeSourceContinuation } from './source-continuation.js';
+import {sourceContinuationCapturedContactReady} from './source-continuation-contact.js';
 import { normalizeSourceEarthfall } from './source-earthfall.js';
 import { normalizeSourceFalseReturn } from './source-false-return.js';
 import { SOURCE_DEMOLITION } from '../data/source-demolition.js';
@@ -29,14 +28,6 @@ import { createSourceDockDoor, sourceDockDoorBlocks, SOURCE_DOCK_DOOR_OPEN_SECON
 import { CELL, EYE, F, MATERIAL, ZONE } from '../data/floorplan/legend.js';
 import { SCENE_DOCK_LABEL } from '../data/space-labels.js';
 import { encodeH } from '../world/floorplan.js';
-import { HORIZON_PROFILE } from '../data/generated/horizon-profile.js';
-import {
-  freshHorizonTransport,
-  horizonTransportReadings,
-  horizonTransportThreaded,
-  threadHorizonTransport,
-  HORIZON_TRANSPORT_OPTIONS,
-} from './horizon-transport.js';
 import {
   CHUNK_SURF_HUSH_STAGE,
   CHUNK_SURF_PHASE,
@@ -59,7 +50,7 @@ import {
 import { chunkSurfRoom } from '../data/chunk-surf-script.js';
 import { SOURCE_PAGES, sourcePageFor } from '../data/source-pages.js';
 import {
-  SOURCE_HALL, sourceHallCellIntervalMs, sourceHallRegime, sourceHallSheet,
+  SOURCE_HALL, SOURCE_HALL_SHEET_COUNT, sourceHallCellIntervalMs, sourceHallRegime, sourceHallSheet,
   sourceHallStillPage, sourceHallInStillPatch, sourceHallPropPlacements, sourceHallLightPlacements,
 } from '../data/source-hall.js';
 import { ambientPaperDocumentId, paperAtlasIndex } from './paper-assets.js';
@@ -135,13 +126,8 @@ import {
 } from './source-contact.js';
 import { sourceContactChapter, sourceContactChapterWon } from './source-contact-chapters.js';
 import { normalizeSourceRecordingCustody, claimSourceRecording, recoverSourceRecording as recoverCustodyRecording } from './source-recording-custody.js';
-import {
-  HORIZON_BUST_REFUSAL,
-  horizonBustAudience,
-} from './horizon-bust.js';
 import { sourceSensoryMix } from './source-sensory.js';
 import { sectorErrorLines } from '../render/sector-error.js';
-import { sourceTowerPath, sourceTowerPathDistance, SOURCE_TOWER_PATH_HALF_WIDTH } from './source-tower-path.js';
 import { createSourceBellField } from './source-bell-field.js';
 import { towerPersonalRecordingLevel } from '../audio/tower-personal-recording.js';
 import { TOWER_PERSONAL_JOURNEY, towerPersonalPlacement, towerPersonalSupportAt, towerPersonalWorld } from '../data/tower-personal-journey.js';
@@ -232,11 +218,6 @@ const rand = (seed, index, salt = 0) => hash32((seed | 0) ^ Math.imul(index + 1,
 // The eyes are evidence, never a payment. A player who put them back has done
 // at least as much as one still carrying them; merely seeing them and refusing
 // them, or never finding them, does not satisfy the Horizon proposition.
-export function horizonBustEyeEvidence(phase = null) {
-  if (phase === 'carried') return Object.freeze({ eligible: true, mode: 'carried' });
-  if (phase === 'returned') return Object.freeze({ eligible: true, mode: 'returned' });
-  return Object.freeze({ eligible: false, mode: phase === 'declined' ? 'declined' : 'untouched' });
-}
 
 function pageCount(distance) {
   const d = Math.max(0, distance);
@@ -940,10 +921,6 @@ export function createSourceSpaceRuntime({
   onScare = () => {},
 } = {}) {
   let state = normalizeChunkSurfState(initialState);
-  state={...state,finale:{...state.finale,bust:{...state.finale.bust,
-    performance:createBustPerformanceState(state.finale.bust.performance,{recognized:state.finale.bust.recognized,committed:state.finale.bust.decision==='accepted',evidence:state.profile?.marbleEyes})}}};
-  let bustCueQueue=[];
-  let bustSavedSecond=-1;
   let stationClockSeconds = state.station.time;
   let stationEntries = state.station.entries;
   let stationWalk = state.station.walk;
@@ -992,7 +969,6 @@ export function createSourceSpaceRuntime({
   // The three dials on the machine at the edge of the field. Runtime-local
   // rather than reducer state: it is set and spent inside one visit to the pad,
   // and nothing after the crossing has any use for how it was threaded.
-  let horizonTransport = freshHorizonTransport();
   let transformElapsed = 0;
   // A restored TRANSFORMING save has no still-page scene to cover it, so it
   // resumes already quiet. A live Haystack transition starts loud and drains
@@ -1299,19 +1275,8 @@ export function createSourceSpaceRuntime({
   // The image can drift and lose substance while the body's ground remains
   // broad and continuous. The measured picture profile affects the image,
   // never the amount of dependable floor left under the player.
-  function horizonBand(ly) {
-    const depth = Math.max(0, Math.min(SOURCE_HORIZON.length, SOURCE_HORIZON.from - ly));
-    const at = depth / SOURCE_HORIZON.sliceMetres;
-    const i = Math.max(0, Math.min(HORIZON_PROFILE.slices - 1, Math.floor(at)));
-    const j = Math.min(HORIZON_PROFILE.slices - 1, i + 1);
-    const t = at - i;
-    const lerp = (arr) => arr[i] + (arr[j] - arr[i]) * t;
-    // Tape units and runtime cells run 1:1 along the tape; across it the
-    // corridor is mapped onto the picture, so the profile's units come back
-    // through the same scale (see r3d's HORIZON_LATERAL_SCALE).
-    return { centre: 0, reach: SOURCE_UNRAVELLING_HALF_WIDTH_CELLS,
-      profileCentre: lerp(HORIZON_PROFILE.com) / HORIZON_LATERAL_SCALE,
-      mosh: lerp(HORIZON_PROFILE.mosh), lum: lerp(HORIZON_PROFILE.lum) };
+  function horizonBand(){
+    return {centre:0,reach:SOURCE_UNRAVELLING_HALF_WIDTH_CELLS,profileCentre:0,mosh:0,lum:.5};
   }
 
   // How far outside the picture the body is, 0 inside and 1 at the last step it
@@ -1332,10 +1297,7 @@ export function createSourceSpaceRuntime({
     return Math.abs(lx) <= SOURCE_UNRAVELLING_HALF_WIDTH_CELLS;
   }
 
-  function onTowerPath(lx, ly) {
-    return state.finale.bust.decision === 'accepted'
-      && sourceTowerPathDistance(lx, ly, sourceTowerPath(horizonBustLateral())) <= SOURCE_TOWER_PATH_HALF_WIDTH;
-  }
+  function onTowerPath(){return false;}
 
   // ── THE WALK OUT OF THE FIELD ─────────────────────────────────────────────
   //
@@ -1764,7 +1726,6 @@ export function createSourceSpaceRuntime({
           { centre, progress: landingPortalFrame().progress, maxAngle: SOURCE_LANDING_PORTAL_MAX_ANGLE },
         )) return { ok: false, why: 'door leaf' };
       }
-      if (horizonBustBlocks(toX, toY)) return { ok: false, why: 'horizon pedestal' };
       if (outskirtDoorBlocks(toX, toY) || routeDoorThresholdRefuses(fromX, fromY, toX, toY) || edgeDoorRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'shut door' };
       if (phoneBoxRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'phone box' };
       // Only the active recording holds locomotion; completion releases it.
@@ -2822,200 +2783,28 @@ export function createSourceSpaceRuntime({
     return { handled: true, state, horizon: true, reason: state.horizon.reason, checkpoint: entry };
   }
 
-  // THE HEAD THAT TALKS, AND WHERE IT STANDS.
-  //
-  // A third of the way in, and off to one side rather than across the path. He
-  // is not a gate and he is not a checkpoint; he is a thing you can walk past
-  // without ever finding out what he wanted, which is the only way the joke
-  // works. Everything he offers costs ten minutes and he says so.
-  const HORIZON_BUST_DEPTH = 168;
-  // HE STANDS ON THE ROUTE, NOT BESIDE IT.
-  //
-  // He was a fixed twenty-six cells off the centre line, from when the corridor
-  // was a straight tube and being off to one side was the whole of his staging.
-  // With the walk following the picture that number means nothing — the path is
-  // somewhere else by then — and the only authored beat in five hundred metres
-  // was parked in the dark where nobody had a reason to go.
-  //
-  // Offset from the PATH instead: far enough off the middle of it that he is
-  // passed rather than collided with, close enough that walking the tape walks
-  // you to him.
-  const HORIZON_BUST_OFFSET = -9;
-  const horizonBustLateral = () =>
-    horizonBand(SOURCE_HORIZON.from - HORIZON_BUST_DEPTH).centre + HORIZON_BUST_OFFSET;
-
-  // Where he stands, for anything that has to draw him.
-  //
-  // Depth passes straight through: one cell along the tape IS one tape unit,
-  // because 512 cells and 512 tape units are both 256 slices. Lateral does not
-  // — the corridor is wider than the picture — so the renderer scales it, and
-  // this reports the raw offset rather than guessing at the mapping.
-  function horizonBustPlacement() {
-    const evidence = horizonBustEyeEvidence(state.profile?.marbleEyes);
-    return {
-      lateral: horizonBustLateral(),
-      depth: HORIZON_BUST_DEPTH,
-      eyes: !!state.finale?.bust?.recognized && evidence.eligible,
-      eyeMode: evidence.mode,
-      performance:describeBustPerformance(state.finale.bust.performance,{evidence:evidence.mode}),
-    };
-  }
-
-  function horizonBustPoint() {
-    const o = landscapeOrigin();
-    return {
-      x: o.x + horizonBustLateral(),
-      y: o.y + SOURCE_HORIZON.from - HORIZON_BUST_DEPTH,
-    };
-  }
-
-  function horizonBustSealPoint(){
-    const at=horizonBustPoint(),seal=BUST_RELIQUARY_RIG.sealCenter;
-    return {x:at.x+seal[0]/CELL,y:at.y+seal[2]/CELL,elevation:seal[1]};
-  }
-  function horizonBustAtSeal(x=player.x,y=player.y){
-    const seal=horizonBustSealPoint();
-    return Math.hypot((x-seal.x)*CELL,(y-seal.y)*CELL)<=.78&&y>horizonBustPoint().y;
-  }
-  function prepareHorizonBustSeal(){
-    if(state.phase!==CHUNK_SURF_PHASE.HORIZON||!state.finale.bust.recognized||state.finale.bust.decision)return false;
-    setState({...state,finale:{...state.finale,bust:{...state.finale.bust,sealReady:true}}},{immediate:true});return true;
-  }
-  function takeHorizonBustCues(){const cues=bustCueQueue;bustCueQueue=[];return cues;}
-  function tickHorizonBust(dt=0,{paused=false,hidden=false,reducedMotion=false}={}){
-    const at=horizonBustPoint(),eyes=BUST_RELIQUARY_RIG.eyeCenters;
-    const center={x:(eyes.L[0]+eyes.R[0])*.5,y:(eyes.L[1]+eyes.R[1])*.5,z:(eyes.L[2]+eyes.R[2])*.5};
-    const x=(player.x-at.x)*CELL-center.x,z=(player.y-at.y)*CELL-center.z,distance=Math.hypot(x,z);
-    const active=state.phase===CHUNK_SURF_PHASE.HORIZON;
-    const evidence=horizonBustEyeEvidence(state.profile?.marbleEyes).mode;
-    const gaze={yaw:Math.atan2(x,z),pitch:Math.atan2(center.y-1.62,distance),distance};
-    const bag={...gaze,pitch:Math.atan2(center.y-.9,distance)};
-    const result=advanceBustPerformance(state.finale.bust.performance,dt,{paused:paused||!active,hidden,reducedMotion,evidence,
-      inAudience:active&&z>0&&distance<13,gaze,bag});
-    state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:result.state}}};
-    bustCueQueue.push(...result.cues);
-    const second=Math.floor(result.state.sceneTime);
-    if(result.changed&&second!==bustSavedSecond){bustSavedSecond=second;onState(state,{immediate:false,recordCausal:false});}
-    return {...result.frame,sealPoint:horizonBustSealPoint(),atSeal:horizonBustAtSeal(),pendingCues:bustCueQueue.length};
-  }
-  function skipHorizonBustPerformance(){
-    state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:settleBustPerformance(state.finale.bust.performance)}}};
-    bustCueQueue=[];onState(state,{immediate:true,recordCausal:false});return describeBustPerformance(state.finale.bust.performance);
-  }
-
-  function horizonBustBlocks(x, y) {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
-    const point = horizonBustPoint();
-    // The asset is 5.2 tape metres wide. Horizon lateral is compressed by 2/3
-    // in the renderer, so its truthful body-space footprint is just under four
-    // cells either side of the authored anchor. The shallow depth keeps the
-    // monument solid without turning it into a wall across the walk.
-    return Math.abs(Number(x) - point.x) < 4.15 && Math.abs(Number(y) - point.y) < 2.35;
-  }
-
-  // How much of the audience has been heard. The offer is deliberately held
-  // until identity, history, route, and consequence have each had a beat;
-  // a secret door should feel conferred, not sold from an interaction prompt.
-  //
-  // Deliberately not persisted: a reload restarts the audience, while the route
-  // decision itself remains durable and cannot be offered twice.
-  let horizonBustBeat = 0;
-  let horizonBustRefusalOffered = false;
-  // WHERE THE RECORDING CHANGES.
-  //
-  // These belong to the whole deterioration, including its first stretch on
-  // the familiar road. Durable receipts prevent a reload repeating them.
-  const HORIZON_MARKERS = Object.freeze([
-    { id: 'street-unravels', amount: .20 },
-    { id: 'street-erased', amount: .7 },
-  ]);
-  const horizonMarkerQueue = [];
-  // Read and clear: the caller speaks it, and it must not be spoken twice.
-  function takeHorizonMarker() {
-    return horizonMarkerQueue.shift() || null;
-  }
-
-  // The furthest whole slice the body has reached, so HORIZON_ADVANCED fires
-  // once per slice instead of once per footstep. Runtime-only; the durable
-  // figure is state.horizon.maxDepth, which this feeds.
-  let horizonDepthSlice = Math.floor(state.horizon.maxDepth / SOURCE_HORIZON.sliceMetres);
-
-  function talkToHorizonBust() {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
-    const evidence = horizonBustEyeEvidence(state.profile?.marbleEyes);
-    if (!evidence.eligible) {
-      // Preserve the durable route decision on first contact for old saves and
-      // callers. The refusal tree below is presentation only: it gives the
-      // player posture, never another route.
-      dispatch({ type: 'HORIZON_BUST_DECIDED', decision: 'declined' }, { immediate: true });
-      if (horizonBustBeat < HORIZON_BUST_REFUSAL.length) {
-        horizonBustBeat += 1;
-        return {
-          handled: true,
-          eligible: false,
-          evidence,
-          beat: horizonBustBeat,
-          line: HORIZON_BUST_REFUSAL[horizonBustBeat - 1],
-          offers: false,
-          offersRefusal: false,
-        };
-      }
-      if (!horizonBustRefusalOffered) {
-        horizonBustRefusalOffered = true;
-        return {
-          handled: true,
-          eligible: false,
-          evidence,
-          beat: horizonBustBeat,
-          line: null,
-          offers: false,
-          offersRefusal: true,
-        };
-      }
-      return {
-        handled: true, eligible: false, evidence, beat: horizonBustBeat,
-        line: null, offers: false, offersRefusal: false,
-      };
-    }
-    const recognition=beginBustRecognition(state.finale.bust.performance,evidence.mode);
-    state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:recognition.state}}};
+  function recognizeHorizonApproach({ eligible = false } = {}) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale.bust.decision) return { handled: false, state };
+    if (!eligible) return { handled: true, eligible: false, recognized: state.finale.bust.recognized, state };
+    if (state.finale.bust.recognized) return { handled: true, eligible: true, recognized: true, state };
     dispatch({ type: 'HORIZON_BUST_RECOGNIZED', eligible: true }, { immediate: true });
-    const lines = horizonBustAudience(evidence.mode);
-    horizonBustBeat = Math.min(lines.length, horizonBustBeat + 1);
-    const last = horizonBustBeat >= lines.length;
-    return {
-      handled: true,
-      eligible: true,
-      evidence,
-      beat: horizonBustBeat,
-      line: lines[horizonBustBeat - 1],
-      offers: last && !state.finale?.bust?.decision,
-      offersRefusal: false,
-    };
+    return { handled: true, eligible: true, recognized: state.finale.bust.recognized, state };
   }
 
-  function decideHorizonBust(accept = false) {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale?.bust?.decision) return { handled: false, state };
+  function decideHorizonApproach(accept = false) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale.bust.decision) return { handled: false, state };
+    if (accept && !state.finale.bust.recognized) return { handled: false, eligible: false, state };
     dispatch({ type: 'HORIZON_BUST_DECIDED', decision: accept ? 'accepted' : 'declined' }, { immediate: true });
-    const decision = state.finale?.bust?.decision;
-    if(decision==='accepted'){
-      const ritual=beginBustRitual(state.finale.bust.performance,{evidence:horizonBustEyeEvidence(state.profile?.marbleEyes).mode});
-      state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:ritual.state}}};
-      onState(state,{immediate:true,recordCausal:false});
-    }
+    const decision = state.finale.bust.decision;
     return { handled: !!decision, accepted: decision === 'accepted', decision, state };
   }
 
-  function takeHorizonBustDetour() {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale?.bust?.decision !== 'accepted') return { handled: false, state };
-    return { handled: true, state, pathOpened: true, path: sourceTowerPath(horizonBustLateral()) };
-  }
+
 
   // Where he is on the tape, which is also when he is on it. The renderer, the
   // score and the bust all read this one frame.
   // Picture half-width over corridor half-width, mirroring the renderer: the
   // profile is in tape units and the runtime walks in cells.
-  const HORIZON_LATERAL_SCALE = 64 / 96;
   // How many cells of approach the edge is felt over.
   const HORIZON_EDGE_FADE = 18;
   // HOW THE RECORDING'S OWN BRIGHTNESS BECOMES THE TAPE'S EXPOSURE.
@@ -3026,8 +2815,6 @@ export function createSourceSpaceRuntime({
   // crossing, which reads as a tape wearing out, without ever going so dark
   // that the middle act cannot be walked. The floor is what stops a dim slice
   // becoming an unlit room; the gain is how much of the decline you feel.
-  const HORIZON_EXPOSURE_FLOOR = 0.45;
-  const HORIZON_EXPOSURE_GAIN = 0.95;
   // How much slower than an ordinary walk the tape is. One number, because the
   // right value is a matter of feel. Measured against the real base step of
   // ~46ms a cell over 506 cells:
@@ -3224,23 +3011,7 @@ export function createSourceSpaceRuntime({
   // further on, it is small and low from the doors and grows by several times
   // across the walk, most of that in the last stretch — you can see it coming.
   const BEACON_PUSHBACK_M = 140;
-  function sourceVoidBeacon() {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return null;
-    const o = landscapeOrigin(), local = player.y - o.y;
-    if (local <= SOURCE_HORIZON.from || local > SOURCE_PRE_TAPE.from) return null;
-    const head = { x: o.x + horizonBand(SOURCE_HORIZON.from).centre, y: o.y + SOURCE_HORIZON.from };
-    const dx = head.x - player.x, dy = head.y - player.y;
-    const realDistanceM = Math.hypot(dx, dy) * CELL;
-    return {
-      bearing: Math.atan2(dx, -dy),
-      distanceM: realDistanceM + BEACON_PUSHBACK_M,
-      realDistanceM,
-      halfWidthM: SOURCE_HORIZON.halfWidth * CELL,
-      heightM: 24,
-      strength: (0.45 + 0.55 * (1 - Math.max(0, Math.min(1, realDistanceM / (SOURCE_PRE_TAPE.length * CELL)))))
-        * (1 - smoothstep(OUTSKIRT_ROAD_END - OUTSKIRT_STRETCH_METRES, OUTSKIRT_ROAD_END + 20, outskirtsAlong())),
-    };
-  }
+  function sourceVoidBeacon(){return null;}
 
   // The body's sway, lurch and drop in the dark stretches, for the camera.
   function outskirtsBodyFrame({ time = 0, reducedMotion = false } = {}) {
@@ -3266,106 +3037,20 @@ export function createSourceSpaceRuntime({
   // THE CHECKPOINT THE SCORE STANDS AT, this many cells on along the route.
   // Far enough that the route's bends show up as a turn of the head, near
   // enough that the sound is somewhere you are walking to, not the horizon.
-  const HORIZON_GUIDE_AHEAD = 48;
 
   // Where the score stands: the next checkpoint on his route, in world cells.
   // On the tape it is the picture's own path, HORIZON_GUIDE_AHEAD on. Once the
   // bust has cut the tower road, it is that road, measured along its legs.
   // Short of the tape it is the head of the tape.
-  function horizonGuide() {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return null;
-    const o = landscapeOrigin(), lx = player.x - o.x, ly = player.y - o.y;
-    if (ly > SOURCE_HORIZON.from) {
-      const head = { x: o.x + horizonBand(SOURCE_HORIZON.from).centre, y: o.y + SOURCE_HORIZON.from };
-      return { ...head, kind: 'head', distanceM: Math.hypot(head.x - player.x, head.y - player.y) * CELL };
-    }
-    if (state.finale.bust.decision === 'accepted') {
-      const points = sourceTowerPath(horizonBustLateral());
-      // The nearest point on the road, then HORIZON_GUIDE_AHEAD further along it.
-      let best = { d: Infinity, seg: 0, t: 0 };
-      for (let i = 1; i < points.length; i += 1) {
-        const a = points[i - 1], b = points[i], dx = b.x - a.x, dy = b.y - a.y;
-        const t = Math.max(0, Math.min(1, ((lx - a.x) * dx + (ly - a.y) * dy) / Math.max(1e-6, dx * dx + dy * dy)));
-        const d = Math.hypot(lx - a.x - dx * t, ly - a.y - dy * t);
-        if (d < best.d) best = { d, seg: i, t };
-      }
-      let left = HORIZON_GUIDE_AHEAD, seg = best.seg, t = best.t, point = points[points.length - 1];
-      while (seg < points.length) {
-        const a = points[seg - 1], b = points[seg], length = Math.hypot(b.x - a.x, b.y - a.y);
-        const remaining = length * (1 - t);
-        if (remaining >= left) { const u = t + left / Math.max(1e-6, length); point = { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u }; break; }
-        left -= remaining; seg += 1; t = 0;
-      }
-      const guide = { x: o.x + point.x, y: o.y + point.y };
-      return { ...guide, kind: 'tower', distanceM: Math.hypot(guide.x - player.x, guide.y - player.y) * CELL };
-    }
-    const ahead = Math.max(SOURCE_HORIZON.to, ly - HORIZON_GUIDE_AHEAD);
-    const guide = { x: o.x + horizonBand(ahead).centre, y: o.y + ahead };
-    return { ...guide, kind: 'path', distanceM: Math.hypot(guide.x - player.x, guide.y - player.y) * CELL };
+
+  function horizonFrame(){
+    if(state.phase!==CHUNK_SURF_PHASE.HORIZON)return {active:false};
+    const o=landscapeOrigin(),local=player.y-o.y;
+    return {active:true,preTape:local>SOURCE_HORIZON.from,reason:state.horizon.reason,
+      depth:state.horizon.maxDepth,progress:0,onTape:false,seconds:0,lateral:player.x-o.x};
   }
 
-  function horizonFrame() {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { active: false };
-    const o = landscapeOrigin(), local = player.y - o.y;
-    const slice = sourceHorizonSlice(local), depth = sourceHorizonDepth(local);
-    const bandHere = horizonBand(local), unravelling = sourceUnravellingFrame(horizonUnravelling);
-    const groundY = SOURCE_TIER_BY_ID.horizon.height;
-    return {
-      active: true,
-      onTape: local <= SOURCE_HORIZON.from,
-      preTape: local > SOURCE_HORIZON.from,
-      preTapeProgress: sourcePreTapeProgress(local),
-      reason: state.horizon.reason,
-      depth, progress: depth / SOURCE_HORIZON.length,
-      seconds: sourceHorizonSeconds(local),
-      slice: slice.index, sliceFraction: slice.fraction,
-      lateral: player.x - o.x,
-      // Both render passes use this same physical seam; crossing it does not
-      // change the camera or start a new room around the body.
-      worldOriginM: [(o.x + .5) * CELL, groundY, (o.y + SOURCE_HORIZON.from + .5) * CELL],
-      seamY: o.y + SOURCE_HORIZON.from, endY: o.y + SOURCE_HORIZON.to,
-      groundY, floorY: groundY, cellMetres: CELL,
-      tapeLengthMetres: SOURCE_HORIZON.length * CELL,
-      unravelling,
-      towerPath: state.finale.bust.decision === 'accepted' ? sourceTowerPath(horizonBustLateral()).map(p => ({ x: p.x, depth: SOURCE_HORIZON.from - p.y })) : [],
-      onTowerPath: onTowerPath(player.x - o.x, local),
-      falling: 0,
-      dream: smoothstep(70, 145, depth) * (1 - smoothstep(285, 365, depth)),
-      collapsing: unravelling.loss > .7,
-      collapse: unravelling.loss,
-      edge: horizonEdge(player.x, player.y),
-      band: bandHere, bandAhead: horizonBand(local - HORIZON_BAND_LOOKAHEAD),
-      bandLookahead: HORIZON_BAND_LOOKAHEAD,
-      guide: horizonGuide(),
-      exposure: HORIZON_EXPOSURE_FLOOR + HORIZON_EXPOSURE_GAIN * bandHere.lum,
-    };
-  }
 
-  function advanceHorizonUnravelling(dt = 0) {
-    const metres = (SOURCE_HORIZON.from - (player.y - landscapeOrigin().y)) * CELL;
-    horizonUnravelling = advanceSourceUnravelling(horizonUnravelling, { metres, dt });
-    for (const marker of HORIZON_MARKERS) {
-      if (horizonUnravelling.amount >= marker.amount && !horizonUnravelling.markers.includes(marker.id)) {
-        horizonUnravelling = { ...horizonUnravelling, markers: [...horizonUnravelling.markers, marker.id] };
-        horizonMarkerQueue.push(marker.id);
-      }
-    }
-    // Commit before revealing the next visible amount bucket. Exact elapsed
-    // time remains local between these writes and is included in state().
-    if (horizonUnravelling.amount !== state.horizon.unravelling.amount
-      || horizonUnravelling.markers.length !== state.horizon.unravelling.markers.length
-      || Math.floor(horizonUnravelling.elapsedSeconds / 5) > Math.floor(state.horizon.unravelling.elapsedSeconds / 5)) {
-      dispatch({ type: 'HORIZON_UNRAVELLING_ADVANCED', unravelling: horizonUnravelling });
-    }
-  }
-
-  function tickHorizon(dt = 0) {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || !(Number(dt) > 0)) return null;
-    // Speech and listening are live time. The caller supplies zero only when
-    // the world is paused; long suspension frames cannot spend minutes here.
-    advanceHorizonUnravelling(dt);
-    return null;
-  }
 
   function chooseHorizonExit(exit) {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
@@ -3557,15 +3242,7 @@ export function createSourceSpaceRuntime({
     candidates.push(...phoneBoxFocus(), ...flurryFocus());
     candidates.push(...outskirtInspectFocus());
     candidates.push(...busActionFocus());
-    if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
-      const bust = horizonBustPoint();
-      // Radius widened with him: he is a monument standing on the route now, and
-          // needing to be within eight cells of a thing that size to notice it is
-          // a reticle problem, not a staging one.
-          candidates.push({ kind: 'horizon-bust', id: 'horizon-bust', ...bust, focusPriority: 9, focusRadius: 20 });
-      if(state.finale.bust.sealReady&&!state.finale.bust.decision&&horizonBustAtSeal(px,py))candidates.push({kind:'horizon-bust-seal',id:'horizon-bust-seal',...horizonBustSealPoint(),focusPriority:20,focusRadius:2});
-      return (lastFocus = focusedCandidate(px, py, facing, candidates, 8));
-    }
+
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase) && (state.firstLiftCompleted || !sourceShoreFrame().outside)) {
       // THE BODY IS A THING YOU CAN WALK UP TO.
       //
@@ -3707,35 +3384,7 @@ export function createSourceSpaceRuntime({
         captureMovementAnchor=null;
       }
     }
-    if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
-      // Furthest in, not current — walking back up the tape is allowed and is
-      // most of the point, but it must not un-earn the ground he has decoded.
-      const depth = sourceHorizonDepth(to.y - landscapeOrigin().y);
-      // A SAVE PER FOOTSTEP IS NOT A CHECKPOINT.
-      //
-      // This dispatched on every step — eleven a second at pace — and every
-      // dispatch runs setState, which calls onState, which commits the save.
-      // What it was persisting is a monotone maxDepth that nothing reads back.
-      // Only tell the store when the furthest point actually moves, and only in
-      // whole slices, so the write rate follows the tape rather than the legs.
-      advanceHorizonUnravelling();
-      const slice = Math.floor(depth / SOURCE_HORIZON.sliceMetres);
-      if (slice > horizonDepthSlice) {
-        horizonDepthSlice = slice;
-        dispatch({ type: 'HORIZON_ADVANCED', depth });
-      }
-      // THE DEFAULT EXIT IS DOING NOTHING. Walk far enough and the recording
-      // runs out, and where it runs out is the nave. This is the exit that
-      // cannot be missed, which is exactly why it is the one that costs nothing
-      // and gives nothing — no bells, no advantage, just the way on.
-      if(state.finale.bust.decision==='accepted' && localY<=SOURCE_BELLS.from
-        && onTowerPath(to.x-landscapeOrigin().x,localY)) {
-        chooseHorizonExit(HORIZON_EXIT.TOWER);
-        return {handled:true,event:'bells-entered'};
-      }
-      if (depth >= SOURCE_HORIZON.length - 1 && state.finale.bust.decision!=='accepted') chooseHorizonExit(HORIZON_EXIT.CHAPEL);
-      return;
-    }
+    if(state.phase===CHUNK_SURF_PHASE.HORIZON)return;
     if (state.phase === CHUNK_SURF_PHASE.BELLS) {
       eraseCrossedDoors(from, to);
       if (coastalMemory.active) return { handled: true, event: 'coastal-entry', checkpoint: coastalMemoryState(), position: { ...coastalMemory.returnPose } };
@@ -3859,24 +3508,7 @@ export function createSourceSpaceRuntime({
       const room = chunkSurfRoom(focus.id);
       return { handled: true, text: room.inspect, source: exactLine(focus.sector, 0) };
     }
-    if(focus.kind==='horizon-bust-seal')return{handled:true,event:'horizon-bust-seal',text:''};
-    if (focus.kind === 'horizon-bust') {
-      if(state.finale.bust.decision)return{handled:true,event:'horizon-bust',line:{who:'bust',text:state.finale.bust.decision==='accepted'?'The path is open. There. Walk it.':'The chapel is still ahead.'},text:''};
-      const talk = talkToHorizonBust();
-      return {
-        handled: true,
-        event: talk.offers
-          ? 'horizon-bust-offer'
-          : talk.offersRefusal
-            ? 'horizon-bust-refusal-offer'
-            : 'horizon-bust',
-        line: talk.line,
-        eligible: talk.eligible,
-        evidence: talk.evidence,
-        beat: talk.beat,
-        text: '',
-      };
-    }
+
     if (focus.kind === 'outskirt-door') {
       const piece = doorFieldPieces().find((entry) => entry.id === focus.id);
       if (piece && homeDoorEligible(piece) && !homeDoorsLooked.has(piece.id)) {
@@ -3904,25 +3536,7 @@ export function createSourceSpaceRuntime({
       // catch takes. This only says the player asked for it.
       return { handled: true, event: 'hush-contact', text: '' };
     }
-    if (focus.kind === 'normal-exit') {
-      // THE MACHINE COMES FIRST, AND IT IS THE SAME MACHINE ON BOTH ROADS.
-      //
-      // This used to be a bare press: with Contact available it opened the
-      // warning, and without it — which is most runs — it dropped the body
-      // straight into a two-minute walk with no text on it anywhere. The
-      // transport is the door now. Threading it is what makes the tape exist
-      // out past the field, and only then does the road fork.
-      if (!horizonTransport.threaded) {
-        return { handled: true, event: 'horizon-transport', text: '' };
-      }
-      // The two authored pads are one decision, not a secret safe exit beside a
-      // dangerous one. When Contact is available, either approach opens the
-      // same explicit warning; Horizon is entered only by choosing WALK AWAY.
-      const request = requestBossBattle();
-      if (request.available) return { handled: true, event: 'boss-warning', text: '' };
-      const completed = completeNormalExit();
-      return { ...completed, event: 'horizon', text: '' };
-    }
+
     if (focus.kind === 'boss-fault') {
       const request = requestBossBattle();
       if (request.available) return { handled: true, event: 'boss-warning', text: '' };
@@ -4023,13 +3637,23 @@ export function createSourceSpaceRuntime({
     }
   }
 
+  let paperFallbackKey=null;
+  const paperFallbackIds=new Map();
   function paperDocumentIdForSheet(index) {
     const sheetId=`source-sheet-${index}`;
     const assignedId=sourceDialogue.assignments?.[sheetId];
     if(assignedId)return `source-page:${assignedId}`;
+    // Stock print is deterministic. Live dialogue assignment stays above this
+    // cache, so reading a sheet can replace its print on the very next frame.
+    // One runtime owns at most the finite960 sheet addresses for one seed/slot.
+    const stockKey=`${state.seed}:${state.interactivePageSlot??'default'}`;
+    if(stockKey!==paperFallbackKey){paperFallbackKey=stockKey;paperFallbackIds.clear();}
+    if(paperFallbackIds.has(index))return paperFallbackIds.get(index);
     const sheet=sourceHallSheet(state.seed,index,{slot:state.interactivePageSlot});
     const fallback=sourcePageFor(index,sheet?.documentStage ?? 0,state.seed);
-    return fallback?`source-page:${fallback.id}`:ambientPaperDocumentId(state.seed,index);
+    const documentId=fallback?`source-page:${fallback.id}`:ambientPaperDocumentId(state.seed,index);
+    if(Number.isInteger(index)&&index>=0&&index<SOURCE_HALL_SHEET_COUNT)paperFallbackIds.set(index,documentId);
+    return documentId;
   }
 
   function pageInstances(px, py, {time=0,reducedMotion=false,objectiveHints='full',flashMode='full'}={}) {
@@ -5424,8 +5048,11 @@ export function createSourceSpaceRuntime({
     if (!inStreetRemnantView() && !recordedOutskirtsPresentation()) return [];
     const eye = outskirtsEye(px, py);
     const foldVisibility = outskirtsFoldVisibility(outskirtsPerceptualAlong(py));
+    // The unanswered call needs one readable place. Prefetched lateral returns
+    // may remain in the scenery cache, but never intrude on this quiet loop.
+    const quietPhoneReturn = outskirtsPassAt(py) === PAYPHONE_LOOP_ROUTE.pass;
     const out = streetRenderPieces()
-      .filter((piece) => (!piece.folded || foldVisibility > 0) && streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
+      .filter((piece) => (!piece.folded || (!quietPhoneReturn && foldVisibility > 0)) && streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
         && !(piece.encounter==='bus-close'&&/^bus-woman/.test(piece.key)&&streetExperience.busTransitState().openAt!=null&&streetExperience.busTransitState().clock-streetExperience.busTransitState().openAt>=.32)
         && !(piece.encounter === 'wrong-fold' && streetExperience.characterFrame().fold.phase === 'spent'))
       .flatMap((piece) => {
@@ -6020,7 +5647,7 @@ export function createSourceSpaceRuntime({
 
   // The twelve edges of a piece's box, as raw timber.
   function unfinishedFrame(piece, matrix) {
-    const b = PROP_BOUNDS[piece.mesh];
+    const b = PROP_BOUNDS[piece.mesh] || PROP_BOUNDS[piece.fallbackMesh];
     if (!b) return [];
     const [x0, y0, z0] = b.min, [x1, y1, z1] = b.max, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, cz = (z0 + z1) / 2, t = 0.14;
     const beams = [];
@@ -7906,7 +7533,12 @@ export function createSourceSpaceRuntime({
   }
   function propInstances(px = player.x, py = player.y, options = {}) {
     const base=basePropInstances(px,py,options),shore=sourceShoreFrame();
-    const faults=sourceEarlyFaultFrame({phase:state.phase,shore:!!shore?.outside,origin:landscapeOrigin(),player:{x:px,y:py},
+    const faultOrigin=landscapeOrigin();
+    // The road's coordinate rebase moves its scenery, lights and player
+    // together. Later-added fault geometry must share that same translation.
+    const faultFrameOrigin=state.phase===CHUNK_SURF_PHASE.HORIZON&&payphoneRoadLoopTurns>0
+      ?{...faultOrigin,y:faultOrigin.y+payphoneRoadLoopTurns*OUTSKIRT_STRETCH_METRES/CELL}:faultOrigin;
+    const faults=sourceEarlyFaultFrame({phase:state.phase,shore:!!shore?.outside,origin:faultFrameOrigin,player:{x:px,y:py},
       suspended:!!busInteriorFrame()?.active||!!towerLandState()||base.some(p=>p.sourceStructure==='source-demolition-void')});
     return faults.props.length?[...base,...faults.props]:base;
   }
@@ -8114,17 +7746,18 @@ export function createSourceSpaceRuntime({
       activeChapter: state.finalEncounter.activeChapter, victories: state.finalEncounter.victories };
   }
 
-  function continuationContactLocal(chapter) {
+  function continuationContactLocal(chapter, captured=false) {
     const checkpoint = state.sourceContinuation;
-    return checkpoint?.status === 'active' && !checkpoint.fall && !checkpoint.recovery
+    return checkpoint?.status === 'active' && !checkpoint.fall && (captured?sourceContinuationCapturedContactReady(checkpoint):!checkpoint.recovery)
       && !checkpoint.bodyTransit && !checkpoint.cameraTransit
       && (chapter === 'II' ? checkpoint.phase === 'wrong-return' : chapter === 'III' && checkpoint.phase === 'catch');
   }
 
-  function beginHushContact(context = null, { chapter = 'I', locallyAvailable = false, runId = '' } = {}) {
+  function beginHushContact(context = null, { chapter = 'I', locallyAvailable = false, runId = '', captured=false } = {}) {
     chapter = sourceContactChapter(chapter);
+    if(captured&&chapter==='I')return null;
     const status = sourceContactStatus(chapter);
-    const local = chapter === 'I' ? hushMode().contactAvailable : locallyAvailable && continuationContactLocal(chapter);
+    const local = chapter === 'I' ? hushMode().contactAvailable : locallyAvailable && continuationContactLocal(chapter,captured);
     if (!local || (!status.battleAvailable && !status.repeatAvailable) || traversal || pendingContact) return null;
     // Each new approach needs its own warning, including one interrupted at
     // the warning in an older save. Merely asking a question never pays a cost.
@@ -8132,7 +7765,7 @@ export function createSourceSpaceRuntime({
       chapter, warningSeen: false, combatCommitted: false, lastChoiceId: null }) };
     rememberDialogueFact(SOURCE_DIALOGUE_FACT.HUSH_CONTACT, true, { latencyReads: 0 });
     pendingContact = nextSourceContact(state.sourceContacts, { seed: state.seed, context,
-      victories: state.finalEncounter.victories, chapter, repeatContact: status.repeatAvailable });
+      victories: state.finalEncounter.victories, chapter, repeatContact: status.repeatAvailable,captured });
     pendingContact.custodyRunId = typeof runId === 'string' ? runId : '';
     const custody = normalizeSourceRecordingCustody(state.sourceRecordingCustody, { runId: pendingContact.custodyRunId });
     pendingContact.recordingContactId = `source-repeat:${pendingContact.custodyRunId}:${chapter}:${custody.serial + 1}`;
@@ -8639,26 +8272,11 @@ export function createSourceSpaceRuntime({
     returnContinuation,
     completeContinuation,
     acknowledgeContinuationHandoff,
-    // THE MACHINE. Main owns the slate and the window cue; this owns the dials.
-    horizonTransport: () => ({ ...horizonTransport }),
-    horizonTransportOptions: () => HORIZON_TRANSPORT_OPTIONS,
-    horizonTransportReadings: () => horizonTransportReadings(),
-    horizonTransportStatus: () => horizonTransportThreaded(horizonTransport),
-    setHorizonTransportDial: (dial, value) => {
-      if (!HORIZON_TRANSPORT_OPTIONS[dial]?.includes(value)) return { ...horizonTransport };
-      horizonTransport = { ...horizonTransport, [dial]: value };
-      return { ...horizonTransport };
-    },
-    runHorizonTransport: () => {
-      const result = threadHorizonTransport(horizonTransport);
-      horizonTransport = result.state;
-      return { ...result, state: { ...result.state } };
-    },
     resolveFinalEncounter,
     cancelFinalEncounter,
     failFinalEncounter,
     horizonFrame,
-    tickHorizon,
+    horizonApproachDue:()=>state.phase===CHUNK_SURF_PHASE.HORIZON&&player.y-landscapeOrigin().y<=SOURCE_HORIZON.from,
     hushApproachFrame,
     // The bell passage: the tower road, walked. See SOURCE_BELLS.
     bellsFrame,
@@ -8666,15 +8284,10 @@ export function createSourceSpaceRuntime({
     enteredBells,
     enterBellsRoom,
     chooseHorizonExit,
-    horizonBustPoint,
-    horizonBustPlacement,
-    horizonBustSealPoint,horizonBustAtSeal,prepareHorizonBustSeal,tickHorizonBust,takeHorizonBustCues,skipHorizonBustPerformance,
     horizonBand,
     horizonEdge,
-    takeHorizonMarker,
-    talkToHorizonBust,
-    decideHorizonBust,
-    takeHorizonBustDetour,
+    recognizeHorizonApproach,
+    decideHorizonApproach,
     navigation,
     checkpointPosition,
     beginHushContact,

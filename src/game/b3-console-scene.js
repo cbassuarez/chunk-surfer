@@ -7,7 +7,7 @@ import {fitText} from '../render/fit-text.js';
 
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
 export function makeB3ConsoleScene({getState=()=>({}),onFader=()=>{},onPower=()=>{},onClose=()=>{},onControl=()=>{},
-  onLookMode=()=>{},isRecording=()=>false,onRecord=()=>{}}={}){
+  onInspect=()=>{},onLookMode=()=>{},isRecording=()=>false,onRecord=()=>{}}={}){
   let scene,closed=false,notified=false,selected=1,focus='fader',looking=false,drag=null,press=null,size={cols:120,rows:38};
   const state=()=>({...(getState()||{}),selected,focus,looking,pressed:press?.kind||null,dragChannel:drag?.channel||null});
   const layout=()=>b3ConsoleLayout(size,selected);
@@ -29,7 +29,7 @@ export function makeB3ConsoleScene({getState=()=>({}),onFader=()=>{},onPower=()=
   };
   const toggle=()=>{if(closed||looking)return;focus='power';const next=!getState()?.powerOn;onPower(next);onControl('power',{on:next});};
   const activate=(hit,event)=>{
-    if(hit?.kind==='close')close();else if(hit?.kind==='look')setLooking(!looking,event);
+    if(hit?.kind==='inspect')onInspect();else if(hit?.kind==='close')close();else if(hit?.kind==='look')setLooking(!looking,event);
     else if(hit?.kind==='power')toggle();else if(hit?.kind==='previous')select(selected-layout().visible);
     else if(hit?.kind==='next')select(selected+layout().visible);
   };
@@ -50,6 +50,7 @@ export function makeB3ConsoleScene({getState=()=>({}),onFader=()=>{},onPower=()=
         e.preventDefault?.();if(!e.repeat)setLooking(!looking,e);return true;
       }
       if(looking){if(action==='confirm'&&!e.repeat)setLooking(false,e);return true;}
+      if(key==='i'||e.code==='KeyI'){if(!e.repeat)onInspect();return true;}
       if(key==='p'||e.code==='KeyP'){if(!e.repeat){const previous=focus;toggle();focus=previous;}return true;}
       if(key==='arrowleft'||key==='a'||action==='move_left'){
         if(focus==='power'){focus='fader';select(16);}else if(selected===1)focus='power';else select(selected-1);return true;
@@ -94,7 +95,7 @@ export function makeB3ConsoleScene({getState=()=>({}),onFader=()=>{},onPower=()=
     render(viewport=uiSize()){
       if(viewport.cols>0&&viewport.rows>0)size=viewport;
       drawB3Console(state(),size);
-      const footer=(isRecording()?'R STOP  ·  ':'')+'E LEAVE  ·  '+(looking?'CLICK / TAB DESK':'TAB LOOK  ·  P POWER  ·  ← → CHANNEL  ·  ↑ ↓ FADER');
+      const footer=(isRecording()?'R STOP  ·  ':'')+'E LEAVE  ·  '+(looking?'CLICK / TAB DESK':'I TRACE / PATCH  ·  TAB LOOK  ·  P POWER  ·  ← → CHANNEL  ·  ↑ ↓ FADER');
       uiText(1,size.rows-.85,fitText(footer,Math.max(1,size.cols-2)),'ui-dim');
     },
   };return scene;

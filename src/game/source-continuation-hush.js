@@ -1,5 +1,6 @@
 import {SOURCE_CONTINUATION as C,SOURCE_CONTINUATION_ROUTES, continuationSupportAt, continuationSurfaceContains, continuationChartSurfaces, continuationChartSolids,continuationChartDoors,continuationFolds} from '../data/source-continuation.js';
 import {JOURNEY_ROUTES} from '../data/source-continuation-journey.js';
+import {ARCHIPELAGO_MAIN_ROUTE,ARCHIPELAGO_OPTIONAL_ROUTES,ARCHIPELAGO_REFUGES} from '../data/source-continuation-archipelago.js';
 import {continuationBallisticStep,continuationFreeBody} from './source-continuation-physics.js';
 import {advancePortalTransit,continuationPortalCrossing,transferContinuationPortal,portalEdge,continuationBodyAxis} from './source-continuation-portals.js';
 import {freshHushDensityPose,normalizeHushDensityPose,stepHushDensityPose} from './hush-density-performance.js';
@@ -14,13 +15,38 @@ const position=actor=>({x:actor.x,y:actor.feet,z:actor.z});
 
 // Geometry owned by the continuation, also used by its ground recovery. A
 // straight shortcut must carry the whole body over actual supported steps.
+let archipelagoSpatial = null;
+function archipelagoGeometryAt(x, z) {
+  if (!archipelagoSpatial) {
+    const bins = new Map(), cellSize = 24;
+    const add = (row, type) => {
+      if (row.minX >= -185) return;
+      for (let ix = Math.floor((row.minX - .3) / cellSize); ix <= Math.floor((row.maxX + .3) / cellSize); ix++) {
+        for (let iz = Math.floor((row.minZ - .3) / cellSize); iz <= Math.floor((row.maxZ + .3) / cellSize); iz++) {
+          const key = `${ix},${iz}`;
+          if (!bins.has(key)) bins.set(key, {surfaces: [], solids: []});
+          bins.get(key)[type].push(row);
+        }
+      }
+    };
+    // The far Catch has static floor/solid topology. The moving cabinet is in
+    // chart4; the II closure is near X0, so neither belongs to these far bins.
+    for (const row of continuationChartSurfaces({chartId: 0})) add(row, 'surfaces');
+    for (const row of continuationChartSolids({chartId: 0})) add(row, 'solids');
+    archipelagoSpatial = {bins, cellSize};
+  }
+  const {bins, cellSize} = archipelagoSpatial;
+  return bins.get(`${Math.floor(x / cellSize)},${Math.floor(z / cellSize)}`) || {surfaces: [], solids: []};
+}
 function rawSupport(x,z,feet,chartId=0,world=null) {
   const geometry={feet,chartId,...(chartId===4&&world?.corridor?{corridor:world.corridor}:{})};
-  const at=continuationSupportAt(x,z,geometry);
+  const nearby=chartId===0&&x< -185?archipelagoGeometryAt(x,z):null;
+  const floor=nearby?.surfaces.filter(s=>s.y<=feet+C.maximumStep+1e-7&&s.y>=feet-C.maximumStep-1e-7&&continuationSurfaceContains(s,x,z)).sort((a,b)=>b.y-a.y)[0];
+  const at=nearby?(floor?{id:floor.id,y:floor.y,level:floor.level??0,surface:floor}:null):continuationSupportAt(x,z,geometry);
   if(!at)return null;
   const radius=chartId===4&&world?.corridor?C.hush.radius:C.bodyRadius;
-  if(continuationChartSolids(geometry).some(s=>at.y+C.bodyHeight>s.minY+.04&&at.y<s.maxY-.04&&x+radius>s.minX&&x-radius<s.maxX&&z+radius>s.minZ&&z-radius<s.maxZ))return null;
-  if(continuationChartSurfaces({chartId}).some(s=>s.y>at.y+.04&&s.y-s.thickness<at.y+C.bodyHeight-.03&&continuationSurfaceContains(s,x,z)))return null;
+  if((nearby?.solids||continuationChartSolids(geometry)).some(s=>at.y+C.bodyHeight>s.minY+.04&&at.y<s.maxY-.04&&x+radius>s.minX&&x-radius<s.maxX&&z+radius>s.minZ&&z-radius<s.maxZ))return null;
+  if((nearby?.surfaces||continuationChartSurfaces({chartId})).some(s=>s.y>at.y+.04&&s.y-s.thickness<at.y+C.bodyHeight-.03&&continuationSurfaceContains(s,x,z)))return null;
   return at;
 }
 function support(x,z,feet,cache=null,chartId=0,world=null) {
@@ -60,7 +86,7 @@ function wrongReturnPath(from,to,cache,world=null) {
     route([[-10,-3],[-10,-22],[-10,-32],[16,-32],[16,-22],[16,-7]],0);
     route([[-8,-30],[11,-30],[11,-20],[11,-7],[-8,-7]],4.2);
     route([[-8,-20],[11,-20]],4.2);
-    route(JOURNEY_ROUTES.main,0);
+    for(const rows of Object.values(JOURNEY_ROUTES))route(rows,0);
     wrongReturnGraph={nodes,edges};wrongReturnGraphKey=graphKey;
   }
   const nodes=[...wrongReturnGraph.nodes,point(from),point(to)],edges=wrongReturnGraph.edges.map(row=>[...row]);edges.push([],[]);
@@ -79,12 +105,101 @@ function wrongReturnPath(from,to,cache,world=null) {
   return null;
 }
 
+// The expedition is hundreds of metres across and crosses negative elevations.
+// Its authored graph is both smaller and more faithful than searching the whole
+// bounding rectangle. Edges are admitted only after supported-step and physical
+// body checks; this supplies real walking for shelter reconnects and recovery.
+let archipelagoGraph = null;
+function archipelagoEdge(from, to, cache, world) {
+  if (!continuationWalkSegment(from, to, cache, world)) return false;
+  let feet = from.feet;
+  const count = Math.max(1, Math.ceil(distance(from, to) / .2));
+  for (let k = 1; k <= count; k++) {
+    const t = k / count, x = from.x + (to.x - from.x) * t, z = from.z + (to.z - from.z) * t;
+    const at = support(x, z, feet, cache, 0, world);
+    if (!at) return false;
+    if (x < -185) {
+      const nearby = archipelagoGeometryAt(x, z), radius = C.hush.radius;
+      const circle = s => Math.hypot(Math.max(s.minX - x, 0, x - s.maxX),
+        Math.max(s.minZ - z, 0, z - s.maxZ)) < radius - 1e-6;
+      if (nearby.solids.some(s => at.y + C.bodyHeight > s.minY + 1e-6 && at.y < s.maxY - 1e-6 && circle(s))) return false;
+      if (nearby.surfaces.some(s => s.y > at.y + C.maximumStep && at.y + C.bodyHeight > s.y - s.thickness + 1e-6
+        && (s.kind === 'sector' ? continuationSurfaceContains(s, x, z, -radius) : circle(s)))) return false;
+    } else if (!continuationFreeBody({x, z, feet: at.y}, {...world, chartId: 0},
+      {radius: C.hush.radius, stepFloor: at.y + C.maximumStep})) return false;
+    feet = at.y;
+  }
+  return Math.abs(feet - to.feet) < .46;
+}
+function archipelagoPath(from, to, cache, world) {
+  if ((from.chartId ?? 0) !== 0 || (to.chartId ?? 0) !== 0
+    || !(from.phase === 'catch' || to.phase === 'catch' || world?.phase === 'catch'
+      || from.x < -190 && to.x < -190)) return null;
+  if (!archipelagoGraph) {
+    const nodes = [], edges = [], ids = new Map();
+    const id = p => {
+      const key = `${p.x},${p.z},${p.feet}`;
+      if (!ids.has(key)) {ids.set(key, nodes.length); nodes.push(point(p)); edges.push([]);}
+      return ids.get(key);
+    };
+    const add = (a, b) => {
+      if (a === b || !archipelagoEdge(nodes[a], nodes[b], cache, world)) return;
+      if (!edges[a].includes(b)) edges[a].push(b);
+      if (!edges[b].includes(a)) edges[b].push(a);
+    };
+    for (const route of [ARCHIPELAGO_MAIN_ROUTE, ...ARCHIPELAGO_OPTIONAL_ROUTES.map(r => r.points)]) {
+      for (let k = 1; k < route.length; k++) add(id(route[k - 1]), id(route[k]));
+    }
+    // The refuge's supported side bay is part of its island, not a new spatial
+    // address. Join it to nearby, body-clear route nodes on that actual plane.
+    for (const refuge of ARCHIPELAGO_REFUGES) {
+      const a = id(refuge);
+      const candidates = nodes.map((p, index) => ({p, index})).filter(v => v.index !== a
+        && distance(v.p, refuge) < 32 && Math.abs(v.p.feet - refuge.feet) < .4)
+        .sort((a, b) => distance(a.p, refuge) - distance(b.p, refuge)).slice(0, 6);
+      for (const b of candidates) add(a, b.index);
+    }
+    archipelagoGraph = {nodes, edges};
+  }
+  const nodes = [...archipelagoGraph.nodes, point(from), point(to)];
+  const edges = archipelagoGraph.edges.map(row => [...row]); edges.push([], []);
+  const start = nodes.length - 2, end = nodes.length - 1;
+  for (const endpoint of [start, end]) {
+    const candidates = nodes.slice(0, start).map((p, index) => ({p, index,
+      rank: distance(p, nodes[endpoint]) + Math.abs(p.feet - nodes[endpoint].feet) * 4}))
+      .filter(v => distance(v.p, nodes[endpoint]) < 50).sort((a, b) => a.rank - b.rank).slice(0, 12);
+    for (const candidate of candidates) if (archipelagoEdge(nodes[endpoint], candidate.p, cache, world)) {
+      edges[endpoint].push(candidate.index); edges[candidate.index].push(endpoint);
+    }
+  }
+  const costs = new Map([[start, 0]]), parents = new Map(), open = [start];
+  while (open.length) {
+    let best = 0;
+    for (let k = 1; k < open.length; k++) if (costs.get(open[k]) < costs.get(open[best])) best = k;
+    const current = open.splice(best, 1)[0];
+    if (current === end) {
+      const path = [];
+      for (let k = end; k != null; k = parents.get(k)) path.push(nodes[k]);
+      return path.reverse();
+    }
+    for (const next of edges[current]) {
+      const cost = costs.get(current) + Math.hypot(nodes[next].x - nodes[current].x,
+        nodes[next].z - nodes[current].z, nodes[next].feet - nodes[current].feet);
+      if (cost >= (costs.get(next) ?? Infinity)) continue;
+      costs.set(next, cost); parents.set(next, current);
+      if (!open.includes(next)) open.push(next);
+    }
+  }
+  return null;
+}
+
 // Bounded grid search follows real floors and .3m stair treads. It never draws
 // a recovery line through an atrium or interpolates between storeys.
 export function continuationSupportedPath(from,to,world=null) {
   if((from.chartId??0)!==(to.chartId??0))return null;
   const cache=new Map();
   if(continuationWalkSegment(from,to,cache,world))return [point(from),point(to)];
+  const expedition=archipelagoPath(from,to,cache,world);if(expedition)return expedition;
   const authored=wrongReturnPath(from,to,cache,world);if(authored)return authored;
   const step=.5,key=p=>`${Math.round(p.x/step)},${Math.round(p.z/step)},${Math.round(p.feet*100)}`;
   const start={...point(from),cost:0,rank:distance(from,to),parent:null},open=[start],best=new Map([[key(start),0]]);
@@ -156,7 +271,13 @@ export function recordContinuationHushWalk(actor,player,{force=false,protectedRe
   if(!actor.active&&actor.arrival?.stage!=='waiting')return;
   if(actor.reconnectTarget){actor.reconnectTarget=point(player);actor.lastRecorded=point(player);return;}
   if(protectedRefuge){actor.sheltered=true;return;}
-  if(actor.sheltered){reconnectContinuationHush(actor,player);actor.sheltered=false;return;}
+  if(actor.sheltered){
+    reconnectContinuationHush(actor,player);actor.sheltered=false;
+    // Spend the departure notice when the listener actually steps out, rather
+    // than letting it expire while the body is still inside its protected bay.
+    if(player.phase==='catch'){actor.mode='yield';actor.notice=Math.max(actor.notice,C.hush.thresholdNoticeSeconds);}
+    return;
+  }
   if(!force&&distance(actor.lastRecorded,player)<.3&&Math.abs(actor.lastRecorded.feet-player.feet)<.2)return;
   const p={kind:'walk',...point(player)},last=actor.trail.at(-1),previous=actor.trail.at(-2);
   const ax=last?.x-previous?.x,az=last?.z-previous?.z,bx=p.x-(last?.x??p.x),bz=p.z-(last?.z??p.z);
@@ -248,7 +369,12 @@ function blockedLeaf(actor,next,player,events) {
   }
   return false;
 }
-function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refuge=null,frozen=false,events=[]}={}) {
+function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refuge=null,frozen=false,defeated=false,events=[],pace:paceOverride=null}={}) {
+  if(defeated&&!actor.fall&&!actor.recovery&&!actor.bodyTransit){
+    // The chapter's earned victory ends pursuit, while leaving the real body
+    // available for the separately warned repeat Contact/cassette consequence.
+    actor.mode='yield';actor.velocity={x:0,z:0};return false;
+  }
   if(advanceContinuationArrival(actor,{dt,player,frozen,events}))return false;
   if(!actor.active)return false;
   if(actor.catchEntry&&!frozen)actor.catchEntry.elapsed=Math.min(C.hush.thresholdArrivalDelaySeconds,actor.catchEntry.elapsed+dt);
@@ -263,13 +389,17 @@ function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refu
   if(actor.mode==='warning') {if(actor.elapsed<C.hush.warningSeconds)return false;actor.mode='follow';}
   protectedRefuge=protectedRefuge&&actor.chartId===player.chartId;
   const standOff=Math.max(C.hush.refugeStandOff,Number(refuge?.standOff)||0);
+  // A rested listener must be able to pass the waiting body and establish a
+  // running lead before its winded pace returns. The Catch reuses its visible
+  // threshold notice; II retains the shorter ordinary listening notice.
+  const shelterNotice=player.phase==='catch'?Math.max(C.hush.noticeSeconds,C.hush.thresholdNoticeSeconds):C.hush.noticeSeconds;
   // A sheltered body's recorded trail ends where it crossed the neck, a step
   // phase's width outside the stand-off. Settle in place there rather than
   // stalling in follow just beyond the window.
-  if(protectedRefuge&&refuge&&Math.abs(actor.feet-refuge.feet)<.5&&(distance(actor,refuge)<standOff+.2||(actor.sheltered&&!actor.trail.length&&distance(actor,refuge)<standOff+1))){actor.mode='yield';actor.notice=C.hush.noticeSeconds;return false;}
+  if(protectedRefuge&&refuge&&Math.abs(actor.feet-refuge.feet)<.5&&(distance(actor,refuge)<standOff+.2||(actor.sheltered&&!actor.trail.length&&distance(actor,refuge)<standOff+1))){actor.mode='yield';actor.notice=shelterNotice;return false;}
   if(actor.mode==='yield'||actor.mode==='notice') {if(actor.mode==='yield')events.push({type:'hush-notice',position:position(actor)});actor.notice=Math.max(0,actor.notice-dt);actor.mode='notice';if(actor.notice>0)return false;actor.mode='follow';}
   if(!actor.armed&&actor.chartId===player.chartId&&distance(actor,player)<3.5&&Math.abs(actor.feet-player.feet)<.5)return false;
-  const pace=actor.armed?C.hush.speed:C.hush.teachingSpeed;let remaining=pace*dt,repairs=0;
+  const pace=Number.isFinite(paceOverride)?paceOverride:actor.armed?C.hush.speed:C.hush.teachingSpeed;let remaining=pace*dt,repairs=0;
   while(remaining>1e-8&&actor.trail.length) {
     const target=actor.trail[0],d=distance(actor,target);
     if((target.chartId??0)!==actor.chartId)break;
@@ -294,7 +424,7 @@ function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refu
       continue;
     }
     const at=support(next.x,next.z,actor.feet,null,actor.chartId,player);if(!at)break;
-    if(protectedRefuge&&refuge&&Math.abs(at.y-refuge.feet)<.5&&distance(next,refuge)<standOff){actor.mode='yield';actor.notice=C.hush.noticeSeconds;break;}
+    if(protectedRefuge&&refuge&&Math.abs(at.y-refuge.feet)<.5&&distance(next,refuge)<standOff){actor.mode='yield';actor.notice=shelterNotice;break;}
     const before={...actor},velocity=[(target.x-actor.x)/d*pace,0,(target.z-actor.z)/d*pace];actor.heading=Math.atan2(next.x-actor.x,-(next.z-actor.z));Object.assign(actor,{x:next.x,z:next.z,feet:at.y,level:at.level,velocity:{x:velocity[0],z:velocity[2]}});actor.animationClock+=amount;remaining-=amount;
     if(actorPortal(actor,before,player,events,velocity))break;
   }

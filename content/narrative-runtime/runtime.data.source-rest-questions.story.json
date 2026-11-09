@@ -1,26 +1,42 @@
 {
   "schemaVersion": 1,
   "id": "runtime.data.source-rest-questions",
-  "title": "Runtime · data/source-rest-questions.js",
+  "title": "Source II / III · Bench questions",
   "status": "reference",
   "readOnly": true,
-  "entry": "groups.recordings.questions.keep.answer",
+  "entry": "groups.recordings.questions.keep",
   "entries": [
+    "groups.recordings.questions.keep",
     "groups.recordings.questions.keep.answer",
+    "groups.recordings.questions.hush",
     "groups.recordings.questions.hush.answer",
+    "groups.recordings.questions.safe",
     "groups.recordings.questions.safe.answer",
+    "groups.recordings.questions.radio",
     "groups.recordings.questions.radio.answer",
+    "groups.places.questions.ellery",
     "groups.places.questions.ellery.answer",
+    "groups.places.questions.scale",
     "groups.places.questions.scale.answer",
+    "groups.places.questions.source",
     "groups.places.questions.source.answer",
+    "groups.places.questions.trust",
     "groups.places.questions.trust.answer",
+    "groups.rules.questions.answers",
     "groups.rules.questions.answers.answer",
+    "groups.rules.questions.leave",
     "groups.rules.questions.leave.answer",
+    "groups.rules.questions.puzzles",
     "groups.rules.questions.puzzles.answer",
+    "groups.rules.questions.unfinished",
     "groups.rules.questions.unfinished.answer",
+    "groups.making.questions.maker",
     "groups.making.questions.maker.answer",
+    "groups.making.questions.rough",
     "groups.making.questions.rough.answer",
+    "groups.making.questions.beautiful",
     "groups.making.questions.beautiful.answer",
+    "groups.making.questions.feeling",
     "groups.making.questions.feeling.answer",
     "catchReplies.recordings-keep",
     "catchReplies.recordings-hush",
@@ -43,12 +59,32 @@
   ],
   "tags": [
     "runtime",
-    "derived"
+    "derived",
+    "source",
+    "source ii",
+    "source iii",
+    "bench",
+    "benches",
+    "questions"
   ],
   "regions": [],
   "module": "src/data/source-rest-questions.js",
   "notes": "Generated from src/data/source-rest-questions.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "groups.recordings.questions.keep": {
+      "id": "groups.recordings.questions.keep",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.recordings.questions.keep.c0",
+          "text": "Why keep a recording after I have heard it?",
+          "source": "src/data/source-rest-questions.js:12",
+          "choiceId": "keep"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:12"
+    },
     "groups.recordings.questions.keep.answer": {
       "id": "groups.recordings.questions.keep.answer",
       "type": "line",
@@ -79,6 +115,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:13"
+    },
+    "groups.recordings.questions.hush": {
+      "id": "groups.recordings.questions.hush",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.recordings.questions.hush.c0",
+          "text": "What does HUSH want with the recordings?",
+          "source": "src/data/source-rest-questions.js:18",
+          "choiceId": "hush"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:18"
     },
     "groups.recordings.questions.hush.answer": {
       "id": "groups.recordings.questions.hush.answer",
@@ -111,6 +161,20 @@
       ],
       "source": "src/data/source-rest-questions.js:19"
     },
+    "groups.recordings.questions.safe": {
+      "id": "groups.recordings.questions.safe",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.recordings.questions.safe.c0",
+          "text": "Does making a recording make me safer?",
+          "source": "src/data/source-rest-questions.js:24",
+          "choiceId": "safe"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:24"
+    },
     "groups.recordings.questions.safe.answer": {
       "id": "groups.recordings.questions.safe.answer",
       "type": "line",
@@ -141,6 +205,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:25"
+    },
+    "groups.recordings.questions.radio": {
+      "id": "groups.recordings.questions.radio",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.recordings.questions.radio.c0",
+          "text": "Why is the old radio voice gone?",
+          "source": "src/data/source-rest-questions.js:30",
+          "choiceId": "radio"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:30"
     },
     "groups.recordings.questions.radio.answer": {
       "id": "groups.recordings.questions.radio.answer",
@@ -173,6 +251,20 @@
       ],
       "source": "src/data/source-rest-questions.js:31"
     },
+    "groups.places.questions.ellery": {
+      "id": "groups.places.questions.ellery",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.places.questions.ellery.c0",
+          "text": "Why do I keep finding Ellery?",
+          "source": "src/data/source-rest-questions.js:38",
+          "choiceId": "ellery"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:38"
+    },
     "groups.places.questions.ellery.answer": {
       "id": "groups.places.questions.ellery.answer",
       "type": "line",
@@ -203,6 +295,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:39"
+    },
+    "groups.places.questions.scale": {
+      "id": "groups.places.questions.scale",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.places.questions.scale.c0",
+          "text": "Why are these things the size of buildings?",
+          "source": "src/data/source-rest-questions.js:44",
+          "choiceId": "scale"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:44"
     },
     "groups.places.questions.scale.answer": {
       "id": "groups.places.questions.scale.answer",
@@ -235,6 +341,20 @@
       ],
       "source": "src/data/source-rest-questions.js:45"
     },
+    "groups.places.questions.source": {
+      "id": "groups.places.questions.source",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.places.questions.source.c0",
+          "text": "Am I meant to read all the source on the walls?",
+          "source": "src/data/source-rest-questions.js:50",
+          "choiceId": "source"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:50"
+    },
     "groups.places.questions.source.answer": {
       "id": "groups.places.questions.source.answer",
       "type": "line",
@@ -265,6 +385,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:51"
+    },
+    "groups.places.questions.trust": {
+      "id": "groups.places.questions.trust",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.places.questions.trust.c0",
+          "text": "Which version of a place should I trust?",
+          "source": "src/data/source-rest-questions.js:56",
+          "choiceId": "trust"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:56"
     },
     "groups.places.questions.trust.answer": {
       "id": "groups.places.questions.trust.answer",
@@ -297,6 +431,20 @@
       ],
       "source": "src/data/source-rest-questions.js:57"
     },
+    "groups.rules.questions.answers": {
+      "id": "groups.rules.questions.answers",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.rules.questions.answers.c0",
+          "text": "Am I answering any of this correctly?",
+          "source": "src/data/source-rest-questions.js:64",
+          "choiceId": "answers"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:64"
+    },
     "groups.rules.questions.answers.answer": {
       "id": "groups.rules.questions.answers.answer",
       "type": "line",
@@ -327,6 +475,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:65"
+    },
+    "groups.rules.questions.leave": {
+      "id": "groups.rules.questions.leave",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.rules.questions.leave.c0",
+          "text": "Can I still get up?",
+          "source": "src/data/source-rest-questions.js:70",
+          "choiceId": "leave"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:70"
     },
     "groups.rules.questions.leave.answer": {
       "id": "groups.rules.questions.leave.answer",
@@ -359,30 +521,64 @@
       ],
       "source": "src/data/source-rest-questions.js:71"
     },
+    "groups.rules.questions.puzzles": {
+      "id": "groups.rules.questions.puzzles",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.rules.questions.puzzles.c0",
+          "text": "Is every strange thing meant to be a puzzle?",
+          "source": "src/data/source-rest-questions.js:76",
+          "choiceId": "puzzles"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:76"
+    },
     "groups.rules.questions.puzzles.answer": {
       "id": "groups.rules.questions.puzzles.answer",
       "type": "line",
       "lines": [
         {
           "id": "groups.rules.questions.puzzles.answer.l0",
+          "who": "other",
+          "text": "No.",
+          "source": "src/data/source-rest-questions.js:77"
+        },
+        {
+          "id": "groups.rules.questions.puzzles.answer.l1",
           "who": "you",
           "text": "I keep checking.",
           "source": "src/data/source-rest-questions.js:78"
         },
         {
-          "id": "groups.rules.questions.puzzles.answer.l1",
+          "id": "groups.rules.questions.puzzles.answer.l2",
           "who": "other",
           "text": "Some things are there to be found. Some things are just there.",
           "source": "src/data/source-rest-questions.js:79"
         },
         {
-          "id": "groups.rules.questions.puzzles.answer.l2",
+          "id": "groups.rules.questions.puzzles.answer.l3",
           "who": "other",
           "text": "You should not have to strip a place bare before you are allowed to leave it.",
           "source": "src/data/source-rest-questions.js:80"
         }
       ],
-      "source": "src/data/source-rest-questions.js:78"
+      "source": "src/data/source-rest-questions.js:77"
+    },
+    "groups.rules.questions.unfinished": {
+      "id": "groups.rules.questions.unfinished",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.rules.questions.unfinished.c0",
+          "text": "What if I leave things unfinished?",
+          "source": "src/data/source-rest-questions.js:82",
+          "choiceId": "unfinished"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:82"
     },
     "groups.rules.questions.unfinished.answer": {
       "id": "groups.rules.questions.unfinished.answer",
@@ -415,6 +611,20 @@
       ],
       "source": "src/data/source-rest-questions.js:83"
     },
+    "groups.making.questions.maker": {
+      "id": "groups.making.questions.maker",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.making.questions.maker.c0",
+          "text": "Are you the person who made this?",
+          "source": "src/data/source-rest-questions.js:90",
+          "choiceId": "maker"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:90"
+    },
     "groups.making.questions.maker.answer": {
       "id": "groups.making.questions.maker.answer",
       "type": "line",
@@ -445,6 +655,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:91"
+    },
+    "groups.making.questions.rough": {
+      "id": "groups.making.questions.rough",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.making.questions.rough.c0",
+          "text": "What was left unfinished on purpose?",
+          "source": "src/data/source-rest-questions.js:96",
+          "choiceId": "rough"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:96"
     },
     "groups.making.questions.rough.answer": {
       "id": "groups.making.questions.rough.answer",
@@ -477,6 +701,20 @@
       ],
       "source": "src/data/source-rest-questions.js:97"
     },
+    "groups.making.questions.beautiful": {
+      "id": "groups.making.questions.beautiful",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.making.questions.beautiful.c0",
+          "text": "Why make somewhere beautiful that wants me gone?",
+          "source": "src/data/source-rest-questions.js:102",
+          "choiceId": "beautiful"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:102"
+    },
     "groups.making.questions.beautiful.answer": {
       "id": "groups.making.questions.beautiful.answer",
       "type": "line",
@@ -507,6 +745,20 @@
         }
       ],
       "source": "src/data/source-rest-questions.js:103"
+    },
+    "groups.making.questions.feeling": {
+      "id": "groups.making.questions.feeling",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "groups.making.questions.feeling.c0",
+          "text": "Is this how it was supposed to feel?",
+          "source": "src/data/source-rest-questions.js:108",
+          "choiceId": "feeling"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:108"
     },
     "groups.making.questions.feeling.answer": {
       "id": "groups.making.questions.feeling.answer",

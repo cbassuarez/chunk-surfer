@@ -5,6 +5,7 @@
 // DOM, no AudioContext, no renderer — so it is testable and reusable.
 import { freshHands, stepHands, handsSummary } from './hands.js';
 import { windingCylinderAngle, windingKeyAngle, WINDING_PHASE } from './winding.js';
+import {musicBoxInspectionMatrix,rotateMusicBoxInspection,freshMusicBoxInspectionRotation} from '../music-box-inspection.js';
 
 export const HANDS_INTERACTION_MODE = Object.freeze({ AWAY: 'away', HANDLING: 'handling' });
 
@@ -15,7 +16,7 @@ export function freshHandsInteraction() {
   return {
     mode: HANDS_INTERACTION_MODE.AWAY,
     hands: freshHands(),
-    boxYaw: 0, boxPitch: 0,   // orbit pose of the box in hand
+    boxRotation: freshMusicBoxInspectionRotation(), boxYaw: 0, boxPitch: 0, boxRoll: 0,   // orbit pose of the box in hand
     shakeLevel: 0,
     handlingElapsed: 0,
   };
@@ -29,7 +30,7 @@ export function freshHandsInteraction() {
 export function stepHandsInteraction(value, input = {}, dt = 0) {
   const seconds = clamp(dt, 0, 0.25);
   const state = { ...value, hands: { ...value.hands, winding: { ...value.hands.winding } },
-    boxYaw: finite(value.boxYaw), boxPitch: finite(value.boxPitch), shakeLevel: finite(value.shakeLevel),
+    boxYaw: finite(value.boxYaw), boxPitch: finite(value.boxPitch), boxRoll: finite(value.boxRoll), shakeLevel: finite(value.shakeLevel),
     handlingElapsed: finite(value.handlingElapsed) };
 
   if (state.mode === HANDS_INTERACTION_MODE.AWAY && input.pickUp === true) {
@@ -48,8 +49,11 @@ export function stepHandsInteraction(value, input = {}, dt = 0) {
   state.handlingElapsed += seconds;
   // Look orbits the box; crank and shake drive the winding.
   const look = input.lookDelta || {};
+  if(input.resetView){state.boxYaw=state.boxPitch=state.boxRoll=0;state.boxRotation=freshMusicBoxInspectionRotation();}
   state.boxYaw = state.boxYaw + finite(look.yaw, 0);
-  state.boxPitch = clamp(state.boxPitch + finite(look.pitch, 0), -Math.PI / 2, Math.PI / 2);
+  state.boxPitch = state.boxPitch + finite(look.pitch, 0);
+  state.boxRoll = state.boxRoll + finite(look.roll, 0);
+  state.boxRotation=rotateMusicBoxInspection(input.resetView?freshMusicBoxInspectionRotation():(value.boxRotation||freshMusicBoxInspectionRotation()),{yaw:finite(look.yaw),pitch:finite(look.pitch),roll:finite(look.roll)});
 
   const hands = stepHands(state.hands, {
     pinHeld: input.pinHeld === true, crankDelta: finite(input.crankDelta, 0), shake: finite(input.shake, 0),
@@ -57,7 +61,9 @@ export function stepHandsInteraction(value, input = {}, dt = 0) {
   state.hands = hands.hands;
   state.shakeLevel = Math.max(0, state.shakeLevel * Math.exp(-seconds / 0.25) + clamp(input.shake, 0, 1) * 1.2);
 
-  return { state, events: hands.events };
+  const events=[...hands.events],angle=Math.hypot(finite(look.yaw),finite(look.pitch),finite(look.roll));
+  if(angle>.0005)events.push({type:'handling-rattle',at:0,amount:clamp(angle*4,0,1)});
+  return { state, events };
 }
 
 export function handsInteractionFrame(value = freshHandsInteraction()) {
@@ -66,7 +72,7 @@ export function handsInteractionFrame(value = freshHandsInteraction()) {
   const winding = value.hands.winding;
   return {
     mode: value.mode, handling,
-    boxPose: { yaw: value.boxYaw, pitch: value.boxPitch },
+    boxPose: { yaw: value.boxYaw, pitch: value.boxPitch, roll: value.boxRoll, rotation: value.boxRotation||freshMusicBoxInspectionRotation() },
     shakeLevel: clamp(value.shakeLevel, 0, 1),
     pinHeld: summary.pinHeld, crankRate: summary.crankRate,
     winding, summary,   // full winding state (renderer/mechanism) + summary (UI)
@@ -75,8 +81,8 @@ export function handsInteractionFrame(value = freshHandsInteraction()) {
       // The winding is broken; the pin must be held while turned. The hint only
       // shows until the player has cranked once, then the box speaks for itself.
       instruction: handling && winding.phase === WINDING_PHASE.REST && summary.crankRate === 0
-        ? 'HOLD THE PIN AND TURN' : null,
-      crank: handling ? 'WHEEL · CRANK   R · LOWER' : null,
+        ? 'HOLD THE KEY AND TURN' : null,
+      crank: handling ? 'F + W · TURN   E · LOWER' : null,
       putDown: handling ? 'E · PUT DOWN' : null,
     },
   };
@@ -109,16 +115,14 @@ function invertRigid(m) {
   ];
 }
 
-export function coastalHandsHeldLocal({ eye, yaw = 0, pitch = 0, boxPose = {}, shake = 0, worldFromLocal = IDENTITY, distance = 0.42, lower = 0.12 } = {}) {
-  if (!Array.isArray(eye) || eye.length < 3 || !eye.every(Number.isFinite)) throw TypeError('Held box needs a finite eye.');
-  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const forward = [sy * cp, sp, -cy * cp];
-  // Shake jitters the box a few millimetres around its rest pose.
-  const jitter = clamp(shake, 0, 1) * 0.012;
-  const jx = Math.sin(yaw * 13) * jitter, jy = Math.cos(yaw * 17) * jitter * .5, jz = Math.sin(yaw * 11) * jitter;
-  const pos = [eye[0] + forward[0] * distance + jx, eye[1] + forward[1] * distance - lower + jy, eye[2] + forward[2] * distance + jz];
-  const by = -yaw + finite(boxPose.yaw, 0);
-  const cb = Math.cos(by), sb = Math.sin(by);
-  const world = [cb, 0, -sb, 0, 0, 1, 0, 0, sb, 0, cb, 0, pos[0], pos[1], pos[2], 1];
-  return mat4Mul(invertRigid(worldFromLocal), world);
+export function coastalHandsHeldLocal({eye,yaw=0,pitch=0,boxPose={},shake=0,worldFromLocal=IDENTITY,distance=.14,lower=0,boxHeight=.046}={}){
+  const rotation=boxPose.rotation||rotateMusicBoxInspection(freshMusicBoxInspectionRotation(),{yaw:finite(boxPose.yaw),pitch:finite(boxPose.pitch),roll:finite(boxPose.roll)});
+  const world=musicBoxInspectionMatrix({eye,yaw,pitch,rotation,distance,center:[0,boxHeight*.5,0]});
+  // Only an explicit shake can displace the centre. Ordinary three-axis
+  // inspection remains exactly centred through every turn and camera pose.
+  const impulse=clamp(shake,0,1)*.003;
+  world[12]+=Math.sin(yaw*13)*impulse;
+  world[13]-=finite(lower);world[13]+=Math.cos(yaw*17)*impulse*.5;
+  world[14]+=Math.sin(yaw*11)*impulse;
+  return mat4Mul(invertRigid(worldFromLocal),world);
 }

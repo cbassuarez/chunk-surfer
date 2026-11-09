@@ -2,13 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {vfdMarqueeFrame} from '../src/render/vfd-marquee.js';
+import {renderArrivalTitleOption,arrivalTitleOptionFrame,ARRIVAL_TITLE_SUBTITLE} from '../src/render/arrival-title-options.js';
+import {UI_COLOR} from '../src/render/palette.js';
 
 const source=readFileSync(new URL('../src/game/coldopen.js',import.meta.url),'utf8');
 const start=source.indexOf('export function makeWorldTitleScene(');
 assert.ok(start>=0);
 const production=source.slice(start).replace(/^export /gm,'');
-const COPY=['CHUNK SURFER','ELLERY CONSERVATOIRE OF MUSIC','5 ROOMS / 1 CLEAN MINUTE EACH'];
+const COPY=['CHUNK SURFER',ARRIVAL_TITLE_SUBTITLE.toUpperCase(),'01   /   4417-C'];
+const STATIC_COPY=['CHUNK SURFER','ELLERY CONSERVATOIRE OF MUSIC','5 ROOMS / 1 CLEAN MINUTE EACH'];
 function fixture({cols=80,rows=30,camera=true,reducedMotion=false,arrival=true}={}){
   const size={cols,rows},draw=[],events=[],pose={yaw:.73,pitch:-.16};let clip=null;
   const host={
@@ -16,7 +18,7 @@ function fixture({cols=80,rows=30,camera=true,reducedMotion=false,arrival=true}=
     uiText:(x,y,text,role,alpha=1)=>draw.push({kind:'text',x,y,text,role,alpha,scale:1}),
     drawVfdText:(x,y,text,options={})=>draw.push({kind:text===COPY[0]?'title':'text',x,y,text,...options,clip:clip?{...clip}:null}),
     uiWithClip(rect,paint){const previous=clip;clip=rect;try{return paint();}finally{clip=previous;}},
-    vfdMarqueeFrame,hardwareMotionReduced:()=>reducedMotion,
+    renderArrivalTitleOption,hardwareMotionReduced:()=>reducedMotion,
     withMachinePanel:()=>assert.fail('world-title must not render another instrument housing'),
     UI_COLOR:{glass:'#000000',paper:'#D8CFB8',primary:'#F2A81E'},
     scenes:{pop:()=>events.push('pop')},
@@ -37,11 +39,12 @@ test('Ellery entry alone uses bounded VFD title/subtitle fields with hierarchy a
     const drawn=h.render(),ink=drawn.filter(p=>p.kind!=='fill'),title=ink.filter(p=>p.kind==='title');
     assert.equal(title.length,1);assert.equal(title[0].text,COPY[0]);
     assert.ok(title[0].scale>1,'the name dominates the ordinary caption scale');
-    assert.equal(title[0].color,'#F2A81E');
+    assert.equal(title[0].color,UI_COLOR.primary);
     assert.equal(ink.filter(p=>p.kind==='text').map(p=>p.text).join(' '),COPY.slice(1).join(' '),'wrapping preserves every word in order');
     for(const p of ink){
-      assert.ok(p.clip&&p.clip.x>=0&&p.clip.x+p.clip.w<=cols+.001,`${cols}x${rows}: the addressed text window stays on screen`);
-      assert.ok(p.y>=0&&p.y+(p.kind==='title'?p.scale*.60:1)<=rows+.001,`${cols}x${rows}: ${p.text} extends outside the vertical field`);
+      if(p.clip)assert.ok(p.clip.x>=0&&p.clip.x+p.clip.w<=cols+.001,`${cols}x${rows}: the addressed text window stays on screen`);
+      else assert.ok(p.x>=0&&p.x+p.text.length*p.scale<=cols+.001,`${cols}x${rows}: fixed title/metadata fit without cropping`);
+      assert.ok(p.y>=0&&p.y+p.scale*.80<=rows+.001,`${cols}x${rows}: ${p.text} extends outside the vertical field`);
       assert.ok(p.alpha>=0&&p.alpha<=1);
     }
     assert.ok(ink.every(p=>p.text!=='PROGRAM'),'no instrument-source legend survives');
@@ -56,64 +59,95 @@ test('the default world frontispiece retains its original static paper title and
     h.scene.update(2);const later=h.render().filter(p=>p.kind!=='fill');
     assert.equal(first[0].text,COPY[0]);assert.equal(first[0].color,'#D8CFB8');
     assert.ok(first.every(p=>!p.clip),'the static frontispiece does not inherit the entry display window');
-    assert.equal(first.slice(1).map(p=>p.text).join(' '),COPY.slice(1).join(' '));
+    assert.equal(first.slice(1).map(p=>p.text).join(' '),STATIC_COPY.slice(1).join(' '));
     assert.ok(first.slice(1).every(p=>p.role==='ui-secondary'&&p.scale===1));
     assert.deepEqual(later.map(({x,y,text})=>({x,y,text})),first.map(({x,y,text})=>({x,y,text})),
       'no part of the original title drifts while its authored fade proceeds');
   }
 });
 
-test('the real Ellery-entry handoff selects its marquee for a full title interval even after the cinematic overture',()=>{
+test('actual entry, crash aftermath and title callbacks preserve their order and durable completion',()=>{
   const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),
-    from=main.indexOf('function beginGetInArrivalTitle('),to=main.indexOf('\nfunction noteArrivalCrossing(',from);
+    from=main.indexOf('function beginGetInCrashAftermath('),to=main.indexOf('\nfunction noteArrivalCrossing(',from);
   assert.ok(from>=0&&to>from);
   for(const overtureDone of[false,true]){
-    const flags=new Set(['prologueDone',...(overtureDone?['opening.overture.completed']:[])]),titles=[],saved=[],pose={yaw:1.2,pitch:-.1};
+    const flags=new Set(['prologueDone','unrelated.flag',...(overtureDone?['opening.overture.completed']:[])]),stack=[],saved=[],events=[];
     const host={storyMode:true,setupComplete:()=>false,flagTest:key=>flags.has(key),flagClear:key=>flags.delete(key),
-      flagApply:add=>add.forEach(key=>flags.add(key)),saveCommit:value=>saved.push(value),getSave:()=>({flags:Object.fromEntries([...flags].map(key=>[key,true]))}),
-      SPEECH:{clearSpeech:()=>{}},R3:{r3dLookAngles:()=>pose,r3dLook:()=>{}},STORY:{},fireCue:()=>{},
-      scenes:{push:scene=>titles.push(scene)},makeArrivalTitleScene:options=>({kind:'actual-entry-card',options}),
-      makeWorldTitleScene:()=>assert.fail('the Ellery threshold must not select the cinematic/static frontispiece'),
-      restoreOpeningEntryPose:()=>{},beginGetInDriveTeaser:()=>{},
+      flagApply:(add,clear=[])=>{add.forEach(key=>flags.add(key));clear.forEach(key=>flags.delete(key));},
+      saveCommit:value=>saved.push(value),getSave:()=>({flags:Object.fromEntries([...flags].map(key=>[key,true]))}),
+      SPEECH:{clearSpeech:()=>{}},STORY:{openingThresholdTagState:()=>({active:false}),commitOpeningOvertureToTag:()=>events.push('tag')},
+      paused:false,document:{hidden:false},gameplayInputLifecycleActive:()=>true,
+      actx:{},sfxGain:{},master:{},openPauseMenu:()=>{},uiPhysicalSize:()=>({cols:80,rows:30}),uiFill:()=>{},
+      scenes:{has:id=>stack.some(scene=>scene.id===id),push:scene=>{stack.push(scene);return scene;},remove:scene=>{const i=stack.indexOf(scene);if(i>=0)stack.splice(i,1);}},
+      makeOpeningCrashAftermathScene:options=>({id:'opening-crash-aftermath',...options}),
+      makeArrivalTitleScene:options=>({id:'world-title',options}),
+      beginGetInDriveTeaser:()=>events.push('drive'),TUT:{startTutorial:()=>events.push('tutorial')},
     };
     vm.createContext(host);vm.runInContext(main.slice(from,to),host);
-    assert.equal(host.beginGetInArrivalTitle(),true);assert.equal(titles.length,1);
-    assert.equal(titles[0].options.duration,12,'a completed overture cannot silently suppress the entry display');
-    assert.equal(titles[0].options.camera.pose(),pose);assert.equal(saved.length,1);
-    assert.ok(flags.has('title.shown')&&flags.has('opening.driveTeaser.pending'));
-    assert.equal(host.beginGetInArrivalTitle(),false,'the existing one-time entry flag still owns repetition');
-    assert.equal(titles.length,1);
+    assert.equal(host.beginGetInArrivalTitle(),true);assert.equal(stack[0].id,'get-in-score-tag');
+    assert.ok(flags.has('opening.title.pending')&&flags.has('opening.driveTeaser.pending'));
+    assert.equal(flags.has('title.shown'),false,'entry cannot claim to have displayed a later title');
+    assert.equal(host.beginGetInArrivalTitle(),false,'pending threshold prevents duplicate entry');
+    for(let i=0;i<12;i++)stack[0]?.update?.(.1);
+    assert.deepEqual(events,['tag','drive']);assert.equal(stack.length,0,'the drive is next, with no earlier title');
+    assert.equal(host.beginGetInCrashAftermath(),true);const aftermath=stack.at(-1);
+    assert.equal(aftermath.id,'opening-crash-aftermath');assert.equal(host.beginGetInCrashAftermath(),false);
+    aftermath.onDone();const title=stack.at(-1);assert.equal(title.id,'world-title');
+    assert.equal(title.options.duration,12);assert.equal(title.options.manageSoundtrack,false,'the door cadence has already ended; the title cannot restart its music');
+    assert.equal(title.options.camera,undefined,'the postcrash card cannot turn the restored camera back towards the door');
+    assert.equal(flags.has('title.shown'),false);title.options.onDone();
+    assert.equal(flags.has('title.shown'),true);assert.equal(flags.has('opening.title.pending'),false);
+    assert.equal(flags.has('unrelated.flag'),true);assert.equal(events.at(-1),'tutorial');
   }
 });
 
-test('overflow travels once in its fixed display after a readable hold, while reduced motion preserves every word',()=>{
-  const h=fixture({camera:false});h.scene.update(2.7);const held=h.render().find(p=>p.kind==='title');
-  h.scene.update(1.8);const moving=h.render().find(p=>p.kind==='title');
-  assert.ok(moving.x<held.x);assert.deepEqual(moving.clip,held.clip);
-  h.scene.update(3.5);const ending=h.render().find(p=>p.kind==='title');h.scene.update(1);const still=h.render().find(p=>p.kind==='title');
-  assert.equal(still.x,ending.x,'the finite title does not keep cycling like a ticker');
+test('the full game name remains intact while the overflowing location gets one finite addressed pass',()=>{
+  const h=fixture({camera:false,cols:32,rows:10});h.scene.update(4.5);const held=h.render().map(row=>({...row}));
+  h.scene.update(3);const moving=h.render();
+  const firstTitle=held.find(p=>p.kind==='title'),laterTitle=moving.find(p=>p.kind==='title');
+  assert.equal(firstTitle.x,laterTitle.x);assert.equal(firstTitle.text,'CHUNK SURFER');
+  assert.ok(firstTitle.x>=0&&firstTitle.x+firstTitle.text.length*firstTitle.scale<=32+.001,
+    'no frame can turn the title into UNK SURFER');
+  assert.ok(moving.find(p=>p.text===COPY[1]).x<held.find(p=>p.text===COPY[1]).x,'the long location owns the bounded motion');
   for(const[cols,rows]of[[20,8],[54,12],[80,30]]){
     const reduced=fixture({cols,rows,camera:false,reducedMotion:true});reduced.scene.update(8);
     const ink=reduced.render().filter(p=>p.kind!=='fill');
     assert.equal(ink.filter(p=>p.kind==='text').map(p=>p.text).join(' '),COPY.slice(1).join(' '));
-    for(const row of ink)assert.ok(row.x>=row.clip.x-.001&&row.x+row.text.length*row.scale<=row.clip.x+row.clip.w+.001,'static accessible fields show complete words');
+    for(const row of ink)assert.ok(row.x>=0&&row.x+row.text.length*row.scale<=cols+.001,'static accessible fields show complete words');
   }
 });
 
-test('title, place and finite work reveal separately and fade out together without a new hold',()=>{
+test('the exact approved subtitle fits the normal display on its first hold, including its final Y',()=>{
+  for(const[cols,rows]of[[80,30],[100,40],[160,45]])for(const time of[1,4.5,9]){
+    const frame=arrivalTitleOptionFrame({direction:'disc',cols,rows,time});
+    const subtitle=frame.lines.find(line=>line.text===ARRIVAL_TITLE_SUBTITLE.toUpperCase());
+    assert.ok(subtitle);assert.ok(subtitle.x>=subtitle.clip.x+.4);
+    assert.ok(subtitle.x+subtitle.text.length*subtitle.scale<=subtitle.clip.x+subtitle.clip.w-.4,
+      'the complete word CONSERVATORY sits inside the addressed window, before any scroll');
+  }
+});
+
+test('the approved Disc title uses the exact subtitle and restrained metadata rather than instructions',()=>{
   const h=fixture({camera:false});h.scene.update(1);
   let ink=h.render().filter(p=>p.kind!=='fill');
   assert.ok(ink.find(p=>p.kind==='title').alpha>0);
-  assert.equal(ink.find(p=>p.text===COPY[1]).alpha,0);
-  assert.equal(ink.find(p=>p.text===COPY[2]).alpha,0);
-  h.scene.update(2);ink=h.render().filter(p=>p.kind!=='fill');
-  assert.ok(ink.find(p=>p.text===COPY[1]).alpha>0);
-  assert.equal(ink.find(p=>p.text===COPY[2]).alpha,0);
-  h.scene.update(2);const settled=h.render().filter(p=>p.kind!=='fill');
+  assert.ok(ink.find(p=>p.text===COPY[1]).alpha<ink.find(p=>p.kind==='title').alpha);
+  assert.ok(ink.find(p=>p.text===COPY[2]).alpha<ink.find(p=>p.text===COPY[1]).alpha);
+  assert.equal(ink.some(p=>/5 ROOMS|CLEAN MINUTE|CONSERVATOIRE/.test(p.text)),false);
+  h.scene.update(4);const settled=h.render().filter(p=>p.kind!=='fill');
   h.scene.update(6.5);const leaving=h.render().filter(p=>p.kind!=='fill');
   assert.equal(h.events.includes('done'),false);
-  for(let i=0;i<leaving.length;i++)assert.ok(leaving[i].alpha<settled[i].alpha,'all three levels leave in the existing final fade');
+  for(let i=0;i<leaving.length;i++)assert.ok(leaving[i].alpha<settled[i].alpha,'the approved display fades as one authored programme');
   h.scene.update(.5);assert.equal(h.events.filter(e=>e==='done').length,1);
+});
+
+test('production and the approved review use the identical authoritative Disc layout',()=>{
+  for(const reducedMotion of[false,true])for(const[cols,rows]of[[20,8],[32,10],[54,12],[80,30],[160,45]]){
+    const h=fixture({camera:false,cols,rows,reducedMotion});h.scene.update(6);
+    const drawn=h.render().filter(row=>row.kind!=='fill'),expected=arrivalTitleOptionFrame({direction:'disc',cols,rows,time:6,reducedMotion});
+    assert.deepEqual(drawn.map(({text,x,y,scale,alpha,color,clip})=>({text,x,y,scale,alpha,color,clip:clip||null})),
+      expected.lines.map(({text,x,y,scale,alpha,color,clip})=>({text,x,y,scale,alpha,color,clip:clip||null})));
+  }
 });
 
 test('physical look-back, opaque iris, unskippable duration and exact pose return keep their original owner',()=>{

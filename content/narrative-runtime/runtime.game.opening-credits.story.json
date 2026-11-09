@@ -4,8 +4,9 @@
   "title": "Runtime · game/opening-credits.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "QUOTE_LINES",
+  "entry": "OPENING_CREDIT_GROUPS.attribution",
   "entries": [
+    "OPENING_CREDIT_GROUPS.attribution",
     "QUOTE_LINES"
   ],
   "tags": [
@@ -16,6 +17,25 @@
   "module": "src/game/opening-credits.js",
   "notes": "Generated from src/game/opening-credits.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "OPENING_CREDIT_GROUPS.attribution": {
+      "id": "OPENING_CREDIT_GROUPS.attribution",
+      "type": "line",
+      "lines": [
+        {
+          "id": "OPENING_CREDIT_GROUPS.attribution.l0",
+          "who": "thought",
+          "text": "SAMUEL BUTLER · EREWHON",
+          "source": "src/game/opening-credits.js:32"
+        },
+        {
+          "id": "OPENING_CREDIT_GROUPS.attribution.l1",
+          "who": "thought",
+          "text": "THE BOOK OF THE MACHINES",
+          "source": "src/game/opening-credits.js:32"
+        }
+      ],
+      "source": "src/game/opening-credits.js:32"
+    },
     "QUOTE_LINES": {
       "id": "QUOTE_LINES",
       "type": "line",

@@ -44,7 +44,8 @@ test('the same pair seats asymmetrically and strains before the usable-take poin
  assert.ok(new Set(visible.map(f=>f.phase)).has('seat'));assert.ok(new Set(visible.map(f=>f.phase)).has('strain'));
  assert.equal(visible.at(-1).phase,'draw-back');
  const depths=visible.map(f=>recordingEmbodimentInstances(f,camera())[0].diagnostics.depth);
- assert.ok(depths[0]>.7&&depths.at(-1)<.25);
+ assert.ok(depths[0]<0&&depths.at(-1)>.05&&depths.at(-1)<.25,
+  'the hands originate behind the eye and curl around to the temples');
  const seated=settled({takeProgress:.40}),strained=settled({takeProgress:.66}),full=settled({takeProgress:.72});
  assert.ok(seated.hands[0].seat>seated.hands[1].seat,'one hand finds contact before the other');
  assert.ok(strained.hands[0].traction>.8&&strained.hands[1].traction>.5);
@@ -58,7 +59,8 @@ test('a stopped take releases the same hands outwards promptly; a new take never
  const original=d.snapshot(),before=recordingEmbodimentInstances(original,camera())[0];
  const release=d.update(.08,{recording:false}),after=recordingEmbodimentInstances(release,camera())[0];
  assert.equal(release.phase,'release');assert.equal(release.takeId,original.takeId);
- assert.ok(after.diagnostics.depth>before.diagnostics.depth&&Math.abs(after.diagnostics.lateral)>Math.abs(before.diagnostics.lateral));
+ assert.ok(after.diagnostics.depth<before.diagnostics.depth&&Math.abs(after.diagnostics.lateral)>Math.abs(before.diagnostics.lateral),
+  'release withdraws toward the rear outside the peripheral view');
  for(let n=0;n<6;n++)d.update(.08,{recording:false});assert.equal(d.snapshot().active,false);
  const fresh=d.update(1/60,take({takeId:'take-2',takeProgress:0}));
  assert.equal(fresh.proximity,0);assert.equal(fresh.grip,0);assert.equal(fresh.takeId,'take-2');
@@ -157,23 +159,44 @@ test('world-image grip anchors are exact retained, morphed distal vertices in th
   }
  }
  const early=settled({takeProgress:.20}),earlyPull=recordingEmbodimentViewPull(early,camera());
- assert.equal(earlyPull.active,false);assert.ok(earlyPull.right.anchor[1]<0,'a hand still above the view is not clamped into a fictional visible grip');
+ assert.equal(earlyPull.active,false);assert.equal(earlyPull.right.strength,0,
+  'a hand behind the eye is not clamped into a fictional visible grip');
  assert.equal(recordingEmbodimentViewPull(settled({reducedMotion:true}),camera()).active,false);
  const released=recordingEmbodimentViewPull({...frame,release:.9},camera());assert.ok(released.strength<pullStrength(frame));
  function pullStrength(f){return recordingEmbodimentViewPull(f,camera()).strength;}
 });
 
-test('actual retained anatomical vertices preserve central/lower footing and clear the real camera near plane',()=>{
+test('rear approach crosses the near plane outside the frame; visible retained anatomy preserves footing',()=>{
  for(const width of[800,1280,1920])for(const height of[720,1080])for(const tanHalfFov of[.35,.65,.95,1.3,1.5]){
   for(const frame of[settled({takeProgress:.20}),settled({takeProgress:.4}),settled({takeProgress:.55}),settled({takeProgress:.66}),settled({takeProgress:.72}),{...settled(),release:.8}]){
    const view=camera({width,height,tanHalfFov}),points=projected(frame,view);
    for(const hand of points)for(const p of hand){
-    assert.ok(p.depth>.05,'the actual retained vertices must not cross the 5cm near plane');
+    if(p.depth<=0)continue;
+    assert.ok(p.depth>.05||p.x<0||p.x>1||p.y<0||p.y>1,
+      'rear anatomy may cross the near plane only outside the view');
+    if(p.depth<=.05)continue;
     assert.equal(p.x>.30&&p.x<.70&&p.y>.43,false,'the central lower view remains bodily stable and readable');
     assert.equal(p.x>=0&&p.x<=1&&p.y>.70&&p.y<=1,false,'hands cannot cover immediate footing');
    }
   }
  }
+});
+
+test('the complete approach passes behind and around the eye without a visible near-plane cut',()=>{
+ const d=createRecordingEmbodiment();let behind=false,front=false;
+ for(let n=0;n<=90;n++){
+  const frame=d.update(.08,take({takeProgress:n/90}));
+  if(!frame.active)continue;
+  for(const tanHalfFov of[.35,1.5]){
+   const view=camera({tanHalfFov}),parts=recordingEmbodimentInstances(frame,view),points=projected(frame,view);
+   behind ||= parts.every(p=>p.diagnostics.depth<0);
+   front ||= parts.every(p=>p.diagnostics.enterView===1);
+   for(const hand of points)for(const p of hand)
+    if(p.depth>0&&p.depth<=.05)assert.ok(p.x<0||p.x>1||p.y<0||p.y>1,
+     'the full retained hand clears the screen before crossing the near plane');
+  }
+ }
+ assert.ok(behind&&front,'the path includes genuine rear origin and resolved frontal temple contact');
 });
 
 test('late hands have actual vertices visible below the existing five-row matte and outside recorder controls',()=>{

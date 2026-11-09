@@ -7,6 +7,13 @@ import {SOURCE_REST_HORIZON} from '../game/source-rest-horizon.js';
 
 const EYES=SOURCE_REST_HORIZON.rings.length*SOURCE_REST_HORIZON.eyes;
 const f=n=>Number(n).toFixed(5);
+// Opening-only optical identities. Separate from ordinary printed pigment
+// (156..171), so restoring silicon here never recolours the cab or a document.
+export const OPENING_OPHANIM_RING_BYTE=172;
+export const OPENING_OPHANIM_EYE_BYTE=173;
+export function openingOphanimMarkByte({eyePresentation=[0,0],eyeInk=0}={}){
+  return eyePresentation[0]>1.5?eyeInk>.5?OPENING_OPHANIM_EYE_BYTE:OPENING_OPHANIM_RING_BYTE:156;
+}
 
 // Instances carry their tide in the paper-handling slot, which only paper
 // reads (paper index >= 0). x is -2 minus the break-off kick, so ordinary
@@ -67,7 +74,8 @@ export function sourceRestHorizonLensUniforms(frame){
   (frame?.rings||[]).forEach((ring,k)=>{normals.set(ring.normal,k*3);rings.set([ring.inner,ring.outer,ring.alive,ring.flash],k*4);});
   if(frame?.eyeAges)ages.set(Array.from(frame.eyeAges).slice(0,EYES));
   return{centre:[...(frame?.centre||[0,0,0]),frame?.radius||1],spin:[...(frame?.spin||[0,1,0]),frame?.dragging||0],
-    params:[frame?.capture||1,frame?.lensRadius||12,frame?.breath||0,frame?.clock||0],normals,rings,ages};
+    params:[frame?.capture||1,frame?.lensRadius||12,frame?.breath||0,frame?.clock||0],
+    eyes:frame?.eyePresentation?[...frame.eyePresentation]:[0,0],normals,rings,ages};
 }
 
 // A Binet-force photon integrator (Schwarzschild null geodesics in Cartesian
@@ -82,6 +90,7 @@ uniform sampler2D uHorizonScene,uHorizonMarks;
 uniform vec2 uHorizonRes,uHorizonView;
 uniform vec3 uHorizonEye;
 uniform float uHorizonTan;
+uniform vec2 uHorizonEyes;
 uniform vec4 uHorizonCentre,uHorizonSpin,uHorizonParams;
 uniform vec3 uHorizonRingNormal[3];
 uniform vec4 uHorizonRing[3];
@@ -90,6 +99,8 @@ layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 ${CAMERA_FORWARD_GLSL}
 const float HORIZON_STOCK_TAG=156.0/255.0;
+const float HORIZON_OPENING_STOCK_TAG=${OPENING_OPHANIM_RING_BYTE}.0/255.0;
+const float HORIZON_EYE_TAG=${OPENING_OPHANIM_EYE_BYTE}.0/255.0;
 const float HORIZON_EYE_DARK=${f(SOURCE_REST_HORIZON.eyeDarkSeconds)};
 const float HORIZON_EYE_FLASH=${f(SOURCE_REST_HORIZON.eyeFlashSeconds)};
 float horizonHash(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -121,20 +132,39 @@ vec4 horizonEmit(vec3 p,vec3 v,int ring){
   float phi=atan(dot(p,e2),dot(p,e1)),turn=phi-5.45*pow(r,-1.5)*uHorizonParams.w,
     edge=smoothstep(q.x,q.x+.3,r)*smoothstep(q.y,q.y-.3,r),
     lanes=.35+horizonFbm(vec3(r*4.2,cos(turn)*1.4,sin(turn)*1.4)+float(ring)*7.0),
-    I=(1.25-.25*float(ring))*edge*lanes*(.75+.6*uHorizonParams.z)*q.z+q.w*edge*2.5,mid=(q.x+q.y)*.5;
+    I=(1.25-.25*float(ring))*edge*lanes*(.75+.6*uHorizonParams.z)*q.z+q.w*edge*2.5,mid=(q.x+q.y)*.5,eyeInk=0.0,eyeCoverage=0.0,eyeAbsorption=0.0;
   for(int j=0;j<${SOURCE_REST_HORIZON.eyes};j++){
     float age=uHorizonEyeAge[ring*${SOURCE_REST_HORIZON.eyes}+j],open=age<HORIZON_EYE_DARK?0.0:1.0,
       flash=age<HORIZON_EYE_FLASH?exp(-age*3.0)*4.0:0.0,dp=horizonWrap(turn-float(j)*.7853982);
-    I+=(open*2.4+flash)*q.z*exp(-dp*dp*mid*mid/.16-(r-mid)*(r-mid)/.1);
+    float knot=exp(-dp*dp*mid*mid/.16-(r-mid)*(r-mid)/.1);
+    if(uHorizonEyes.x>.5){
+      // In the first, near encounter these are watching apertures rather than
+      // distant luminous knots. The pupil removes the ring's own emission too.
+      // Source II sends zero and retains its existing recording-scale ink.
+      float u=dp*mid/.66,v=(r-mid)/.30;
+      float lid=1.0-smoothstep(.78,1.0,abs(v)/max(.04,1.0-u*u));
+      float almond=(1.0-smoothstep(.88,1.02,abs(u)))*lid;
+      float pupil=(1.0-smoothstep(.14,.24,length(vec2(u*1.55,v))))*uHorizonEyes.y;
+      I*=1.0-almond*(open*pupil+(1.0-open)*.90);
+      float closedLid=(1.0-smoothstep(.80,1.0,abs(u)))*exp(-v*v*180.0);
+      I+=q.z*(open*3.0*almond*(1.0-pupil)+(1.0-open)*.38*closedLid)+flash*q.z*knot;
+      // Retain the physical eye identity at the winning ray intersection.
+      // Its separate optical tag retains the existing pigment acquisition;
+      // the unused tangent byte makes actual visibility inspectable.
+      if(uHorizonEyes.x>1.5&&almond*q.z>max(.25,eyeCoverage)){
+        eyeCoverage=almond*q.z;eyeInk=float(ring*${SOURCE_REST_HORIZON.eyes}+j+1);
+      }
+      eyeAbsorption=max(eyeAbsorption,almond*(open*pupil+(1.0-open)*.80)*q.z);
+    }else I+=(open*2.4+flash)*q.z*knot;
   }
   // Doppler beaming and gravitational redshift dim the receding side.
   float beta=min(sqrt(.5/max(r-1.0,.8)),.62),gamma=inversesqrt(1.0-beta*beta);
   float g=1.0/(gamma*(1.0+beta*dot(normalize(cross(N,p)),normalize(v))))*sqrt(max(1.0-1.0/r,0.0));
   I*=pow(g,2.6);
-  return vec4(I,clamp(I*.7,0.0,.9)*edge,g,0.0);
+  return vec4(I,max(clamp(I*.7,0.0,.9)*edge,eyeAbsorption),g,eyeInk);
 }
-void horizonTrace(vec3 origin,vec3 dir,out float emission,out float transmit,out float captured,out vec3 outgoing,out vec3 crossing){
-  emission=0.0;transmit=1.0;captured=0.0;outgoing=dir;crossing=vec3(0.0);
+void horizonTrace(vec3 origin,vec3 dir,out float emission,out float transmit,out float captured,out vec3 outgoing,out vec3 crossing,out float eyeInk){
+  emission=0.0;transmit=1.0;captured=0.0;outgoing=dir;crossing=vec3(0.0);eyeInk=0.0;
   float rs=uHorizonCentre.w,lens=uHorizonParams.y;vec3 x=(origin-uHorizonCentre.xyz)/rs,v=dir;
   float xv=dot(x,v),b2=dot(x,x)-xv*xv;
   if(dot(x,x)>lens*lens){
@@ -155,7 +185,7 @@ void horizonTrace(vec3 origin,vec3 dir,out float emission,out float transmit,out
     for(int k=0;k<3;k++){
       vec3 N=uHorizonRingNormal[k];float s0=dot(x,N),s1=dot(next,N);
       if(s0*s1<0.0){vec3 p=mix(x,next,s0/(s0-s1));vec4 e=horizonEmit(p,v,k);
-        if(e.x>0.0){float w=transmit*e.x;emission+=w;if(w>best){best=w;crossing=uHorizonCentre.xyz+p*rs;}transmit*=1.0-e.y;}}
+        if(e.x>0.0){float w=transmit*e.x;emission+=w;if(w>best){best=w;crossing=uHorizonCentre.xyz+p*rs;eyeInk=e.w;}transmit*=1.0-e.y;}}
     }
     x=next;if(r>lens+1.0&&dot(x,v)>0.0)break;if(transmit<.03)break;
   }
@@ -168,8 +198,8 @@ void main(){
   float lensPlane=dot(toHole,d),seen=horizonViewDepth(scene.a)/max(.001,dot(d,fwd)),holeDepth=dot(toHole,fwd);
   // Anything between the seat and the lens plane is drawn as acquired.
   if(lensPlane<=0.0||seen<lensPlane){o=scene;oMark=mark;return;}
-  float emission,transmit,captured;vec3 outgoing,crossing;
-  horizonTrace(uHorizonEye,d,emission,transmit,captured,outgoing,crossing);
+  float emission,transmit,captured,eyeInk;vec3 outgoing,crossing;
+  horizonTrace(uHorizonEye,d,emission,transmit,captured,outgoing,crossing,eyeInk);
   vec4 back=vec4(0.0,0.0,0.0,horizonPacked(holeDepth)),backMark=vec4(0.0);
   if(captured<.5){
     // March the virtual image from the seen pixel toward the fully bent
@@ -186,7 +216,8 @@ void main(){
   }
   vec3 colour=back.rgb*transmit+vec3(emission);
   if(emission>.004&&emission>dot(back.rgb*transmit,vec3(.3,.5,.2))*.8){
-    o=vec4(colour,horizonPacked(dot(crossing-uHorizonEye,fwd)));oMark=vec4(0.0,.5,.5,HORIZON_STOCK_TAG);
+    float stock=uHorizonEyes.x>1.5?(eyeInk>.5?HORIZON_EYE_TAG:HORIZON_OPENING_STOCK_TAG):HORIZON_STOCK_TAG;
+    o=vec4(colour,horizonPacked(dot(crossing-uHorizonEye,fwd)));oMark=vec4(eyeInk/32.0,.5,.5,stock);
   }else{o=vec4(colour,back.a);oMark=captured>.5?vec4(0.0):backMark;}
 }
 `;

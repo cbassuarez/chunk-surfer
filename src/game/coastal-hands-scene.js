@@ -16,6 +16,7 @@
 // testable. The pure state machine lives in coastal-memory/hands-scene.js.
 import { freshHandsInteraction, stepHandsInteraction, handsInteractionFrame, coastalHandsHeldLocal } from './coastal-memory/hands-scene.js';
 import { createCoastalWindingAudio } from '../audio/coastal-memory-winding.js';
+import { freshWinding } from './coastal-memory/winding.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(v) ? v : lo));
 const finite = (v, d = 0) => Number.isFinite(v) ? v : d;
@@ -26,55 +27,78 @@ export const COASTAL_HANDS = Object.freeze({ crankTurnsPerSecond: 1.4, orbitPerS
 export function createCoastalHandsScene({
   eye = [0, 1.62, 0], yaw = 0, pitch = 0, worldFromLocal = null,
   context = null, destination = null, createAudio = createCoastalWindingAudio,
-  renderer = null, baseFrame = null, onExit = () => {}, onTrace = () => {},
+  renderer = null, baseFrame = null, startHandling = false, initialWinding = null, recorderHeld: initialRecorderHeld = false,
+  onAudioSample = () => {}, onMonitorChange = () => {}, onExit = () => {}, onTrace = () => {},
 } = {}) {
   let interaction = freshHandsInteraction();
-  let audio = null, closed = false, ready = false, error = null;
-  let pinHeld = false, shake = 0;
+  interaction.hands.winding={...freshWinding(),...initialWinding,phase:'rest',held:false,wind:0,playbackRate:0};
+  let audio = null, closed = false, ready = false, error = null, paused = false, blurred = false, initializing = null;
+  let pinHeld = false, shake = 0, recorderHeld = initialRecorderHeld === true;
+  let inspectionDistance=.14;
   const keys = new Set();
   const trace = (v) => { try { onTrace(structuredClone(v)); } catch {} };
   const frame = () => {
     const base = handsInteractionFrame(interaction);
-    const held = base.handling && worldFromLocal ? coastalHandsHeldLocal({ eye, yaw, pitch, boxPose: base.boxPose, shake: base.shakeLevel, worldFromLocal }) : null;
-    return { ...base, heldLocal: held, ready, error,
-      ui: { ...base.ui, pickup: !base.handling ? 'E · PICK UP' : null } };
+    const held = base.handling && worldFromLocal ? coastalHandsHeldLocal({ eye, yaw, pitch, boxPose: base.boxPose, shake: base.shakeLevel, worldFromLocal,distance:inspectionDistance }) : null;
+    return { ...base, heldLocal: held, ready, error, recorderHeld,inspectionDistance,
+      ui: { ...base.ui, pickup: null } };
   };
   function apply(input, dt) {
-    const r = stepHandsInteraction(interaction, input, dt);
+    // A missing comb/release asset must not silently spend a turn. Inspection
+    // and lowering remain available even if sound preparation failed.
+    const voiced = audio?.ready?.() !== false;
+    const r = stepHandsInteraction(interaction, voiced ? input : { ...input, pinHeld: false, crankDelta: 0 }, dt);
     interaction = r.state;
-    if (audio && r.events.length) {
+    if (audio) {
       audio.update({ state: interaction.hands.winding, events: r.events, turn: interaction.hands.crankRate, held: interaction.hands.pinHeld });
     }
     return r;
   }
-  function sound() { audio?.setPaused?.(closed || !ready); }
+  const frozen = () => closed || !ready || paused || blurred;
+  function flushAudio() { if(frozen()||!audio?.sample)return;try{onAudioSample({...audio.sample(),recorderHeld});}catch(reason){error=String(reason?.message||reason);} }
+  function clearInput() { keys.clear(); pinHeld = false; shake = 0; }
+  function sound() { audio?.setPaused?.(frozen()); }
   return {
     id: 'coastal-hands', blocksWorld: true, blocksInput: true, suppressesHud: true, handlesEscape: false,
-    get allowsLook() { return ready && !closed; },
+    get allowsLook() { return !frozen(); },
     initialize() {
       if (ready) return Promise.resolve(true);
-      return Promise.resolve().then(async () => {
+      if(initializing)return initializing;
+      initializing=Promise.resolve().then(async () => {
         if (context && destination && !audio) {
           audio = createAudio({ context, destination });
           await audio.initialize?.();
         }
-        ready = true; error = null; sound(); return true;
+        if(closed)return false;
+        ready = true; error = null;
+        if (startHandling && interaction.mode !== 'handling') apply({ pickUp: true }, 0);
+        sound();if(startHandling)audio?.rattle?.(.25);return true;
       }).catch((reason) => { error = String(reason?.message || reason); ready = false; return false; });
+      return initializing;
     },
     enter() { void this.initialize(); },
     update(dt) {
-      if (closed || !ready) return;
+      if (frozen()) return;
+      flushAudio();
       const seconds = clamp(dt, 0, 0.25);
       // Crank from held keys; shake decays after a Q press.
-      const crankDelta = (Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'))) * COASTAL_HANDS.crankTurnsPerSecond * seconds;
+      const vertical = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
+      const crankDelta = pinHeld ? vertical * COASTAL_HANDS.crankTurnsPerSecond * seconds : 0;
       const orbit = (Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'))) * COASTAL_HANDS.orbitPerSecond * seconds;
-      apply({ pinHeld, crankDelta, shake, lookDelta: { yaw: orbit, pitch: 0 } }, seconds);
+      const roll = (Number(keys.has(']')) - Number(keys.has('['))) * COASTAL_HANDS.orbitPerSecond * seconds;
+      apply({ pinHeld, crankDelta, shake, lookDelta: { yaw: orbit, pitch: pinHeld?0:vertical*COASTAL_HANDS.orbitPerSecond*seconds, roll } }, seconds);
       shake = 0;
       sound();
     },
     view: frame, serialize: () => structuredClone(interaction),
+    lookAngles: () => ({ yaw: interaction.boxYaw, pitch: interaction.boxPitch }),
+    lookBy(yawDelta = 0, pitchDelta = 0) {
+      if (frozen()) return false;
+      apply({ pinHeld, lookDelta: { yaw: finite(yawDelta), pitch: finite(pitchDelta) } }, 0);
+      return true;
+    },
     key(event = {}) {
-      if (closed) return true;
+      if (frozen()) return true;
       const key = keyOf(event);
       if (key === 'escape' || event.controllerAction === 'back') return false;
       const down = !event.repeat && event.type !== 'keyup';
@@ -82,29 +106,54 @@ export function createCoastalHandsScene({
         const handling = interaction.mode === 'handling';
         apply(handling ? { putDown: true } : { pickUp: true }, 0.016);
         trace({ type: handling ? 'put-down' : 'pick-up', mode: interaction.mode });
+        if(handling)this.exit({ releaseTail: true });
       } else if (key === 'f' && event.type === 'keydown') {
         pinHeld = true;
+        // Catch the key on the input edge, including a catch/release between
+        // simulation frames. This does not manufacture winding or tune time.
+        apply({ pinHeld: true, crankDelta: 0 }, 0);
       } else if (key === COASTAL_HANDS.shakeKey && down) {
         shake = 1;
-      } else if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
-        if (event.type === 'keydown') keys.add(key); else keys.delete(key);
+      } else if (key === 'r' && down) {
+        flushAudio();recorderHeld=!recorderHeld;onMonitorChange(recorderHeld);
+      } else if (key === 'home' && down) {
+        inspectionDistance=.14;apply({resetView:true,pinHeld},0);
+      } else if (['w', 'a', 's', 'd', '[', ']', 'bracketleft', 'bracketright', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+        const code=key==='bracketleft'?'[':key==='bracketright'?']':key;
+        if (event.type === 'keydown') keys.add(code); else keys.delete(code);
       }
       return true;
     },
     keyup(event = {}) {
       const key = keyOf(event);
       if (key === 'f') pinHeld = false;
-      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) keys.delete(key);
+      keys.delete(key==='bracketleft'?'[':key==='bracketright'?']':key);
+      if (!frozen()) apply({ pinHeld, crankDelta: 0 }, 0);
       return true;
     },
     pointer(event = {}) {
-      if (closed || event.type === 'pointerdown') return true;
+      if (frozen()) return true;
+      // The broken spring restraint only permits a supported manual turn.
+      // Letting go releases the key and stops the tune; it does not repair it.
+      if (event.type === 'pointerdown') {
+        pinHeld = true; keys.add('w');
+        apply({ pinHeld: true, crankDelta: 0 }, 0);
+        sound();
+        return true;
+      }
+      if (['pointerup', 'pointercancel', 'lostpointercapture'].includes(event.type)) {
+        pinHeld = false; keys.delete('w');
+        apply({ pinHeld: false, crankDelta: 0 }, 0);
+        sound(); return true;
+      }
       // Pointer drag orbits the box in hand.
       if (event.type === 'pointermove' && event.movementX != null) {
-        apply({ lookDelta: { yaw: finite(event.movementX) * 0.008, pitch: -finite(event.movementY) * 0.006 } }, 0.016);
+        // Viewing motion neither releases the held key nor advances its clock.
+        apply({ pinHeld, crankDelta: 0, lookDelta: { yaw: finite(event.movementX) * 0.008, pitch: -finite(event.movementY) * 0.006 } }, 0);
       }
       return true;
     },
+    wheel(event={}) {if(frozen())return true;inspectionDistance=clamp(inspectionDistance*Math.exp(finite(event.deltaY)*.001),.09,.3);return true;},
     render() {
       if (closed) return false;
       const value = frame();
@@ -112,20 +161,24 @@ export function createCoastalHandsScene({
         try {
           // Reuse the coastal renderer: forward its base frame (pose/elapsed/
           // recordingOffset/wreck lights) plus the hands so the box draws in hand.
-          renderer.render({ ...(baseFrame || {}), hands: { handling: value.handling, winding: value.winding, boxPose: value.boxPose, shakeLevel: value.shakeLevel } });
+          renderer.render({ ...(baseFrame || {}), hands: { handling: value.handling, winding: value.winding, boxPose: value.boxPose, shakeLevel: value.shakeLevel, heldLocal: value.heldLocal } });
         } catch (reason) { error = String(reason?.message || reason); }
       }
       return ready;
     },
-    pause() { sound(); return true; },
-    resume() { sound(); return true; },
-    blur() { sound(); },
-    focus() { sound(); },
-    exit() {
+    pause() { flushAudio();paused = true; clearInput(); sound(); return true; },
+    resume() { paused = false; clearInput(); sound(); return true; },
+    blur() { flushAudio();blurred = true; clearInput(); sound(); },
+    focus() { blurred = false; clearInput(); sound(); },
+    exit({ releaseTail = false } = {}) {
       if (closed) return false;
-      closed = true; apply({ putDown: true }, 0.016); sound(); audio?.dispose?.(); onExit({ interaction: structuredClone(interaction) });
+      flushAudio();
+      const keepRelease = releaseTail && !paused && !blurred && ready;
+      clearInput();apply({ putDown: true }, 0);closed = true;
+      if (!keepRelease) sound();
+      audio?.dispose?.({ releaseTail: keepRelease });onExit({ interaction: structuredClone(interaction),recorderHeld });
       return true;
     },
-    diagnostics: () => ({ ready, error, mode: interaction.mode, pinHeld, keys: [...keys] }),
+    diagnostics: () => ({ ready, error, mode: interaction.mode, paused, blurred, pinHeld, keys: [...keys] }),
   };
 }

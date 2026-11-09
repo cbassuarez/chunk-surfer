@@ -1,10 +1,9 @@
 // How fast the recordist moves, in metres per second, and what it costs him.
 //
-// THE LADDER. Five gaits, measured off people rather than off the grid:
-// a comfortable adult walk is about 1.4 m/s, the walk-to-run transition sits
-// near 2.0, an easy jog is 2.5–3, a committed run 4, and an untrained sprint
-// 6–7. "Crawl" is a speed, not a posture — the pace of somebody putting each
-// foot down where they can see it.
+// THE LADDER. Five gaits in world metres, tuned for responsive exploration
+// and pursuit. The faster walking, jogging, running and sprinting paces share
+// one ladder across the world and self-contained scenes. "Crawl" remains the
+// pace of somebody putting each foot down where they can see it.
 //
 // TWO SPEEDS PER PLACE. A place never offers all five. It offers its walk on
 // the movement keys and its run on the run key, and which two rungs those are
@@ -27,10 +26,10 @@ export const GAIT_ORDER = Object.freeze(['crawl', 'walk', 'jog', 'run', 'sprint'
 
 export const GAIT_SPEED = Object.freeze({
   crawl: 0.7,
-  walk: 2.0,
-  jog: 2.6,
-  run: 4.0,
-  sprint: 6.0,
+  walk: 2.6,
+  jog: 3.6,
+  run: 5.2,
+  sprint: 7.5,
 });
 
 // What one accepted step costs on the recordist's noise envelope — the number
@@ -127,10 +126,10 @@ export function applySpeedFactors(speed, factors = []) {
 // ── Scenes that own their keys ───────────────────────────────────────────────
 // The self-contained scenes (the pub, Source IV, earthfall, the Ellery aside,
 // the continuation, the false return, the coast, first strike) take the same two
-// rungs as the place they stand in (Seb, 2026-11-07). None gets the chase rung:
-// each one's Hush is tuned against this pair, and a sprint would outrun them all.
-export function sceneWalkSpeed(place = 'interior', run = false) {
-  return gaitSpeed(chooseGait({ place, run: !!run }));
+// rungs as the place they stand in. A scene that owns a live pursuit also passes
+// its chase and breath state, so its run key can reach the shared sprint rung.
+export function sceneWalkSpeed(place = 'interior', run = false, { chase = false, winded = false } = {}) {
+  return gaitSpeed(chooseGait({ place, run: !!run, chase: !!chase, winded: !!winded }));
 }
 
 // Such a scene consumes its keys before the world sees them, so it keeps its own

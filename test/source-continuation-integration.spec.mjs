@@ -22,6 +22,7 @@ import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
 import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation} from '../src/game/source-continuation.js';
 import {resumeSourceContinuationHandoff} from '../src/game/source-continuation-handoff.js';
 import {SOURCE_CONTINUATION} from '../src/data/source-continuation.js';
+import {SOURCE_III_ARCHIPELAGO} from '../src/data/source-continuation-archipelago.js';
 import {InputManager} from '../src/input/input-manager.js';
 import * as REC from '../src/game/recordist.js';
 import {resolveTorchLook} from '../src/render/lighting-model.js';
@@ -61,7 +62,8 @@ function committedContact(){
   return state;
 }
 function finalDoorCheckpoint(checkpoint){
-  return normalizeSourceContinuation({...checkpoint,status:'active',phase:'catch',level:SOURCE_CONTINUATION.catch.levels-1,
+  return normalizeSourceContinuation({...checkpoint,status:'active',phase:'catch',level:0,
+    expedition:{version:1,visited:[...SOURCE_III_ARCHIPELAGO.mainIslandIds],activeSeconds:0,travelMetres:0,chases:[]},
     ...SOURCE_CONTINUATION.catch.finalApproach,fall:null,recovery:null});
 }
 function completeAtFinalDoor(checkpoint){
@@ -70,15 +72,15 @@ function completeAtFinalDoor(checkpoint){
   assert.equal(result.state.completed,false,'opening alone does not transfer the player');
   // The final approach faces east. Ordinary forward movement follows that
   // physical yaw through the existing goods pair.
-  for(let i=0;i<30&&result.event?.type!=='complete';i++)result=stepSourceContinuation(result.state,{dt:.05,forward:1,renderReady:true});
-  assert.equal(result.event?.type,'complete','walking through the open final plane grants the exit receipt');
+  for(let i=0;i<160&&result.event?.type!=='complete';i++)result=stepSourceContinuation(result.state,{dt:.05,forward:1,renderReady:true});
+  assert.equal(result.event?.type,'complete','walking through the open final passage grants the exit receipt');
   assert.ok(result.state.x>SOURCE_CONTINUATION.catch.finalDoor.x);
   return result.state;
 }
 async function walkFinalDoor(scene){
   scene.key({key:'e'});assert.equal(scene.serialize().doorOpen['catch-final'],true);assert.equal(scene.serialize().completed,false);
   scene.key({key:'w'});
-  for(let i=0;i<30&&scene.serialize().status==='active';i++)scene.update(.05);
+  for(let i=0;i<160&&scene.serialize().status==='active';i++)scene.update(.05);
   scene.keyup({key:'w'});await Promise.resolve();await Promise.resolve();
   assert.equal(scene.serialize().completed,true,'the real scene receives movement through the final door');
   scene.update(.2);scene.update(.2);await Promise.resolve();await Promise.resolve();

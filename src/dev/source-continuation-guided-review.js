@@ -1,22 +1,30 @@
 // Explicitly installed authoring aid. No production import or automatic start.
 // It steers the public scene controls; the real game owns every physics tick.
 import {SOURCE_CONTINUATION as C, SOURCE_CONTINUATION_ROUTES as ROUTES,
-  CONTINUATION_SIGHTLINES, CONTINUATION_CATCH_STAGES as STAGES,
-  CONTINUATION_DROP_LIPS, CONTINUATION_ALTERNATE_LIPS, CONTINUATION_RETURN_CATCHES, continuationRadialPoint, continuationRefugeAt, continuationDoors, continuationSurfaces} from '../data/source-continuation.js';
+  CONTINUATION_SIGHTLINES, continuationDoors} from '../data/source-continuation.js';
 import {JOURNEY_ROUTES,JOURNEY_SIGHTLINES,JOURNEY_PORTALS} from '../data/source-continuation-journey.js';
 import {SOURCE_CONNECTOR_CORRIDOR as CORRIDOR} from '../data/source-connector-corridor.js';
+import {ARCHIPELAGO_MAIN_ROUTE,ARCHIPELAGO_OPTIONAL_ROUTES} from '../data/source-continuation-archipelago.js';
+import {SOURCE_EXIT_PASSAGE} from '../data/source-exit-passage.js';
+
+function archipelagoReviewRows(alternates){
+ const rows=[];
+ for(let index=0;index<ARCHIPELAGO_MAIN_ROUTE.length;index++){
+  const p=ARCHIPELAGO_MAIN_ROUTE[index];rows.push(p);
+  const branch=alternates&&ARCHIPELAGO_OPTIONAL_ROUTES.find(route=>route.fromIslandId===p.islandId);
+  if(!branch)continue;
+  const rejoin=ARCHIPELAGO_MAIN_ROUTE.findIndex((row,k)=>k>index&&row.islandId===branch.toIslandId);
+  if(rejoin<0)throw Error('The optional island route has no onward main junction: '+branch.id);
+  rows.push(...branch.points.slice(1).map(row=>({...row,optionalRouteId:branch.id})));index=rejoin;
+ }
+ return rows;
+}
 
 export function sourceContinuationGuidedPlan({alternates=false,topologyLoop=false}={}) {
-  const chosen=alternates?CONTINUATION_ALTERNATE_LIPS:CONTINUATION_DROP_LIPS;
   const plan = [], walk = (x, z, label = 'Walk authored support',options={}) => plan.push({kind:'walk', x, z, label,...options});
   const path = (rows, label) => rows.forEach(([x,z]) => walk(x,z,label));
   const look = (yaw,pitch,seconds,label,options={}) => plan.push({kind:'look',yaw,pitch,seconds,label,...options});
   const door = (id,label,options={}) => plan.push({kind:'door',id,label,...options});
-  const arc = (stage,from,to,label) => {
-    const r=(stage.innerRadius+stage.outerRadius)/2;
-    const n=Math.max(1,Math.ceil(Math.abs(to-from)/.12));
-    for(let k=0;k<=n;k++){const p=continuationRadialPoint(r,from+(to-from)*k/n);walk(p.x,p.z,label);}
-  };
   // Follow the declared raised return. Optional loops and free jumps have
   // separate trials; this guide proves its own supported physical route.
   if(topologyLoop){
@@ -74,31 +82,18 @@ export function sourceContinuationGuidedPlan({alternates=false,topologyLoop=fals
     walk(0,-19,'Return to the same supported upper refuge',{feet:8.4,chartId:0,tolerance:.15});
     plan.push({kind:'stop',label:'closed-loop-complete',feet:8.4,chartId:0});
   }else{
-  walk(C.catch.center.x+STAGES[0].outerRadius-1.5,C.catch.center.z,'Enter the overhead Catch',{feet:C.catch.top,chartId:0});
-  for(const stage of STAGES){
-    let from=stage.level?chosen[stage.level-1].approachAngle:0;
-    if(alternates&&stage.level){
-      const branch=CONTINUATION_RETURN_CATCHES.find(b=>b.level===stage.level),r=stage.outerRadius-.7;
-      const pocket=continuationRadialPoint(branch.landingRadius,branch.angle);
-      walk(pocket.x,pocket.z,'Centre on the actual alternate catch',{tolerance:.12});
-      // The digital compass follows the authored tread centres. A single long
-      // diagonal can drift across the narrow spoke and now correctly step off.
-      const prefix=`catch-${stage.level}-wrong-neck-`,treads=continuationSurfaces().filter(row=>row.id.startsWith(prefix)).sort((a,b)=>Number(a.id.slice(prefix.length))-Number(b.id.slice(prefix.length)));
-      for(const tread of treads.slice(1))walk((tread.minX+tread.maxX)/2,(tread.minZ+tread.maxZ)/2,'Follow the alternate catch neck',{tolerance:.12});
-      const n=Math.ceil(Math.abs(branch.joinAngle-branch.angle)/.08);
-      for(let k=1;k<=n;k++){const p=continuationRadialPoint(r,branch.angle+(branch.joinAngle-branch.angle)*k/n);walk(p.x,p.z,'Rejoin by the longer outer return',{tolerance:.21});}
-      from=branch.joinAngle;
-    }
-    const target=stage.level===STAGES.length-1?0:chosen[stage.level].approachAngle;
-    arc(stage,from,target,`Catch ${stage.level}: predict the receiving support`);
-    if(stage.level===STAGES.length-1)break;
-    const lip=chosen[stage.level];walk(lip.x,lip.z,'Approach the release edge',{tolerance:.3});
-    plan.push({kind:'drop',id:lip.id,level:stage.level,label:`Choose descent ${stage.level+1}`});
+  const expedition=archipelagoReviewRows(alternates);
+  for(let index=0;index<expedition.length;index++){
+    const row=expedition[index],previous=expedition[index-1],stair=!!previous&&(Math.abs(previous.feet-row.feet)>1e-6||previous.level!==row.level);
+    walk(row.x,row.z,row.islandId?'Explore the actual '+row.islandId:stair?'Walk the physical island stairs':'Follow the supported island connection',{
+      feet:row.feet,level:row.level,chartId:row.chartId,phase:row.phase,islandId:row.islandId,optionalRouteId:row.optionalRouteId,
+      tolerance:stair?.12:.25,...(stair?{stair:true,fromFeet:previous.feet,fromLevel:previous.level}:{}),
+    });
   }
-  walk(C.catch.finalApproach.x,C.catch.finalApproach.z,'Reach the supported final balcony');door('catch-final','Approach the original onward door');
-  walk(C.catch.finalDoor.x+1,C.catch.finalDoor.z,'Physically cross the final threshold');
+  door('catch-final','Approach the original onward door',{feet:C.catch.finalApproach.feet,level:0,phase:'catch',chartId:0});
+  walk(SOURCE_EXIT_PASSAGE.completionX+1,C.catch.finalDoor.z,'Walk the supported service passage to its final plane',{feet:C.catch.finalDoor.y,level:0,phase:'catch',chartId:0});
   }
-  let phase='wrong-return',level=0;return plan.map(step=>{const checked={...step,expectedPhase:step.transition?null:step.phase||phase,expectedChart:step.chartId??0,expectedLevel:phase==='catch'?level:null};if(step.transition)phase='catch';if(step.kind==='drop')level=step.level+1;return checked;});
+  let phase='wrong-return',level=0;return plan.map(step=>{const nextPhase=step.phase||phase,checked={...step,expectedPhase:step.transition?null:nextPhase,expectedChart:step.chartId??0,expectedLevel:nextPhase==='catch'?step.level??level:null};if(step.transition)phase='catch';else phase=nextPhase;if(Number.isInteger(step.level))level=step.level;return checked;});
 }
 
 export function installSourceContinuationGuidedReview({window:win=window,document:doc=document,
@@ -117,8 +112,8 @@ export function installSourceContinuationGuidedReview({window:win=window,documen
     const next=new Set(keys);
     for(const key of held)if(!next.has(key)&&key!=='Shift')scene.keyup?.({key,code:'Key'+key.toUpperCase()});
     for(const key of next)if(!held.has(key))scene.key({key,code:'Key'+key.toUpperCase(),repeat:false});
-    // The guide jogs: scenes walk at 1.4 now, and an authored traversal must
-    // reach its targets before the ordinary Hush clock closes on it.
+    // Use the same held run key as an ordinary body. The scene owns its gait,
+    // breath and chase transitions; the guide never writes a target speed.
     if(next.size&&!held.has('Shift'))scene.key({key:'Shift',code:'ShiftLeft',repeat:false});
     if(!next.size&&held.has('Shift'))scene.keyup?.({key:'Shift',code:'ShiftLeft'});
     held=new Set(next);if(next.size)held.add('Shift');
@@ -152,7 +147,9 @@ export function installSourceContinuationGuidedReview({window:win=window,documen
       if(Math.abs(forward)>threshold)keys.push(forward>0?'w':'s');if(Math.abs(side)>threshold)keys.push(side>0?'d':'a');pressMove(scene,keys);
     }else{scene.setLook({yaw,pitch:-.12});pressMove(scene);}
   }
-  function steerNext(scene,view){const next=plan[index];if(next?.kind==='walk'&&(!next.expectedPhase||next.expectedPhase===view.phase)&&next.expectedChart===(view.chartId??0)&&(next.expectedLevel==null||next.expectedLevel===view.level)&&(next.feet==null||Math.abs(next.feet-view.feet)<.15))steerWalk(scene,view,next);}
+  function planeMatches(step,view,arrived=false){return step.feet==null||Math.abs(view.feet-step.feet)<.16||!arrived&&step.stair&&Math.abs(view.feet-step.fromFeet)<.16&&Math.abs(step.feet-step.fromFeet)<=C.maximumStep+.01;}
+  function levelMatches(step,view){return step.expectedLevel==null||step.expectedLevel===view.level||step.stair&&step.fromLevel===view.level&&planeMatches(step,view);}
+  function steerNext(scene,view){const next=plan[index];if(next?.kind==='walk'&&(!next.expectedPhase||next.expectedPhase===view.phase)&&next.expectedChart===(view.chartId??0)&&levelMatches(next,view)&&planeMatches(next,view))steerWalk(scene,view,next);}
   function tick(){
     if(disposed)return;frameId=requestFrame(tick);if(!running){paint();return;}
     const active=current(),time=now();
@@ -189,20 +186,21 @@ export function installSourceContinuationGuidedReview({window:win=window,documen
       steerWalk(scene,view,step);paint();return;
     }
     const expectedDropLanding=step.kind==='drop'&&stepSent&&view.level===step.expectedLevel+1;
-    if(step.expectedPhase&&view.phase!==step.expectedPhase||step.expectedLevel!=null&&view.level!==step.expectedLevel&&!expectedDropLanding){hold(`Unexpected phase or catch level at ${step.label}; no route correction or warp.`);return;}
+    if(step.expectedPhase&&view.phase!==step.expectedPhase||!levelMatches(step,view)&&!expectedDropLanding){hold(`Unexpected phase or catch level at ${step.label}; no route correction or warp.`);return;}
     if((view.chartId??0)!==step.expectedChart){hold('Unexpected chart at '+step.label+'; no cross-chart steering or pose correction.');return;}
     const requestedRelease=step.kind==='drop'&&stepSent&&(!view.fall?.trigger||view.fall.trigger==='release');
     if(view.fall&&!requestedRelease){receipt('physical-fall-observed',{trigger:view.fall.trigger||null,phase:view.phase,level:view.level,simulationElapsed:view.elapsed,pose:{x:view.x,z:view.z,feet:view.feet}});hold('An unrequested fall interrupted the authored route; stopped without correction.');return;}
     if(view.fall||view.handoff||view.leaving){release();lastProgressAt=time;lastPose={...view};paint();return;}
-    if(step.feet!=null&&Math.abs(view.feet-step.feet)>.15){hold('Unexpected supported plane at '+step.label+'; no correction.');return;}
+    if(!planeMatches(step,view)){hold('Unexpected supported plane at '+step.label+'; no correction.');return;}
     if(lastPose){const moved=Math.hypot(view.x-lastPose.x,view.z-lastPose.z);if(step.kind!=='walk'&&(moved>.02||Math.abs(view.feet-lastPose.feet)>.02))lastProgressAt=time;if(held.size&&moved>.02&&moved<1.2&&Math.abs(view.feet-lastPose.feet)<.05)lastWalkDistance=moved;}
     lastPose={x:view.x,z:view.z,feet:view.feet,phase:view.phase,completed:view.completed};
     if(time-lastProgressAt>stuckSeconds*1000){hold(`Stuck at ${step.label}; recorded failure, no automatic correction.`);return;}
     if(step.kind==='walk'){
       const dx=step.x-view.x,dz=step.z-view.z;
       const distance=Math.hypot(dx,dz),tolerance=step.tolerance??.43;
-      if(distance<tolerance&&(!step.transition||view.phase==='catch')){
+      if(distance<tolerance&&planeMatches(step,view,true)&&(!step.transition||view.phase==='catch')){
         if(step.recognitionId)receipt('recognition-observed',{id:step.recognitionId,portalId:step.portalId,chartId:view.chartId,targetChart:step.targetChart,eye:{x:view.x,y:view.feet+C.eyeHeight,z:view.z},target:{...step.lookTarget},yaw:view.yaw,pitch:view.pitch,simulationElapsed:view.elapsed,native:false});
+        if(step.islandId)receipt('archipelago-island-observed',{id:step.islandId,optionalRouteId:step.optionalRouteId,chartId:view.chartId,feet:view.feet,level:view.level,simulationElapsed:view.elapsed,physicsOwned:true,native:false});
         advance();
         // Close tread centres are continuous walking. Releasing and pressing
         // the next keys in this same callback avoids an artificial idle tick

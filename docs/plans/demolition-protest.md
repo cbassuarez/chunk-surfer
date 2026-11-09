@@ -117,7 +117,65 @@ without being told, that the Committee's "we" never included the students.
 **Committee members** — a handful of tableau figures in good coats, with the
 single placard and the thermos, rather than a crowd.
 
-## 8. Sources (the raw material, to be read before rewriting lines)
+## 8. Model spec (what the meshes look like)
+
+Scene plan, not to exact scale:
+
+```
+              ┌───────────────────────────────────┐
+              │          ELLERY (east wall)        │
+              └──────┬─────────────────────┬───────┘
+      [scaffold]     │     [scaffold]       │  [scaffold]
+      ┌────────┐     │                      │
+ fence│wheelbarrow    │   [CRANE + ball]     │  replaces excavator
+ Heras│+sledgehammer  │       jib ↑          │
+      │+pick +bricks  │                      │
+      └────────┘     │                      │
+      [COMPRESSOR]    │   [brick workers ×3] │  donkey jackets,
+        trailer       │     one on the kango │  flat caps, thermos
+                     │                      │
+      ───────────────┼──────────────────────┼──── road/verge
+                     │   [the Committee]     │
+                     │   folding chair       │
+                     │   thermos · placard   │  "SAVE THE ELLERY"
+                     │   the good coats      │
+```
+
+**Equipment:**
+
+- **`demolition_crane`** — replaces `demolition_excavator`. 1980s mobile lattice
+  crane (Coles/Jones look), cream + orange, wrecking ball (~0.8 m) on the jib
+  tip. Footprint ~2.5 m wide × 4 m long, jib up ~18 m. This is the "machine
+  [that] takes the first bite," and it stays ambiguous: crane or Source.
+- **`demolition_compressor`** — replaces `demolition_generator`. Towable air
+  compressor, weathered grey/yellow trailer box, one round tank, hose reel,
+  faded CAUTION decal. ~2 m long × 1 m tall × 1 m wide, two wheels + jockey leg.
+- **`demolition_wheelbarrow` + hand tools** — galvanised barrow, sledgehammer,
+  pick, a few scaffold boards, a spill of brick rubble. The manual layer.
+- **Kept as-is:** `demolition_scaffold_run`, `demolition_heras_fence`,
+  `demolition_light_tower`.
+
+**People:**
+
+- **Brick workers ×3** — 1980s demolition gang: donkey jacket (dark wool,
+  leather shoulder yoke), flat cap or woolly hat, steel-toe boots, no hi-vis
+  (a yellow armband at most). One on the kango, one leaning on a sledgehammer,
+  one with a thermos. The only ones physically inside the building.
+- **The Committee (tableau)** — the acoustics professor (long good coat, silk
+  scarf, holding the letter); the gnostic (long dark coat, a book); the retvrn
+  young man (tweed, earnest); the NIMBY (anorak, shopping bag, watching the
+  road). Props: folding chair, thermos, placard "SAVE THE ELLERY" with one
+  letter slightly wrong.
+
+**Fresh vs reused:**
+
+| Model | Status |
+|---|---|
+| crane, compressor, wheelbarrow, sledgehammer, pick, rubble | new meshes (Blender / procedural in `build-props.mjs`) |
+| brick workers ×3, Committee ×4 | new character meshes (or wardrobe re-skins of existing `outskirts_*` / `exterior_*`) |
+| scaffold, Heras fence, light tower | reused as-is |
+
+## 9. Sources (the raw material, to be read before rewriting lines)
 
 - **Firestone Factory, Brentford, 1980** — the bank-holiday demolition.
 - **The "monstrous carbuncle" speech**, 1984 — the conservationist voice raw.
@@ -130,7 +188,7 @@ single placard and the thermos, rather than a crowd.
 - **1980s "inner city" and "regeneration"** discourse — where "the area is
   changing" and the curry shop are braided together.
 
-## 9. What shows the result is right
+## 10. What shows the result is right
 
 - **Recognition, not smugness:** the player sees their own people in the
   Committee and feels unease, never a cartoon villain.

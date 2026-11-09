@@ -3,7 +3,12 @@
 import {VAN_REAR_CARGO_LIGHT as CARGO} from '../data/van-rear-design.js';
 import {isOutdoorZone} from '../data/floorplan/legend.js';
 
-export function vanRearCargoLight({group,zone,anchor,listener,open=0}={}){
+export function vanRearCargoLight({group,zone,anchor,listener,open=0,vehicleActive=false}={}){
+  // The moving/borrowed cab owns its own practicals. The authored parked van
+  // remains at its destination until egress; it cannot leave this lamp in the
+  // air for the arriving body to drive through, even if its rear-door state
+  // still belongs to the preceding preparation visit.
+  if(vehicleActive)return null;
   if(group!=='ground'||!isOutdoorZone(zone)||!anchor||!listener)return null;
   if(![anchor.x,anchor.y,anchor.z,listener.x,listener.z,open].every(Number.isFinite)||open<=0)return null;
   if(Math.hypot(listener.x-anchor.x,listener.z-anchor.z)>6)return null;

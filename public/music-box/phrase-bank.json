@@ -1,0 +1,40 @@
+{
+ "sampleRate": 44100,
+ "phrases": [
+  {
+   "id": "phrase_1",
+   "file": "music-box/phrases/phrase_1.wav",
+   "start": 2.4,
+   "end": 18.1,
+   "seconds": 15.7
+  },
+  {
+   "id": "phrase_2",
+   "file": "music-box/phrases/phrase_2.wav",
+   "start": 19.3,
+   "end": 33.7,
+   "seconds": 14.4
+  },
+  {
+   "id": "phrase_3",
+   "file": "music-box/phrases/phrase_3.wav",
+   "start": 42.5,
+   "end": 58.4,
+   "seconds": 15.9
+  },
+  {
+   "id": "phrase_4",
+   "file": "music-box/phrases/phrase_4.wav",
+   "start": 59.4,
+   "end": 76.4,
+   "seconds": 17.0
+  },
+  {
+   "id": "phrase_5",
+   "file": "music-box/phrases/phrase_5.wav",
+   "start": 95.4,
+   "end": 111.8,
+   "seconds": 16.4
+  }
+ ]
+}

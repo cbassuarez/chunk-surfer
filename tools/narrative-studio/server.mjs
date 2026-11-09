@@ -176,7 +176,7 @@ const studioApi = {
 
 await access(CONTENT_ROOT);
 // Bring the code's dialogue up to date before the first snapshot is served.
-const runtimeTotals = async () => { const { index } = await exportRuntimeNarrative({ write: true }); return index.reduce((t, d) => ({ docs: t.docs + 1, lines: t.lines + d.lines, choices: t.choices + d.choices }), { docs: 0, lines: 0, choices: 0 }); };
+const runtimeTotals = async () => { const { index } = await exportRuntimeNarrative({ write: true,onProgress:process.env.STUDIO_RUNTIME_TRACE?event=>console.log(JSON.stringify(event)):null }); return index.reduce((t, d) => ({ docs: t.docs + 1, lines: t.lines + d.lines, choices: t.choices + d.choices }), { docs: 0, lines: 0, choices: 0 }); };
 try { const t = await runtimeTotals(); console.log(`Runtime dialogue: ${t.docs} modules, ${t.lines} lines, ${t.choices} choices`); }
 catch (error) { console.warn(`Runtime dialogue export failed: ${error.message}`); }
 const server = await createViteServer({
@@ -198,18 +198,36 @@ wss.on('connection', (socket) => { sockets.add(socket); socket.on('close', () =>
 const watcher = chokidar.watch(CONTENT_ROOT, { ignoreInitial: true });
 watcher.on('all', (event, path) => {
   const authoringPath = relative(CONTENT_ROOT, path).replaceAll('\\', '/');
+  // A complete source export emits one refresh after its index is committed;
+  // do not expose partial exports or require hundreds of manual reloads.
+  if(authoringPath.startsWith('narrative-runtime/'))return;
   if (internalWrites.delete(authoringPath)) return;
   broadcast({ type: 'file-change', event, path: authoringPath });
+  if(authoringPath==='project.json'||authoringPath.startsWith('narrative/'))scheduleRuntimeExport();
 });
 
 // When dialogue changes in code, re-export it; the content watcher above then
 // tells the open studio which runtime documents changed.
 let runtimeTimer = null;
+let runtimeExportRunning=false,runtimeExportPending=false;
+function scheduleRuntimeExport(){
+  clearTimeout(runtimeTimer);
+  runtimeTimer=setTimeout(async()=>{
+    runtimeExportPending=true;if(runtimeExportRunning)return;
+    runtimeExportRunning=true;
+    try{
+      while(runtimeExportPending){
+        runtimeExportPending=false;
+        try{const totals=await runtimeTotals();broadcast({type:'runtime-refresh',path:'narrative-runtime/index.json',totals});}
+        catch(error){broadcast({type:'runtime-export-failed',message:error.message});}
+      }
+    }finally{runtimeExportRunning=false;}
+  },700);
+}
 const sourceWatcher = chokidar.watch(resolve(ROOT, 'src'), { ignoreInitial: true, ignored: (path) => /generated-content\.js$/.test(path) });
 sourceWatcher.on('all', (event, path) => {
   if (!path.endsWith('.js')) return;
-  clearTimeout(runtimeTimer);
-  runtimeTimer = setTimeout(() => { runtimeTotals().catch((error) => broadcast({ type: 'runtime-export-failed', message: error.message })); }, 700);
+  scheduleRuntimeExport();
 });
 
 const url = `http://${HOST}:${PORT}/?token=${TOKEN}`;
@@ -218,7 +236,7 @@ const url = `http://${HOST}:${PORT}/?token=${TOKEN}`;
 // process that wants to deep-link into the studio (tools/endings-audit, for one)
 // has no way to construct a working URL. It publishes the live one here instead,
 // beside the pid, so a reader can tell a running studio from a hard-killed one.
-const SESSION_FILE = resolve(STUDIO_ROOT, '.studio-session.json');
+const SESSION_FILE = process.env.STUDIO_SESSION_FILE ? resolve(process.env.STUDIO_SESSION_FILE) : resolve(STUDIO_ROOT, '.studio-session.json');
 await writeFile(SESSION_FILE, `${JSON.stringify({ url, token: TOKEN, host: HOST, port: PORT, pid: process.pid, startedAt: new Date().toISOString() }, null, 2)}\n`, 'utf8');
 const clearSession = async () => { try { await rm(SESSION_FILE, { force: true }); } catch (_) {} };
 process.on('exit', () => { try { rmSync(SESSION_FILE, { force: true }); } catch (_) {} });
