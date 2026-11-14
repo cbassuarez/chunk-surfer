@@ -26,3 +26,24 @@ test('preview uses canonical sun geometry and accountable threshold coordinates 
  assert.match(STATION_FIELD_PREVIEW_GLSL,/vec3\[4\]/);
  assert.doesNotMatch(STATION_FIELD_PREVIEW_GLSL,/ewTrace|for\(/);
 });
+test('the crash field draws the whole van falling with its shadow near the end, then the wreck, its sod and a flattened door',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {stationFieldCrashProps,STATION_FIELD_VAN_PACKS}=await import('../src/render/station-field-renderer.js');
+ const {VAN_WRECK}=await import('../src/data/van-wreck.js');
+ const metrics=JSON.parse(readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url),'utf8'));
+ const visit=STATION_FIELD_VISITS.fourth,base={target:{x:.5,z:-6},yaw:Math.PI/2};
+ const high=stationFieldCrashProps({...base,landed:false,height:400},{metrics}).props.map(p=>p.mesh);
+ for(const m of['drive_vehicle_body','drive_cabin','van_brand_drive'])assert.ok(high.includes(m),m);
+ assert.equal(high.filter(m=>m==='drive_tyre').length,4);assert.ok(!high.includes('station_field_van_shadow'),'no shadow from that far up');
+ assert.ok(stationFieldCrashProps({...base,landed:false,height:20},{metrics}).props.some(p=>p.mesh==='station_field_van_shadow'));
+ const door=memoryFieldRenderFrame({x:0,z:2.65,yaw:0,pitch:0,elapsed:9,decay:.7},visit.memoryVisit).props.filter(p=>p.id.startsWith('memory-field:door-')).map(p=>({...p,door:visit.memoryVisit.door}));
+ const down=stationFieldCrashProps({...base,landed:true,height:0,flattened:true},{metrics,doorProps:door});
+ const meshes=new Set(down.props.map(p=>p.mesh));
+ for(const m of[VAN_WRECK.meshes.hull,VAN_WRECK.meshes.cabDoorNear,'station_field_earth','van_wreck_brand'])assert.ok(meshes.has(m),m);
+ assert.ok(!meshes.has('drive_vehicle_body'),'the whole van is gone once it is down');
+ assert.equal(down.replace.size,door.length);for(const p of down.replace.values())assert.ok(Math.abs(p.matrix[5])<1e-6,'lying flat');
+ for(const p of down.props)assert.ok(Array.from(p.matrix).every(Number.isFinite),p.id);
+ // Every mesh it draws is loaded from a pack it lists, or made here.
+ const listed=new Set(STATION_FIELD_VAN_PACKS.flatMap(p=>p.meshes));
+ for(const m of new Set([...high,...meshes]))assert.ok(listed.has(m)||/^station_field_/.test(m)||/^van_wreck_brand/.test(m),m);
+});

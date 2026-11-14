@@ -5,6 +5,7 @@ import {HORIZON_APPROACH as C,HORIZON_DEBRIS_KINDS,horizonDebrisField,spaceEyeUn
 import {HORIZON_TOWER_BEARING,horizonTowerBearing} from '../game/horizon-approach-scene.js';
 import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
 import {horizonStairsMeshes,HORIZON_TOWER_ROAD} from './horizon-approach-models.js';
+import {HORIZON_TOWER_BELLS,horizonTowerBellBearing,horizonBellPose} from '../data/horizon-tower-bells.js';
 import {SOURCE_ESCHER_EXTENT} from './source-continuation-escher.js';
 
 const TAU=Math.PI*2;
@@ -91,6 +92,25 @@ function destinations(variant){
   for(const[k,side]of[[0,-1],[1,1],[2,-1],[3,1]])props.push(inst(HORIZON_MASONRY.buttress,`chapel:${k}`,standing(far,(variant==='relativity'?Math.PI:-HORIZON_TOWER_BEARING)+side*.09+k*.02,{scale:.6*s,turn:Math.PI/2*side})));
   return props;
 }
+// THE BELLS ALONG THE TOWER ROAD: St Brendan's ring, hung from their headstocks
+// with no frame, at their three sizes. They are there once the road is offered,
+// and the ones that sound swing the chapel's stroke when they do.
+export const HORIZON_BELL_MESHES=Object.freeze([...new Set(HORIZON_TOWER_BELLS.flatMap(b=>['bell','wheel','clapper','stay','slider'].map(part=>`tower_${part}_0${b.ring}`)))]);
+export function horizonTowerBellProps(state){
+  if(state.variant!=='closed'||!state.offerOpen||state.returning)return[];
+  const props=[],rung=state.tower?.rung||{};
+  for(const bell of HORIZON_TOWER_BELLS){
+    const phi=horizonTowerBellBearing(bell),at=rung[bell.id],pose=horizonBellPose(bell,at==null?null:state.elapsed-at);
+    const base=multiply(multiply(translate(...atMap(bell.r,phi,bell.elevation)),aboutY(phi+bell.yaw)),scaled(bell.scale));
+    const n=`0${bell.ring}`,radius=Math.max(3,bell.scale*2.2);
+    props.push(inst(`tower_bell_${n}`,`${bell.id}`,multiply(base,aboutZ(pose.angle)),{cullRadius:radius}));
+    props.push(inst(`tower_wheel_${n}`,`${bell.id}:wheel`,multiply(base,aboutZ(pose.angle)),{cullRadius:radius}));
+    props.push(inst(`tower_stay_${n}`,`${bell.id}:stay`,multiply(base,aboutZ(pose.angle)),{cullRadius:radius}));
+    props.push(inst(`tower_clapper_${n}`,`${bell.id}:clapper`,multiply(base,aboutZ(pose.clapperAngle)),{cullRadius:radius}));
+    props.push(inst(`tower_slider_${n}`,`${bell.id}:slider`,multiply(base,translate(pose.sliderOffset,0,0)),{cullRadius:radius}));
+  }
+  return props;
+}
 const KIND=new Map(HORIZON_DEBRIS_KINDS.map(k=>[k.id,k]));
 // Everything that came loose, in the closed space only. It turns over slowly, each
 // piece at its own rate, and stops turning for anyone who has asked for less motion.
@@ -110,6 +130,7 @@ export function horizonApproachRenderFrame(state,{reducedMotion=false}={}){
   // The tower's road, as the others are until the tower is offered; in negative from then on.
   const tower=HORIZON_TOWER_ROAD[state.variant];
   if(tower)for(const mesh of state.offerOpen?tower.negative:tower.plain)props.push(inst(mesh,mesh,I));
+  props.push(...horizonTowerBellProps(state));
   if(state.variant==='relativity'&&state.offerOpen)props.push(inst('ha_side','side',I),inst('ha_side_line','side-line',I));
   if(state.variant==='closed')props.push(...horizonDebrisProps(state.elapsed,{reducedMotion}));
   props.push(...LANDSCAPE[state.variant](),...destinations(state.variant),...horizonApproachObjectProps(state));

@@ -7,6 +7,7 @@
 import {MEMORY_FIELD as C} from '../data/memory-field.js';
 import {neuralFrame,neuralSeconds,NEURAL_NONE} from './neural-transition.js';
 import {antPoseAt} from './memory-field-ant.js';
+import {FIELD_SKY_FILM} from '../data/field-sky-film.js';
 
 const finite=(v,f=0)=>typeof v==='number'&&Number.isFinite(v)?v:f;
 const smooth=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
@@ -67,11 +68,19 @@ export function memoryFieldNeural(state,{reducedFlash=false,reducedMotion=false}
   // through its own geometry, colour and gaze without a new lens event.
   return NEURAL_NONE;
 }
+// How far this visit's sky has come from the game's own to the film's (data/field-sky-film.js).
+// It runs to the end a visit reaches when it is let be; a visit fought longer stays there.
+export function memoryFieldSkyFilm(state,visit,{reducedDread=false}={}){
+  const span=FIELD_SKY_FILM.visits[visit?.id];if(!span)return 0;
+  const times=memoryFieldTimes(visit,{reducedDread}),end=visit.kind==='stuck'?times.min+times.quiet:times.max;
+  return span[0]+(span[1]-span[0])*Math.max(0,Math.min(1,finite(state?.elapsed)/Math.max(1,end)));
+}
 export function memoryFieldLook(state,visit,{reducedDread=false,reducedMotion=false,reducedFlash=false}={}){
   const d=state.decay,times=memoryFieldTimes(visit,{reducedDread});
   const closing=visit.tunnel?smooth(0,Math.max(1,times.max*.8),state.elapsed)*visit.tunnel*(reducedDread?.5:1):0;
   return{chroma:1.18-.95*d*d,contrast:1.04-.2*d,narrowing:closing,lift:0,lids:memoryFieldLids(state,visit,{reducedMotion}),
-    skyFault:reducedDread?0:Math.pow(d,1.4),edge:.14+.86*smooth(.2,.8,d),sunScale:visit.sunScale*(1+(visit.tunnel?1.1*closing:0)),reducedMotion,reducedDread,neural:memoryFieldNeural(state,{reducedFlash,reducedMotion}),seed:state.seed||0};
+    skyFault:reducedDread?0:Math.pow(d,1.4),edge:.14+.86*smooth(.2,.8,d),sunScale:visit.sunScale*(1+(visit.tunnel?1.1*closing:0)),reducedMotion,reducedDread,neural:memoryFieldNeural(state,{reducedFlash,reducedMotion}),seed:state.seed||0,
+    skyFilm:memoryFieldSkyFilm(state,visit,{reducedDread})};
 }
 function blockedByLeaf(state,before,visit){
   if(!visit.door)return false;

@@ -240,10 +240,10 @@
       "id": "runtime.data.opening-prologue",
       "path": "narrative-runtime/runtime.data.opening-prologue.story.json",
       "module": "src/data/opening-prologue.js",
-      "nodes": 66,
-      "lines": 171,
-      "choices": 48,
-      "sourceSha256": "cfc04a3f937af2d67de5dc5e0ba6e43699e88e52b50f188ec447bcae9cb20062"
+      "nodes": 67,
+      "lines": 174,
+      "choices": 49,
+      "sourceSha256": "37ee19950d968df8d67b3bf6c7cdc11b2b31cf80cf32b8db749b015585967114"
     },
     {
       "id": "runtime.data.plaza-shopfronts",
@@ -621,7 +621,7 @@
       "nodes": 1,
       "lines": 3,
       "choices": 0,
-      "sourceSha256": "a5c3f0a7245ca38c1efca31a8348feb522c567cd9aa7ba452239a13a81a3a0d4"
+      "sourceSha256": "bac9be0bbcf89b9ee833ab62e24dd0cff4584c9696a23f5ca8e120b021dacdc0"
     },
     {
       "id": "runtime.game.threshold-gag-inspection",
@@ -675,7 +675,7 @@
       "nodes": 134,
       "lines": 266,
       "choices": 15,
-      "sourceSha256": "ef0b90d489dc46f9616a4187eabf0cf70370d1d7a1e2bd7ac500cb51a4f292ad"
+      "sourceSha256": "fab30c42090e43365cb1540428f2ba88cdbbea32b158ac902c28d0328eb2826c"
     },
     {
       "id": "runtime.render.arrival-title-options",

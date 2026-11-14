@@ -1968,8 +1968,9 @@ export function createSourceSpaceRuntime({
     // Just over the seam, facing in. Far enough that the field is behind him and
     // he cannot walk back out of it by accident.
     if (tierId === 'horizon') return { x: o.x, y: o.y + SOURCE_HORIZON.from - SOURCE_HORIZON.entryStandoff, facing: 0 };
-    // And the same again for the bell passage: over its own seam, facing in.
-    if (tierId === 'bells') return { x: o.x, y: o.y + SOURCE_BELLS.from - SOURCE_BELLS.entryStandoff, facing: 0 };
+    // The tower road arrives at the door field: the walk that used to lie
+    // between the seam and the doors is walked in the Rind now.
+    if (tierId === 'bells') return { x: o.x, y: o.y + SOURCE_BELLS.arrival, facing: 0 };
     return landingWorld();
   }
 
@@ -2141,9 +2142,7 @@ export function createSourceSpaceRuntime({
         horizonProgress: Math.max(0, Math.min(1, depth / SOURCE_HORIZON.length)),
       };
     } else if (state.phase === CHUNK_SURF_PHASE.BELLS) {
-      objective = {id:'bell-field',label:localPlayer.y<=SOURCE_BELLS.doors.from
-          ?(towerDoorUnlocked()?'THE TOWER DOOR IS OPEN':'FIND WHAT OPENS THE TOWER DOOR')
-          :'WALK BETWEEN THE BELLS — KEEP THEM QUIET',
+      objective = {id:'bell-field',label:towerDoorUnlocked()?'THE TOWER DOOR IS OPEN':'FIND WHAT OPENS THE TOWER DOOR',
         // Once it is open, the tower door is somewhere to walk to. Before that the
         // keys are the search, and nothing points at them.
         target:towerDoorUnlocked()?{x:o.x,y:o.y+SOURCE_BELLS.room.threshold}:null,
@@ -3147,7 +3146,7 @@ export function createSourceSpaceRuntime({
   function inBells(x, y) {
     if (state.phase !== CHUNK_SURF_PHASE.BELLS) return false;
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
-    if (ly > SOURCE_BELLS.from || ly < SOURCE_BELLS.to) return false;
+    if (ly > SOURCE_BELLS.open || ly < SOURCE_BELLS.to) return false;
     // Inside the room the walls are the bound; outside it the open ground is.
     if (ly <= SOURCE_BELLS.room.threshold) return Math.abs(lx) <= SOURCE_BELLS.room.halfX - 0.6;
     return Math.abs(lx) <= SOURCE_BELLS.halfWidth;
@@ -7767,7 +7766,8 @@ export function createSourceSpaceRuntime({
       part(`${entry.id}:stay`, `tower_stay_${n}`, pose.angle);
       part(`${entry.id}:slider`, `tower_slider_${n}`, 0, pose.sliderOffset * scale);
     };
-    for (const entry of SOURCE_BELL_PASSAGE) place(entry);
+    // The passage's own bells went with the walk: the ring that stood along it
+    // now hangs either side of the tower road in the Rind (horizon-tower-bells).
     const recessY = o.y + SOURCE_BELLS.room.threshold + 12;
     if (Math.hypot((o.x + 8 - px) * CELL, (recessY - py) * CELL) < 75) {
       const height = SOURCE_TIER_BY_ID.bells?.height ?? 15.2;

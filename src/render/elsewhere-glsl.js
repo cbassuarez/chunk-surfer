@@ -737,12 +737,13 @@ vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,floa
     float nearWindow=1.0-smoothstep(2.0,7.0,length(ro.xz-vec2(${glf(HOME_WINDOW.x)},${glf(HOME_WINDOW.z)})));
     float looking=pow(max(0.0,rd.z),6.0);
     if(m<19.5||(m>39.5&&m<49.5))col=mix(col,col*vec3(.79,.77,.74),uHomeState.z*nearWindow*looking*.45);
-    // The walk in (home-arrival-glsl.js). Where the whiteout still stands the
-    // surface gives up its depth and print too, so no edge is engraved there.
+    // The walk in (home-arrival-glsl.js). Where the whiteout is still nearly
+    // whole the surface gives up its depth and print too, so no edge is
+    // engraved there; where it is thinning, the shape engraves through it.
     float arrivalWhite=ewHomeArrivalWhite(ro,rd,surfaceHit,t);
     if(arrivalWhite>0.0){
-      col=mix(col,ewHomeArrivalSnow(ro,rd),arrivalWhite);
-      if(arrivalWhite>.5){surfaceHit=460.0;surfacePrint=vec2(0.0);}
+      col=mix(col,ewHomeArrivalSnow(ro,rd,t),arrivalWhite);
+      if(arrivalWhite>.85){surfaceHit=460.0;surfacePrint=vec2(0.0);}
     }
     col=ewHomeFallingSnow(ro,rd,col,hit,t,homeWeather);
     // Rest only changes the air around the seated body. The terminal cut

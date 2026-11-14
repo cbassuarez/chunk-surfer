@@ -3,7 +3,7 @@
   "id": "runtime.game.apparition-applause-study",
   "title": "Runtime · game/apparition-applause-study.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "HALL_STUDY_QUESTIONS.recognition",
   "entries": [
     "HALL_STUDY_QUESTIONS.recognition",
@@ -17,7 +17,7 @@
   ],
   "regions": [],
   "module": "src/game/apparition-applause-study.js",
-  "notes": "Generated from src/game/apparition-applause-study.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/game/apparition-applause-study.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "HALL_STUDY_QUESTIONS.recognition": {
       "id": "HALL_STUDY_QUESTIONS.recognition",

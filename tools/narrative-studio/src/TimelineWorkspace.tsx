@@ -12,7 +12,7 @@ export function TimelineWorkspace({ project, documents, selectedDocumentId, onSe
   const byId = new Map(documents.map((item) => [item.document.id, item]));
   const entries: TimelineEntry[] = projectStudioTimeline(project,documents);
   const placed = new Set(entries.flatMap((entry) => entry.documents || []));
-  const unplaced = documents.filter((item) => !item.readOnly&&!placed.has(item.document.id));
+  const unplaced = documents.filter((item) => !item.fromCode&&!placed.has(item.document.id));
 
   return <div className="timeline-workspace">
     <aside className="timeline-summary">
@@ -31,7 +31,7 @@ export function TimelineWorkspace({ project, documents, selectedDocumentId, onSe
             const doc = envelope?.document;
             return <button key={documentId} className={documentId === selectedDocumentId ? 'is-active' : ''} onClick={() => doc && onSelect(documentId)} disabled={!doc}>
               <span>{doc?.title || 'Missing document'}</span>
-              <small>{envelope?.readOnly?'From game code · read-only · ':''}{documentId}{doc ? ` · ${Object.keys(doc.nodes || {}).length} nodes` : ' · missing'}</small>
+              <small>{envelope?.fromCode?'From game code · ':''}{documentId}{doc ? ` · ${Object.keys(doc.nodes || {}).length} nodes` : ' · missing'}</small>
             </button>;
           })}
         </div>

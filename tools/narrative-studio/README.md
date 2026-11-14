@@ -14,7 +14,9 @@ npm run studio
 The command opens a loopback-only browser app. The terminal owns the local file
 service; stop it with `Ctrl-C`. The service uses a per-launch token, restricts
 writes to `content/narrative`, `content/audio`, and `content/layout`, validates
-before writing, and rejects saves when a file changed externally.
+before writing, and rejects saves when a file changed externally. The one
+exception is dialogue written in game modules, whose words are saved back into
+the module itself (see below).
 
 Useful checks:
 
@@ -29,12 +31,22 @@ node test/narrative-studio.spec.mjs
 - Pick a document from the left index. Endings, battles, radio trees, room
   listens, playback scenes, and legacy material are all searchable.
 - The index also includes dialogue still authored in game modules. Search a
-  spoken sentence or choice to open its source beat. Those documents are
-  read-only references; edit the indicated module to change the game.
-- Source edits refresh those references automatically, including imported line
-  constructors and conditional variants. Unsaved Studio stories, media and
-  audio edits stay in place. Ordinary external authoring edits still ask for a
-  reload so they cannot silently overwrite your work.
+  spoken sentence or choice to open its source beat. Edit a line's words, its
+  speaker or a choice's text and **Save writes them into the module's own
+  string literals**, in their own quoting, so the game picks them up on its
+  next reload. Only words change from there: beats, their order, where a
+  choice leads, conditions and cues are the shape of the code and are changed
+  in the module. A speaker or text built in code rather than written on that
+  line (a shared constant, a line helper's prefix) is locked, and a line with
+  code-built parts such as `{room}` names the parts to keep. When one written
+  speaker covers several lines, changing it changes all of them. A save is
+  checked field by field against the module as it is now: anything changed in
+  code since the Studio loaded it is refused, never overwritten.
+- Source edits refresh those documents automatically, including imported line
+  constructors and conditional variants. A code document with unsaved edits is
+  kept as it is. Unsaved Studio stories, media and audio edits stay in place.
+  Ordinary external authoring edits still ask for a reload so they cannot
+  silently overwrite your work.
 - Drag nodes or use **Auto-layout**. Layout changes are stored separately from
   prose so visual organization does not create dialogue merge conflicts.
 - Connect a choice handle to another node to change its `goto` target.

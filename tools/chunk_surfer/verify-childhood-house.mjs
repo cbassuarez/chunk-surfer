@@ -145,6 +145,8 @@ try {
     const door = window.__probe.doorFieldDoors().find((entry) => !entry.route && !entry.shut && !entry.erased && entry.variant === 5);
     if (!door) throw new Error('No eligible whiteout doorway in the disposable checkpoint');
     window.__probe.crossFieldDoor(door.id);
+    // The walk in opens on whiteout and questions (game/home-arrival.js); these captures want the house.
+    window.__probe.homeArrival?.('skip');
     return [-door.normal[0], -door.normal[2]];
   });
   await sleep(650);

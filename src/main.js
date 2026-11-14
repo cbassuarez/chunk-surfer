@@ -13,7 +13,9 @@ import {createFirstStrikeRenderer,prewarmFirstStrikeMeshes,firstStrikeWarningFra
 import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop,sixReturnPending,leaveSixLoop,sixOrdinaryTakes,showSixDebugOverlay,sixLoopDebugBuild} from './game/six-loop.js';
 import {createSixNothingnessScene} from './game/six-nothingness-scene.js';
 import {createSixNothingnessRenderer} from './render/six-nothingness-renderer.js';
-import {createHorizonApproachScene,HORIZON_APPROACH_EVENT} from './game/horizon-approach-scene.js';
+import {createHorizonApproachScene,HORIZON_APPROACH_EVENT,horizonApproachBearingTo} from './game/horizon-approach-scene.js';
+import {HORIZON_TOWER_BELLS,horizonTowerBellBearing} from './data/horizon-tower-bells.js';
+import {createHorizonBellsAudio,horizonBellVoicing} from './audio/horizon-bells-audio.js';
 import {createHorizonApproachRenderer} from './render/horizon-approach-renderer.js';
 import {horizonApproachSelection,HORIZON_RECORD_FLAGS} from './game/horizon-approach-record.js';
 import {horizonApproachTruth,horizonApproachPetalLine,horizonApproachReturnLines,horizonApproachOfferLines,horizonApproachProposition} from './data/horizon-approach-dialogue.js';
@@ -7512,14 +7514,33 @@ function beginHorizonInterruption({returning=false,defeats=0}={}){
   });
   return true;
 }
+// THE TOWER ROAD'S BELLS. The belfry's own samples, loaded as the Horizon opens
+// so the first one to sound is not late, and struck where the bell is.
+let horizonBells=null;
+function warmHorizonBells(){
+  if(!actx)return null;
+  horizonBells ||= createHorizonBellsAudio({context:actx,destination:sfxGain||master||actx.destination});
+  void horizonBells.load();return horizonBells;
+}
+function ringHorizonBell(state,event){
+  const bell=HORIZON_TOWER_BELLS.find(entry=>entry.id===event.id),bells=warmHorizonBells();if(!bell||!bells)return false;
+  const{distance,bearing}=horizonApproachBearingTo(state,bell.r,horizonTowerBellBearing(bell));
+  const voicing=horizonBellVoicing({distance:Math.hypot(distance,bell.elevation-1.6),bearing,size:bell.size});
+  if(!dreadAllowed())voicing.gain*=.65;
+  return bells.ring({ring:bell.ring,strikes:event.strikes,voicing})>0;
+}
 function beginHorizonApproach({variant,occupant,condition,lyleBox,live=false,returning=false,defeats=0}={}){
   if(horizonApproachScene())return horizonApproachScene();
   if(firstStrikeScene)return null;
   const prior=live?flagGet(HORIZON_APPROACH_SAVE):null,selection=horizonApproachSelection(getSave().flags);
   occupant ||= prior?.scene?.occupant||selection.occupant;
   condition ??= selection.condition;lyleBox ??= prior?.scene?.lyleBox||selection.lyleBox;
-  const snapshot=live&&prior?.scene&&!prior.scene.decided&&!!prior.scene.returning===returning&&(!returning||prior.scene.defeats===defeats)?prior.scene:null;
+  // An undecided approach resumes; so does the tower road, taken and not yet
+  // walked to its end.
+  const resumable=scene=>!scene.decided||scene.decided==='accepted'&&!scene.returning&&scene.tower&&!scene.tower.reached;
+  const snapshot=live&&prior?.scene&&resumable(prior.scene)&&!!prior.scene.returning===returning&&(!returning||prior.scene.defeats===defeats)?prior.scene:null;
   horizonApproachRenderer ||= createHorizonApproachRenderer();
+  ensureCtx();warmHorizonBells();
   resetMotionInput('horizon-approach',{stopRenderMove:true});
   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
   let scene,closing=false,truth=null,offer=null,truthComplete=!!snapshot&&prior.truthComplete===true,offerRead=!!snapshot&&prior.offerRead===true,savedAt=-1;
@@ -7540,13 +7561,17 @@ function beginHorizonApproach({variant,occupant,condition,lyleBox,live=false,ret
       :horizonApproachTruth(state.occupant,{lyleBox:state.lyleBox,reducedDread:!dreadAllowed()});
     truth=SPEECH.sayAll(lines,{id:'horizon:truth',context:null,maxWaitMs:Infinity,escapable:false});
   };
+  // The route is the night's the moment it is taken, whether or not the body is
+  // still walking: a reload on the tower road must not offer it again.
+  const commit=exit=>{
+    if(!live||returning)return true;
+    if(chunkSurfRuntime.state?.()?.finale?.bust?.decision)return true;
+    if(exit==='tower')chunkSurfRuntime.recognizeHorizonApproach({eligible:true});
+    return !!chunkSurfRuntime.decideHorizonApproach(exit==='tower')?.handled;
+  };
   const depart=exit=>{
     if(closing)return;
-    if(live&&!returning){
-      if(exit==='tower')chunkSurfRuntime.recognizeHorizonApproach({eligible:true});
-      const decided=chunkSurfRuntime.decideHorizonApproach(exit==='tower');
-      if(!decided?.handled)return;
-    }
+    if(!commit(exit))return;
     persist();closing=true;
     const arrive=()=>{
       scenes.remove(scene);SPEECH.clearSpeech();
@@ -7564,7 +7589,12 @@ function beginHorizonApproach({variant,occupant,condition,lyleBox,live=false,ret
       if([HORIZON_APPROACH_EVENT.ARRIVED,HORIZON_APPROACH_EVENT.RETURNED].includes(event.type))speakTruth(scene.view().state);
       if(event.type===HORIZON_APPROACH_EVENT.PLUCKED){const line=horizonApproachPetalLine(event.petalsPlucked);if(line)SPEECH.say(line,{id:'horizon:petal',replace:true});}
       if(event.type===HORIZON_APPROACH_EVENT.OPENED){if(live&&!returning)chunkSurfRuntime.recognizeHorizonApproach({eligible:true});}
-      if(event.type===HORIZON_APPROACH_EVENT.ACCEPTED)depart('tower');
+      // Taken in the closed space, the tower is a walk on down the road, between
+      // the bells, and it ends at St Brendan's door.
+      if(event.type===HORIZON_APPROACH_EVENT.ACCEPTED){if(event.walking){commit('tower');persist();}else depart('tower');}
+      if(event.type===HORIZON_APPROACH_EVENT.TOWER_REACHED)depart('tower');
+      // The serialized state: the view leaves out where he is, and hearing needs it.
+      if(event.type===HORIZON_APPROACH_EVENT.BELL)ringHorizonBell(scene.serialize(),event);
       if(event.type===HORIZON_APPROACH_EVENT.DECLINED)depart('chapel');
       persist();
     },onInspect:ask,
@@ -7585,7 +7615,7 @@ function beginHorizonApproach({variant,occupant,condition,lyleBox,live=false,ret
         scenes.push(retry);
       });
     },
-    onExit:()=>{persist();if(firstStrikeScene===scene){firstStrikeScene=null;horizonApproachRenderer=null;}},
+    onExit:()=>{persist();horizonBells?.stop();if(firstStrikeScene===scene){firstStrikeScene=null;horizonApproachRenderer=null;}},
   });
   const update=scene.update;
   scene.approachProgress=()=>({live,truthComplete,offerRead,closing,returning,defeats});
@@ -12991,8 +13021,11 @@ function resumeSourceSpaceFromSave(){
   // street checkpoint remains on the physical road until its final edge.
   if(state.phase===CHUNK_SURF_PHASE.HORIZON){
     queueMicrotask(()=>{
-      const exit=state.finale?.bust?.decision==='accepted'?'tower':state.finale?.bust?.decision==='declined'?'chapel':null;
-      if(exit)arriveFromHorizonApproach(exit);else if(chunkSurfRuntime.horizonApproachDue?.()||flagGet(HORIZON_APPROACH_SAVE)?.scene&&!flagGet(HORIZON_APPROACH_SAVE).scene.decided)beginHorizonInterruption();
+      const exit=state.finale?.bust?.decision==='accepted'?'tower':state.finale?.bust?.decision==='declined'?'chapel':null,
+        road=flagGet(HORIZON_APPROACH_SAVE)?.scene;
+      // Taken, and still being walked: back onto the tower road, where he was.
+      if(exit==='tower'&&road?.decided==='accepted'&&!road.returning&&road.tower&&!road.tower.reached)beginHorizonInterruption();
+      else if(exit)arriveFromHorizonApproach(exit);else if(chunkSurfRuntime.horizonApproachDue?.()||flagGet(HORIZON_APPROACH_SAVE)?.scene&&!flagGet(HORIZON_APPROACH_SAVE).scene.decided)beginHorizonInterruption();
     });
   }
   return true;
@@ -23845,6 +23878,15 @@ function releaseStationField({restore=false,position=null}={}){
   }
   return !!scene;
 }
+// Black over the station, thinning to nothing over `seconds`. It never takes
+// input: he is back, and can move while it clears.
+function wakeFromStationField(seconds=1.8){
+  let elapsed=0;
+  const wake={id:'station-field-wake',blocksInput:false,blocksWorld:false,handlesEscape:false,
+    update(dt){if(paused)return;elapsed+=Math.max(0,Math.min(.1,Number(dt)||0));if(elapsed>=seconds)scenes.remove(wake);},
+    render(){const u=Math.max(0,Math.min(1,elapsed/seconds)),alpha=1-u*u*(3-2*u);if(alpha>0){const {cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${alpha})`);}}};
+  scenes.push(wake);return wake;
+}
 async function beginStationFieldJourney(){
   if(stationFieldScene)return stationFieldScene;
   const owner=chunkSurfRuntime,saved=owner?.stationFieldFrame?.();
@@ -23863,7 +23905,11 @@ async function beginStationFieldJourney(){
     audio:createMemoryFieldAudio({context:actx,destination:sfxGain||master}),
     onFootContact:playSceneFootContact,clearFootContacts:clearSceneFootContacts,
     presentation:()=>({paused:paused||!gameplayInputLifecycleActive(),hidden:document.hidden,reducedMotion:shakeMode()!=='full',reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'}),
-    onCheckpoint:value=>{if(stationFieldScene===scene&&stationFieldOwner===owner&&owner===chunkSurfRuntime){owner.setStationFieldState(value);saveCommit({chunkSurf:owner.state(),area:'source-space'});}},
+    onCheckpoint:(value,reason)=>{
+      if(stationFieldScene===scene&&stationFieldOwner===owner&&owner===chunkSurfRuntime){owner.setStationFieldState(value);saveCommit({chunkSurf:owner.state(),area:'source-space'});}
+      // The crash field's van coming down beside him: the ground jumps.
+      if(reason==='van-landed'&&shakeMode()==='full')CR.fx.shake(3,620);
+    },
     onDone:result=>{
       if(stationFieldScene!==scene||owner!==chunkSurfRuntime)return;
       const returned=owner.finishStationFieldReturn(result);
@@ -23872,6 +23918,8 @@ async function beginStationFieldJourney(){
         CUES.playCue(CUES.CUE.keys,{gain:.15,rate:.62,lowpassHz:900,delay:1.8});
       }
       releaseStationField({restore:true,position:returned?.position||saved.returnPose});
+      // Under the van it went black. The station comes back up out of it.
+      if(result.reason==='crushed')wakeFromStationField(authoredVisit.crash?.wake||1.8);
       saveCommit({px,py,chunkSurf:owner.state(),...sourceCameraPatch(px,py),area:'source-space'});ensureInteractionFocus();
     },
     paintOverlay:frame=>{
@@ -38225,6 +38273,13 @@ function installProbe(){
     // A prop that is visible, enormous and not collidable is three separate
     // bugs wearing one costume, and none of them can be found by reading the
     // authoring — the size only exists after the matrix has been composed.
+    // What the world submits around him, after the envelope filter: id, mesh,
+    // where it is, and the zone of the cell under it. For finding strays.
+    worldPropsNear:(radius=30)=>{
+      const at=FP.logicalToPhysical(px,py);if(!at)return null;
+      const eye={x:(at.x+.5)*CELL,z:(at.z+.5)*CELL},exteriorWindow=currentExteriorWindow();
+      return{eye,zone:FP.zoneAt(px,py),props:worldRenderInstances(at.renderGroup).filter(i=>!hiddenCrossEnvelopeProp(i,exteriorWindow)).map(i=>{const x=i.matrix?.[12]??i.x,z=i.matrix?.[14]??i.z;return{id:i.id,mesh:i.mesh,x,y:i.matrix?.[13]??i.y??0,z,d:Math.hypot(x-eye.x,z-eye.z)};}).filter(i=>i.d<radius)};
+    },
     sourceProps:()=>{
       if(!usingSourceSpace())return null;
       const list=chunkSurfRuntime.propInstances(px,py,{
@@ -38407,7 +38462,7 @@ function installProbe(){
       lossReview:()=>{const state=normalizeChunkSurfState(getSave().chunkSurf);if(!scenes.top()?.battleView||state.finale.route!==SOURCE_FINALE_ROUTE.TOWER||state.finale.stage!==SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT)return false;godAbortBattle();resolveCathedralLoss();return normalizeChunkSurfState(getSave().chunkSurf).finale;},
       walk:(seconds,input)=>horizonApproachScene()?.walk?.(seconds,input)||null,render:()=>horizonApproachScene()?.render?.(),
       occupant:(id,options)=>horizonApproachScene()?.setOccupant?.(id,options),finish:id=>horizonApproachRenderer?.setFinish?.(id),pluck:()=>!!horizonApproachScene()?.interact?.(),
-      renderer:()=>horizonApproachRenderer?.diagnostics?.()||null,
+      renderer:()=>horizonApproachRenderer?.diagnostics?.()||null,bells:()=>horizonBells?.diagnostics?.()||null,
       leave:()=>{const s=horizonApproachScene();if(!s)return false;scenes.remove(s);s.exit?.();return true;}},
     godWarpBay:()=>godWarpBayApron(),
     godWarpGetIn:()=>godWarpToHook('get-in'),

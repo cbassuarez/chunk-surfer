@@ -71,35 +71,41 @@ const action=(text,go)=>({...mum(go,text),hideWhenAsked:true});
 const nodes={
   // ── the blink ────────────────────────────────────────────────────────────────
   start:{stage:'dark',lines:[
-    d("You have been on this motorway for quite some time. It's been raining on the road for longer, and it's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go."),
-    d('You blink.'),
-    d('It is a long blink, you think.'),
-    d('Your thumb rests on the seam of the steering wheel; you can feel the join in the leather.'),
+    d("You have been on this motorway for some time now. It's been raining on the road for even longer, though it's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go; even on the fastest speed they stop just short of giving you enough roaadtime visibility."),
+    d('You can\'t help but sway- not quite swerve- from side to side every now and then. You\'ve ran through the night-drivers\' playbook; crank the radio, yawp and scream, you\'ve even slapped your face two or three times, but this has all simply made you all the more tired, with a red and ringing face and a scratchy throat.'),
+    d('Thankfully, this road is rather quiet, lacking of the vehicle and pedestrian traffic that might ordinarily put you and others in grave danger should you veer off after an accidental wink.'),
+    d('Your thumb rests on the seam of the steering wheel; you can feel the join in the leather. Your trusty van, which you\'ve had ever since your uni days, is holding up rather well. For all the places you\\ve ever driven it, all the calls you\'ve made with it (it\'s taken you all the way to Slovenia for a summer music festival), it\'s never earned more than a scratch. What a lucky van.'),
+    d('On this occasion, you and the van are on the M62, headed to Ellery Conservatoire of Music and Dance, a university whose music programme you know all too well. You spent a semester as an exchange student, taking up a wealth of knowledge in sound recording, chamber ensemble performance- viol consorts, electroacoustic ensembles, and many an impromptu performance series- and instrumental performance on a wide array of instruments. You received a communique from some department in the school you can\'t yet remember requesting your sound recording services for audio recordings of the school before its demolition. They gave you until today, and of course you chose today to complete the job.'),
   ],goto:'there'},
   there:{stage:'woken',lines:[
-    o('There you are.'),
-    d('A deep voice bellows from outside the van, but you can hear it so, so well. It comes at you the way a room fades into earshot when the fridge cuts out.'),
-    o("I have been waiting for you to get here. I have been waiting for ages. What took you so long?"),
-  ],choices:[say('Who is that?','who'),say('I\'m driving.','driving'),mum('quiet')]},
+    o('Ah! There you are.'),
+    d('A deep voice bellows from outside the van, but you can hear it so very well. The sound comes at you the way a room fades into earshot when the fridge cuts out- or maybe like it does in a concert hall or cathedral: big and boomy and coming from everywhere all at once.'),
+    o("I\'ve been waiting for you to arrive... been waiting for ages. What took you so long?"),
+  ],choices:[say('Who is that?','who'),say('I\'ve been busy preoccupied with other stuff.','procrast'),say('I\'m driving.','driving'),mum('quiet')]},
   who:{stage:'inner',lines:[
-    y('Who is that?'),
-    o("Nobody you would know, and everyone you've ever met. I keep late hours. I have been the cough in a slow movement, and the string that goes in the last eight bars. I am the sound that leaves your breath as you think of them."),
+    y('Who is that?! Who are you?'),
+    o("Nobody you\'d know, and everyone you've ever met. I keep late hours. I have been the cough in a slow movement, and the string that goes in the last eight bars. I am the sound that leaves your breath as you think of them."),
     o('I have been the chair that creaks on the only good take. I am very much thought about; rarely ever acknowledged.'),
+  ],goto:'look'},
+  procrast:{stage:'inner',lines:[
+    y('I\'ve been busy preoccupied with other stuff.'),
+    o('I bet you have been, haven\'t you? But you\'re here now, and now that you\'re here, we finally get to talk.'),
+    d('The wipers move so beautifully, with great effort, like the stride of a doe or an olympic athlete; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.'),
   ],goto:'look'},
   driving:{stage:'inner',lines:[
     y('I\'m driving.'),
     o('You are! Beautifully. Both hands, ten and two!'),
-    d('The wipers move so beautifully; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.'),
+    d('The wipers move so beautifully, with great effort, like the stride of a doe or an olympic athlete; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.'),
   ],goto:'look'},
   quiet:{stage:'inner',lines:[
-    d('You say nothing. You\'re pretty good at it.'),
-    o('Good. Do not start talking now. You would only have to stop again at the door.'),
-    d('At some point you will have to stop pretending you\'re not seeing things.'),
+    d('You say nothing. You\'re pretty good at it...'),
+    o('Good. Don\'t start talking now. You would only have to stop again at the door.'),
+    d('...but at some point you will have to stop pretending you\'re not seeing things.'),
   ],goto:'look'},
   // ── the interval ─────────────────────────────────────────────────────────────
   look:{stage:'interval',lines:[
     d('Three wheels have torn away from one another and gone on turning, round a hole in nothing. The wheels are full of eyes, full of eyes, full of eyes eyes eyes eye see youyouyouyouyouyouyouyou.'),
-    o('Before you reach your destination, I want to play a game. Are yourhands on the wheel?'),
+    o('Before you reach your destination, I want to play a game. Are your hands on the wheel?'),
   ],revisitLines:[
     d('Your hands have not moved. The eyes have.'),
     o('Still here. You may ask another, or we can get on with the job.'),
@@ -112,14 +118,14 @@ const nodes={
   ]},
   'interval-refuse':{stage:'refused',openingAct:'refuse',lines:[
     y('No. I am not playing a game for you.'),
-    o('Of course not. Keep your hands where you want them. I will keep mine where I want \'em.'),
+    o('Of course not. Keep your hands where you want them. I will keep mine where I please.'),
     d('One eye shuts. The wheels go on turning.'),
   ],goto:'kept'},
   'interval-eyes':{stage:'counted',lines:[
     y('What am I looking at?'),
     o('I do\'nt think you\'d want the answer to that question.'),
     d('You count twenty-four eyes. Twenty-three close. The last seems nearer than the wheel that carries it.'),
-    o('Holy...'),
+    y('Holy...'),
   ],choices:[say('You first.','interval-first'),mum('interval-meet','(hold its gaze)')]},
   'interval-first':{stage:'unseen',openingAct:'refuse',lines:[
     y('You first.'),
@@ -136,14 +142,14 @@ const nodes={
     d('You can still feel the seam under your thumb. As your vision blurs every now and then (maybe the tear in your eye, maybe something else) you use that seam to guide you back to the roadway.'),
     o('And somehow it simply won\'t make a difference, I\'m sorry to say.'),
     y('What? But I\'m doing so well!'),
-    o('That you are. But sometimes it is not enough. You can keep your hands on the wheel, and you can keep your eyes on the road, and still somehow the road gives out, and still somehow the job is not complete, and somehow your love is not who you thought they were, and somehow it all comes crashing down. It\'s all rather unfortunate; it usually is.'),
+    o('That you are. But sometimes it is not enough. You can keep your hands on the wheel, and you can keep your eyes on the road, and still somehow the road gives out, and still somehow the job is not complete, and somehow your love is not who you thought they were, and somehow it all comes crashing down. It\'s all rather unfortunate; it almost always usually is.'),
   ],choices:[mum('interval-hold','(tighten your grip)'),mum('interval-release','(open your hands)')]},
   'interval-hold':{stage:'held',openingAct:'grip',lines:[
-    d('Three eyes close, one after another. The seam stops moving. You have not moved your hands in what seems like an eternity.'),
+    d('Three eyes close, each after the other. You have not moved your hands in what seems like an eternity.'),
   ],goto:'kept'},
   'interval-release':{stage:'released',openingAct:'release',lines:[
     d('You splay your fingers around the wheel. The seam stays against your thumb anyway. There\'s not much keeping you awake but the road, the radio, and the giant talking hole in the sky. As it is, even this combo is not enough to keep you from drifting.'),
-    o('Eyes, my dear. You have to keep your eyes on the road.'),
+    o('Eyes, love. You have to keep yer eyes on the road.'),
   ],goto:'kept'},
   'interval-avert':{stage:'averted',lines:[
     d('You turn from the wheels. The dark is exactly as deep on this side.'),
@@ -154,10 +160,10 @@ const nodes={
     o('You are remarkably good at this. Are you sure this is your first night?'),
   ],goto:'kept'},
   'interval-return':{stage:'interval',openingAct:'return',lines:[
-    d('The wheels are where you left them. You have the unpleasant thought that you have come back on a different side.'),
+    d('You have the unpleasant thought that you have come back on a different side.'),
   ],goto:'kept'},
   'interval-silent':{stage:'unseen',openingAct:'silence',lines:[
-    d('You give it no answer. The eyes shut in order, as though a name is being read for each one.'),
+    d('You give it nothing to work with. Still, pairs of eyes go one after the other. Your only choice is to keep driving, however.'),
     o('For someone heading off to such quiet grounds, I advise you to use your words. You\'ll face some time without being able to speak.'),
   ],goto:'kept'},
   kept:{stage:'kept',lines:[
@@ -172,7 +178,7 @@ const nodes={
   'job-rooms':{stage:'whole',lines:[
     y('Five rooms. One clean minute of each.'),
     o('With nothing in it.'),
-    y('With nothing in it. A basement studio, the pool, the concert hall, one of the practice rooms in the practice wing and the chapel. Kinda creepy old school, but I\'ve been dying to hear the reverb in the pool.'),
+    y('With nothing in it. A basement studio, the pool, the concert hall, one of the practice rooms in the practice wing and the chapel. Kinda creepy old school, I never liked the way the halls felt like they were whispering, but I\'ve been dying to hear the reverb in the pool again.'),
   ],goto:'job-sheet'},
   'job-money':{stage:'whole',lines:[
     y('Well, it\'s four hundred quid.'),
@@ -183,7 +189,7 @@ const nodes={
     o('It is a lovely job. They ring up a person whose whole job is to listen and stand still. But you\'re known in the business, or so I see; your recordings are pristine, beautifully empty. Practically zero extra noise. That\'s why they\'ve your number.'),
   ],goto:'job-sheet'},
   'job-sheet':{stage:'whole',lines:[
-    d('The sheet sits in the passenger seat. Ellery Conservatoire of Music, condemned. Demolition begins 06:00 Thursday. Bring a light.'),
+    d('The sheet sits in the passenger seat. Ellery Conservatoire of Music and Dance, condemned. Demolition begins 06:00 Thursday. Bring a light.'),
     d('One clean minute of each, with nothing in it. No handling noise, no clothing, no breath.'),
     o('No breath, can you believe it! Read me the next bit. I could hear it all night. I love it.'),
     d('If you can hear yourself on the take, that\'s not the room, and we won\'t accept it.'),
@@ -192,7 +198,7 @@ const nodes={
   client:{stage:'whole',lines:[
     y('Who signed for W. Ellery Holdings?'),
     o('A good question.'),
-    d('The signature is illegible. The authorising officer\'s field is blank under every carbon.'),
+    d('The signature is illegible. The authorising officer\'s field is blank under every sheet.'),
     o('There. Now you have asked, and it cost you nothing. It is a very old firm.'),
   ],goto:'file'},
   'no-ask':{stage:'whole',lines:[
@@ -200,7 +206,7 @@ const nodes={
     o('No you don\'t. Neither did the last one.'),
   ],goto:'file'},
   'last-one':{stage:'whole',lines:[
-    d('The prior contractor delivered four accepted room tones; the verdict remains open on what happened to the fifth take, but it\'s the reason you\'re here, driving to this posh, derelict school for less than the cost of one of their students\' weekly allowance.'),
+    d('The prior contractor delivered four accepted room tones; the verdict remains open on what happened to the fifth take, but it\'s the reason you\'re here, driving to this posh, derelict school for less than the cost of one of their prior students\' weekly allowance.'),
   ],goto:'ellery'},
   fifth:{stage:'whole',lines:[
     y('What happened to the fifth?'),
@@ -247,32 +253,32 @@ const nodes={
   ],goto:'school-told'},
   'school-quiet':{stage:'school',lines:[d('You keep quiet. It tells you anyway.')],goto:'school-told'},
   'school-told':{stage:'school',lines:[
-    o('They take a child with a dream of being a musician, a performer, dancer, harpsichordist, composer, revolutionary ... and correct it. Reference listening, over and over and over and over. Again. Again. Another sonata, another mistake, another recording. The same bar, the same small fault, until their ears begin to scream for silence. Again. Again. More exercises, more method books, more practice, more lessons, more listening, until their fingers are bent and their hands are twisted and their eyes are red and their ears can\'t stop hearing every little perturbation in the world. Again. Again. Again. Again. Again.'),
+    o('They take a lad with a dream of being a musician, a performer, dancer, harpsichordist, composer, revolutionary ... and correct it. Reference listening, over and over and over and over. Again. Again. Another sonata, another mistake, another recording. The same bar, the same small fault, until their ears begin to scream for silence. Again. Again. More exercises, more method books, more practice, more lessons, more listening, until their fingers are bent and their hands are twisted and their eyes are red and their ears can\'t stop hearing every little perturbation in the world. Again. Again. Again. Again. Again.'),
     o('Until you can hear a wrong note through a wall, in your sleep, in your mother saying your name.'),
     d('You have worked with people who came out of Ellery. They flinch at fridges, and they can all tell you what note their toilet flushes produce.'),
     o('One got very good. He could hear everything. Then he stopped coming down to lessons. He stopped eating. He just kept... listening. Harder and harder, until his body became nothing, and he became sound itself.'),
   ],goto:'coverup'},
   coverup:{stage:'boy',lines:[
-    o('The classmates say the boy was recovered from a chamber room upstairs, but the public account of the incident tells a different story.'),
+    o('The classmates say the lad was recovered from a chamber room upstairs, but the public account of the incident tells a different story.'),
     d('Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: inconclusive.'),
     o('The others knew. They would not dare play over it with sounds of practice or performance. They, too, fell silent. It was the quietest period in the building since its construction. At first, some outlets thought the students were postmodernists trying to make a statement with a new performance art piece, and then some of them broke their vows and ran to the news.'),
   ],goto:'notice'},
   'boy-name':{stage:'school',lines:[
-    y('What was the kid\'s name?'),
+    y('What was his name?'),
     o('The other students decided to call him nothing, out of respect for his initial vow of silence.'),
   ],goto:'file'},
   boy:{stage:'school',lines:[y('What happened to the boy?')],goto:'boy-told'},
   'boy-told':{stage:'boy',lines:[
-    o('He is missing. Look, the official school report says so.'),
+    o('He\'s missing. See? official report says so.'),
     d('The public register says MISSING, its telex type likely rushed in a series of quick communiques to the public.'),
-    o('The recovered body is a separate matter. They took that out of a chamber room on the third floor.'),
+    o('The recovered body is a separate matter. They took it out of a chamber room on the third floor.'),
     d('Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: inconclusive.'),
-    o('And the others knew. They are musicians. You cannot hide a missing boy from people who can hear which floor he is not practicing on.'),
+    o('And of course the others knew. They\'re musicians. You cannot hide a missing boy from those who know which floor he ain\'t practicing on.'),
   ],goto:'file'},
   notice:{stage:'notice',lines:[
-    d('The students collectively put up a poster denouncing the school administration, demanding that the school acknowledge that the boy\'s body was recovered from the ringing room.'),
+    d('The students almost all collectively put up a poster denouncing the school administration, demanding that the school acknowledge that the lad\'s body was recovered from the ringing room.'),
     d('Acknowledge that his body was recovered here. Until that acknowledgment is made, we will not rehearse or perform. We will not play over what happened.'),
-    d('The school, in turn, hired a firm to represent their best interests. Following their suggestions, the administration pushed the issue over the summer and into the fall, using meetings and the endless proposal of scheme after scheme, forcing the students to forget about the issue and quietly return to their studies. Most students who cared deeply ended up graduating that summer, and those who remained were haunted by the silence. The school has not acknowledged that the boy\'s body was recovered from the ringing room.'),
+    d('The school, in turn, hired a firm to represent their best interests. Following their suggestions, the administration pushed the issue over the summer and into the fall, using meetings and the endless proposal of university scheme after university scheme, forcing the students to forget about the issue and quietly return to their studies. Most students who cared deeply ended up graduating that summer or worse, and those who remained were haunted by the silence. The school has not acknowledged that the lad\'s body was recovered from the ringing room.'),
   ],choices:[say('Good for them for trying.','good'),say('What did the school say?','office'),
     say('What else is in the file?','file'),say('What does that leave me to hear?','hearing'),mum('hearing-quiet')]},
   good:{stage:'notice',lines:[
@@ -284,28 +290,28 @@ const nodes={
     o('They are still not answering. It is the longest piece anyone has ever performed there; the school administration had always wanted a performance they can rest their legacy on, and in the handling of this incident, it found one.'),
   ],goto:'file'},
   tower:{stage:'roll',lines:[
-    o('So nobody played. Some stopped eating. And some went up the tower, to the ringing room, where it was most quiet for some time. Out of respect for the boy, the student bellringers of both the school chapel and the surrounding cathedral towers refused to ring the square\'s bells.'),
+    o('But then it took a turn for the worse, something the school was not prepared for. First nobody played. Then some stopped eating. And some went up the tower, to the ringing room, where it was most quiet for some time. Out of respect for the boy, the student bellringers of both the school chapel and the surrounding cathedral towers refused to ring the square\'s bells. Nobody checked on them.'),
     d('Transfer receipts. Students\' bodies, removed from the ringing room en masse. Administration had a last-minute meeting internally to discuss enrollment after this incident; they found that losing 5% of your enrollment in one go is not ideal for the c-suite, and something had to be done. Out goes another press release, and another firm was hired to revamp the school\'s image. A new logo was proposed.'),
     d('You should have seen the internal memoranda on the subject. The school\'s lawyers have their own special 1.5m cubed little compartment in hell.'),
-    o('"Refusal to rehearse is not a medical finding." Somebody seriously sat down and typed that.'),
+    o('"Refusal to rehearse is not a medical finding." Somebody seriously sat down and typed that. Regardless, ever since, the school has been plagued by scandal after scandal. No wonder they\'re broke.'),
   ],choices:[say('Did you do that?','did'),say('Why are you telling me?','why'),mum('tower-quiet')]},
   did:{stage:'roll',lines:[
-    y('Did you do that?'),
+    y('Did you write that?'),
     o('Look at me. I am a hole. I have never so much as lifted a bow.'),
     y('That isn\'t a no.'),
-    o('It is not. They told me you were cheap. They did not say you were quick.'),
+    o('It is not. They told me you were cheap, but they didn\'t say you were quick.'),
   ],goto:'file'},
   why:{stage:'roll',lines:[
     y('Why are you telling me?'),
     o('Because by midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of, whose legacy you will be standing on, and what it cost them to become atoms of air in your little recording. You deserve to know where you stand in all of this.'),
   ],goto:'file'},
   'tower-quiet':{stage:'roll',lines:[
-    d('You say nothing. You have a professional reason.'),
-    o('That is it. That is exactly what they all did. Looks like you\'ll fit right in.'),
+    d('You say nothing. You have your professional reasons to keep quiet.'),
+    o('That\'s it. That is exactly what they all did! Looks like you\'ll fit right in.'),
   ],goto:'file'},
   margin:{stage:'margin',lines:[
     d('The road dips. Your hands have corrected for a bend you cannot see.'),
-    o('Good. You are still driving.'),
+    o('Good. You\'re still driving.'),
     o('Do you want me to put the next bit back where it was?'),
   ],choices:[say('What next bit?','margin-next'),say('Leave the road alone.','margin-road'),mum('margin-quiet')]},
   'margin-next':{stage:'margin',lines:[
@@ -319,13 +325,13 @@ const nodes={
   ],goto:'fate'},
   'margin-quiet':{stage:'margin',lines:[
     d('You keep the small correction in your hands.'),
-    o('I will put you down as still driving. That gives us something to start from.'),
+    o('I will mark you down as still driving. That gives us something to start from, and I\'ll tell ya, I love this next bit.'),
   ],goto:'fate'},
   // ── you ──────────────────────────────────────────────────────────────────────
   fate:{stage:'fate',lines:[
-    o('Now. On you. I have been looking forward to you.'),
+    o('Right, then; you... I have been looking forward to you.'),
     d('More of the eyes have turned this way than you would have thought it had left.'),
-    o('I have seen this night a good many ways. They are all very well made. Ask me one.'),
+    o('I have seen this night a good many ways. They\'re all very well made. Ask me one.'),
   ],revisitLines:[o('Another?')],choices:[
     fate('The one where I finish the job and go home.','f-home'),
     fate('The one where I stop whatever this is.','f-seal'),
@@ -338,34 +344,33 @@ const nodes={
   ]},
   'f-home':{...back,lines:[
     y('I\'ll finish the job and go home.'),
-    o('You might! A car park. Morning. Nothing wrong with the light at all. A cup of coffee the guard gave you, gone cold.'),
-    o('You might listen back. Five clean minutes. Perhaps there is something on them. Perhaps you have just learned to hear it.'),
-    o('A perfectly ordinary morning. I would hate to be the one who made you doubt it.'),
+    o('You might just! Anything could happen, surely. You\'ll finish up, go home, and check your recordings. You\'ll find them all clean, and you\'ll be able to go to bed with a clear conscience.'),
+    o('Except you listen back, late in the morning, and perhaps there are hauntings on them you could never dream of hearing.'),
+    o('Or maybe it\'s something else- something you took, saw, experienced. If anything, the only thing you learn today is that your senses may fail you.'),
   ]},
   'f-seal':{...back,lines:[
     y('Then I stop whatever this is.'),
-    o('You might. Suppose it closes. Suppose it works, even. People do like a job that stays done.'),
-    o('You would be on the inside, mind. Your own torch would be the last thing to go out.'),
+    o('The most selfless thing you could ever do. Then your meandering little life might amount to something.'),
+    o('...but if I\'m being honest, I\'m not sure you\'d be able to stop it. The building has to come down sometime, even if it\'s not today.'),
   ]},
   'f-help':{...back,lines:[
     y('Somebody will help me.'),
-    o('Somebody will. There is a man on the gate, and he is kind, and I am not being funny. He tries. They file it under what he tried.'),
-    o('It is the same ending, with a witness.'),
+    o('Sure enough you\'ll receive some help, but whether or not it is the kind of help you wanted is another matter entirely.'),
+    o('Up to you whether to accept.'),
   ]},
   'f-door':{...back,lines:[
     y('There\'s always another way out.'),
-    o('There is! It is not on the drawings. It is grey, and it opens, and you are so pleased.'),
-    o('I will not spoil what is behind it. There is a great deal more of it than you would think, and then another grey door.'),
+    o('There is! But you won\'t find it on any of the plans; in fact, you find it by losing another door, funny asat sounds.'),
+    o('The rooms in Ellery have a way of manifesting themselves. It\'s really quite a sight. Some of the earlier students were so good at it, they could make a whole room appear in the middle of the street. It\'s a remarkable way to find an extra room to practice in when they\'re all already taken up.'),
   ]},
   'f-carry':{...back,lines:[
-    y('I could get the last one out.'),
-    o('You would, too. Down the service road, into the morning, the two of you.'),
-    o('He will thank you. Do listen to who is doing the thanking.'),
+    y('I could get the last guy out.'),
+    o('It\'s not as easy as it sounds, and if you\'re not careful, you\'ll be the last one in.'),
   ]},
   'f-bench':{...back,lines:[
     y('I could just stop, and listen.'),
-    o('There is a bench. I would like that. There is a piece I want you to hear.'),
-    o('You sit. It holds your weight. There is no waking up farther along the corridor, and you will not mind as much as you should.'),
+    o('There are some benches where you sit down and we talk. It\'s rather quite enjoyable. You can hear the rain on the roof, and the wind in the trees, and the birds in the morning, their hands on your face, and the roar of a thousand daisies in the wind.'),
+    o('We sit. It holds your weight. There is no getting up and yet you don\'t mind as much as you thought you would. There is no hurry to leave, it\'s... peaceful.'),
   ]},
   'f-none':{stage:'last',lines:[
     y('Is there one where I\'m all right?'),
@@ -375,10 +380,10 @@ const nodes={
   ],goto:'off'},
   'f-enough':{stage:'last',lines:[
     y('That\'s enough.'),
-    o('It is. You have a bend coming up.'),
+    o('If you say so. You have a bend coming up, by the way.'),
   ],goto:'off'},
   off:{stage:'last',lines:[
-    o('Last thing. In there, take your time. It\'s not worth it if you don\'t enjoy it. I hope you enjoy it.'),
+    o('Last thing. In there, take your time. Yanno, it\'s not worth it if you don\'t enjoy it. I really do hope you enjoyed it...'),
     o('I can\'t tell you everything here, I just can\'t. But I\'ll tell you it was beautiful. It was beautiful, and it was quiet, and it was the best thing you\'ve ever heard.'),
     d('All the eyes shut. The hole still seems to be looking.'),
     o('When it gets quiet, give yourself in for a moment. Bathe in the silence.'),

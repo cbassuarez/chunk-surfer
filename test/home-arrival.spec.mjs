@@ -73,7 +73,8 @@ test('nothing he is asked or says talks about the world arriving', () => {
 test('the snow parts around the valley\'s own things, and the openings show only whiteout', () => {
   assert.ok(ELSEWHERE_GLSL.includes(HOME_ARRIVAL_GLSL));
   assert.match(ELSEWHERE_GLSL, /float arrivalWhite=ewHomeArrivalWhite\(ro,rd,surfaceHit,t\);/);
-  assert.match(ELSEWHERE_GLSL, /if\(arrivalWhite>\.5\)\{surfaceHit=460\.0;surfacePrint=vec2\(0\.0\);\}/, 'whited-out surfaces still engrave their edges');
+  assert.match(ELSEWHERE_GLSL, /if\(arrivalWhite>\.85\)\{surfaceHit=460\.0;surfacePrint=vec2\(0\.0\);\}/, 'whited-out surfaces still engrave their edges');
+  assert.match(HOME_ARRIVAL_GLSL, /float ewHomeArrivalDrift\(/, 'the whiteout does not move with the wind');
   assert.equal(HOME_ARRIVAL_GLSL_ANCHORS.wireRun.length, 4, 'three poles and the service fixing');
   assert.ok(HOME_ARRIVAL_GLSL_ANCHORS.roofs.length >= 6);
   assert.equal(HOME_ARRIVAL_GLSL_ANCHORS.laneTree.id, 'lane-tree');

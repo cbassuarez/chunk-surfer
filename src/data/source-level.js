@@ -261,6 +261,12 @@ export const SOURCE_BELLS = Object.freeze({
   // THE TOWER'S DOOR FIELD, between the ring and the belfry — whose missing wall
   // now holds the tower door. See DOOR FIELDS in source-space-runtime.js.
   doors: Object.freeze({ from: preTapeY(-1400), to: preTapeY(-1496) }),
+  // THE WALK BETWEEN THE BELLS IS GONE (Seb, 2026-11-14). The tower road is
+  // walked in the Rind now, between the ring's bells, and it hands him over two
+  // metres short of the door field. Nothing of the passage behind that stands or
+  // can be walked: `open` is as far back as the ground goes.
+  arrival: preTapeY(-1396),
+  open: preTapeY(-1390),
   // How far out the room begins to resolve, and where it is unmistakable. The
   // whole third act of the walk is a shape getting closer.
   resolveFrom: preTapeY(-1272),

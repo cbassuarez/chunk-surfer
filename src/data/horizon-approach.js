@@ -34,6 +34,20 @@ export const HORIZON_APPROACH=Object.freeze({
   debris:Object.freeze({count:118,clearance:5,sightline:7,seed:0x50d5a1,rate:Object.freeze([.05,.24])}),
 });
 const C=HORIZON_APPROACH,S=C.variants.closed,TAU=Math.PI*2;
+// The bearing St Brendan's lies on, from the object. Anywhere else out is the chapel.
+export const HORIZON_TOWER_BEARING=Math.PI*.5,HORIZON_TOWER_SECTOR=.42;
+// Where the roads are only some bearings, the way to the tower is a road: the one
+// nearest St Brendan's bearing. Its index, or null where the ground is not roads.
+export function horizonTowerRoad(variant){
+  const V=C.variants[horizonApproachVariantId(variant)];
+  return V.roads?Math.round(HORIZON_TOWER_BEARING/(TAU/V.roads))%V.roads:null;
+}
+// The bearing the tower is taken on, and St Brendan's stands at the end of: down
+// the middle of the tower road where there is one.
+export function horizonTowerBearing(variant){
+  const V=C.variants[horizonApproachVariantId(variant)],road=horizonTowerRoad(variant);
+  return road===null?HORIZON_TOWER_BEARING:road*TAU/V.roads;
+}
 export const horizonApproachVariantIds=Object.freeze(Object.keys(C.variants));
 export const horizonApproachVariantId=id=>Object.hasOwn(C.variants,id)?id:C.defaultVariant;
 

@@ -3,7 +3,7 @@
   "id": "runtime.data.meaning-lines",
   "title": "Runtime · data/meaning-lines.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "FAMILIES.lamp",
   "entries": [
     "FAMILIES.lamp",
@@ -23,7 +23,7 @@
   ],
   "regions": [],
   "module": "src/data/meaning-lines.js",
-  "notes": "Generated from src/data/meaning-lines.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/data/meaning-lines.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "FAMILIES.lamp": {
       "id": "FAMILIES.lamp",

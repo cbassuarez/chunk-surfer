@@ -368,7 +368,10 @@ export class SourceDriveAcoustics {
     const target = (param, value, seconds = .08) => param.setTargetAtTime(value, now, seconds);
     const opening=driveOpeningAcousticFrame(state);if(opening)this.ensureOpeningBus();
     const speed = Math.abs(state.speed), load = clamp(state.engineLoad), throttle = clamp(state.throttle);
-    const rpm = clamp(850 + speed * (state.gear < 0 ? 185 : 105) + load * 450 + (speed < .5 ? throttle * 250 : 0), 650, 4800);
+    // Rear wheels spinning free on water run the engine up past road speed:
+    // the revs flare and the van does not go any faster (hydroplane.js).
+    const spin = clamp(state.wheelSpin) * throttle, lifted = clamp(state.aquaplane);
+    const rpm = clamp(850 + speed * (state.gear < 0 ? 185 : 105) + load * 450 + (speed < .5 ? throttle * 250 : 0) + spin * 1500, 650, 4800);
     const rough = state.surface === 'verge' ? 1 : state.surface === 'shoulder' ? .55 : 0;
     const motion = clamp(speed / 16), body = clamp(Math.abs(state.longitudinalAcceleration) / 5 + Math.abs(state.heaveVelocity) * .8);
     this.engineHz = rpm / 30;
@@ -377,8 +380,9 @@ export class SourceDriveAcoustics {
     target(this.engineGain.gain, (.016 + load * .031 + motion * .006 + body * .003)*(opening?.enginePower??1));
     const grain = 1 + .035 * Math.sin(state.odometer * 19.7) + .025 * Math.sin(state.odometer * 43.1);
     const wetRoad=clamp(weatherFrame?.roadWetness??.35);
-    target(this.roadGain.gain, (.14 + rough * .085 + wetRoad*.035 + clamp((Math.abs(state.roadOffset) - 2.4)) * .014) * motion * (grain + body * .06)*(opening?.roadContact??1));
-    target(this.roadFilter.frequency, 430 + speed * 25 + rough * 850+wetRoad*speed*12, .1);
+    // Tyres lifted off the road lose their roar; what is left is spray.
+    target(this.roadGain.gain, (.14 + rough * .085 + wetRoad*.035 + clamp((Math.abs(state.roadOffset) - 2.4)) * .014) * motion * (grain + body * .06)*(opening?.roadContact??1)*(1-.5*lifted));
+    target(this.roadFilter.frequency, 430 + speed * 25 + rough * 850+wetRoad*speed*12+lifted*2200, .1);
     if (this.lastGear != null && this.lastGear !== state.gear) this.click('gear-engagement', .32);
     this.lastGear = state.gear;
     target(this.radio.gain, state.radioOn ? clamp(state.volume??.65)*(opening?.radioPower??1)*(1-.83*(opening?.lifeFlash||0)) : 0, .012);

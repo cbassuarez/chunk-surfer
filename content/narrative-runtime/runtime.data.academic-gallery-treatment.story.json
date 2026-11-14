@@ -3,7 +3,7 @@
   "id": "runtime.data.academic-gallery-treatment",
   "title": "Runtime · data/academic-gallery-treatment.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "ACADEMIC_GALLERY_PROPS.inspect",
   "entries": [
     "ACADEMIC_GALLERY_PROPS.inspect"
@@ -14,7 +14,7 @@
   ],
   "regions": [],
   "module": "src/data/academic-gallery-treatment.js",
-  "notes": "Generated from src/data/academic-gallery-treatment.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/data/academic-gallery-treatment.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "ACADEMIC_GALLERY_PROPS.inspect": {
       "id": "ACADEMIC_GALLERY_PROPS.inspect",

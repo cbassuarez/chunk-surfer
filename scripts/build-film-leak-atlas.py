@@ -3,7 +3,7 @@
 
     python3 scripts/build-film-leak-atlas.py [REELS_DIR]
 
-REELS_DIR (default ~/letgo_ingest_footage) holds the lab's full-gate 4K ProRes scans:
+REELS_DIR (default ~/letgo_ingest_footage) has the lab's full-gate 4K ProRes scans:
   Suarez-Solis#149160#5072.mov  reversal with picture; frames 38-60 are a real roll-head
                                 fog sequence (red on black, a cyan-white bloom, burned white)
   Suarez-Solis#149145#5068.mov  a blank negative, scanned inverted; frames 30-125 are fog

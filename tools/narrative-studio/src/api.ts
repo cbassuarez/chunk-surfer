@@ -1,4 +1,4 @@
-import type { ProjectSnapshot } from './types';
+import type { CodeFields, NarrativeDocument, ProjectSnapshot } from './types';
 
 export const token = new URLSearchParams(location.search).get('token') || '';
 
@@ -21,6 +21,13 @@ export const loadProject = () => request('/api/project') as Promise<ProjectSnaps
 export const saveDocument = (path: string, revision: string, data: unknown) => request('/api/document', {
   method: 'PUT', body: JSON.stringify({ path, revision, data }),
 }) as Promise<{ revision: string }>;
+
+// A document generated from a game module: the server writes the changed
+// words into the module and answers with the document re-read from it.
+export type CodeSave = { revision: string; document: NarrativeDocument; codeFields: CodeFields; changed: number; alsoChanged: number; files: string[]; warnings: string[] };
+export const saveCodeDocument = (path: string, revision: string, data: NarrativeDocument, base: NarrativeDocument) => request('/api/document', {
+  method: 'PUT', body: JSON.stringify({ path, revision, data, base }),
+}) as Promise<CodeSave>;
 
 export const assetUrl = (path: string) => `/project-assets/${path}?token=${encodeURIComponent(token)}`;
 

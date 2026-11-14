@@ -1,7 +1,8 @@
 // HORIZON: the walking scene. He walks up to whoever is there. It reports what he
 // does and decides nothing: the route is raised from these events by whoever owns
 // the night.
-import {HORIZON_APPROACH as C,horizonApproachVariantId,spaceAtMap,spaceMapOf,spaceMultiply,spaceTranslation,spaceDistance,spaceIdentity} from '../data/horizon-approach.js';
+import {HORIZON_TOWER_WALK,HORIZON_SOUNDING_BELLS,horizonBellDue,horizonBellStrikes} from '../data/horizon-tower-bells.js';
+import {HORIZON_APPROACH as C,HORIZON_TOWER_BEARING,HORIZON_TOWER_SECTOR,horizonTowerRoad,horizonTowerBearing,horizonApproachVariantId,spaceInverse,spaceAtMap,spaceMapOf,spaceMultiply,spaceTranslation,spaceDistance,spaceIdentity} from '../data/horizon-approach.js';
 
 const finite=(n,f=0)=>typeof n==='number'&&Number.isFinite(n)?n:f;
 const actions={forward:'w',moveForward:'w',move_forward:'w',backward:'s',reverse:'s',moveBackward:'s',move_backward:'s',left:'a',moveLeft:'a',strafeLeft:'a',move_left:'a',right:'d',moveRight:'d',strafeRight:'d',move_right:'d'};
@@ -12,27 +13,29 @@ const wrapAngle=a=>a-TAU*Math.floor(a/TAU+.5);
 export const HORIZON_APPROACH_EVENT=Object.freeze({
   ARRIVED:'horizon-approach-arrived',PLUCKED:'horizon-approach-petal',OPENED:'horizon-approach-offer-open',
   ACCEPTED:'horizon-approach-accepted',DECLINED:'horizon-approach-declined',RETURNED:'horizon-approach-returned',
+  BELL:'horizon-approach-bell',TOWER_REACHED:'horizon-approach-tower-reached',
 });
-// The bearing St Brendan's lies on, from the object. Anywhere else out is the chapel.
-export const HORIZON_TOWER_BEARING=Math.PI*.5,HORIZON_TOWER_SECTOR=.42;
-// Where the roads are only some bearings, the way to the tower is a road: the one
-// nearest St Brendan's bearing. Its index, or null where the ground is not roads.
-export function horizonTowerRoad(variant){
-  const V=C.variants[horizonApproachVariantId(variant)];
-  return V.roads?Math.round(HORIZON_TOWER_BEARING/(TAU/V.roads))%V.roads:null;
-}
-// The bearing the tower is taken on, and St Brendan's stands at the end of: down
-// the middle of the tower road where there is one.
-export function horizonTowerBearing(variant){
-  const V=C.variants[horizonApproachVariantId(variant)],road=horizonTowerRoad(variant);
-  return road===null?HORIZON_TOWER_BEARING:road*TAU/V.roads;
-}
+// St Brendan's bearing and the tower road live with the space's data now, so the
+// bells along that road can be laid out without the scene.
+export {HORIZON_TOWER_BEARING,HORIZON_TOWER_SECTOR,horizonTowerRoad,horizonTowerBearing};
 
 export function freshHorizonApproach({variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,phi=0,returning=false,defeats=0}={}){
   const id=horizonApproachVariantId(variant),V=C.variants[id],losses=Math.max(0,Math.floor(finite(defeats))),again=!!returning||losses>0,start=again?C.station.reach-.6:V.startMetres;
   return{schema:1,variant:id,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:again||!!condition,lyleBox,
     frame:spaceAtMap(V.sign,V.radius,start,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,
-    petalsPlucked:again&&occupant==='daisy'?C.daisy.petals:0,decided:null,returning:again,defeats:losses};
+    petalsPlucked:again&&occupant==='daisy'?C.daisy.petals:0,decided:null,returning:again,defeats:losses,tower:null};
+}
+// THE TOWER ROAD. Taken the first time, in the closed space, the tower is not a
+// cut: he walks on down the pale road, between the bells, to St Brendan's. Coming
+// back after a defeat, or in the other spaces, taking it is arriving.
+export const horizonTowerWalking=state=>state?.decided==='accepted'&&!!state.tower&&!state.tower.reached;
+const towerRoadFor=state=>!state.returning&&state.variant==='closed';
+const SOUNDING=new Set(HORIZON_SOUNDING_BELLS.map(bell=>bell.id));
+function restoreTower(value,elapsed){
+  if(!value||typeof value!=='object')return null;
+  const rung={};
+  for(const[id,at]of Object.entries(value.rung||{}))if(SOUNDING.has(id)&&Number.isFinite(at))rung[id]=Math.max(0,Math.min(elapsed,at));
+  return{rung,still:Math.max(0,finite(value.still)),reached:value.reached===true};
 }
 export function restoreHorizonApproach(value,fallback={}){
   if(!value||typeof value!=='object'||!Array.isArray(value.frame)||value.frame.length!==16||!value.frame.every(Number.isFinite))return freshHorizonApproach(fallback);
@@ -44,9 +47,18 @@ export function restoreHorizonApproach(value,fallback={}){
   return{...state,frame:value.frame.slice(),yaw:finite(value.yaw,state.yaw),pitch:Math.max(-PITCH,Math.min(PITCH,finite(value.pitch))),
     elapsed:Math.max(0,finite(value.elapsed)),arrived:value.arrived===true,offerOpen:value.offerOpen===true,
     petalsPlucked:state.returning&&occupant==='daisy'?C.daisy.petals:Math.max(0,Math.min(C.daisy.petals,Math.floor(finite(value.petalsPlucked)))),
-    decided:value.decided==='accepted'?'accepted':value.decided==='declined'&&!state.returning?'declined':null};
+    decided:value.decided==='accepted'?'accepted':value.decided==='declined'&&!state.returning?'declined':null,
+    tower:value.decided==='accepted'&&towerRoadFor(state)?restoreTower(value.tower,Math.max(0,finite(value.elapsed)))||{rung:{},still:0,reached:false}:null};
 }
 export const horizonApproachMap=state=>{const V=C.variants[state.variant];return spaceMapOf(V.sign,V.radius,state.frame);};
+// Where a thing standing at `r` on bearing `phi` is from him: how far, along the
+// space's own line, and at what bearing from where he is looking (to his right
+// positive). For hearing it.
+export function horizonApproachBearingTo(state,r,phi){
+  const V=C.variants[state.variant],target=spaceAtMap(V.sign,V.radius,r,phi),distance=spaceDistance(V.sign,V.radius,state.frame,target);
+  const local=spaceMultiply(spaceInverse(V.sign,state.frame),target),x=local[3],z=local[11];
+  return{distance,bearing:Math.hypot(x,z)>1e-9?wrapAngle(Math.atan2(x,-z)-state.yaw):0};
+}
 export function horizonApproachDistance(state){
   const V=C.variants[state.variant];
   return spaceDistance(V.sign,V.radius,state.frame,spaceIdentity());
@@ -90,23 +102,32 @@ export function horizonApproachTether(state,{decisionsEnabled=true}={}){
   if(!state.arrived||state.decided)return Infinity;
   return decisionsEnabled&&!horizonApproachOfferPending(state)?Infinity:C.station.reach-.01;
 }
+// Once the tower is taken the only ground is the tower road, from where the
+// choice was made on to St Brendan's door: no way back onto the others.
+export function horizonTowerRoadGround(frame){
+  const V=C.variants.closed,{r,phi}=spaceMapOf(V.sign,V.radius,frame);
+  return r>=HORIZON_TOWER_WALK.from&&r<=HORIZON_TOWER_WALK.arrive+3
+    &&V.radius*Math.sin(r/V.radius)*Math.abs(wrapAngle(phi-horizonTowerBearing('closed')))<=V.roadHalfWidth-C.bodyRadius;
+}
 // Straight on, in the space's own sense of straight. A wall is met by sliding along it.
 function move(state,forward,strafe,distance,tether=Infinity){
+  const ground=horizonTowerWalking(state)?horizonTowerRoadGround:frame=>horizonApproachOnGround(state.variant,frame);
   const V=C.variants[state.variant],length=Math.hypot(forward,strafe);if(!length)return false;
   const heading=Math.atan2(strafe,forward)+state.yaw,centre=spaceIdentity(),now=spaceDistance(V.sign,V.radius,state.frame,centre);
   for(const[turn,share]of[[0,1],[.7,.7],[-.7,.7],[1.2,.35],[-1.2,.35]]){
     const a=heading+turn,frame=spaceMultiply(state.frame,spaceTranslation(V.sign,V.radius,[Math.sin(a),0,-Math.cos(a)],distance*share)),d=spaceDistance(V.sign,V.radius,frame,centre);
     // He walks up to it, not through it; and not away from it before it has spoken.
-    if(!(d<C.station.standOff&&d<now)&&!(d>tether&&d>now)&&horizonApproachOnGround(state.variant,frame)){state.frame=frame;return true;}
+    if(!(d<C.station.standOff&&d<now)&&!(d>tether&&d>now)&&ground(frame)){state.frame=frame;return true;}
   }
   return false;
 }
 export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=false,decisionsEnabled=true}={}){
   const state={...current},events=[];
-  if(paused||state.decided)return{state,events};
+  if(paused||state.decided&&!horizonTowerWalking(state))return{state,events};
   const step=Math.max(0,Math.min(C.maxFrameDelta,finite(dt)));
   state.elapsed+=step;
   const length=Math.hypot(forward,strafe);
+  if(horizonTowerWalking(state))return stepTowerRoad(state,{step,forward,strafe,length});
   const moved=length>0&&step>0&&move(state,forward/Math.max(1,length),strafe/Math.max(1,length),C.walk*step*Math.min(1,length),horizonApproachTether(state,{decisionsEnabled}));
   const near=horizonApproachNear(state);
   if(!state.arrived&&near){
@@ -120,8 +141,25 @@ export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=fals
     const{phi}=horizonApproachMap(state),tower=state.offerOpen&&Math.abs(wrapAngle(phi-horizonTowerBearing(state.variant)))<HORIZON_TOWER_SECTOR;
     if(state.returning&&!tower)return{state,events};
     state.decided=tower?'accepted':'declined';
-    events.push({type:tower?HORIZON_APPROACH_EVENT.ACCEPTED:HORIZON_APPROACH_EVENT.DECLINED,occupant:state.occupant,exit:tower?'tower':'chapel'});
+    if(tower&&towerRoadFor(state))state.tower={rung:{},still:0,reached:false};
+    events.push({type:tower?HORIZON_APPROACH_EVENT.ACCEPTED:HORIZON_APPROACH_EVENT.DECLINED,occupant:state.occupant,exit:tower?'tower':'chapel',walking:!!state.tower});
   }
+  return{state,events};
+}
+// A step on the tower road. A bell sounds when what sets it off comes due, once;
+// at St Brendan's door the Rind hands him on.
+function stepTowerRoad(state,{step,forward,strafe,length}){
+  const events=[],moved=length>0&&step>0&&move(state,forward/Math.max(1,length),strafe/Math.max(1,length),C.walk*step*Math.min(1,length));
+  const tower={...state.tower,rung:{...state.tower.rung}};
+  tower.still=moved?0:tower.still+step;
+  const along=horizonApproachMap(state).r;
+  for(const bell of HORIZON_SOUNDING_BELLS){
+    if(tower.rung[bell.id]!=null||!horizonBellDue(bell,{along,still:tower.still}))continue;
+    tower.rung[bell.id]=state.elapsed;
+    events.push({type:HORIZON_APPROACH_EVENT.BELL,id:bell.id,ring:bell.ring,size:bell.size,strikes:horizonBellStrikes(bell)});
+  }
+  if(along>=HORIZON_TOWER_WALK.arrive){tower.reached=true;events.push({type:HORIZON_APPROACH_EVENT.TOWER_REACHED,exit:'tower'});}
+  state.tower=tower;
   return{state,events};
 }
 
@@ -136,7 +174,7 @@ export function createHorizonApproachScene({renderer,variant=C.defaultVariant,oc
   function fail(reason){failed=true;keys.clear();onError(reason);}
   const emit=events=>{for(const e of events)onEvent(e);};
   const scene={id:'horizon-approach',blocksWorld:true,blocksInput:true,suppressesHud:true,worldPresentation:'hidden',handlesEscape:false,lookProfile:'explore',faceplate:false,
-    get allowsLook(){return live()&&!stopped()&&!state.decided;},
+    get allowsLook(){return live()&&!stopped()&&(!state.decided||horizonTowerWalking(state));},
     initialize(){
       if(initializing)return initializing;
       initializing=Promise.resolve().then(()=>renderer.initialize?.()).then(ok=>{if(closed)return false;if(ok===false)throw Error('The approach could not be prepared.');ready=true;return true;}).catch(reason=>{fail(reason);return false;});

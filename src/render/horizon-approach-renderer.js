@@ -12,7 +12,7 @@ import {horizonApproachGeometry,HORIZON_APPROACH_MESHES} from './horizon-approac
 import {horizonDebrisMeshes} from '../data/horizon-approach.js';
 import {OPENING_CAB_ASSET} from '../data/opening-cab-objects.js';
 import {STOP_LISTENING_ASSET} from '../data/stop-listening.js';
-import {horizonApproachRenderFrame,HORIZON_CHURCH_MESH,HORIZON_ANT_MESH,HORIZON_SLAB_MESHES,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY} from './horizon-approach-frame.js';
+import {horizonApproachRenderFrame,HORIZON_BELL_MESHES,HORIZON_CHURCH_MESH,HORIZON_ANT_MESH,HORIZON_SLAB_MESHES,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY} from './horizon-approach-frame.js';
 
 const FAR=320;
 const FIGURES=Object.freeze(Object.values(HORIZON_FIGURES).map(f=>f.mesh)),MASONRY=Object.freeze(Object.values(HORIZON_MASONRY));
@@ -28,7 +28,7 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
   let preparing=null,initialized=false,released=false,error=null,releaseRange=null,last=null,finish='bsod';
   let prepareMs=null;const packTimings=[],clock=()=>globalThis.performance?.now?.()??Date.now();
   const rangeOwner=Symbol('horizon-approach');
-  const required=[...new Set([...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY,...DEBRIS])];
+  const required=[...new Set([...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY,...DEBRIS,...HORIZON_BELL_MESHES])];
   const catalog=()=>new Set(props.propMeshCatalog?.()||[]),resident=()=>{const c=catalog();return required.every(m=>c.has(m));};
   function clearSource(){
     for(const name of['r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);

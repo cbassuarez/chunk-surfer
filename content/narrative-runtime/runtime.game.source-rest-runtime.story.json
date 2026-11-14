@@ -3,7 +3,7 @@
   "id": "runtime.game.source-rest-runtime",
   "title": "Runtime · game/source-rest-runtime.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "installSourceRest.focus",
   "entries": [
     "installSourceRest.focus",
@@ -16,7 +16,7 @@
   ],
   "regions": [],
   "module": "src/game/source-rest-runtime.js",
-  "notes": "Generated from src/game/source-rest-runtime.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/game/source-rest-runtime.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "installSourceRest.focus": {
       "id": "installSourceRest.focus",

@@ -21,10 +21,18 @@ function contact(p,solid){
  }
  const minX=solid.minX??solid.x-(solid.halfX??solid.halfWidth??.2),maxX=solid.maxX??solid.x+(solid.halfX??solid.halfWidth??.2),minZ=solid.minZ??solid.z-(solid.halfZ??solid.halfLength??.2),maxZ=solid.maxZ??solid.z+(solid.halfZ??solid.halfLength??.2);
  const cx=(minX+maxX)/2,cz=(minZ+maxZ)/2,hx=(maxX-minX)/2,hz=(maxZ-minZ)/2,cs=Math.cos(solid.yaw||0),sn=Math.sin(solid.yaw||0),corners=[[-hx,-hz],[hx,-hz],[hx,hz],[-hx,hz]].map(([x,z])=>({x:cx+x*cs-z*sn,z:cz+x*sn+z*cs}));
+ // A piece of a chained barrier (a shared contactGroup: the route edges, a
+ // bank) is part of one continuous wall, so it pushes back only across its
+ // face, however it is struck. Least-overlap picked the next piece's end, or
+ // the van's own nose where its corner met the next piece, and took the whole
+ // forward speed as impact: dead stops every 3 m on the cliff bends, with the
+ // van still in its lane.
+ const chained=!!solid.contactGroup&&solid.contactGroup!==solid.id;
  let depth=Infinity,normal=null;
- for(const axis of[{x:c,z:n},{x:-n,z:c},{x:cs,z:sn},{x:-sn,z:cs}]){
+ for(const[index,axis]of[{x:c,z:n},{x:-n,z:c},{x:cs,z:sn},{x:-sn,z:cs}].entries()){
   const a=body.map(v=>dot(v,axis)),b=corners.map(v=>dot(v,axis)),amin=Math.min(...a),amax=Math.max(...a),bmin=Math.min(...b),bmax=Math.max(...b);
   if(amax<=bmin+1e-8||bmax<=amin+1e-8)return null;
+  if(chained&&index!==2)continue;
   const positive=bmax-amin,negative=amax-bmin,d=Math.min(positive,negative);if(d<depth){depth=d;const sign=positive<negative?1:-1;normal={x:axis.x*sign,z:axis.z*sign};}
  }
  return{id:solid.id??'visible-solid',normal,depth};

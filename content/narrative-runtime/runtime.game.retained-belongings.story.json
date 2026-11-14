@@ -3,7 +3,7 @@
   "id": "runtime.game.retained-belongings",
   "title": "Runtime · game/retained-belongings.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "RETAINED_BELONGINGS.b3-session-card",
   "entries": [
     "RETAINED_BELONGINGS.b3-session-card",
@@ -24,7 +24,7 @@
   ],
   "regions": [],
   "module": "src/game/retained-belongings.js",
-  "notes": "Generated from src/game/retained-belongings.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/game/retained-belongings.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "RETAINED_BELONGINGS.b3-session-card": {
       "id": "RETAINED_BELONGINGS.b3-session-card",

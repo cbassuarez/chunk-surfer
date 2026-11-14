@@ -15,7 +15,8 @@
 // PHOTOSENSITIVITY. The fog run is in an order where every quarter of the frame only gains
 // light as the leak grows, so a cut between frames moves the fog's edge and never flashes a
 // region back. The burn frames are scaled to one exposure, so a cut between them never moves
-// the screen's level: that follows the white, which neural-transition.js already limits.
+// the screen's level: that follows the white, which neural-transition.js already limits. The
+// burn also goes frame by frame with the white, so each of its frames shows once a crossing.
 // Reduce Flash crossfades between neighbouring frames instead of cutting.
 
 import { FILM_LEAK_ATLAS } from '../data/film-leak-atlas.js';
@@ -40,7 +41,7 @@ export function filmLeakRoll(seed = 0) {
 }
 
 // Which frame of a run is in the gate when the run is `s` of the way through.
-function runFrame(run, s, { clock, seed, reduced, scale = 1, normalise = 0 }) {
+function runFrame(run, s, { clock, seed, reduced, scale = 1, normalise = 0, jitter = true }) {
   const cells = FILM_LEAK_ATLAS.cells, N = run.length;
   if (!(s > 0) || !N) return NONE;
   const u = Math.min(N - 1, s * (N - 1)), arrive = Math.min(1, s * (N - 1) + .15);
@@ -50,6 +51,7 @@ function runFrame(run, s, { clock, seed, reduced, scale = 1, normalise = 0 }) {
     return Object.freeze({ a: run[i], b: run[j], mix: t, scale: arrive * scale * (gain(i) * (1 - t) + gain(j) * t) });
   }
   let i = Math.round(u);
+  if (!jitter) return Object.freeze({ a: run[i], b: run[i], mix: 0, scale: arrive * scale * gain(i) });
   const near = [];
   for (let k = i - 2; k <= i + 2; k++) if (k >= 0 && k < N && Math.max(E(k), E(i)) / Math.max(1e-3, Math.min(E(k), E(i))) < FILM_LEAK.neighbourRatio) near.push(k);
   i = near[Math.floor(hash(Math.floor(clock * FILM_LEAK.framesPerSecond), seed * 91) * near.length)];
@@ -64,7 +66,9 @@ export function filmLeakFrame({ leak = 0, white = 0, time = 0, seed = 0, reduced
   return Object.freeze({
     ...roll,
     fog: runFrame(reel.fog, Math.max(0, Math.min(1, Number(leak) || 0)), options),
-    burn: roll.filmOnly ? runFrame(reel.burn, w, { ...options, normalise: 1, scale: FILM_LEAK.burnExposure * Math.pow(w, 1.5) }) : NONE,
+    // The burn follows the white and never flickers between its frames: they share a level,
+    // but not a shape (5072's frame-line bar), and swapping shapes flashes part of the screen.
+    burn: roll.filmOnly ? runFrame(reel.burn, w, { ...options, normalise: 1, scale: FILM_LEAK.burnExposure * Math.pow(w, 1.5), jitter: false }) : NONE,
     grain: reducedFlash ? 0 : Math.floor(options.clock * FILM_LEAK.framesPerSecond),
   });
 }

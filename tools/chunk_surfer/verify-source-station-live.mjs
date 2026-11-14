@@ -99,7 +99,8 @@ async function enterWorld(variant, keyboard = false) {
       window.__probe.sourceWarp((a.x + b.x) / 2 + n[0] * 2.2, (a.y + b.y) / 2 + n[2] * 2.2);
       window.__probe.lookAtWorld(Math.atan2(-n[0], n[2]), 0);
     }, door);
-    await clearSpeech(); await press('e'); await finishDialogue(); await press('e'); await finishDialogue();
+    // One press opens a station door; there is no look first any more.
+    await clearSpeech(); await press('e'); await finishDialogue();
     await hold(1100);
     assert.ok((await realm()).frame, 'real E/open and held W must cross the field doorway');
   } else {
@@ -107,6 +108,8 @@ async function enterWorld(variant, keyboard = false) {
     await sleep(180);
     assert.ok((await realm()).frame, 'authored doorway fixture must create a realm session');
   }
+  // The snow valley opens in whiteout with questions (game/home-arrival.js); these checks want the valley itself.
+  await page.evaluate(() => window.__probe.homeArrival?.('skip'));
   console.log('ENTER', variant, door.id, keyboard ? 'keyboard doorway' : 'fixture doorway');
   return { door, forward: [-door.normal[0], -door.normal[2]] };
 }

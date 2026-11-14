@@ -373,14 +373,28 @@ try {
   const snapshotResponse=await fetch(`http://127.0.0.1:${port}/api/project`,{headers:{'x-studio-token':session.token}});
   assert.equal(snapshotResponse.status,200);
   const snapshot=await snapshotResponse.json();
-  const fromCode=snapshot.documents.filter(item=>item.readOnly);
+  const fromCode=snapshot.documents.filter(item=>item.fromCode);
   const social=fromCode.find(item=>item.module==='src/data/academic-bouncer-society.js');
   assert.ok(social,'the real studio API includes recent code-built academic conversations');
   assert.ok(Object.values(social.document.nodes).some(node=>node.lines.some(line=>line.text==='Agathe wanted a time for the opening.')));
   assert.ok(fromCode.some(item=>item.module==='src/data/b3-investigation-dialogue.js'),'current investigation dialogue is included without editing the project manifest');
-  const writeResponse=await fetch(`http://127.0.0.1:${port}/api/document`,{method:'PUT',headers:{'content-type':'application/json','x-studio-token':session.token},body:JSON.stringify({path:social.path,data:social.document,revision:social.revision})});
-  assert.notEqual(writeResponse.status,200,'derived source dialogue remains read-only');
-  assert.match((await writeResponse.json()).error,/outside the authoring roots/);
+  // Code documents are written back into their module. These requests never
+  // change a word, so nothing in src/ is touched; the write itself is covered
+  // against a temporary module in narrative-runtime-export.spec.mjs.
+  assert.ok(social.codeFields&&typeof social.codeFields==='object','the snapshot says which words are built in code');
+  assert.ok(social.layoutPath.startsWith('layout/'),'a code document can keep its own map layout');
+  const put=async payload=>{const response=await fetch(`http://127.0.0.1:${port}/api/document`,{method:'PUT',headers:{'content-type':'application/json','x-studio-token':session.token},body:JSON.stringify(payload)});return{status:response.status,body:await response.json()};};
+  const unchanged=await put({path:social.path,data:social.document,base:social.document,revision:social.revision});
+  assert.equal(unchanged.status,200,unchanged.body.error);assert.equal(unchanged.body.changed,0);assert.deepEqual(unchanged.body.files,[]);
+  const reshaped=structuredClone(social.document),node=Object.values(reshaped.nodes).find(item=>item.lines.length>1);node.lines.pop();
+  const structural=await put({path:social.path,data:reshaped,base:social.document,revision:social.revision});
+  assert.equal(structural.status,422,'adding or removing lines is refused for code documents');assert.match(structural.body.error,/Lines are added, removed and reordered in the module/);
+  const staleBase=structuredClone(social.document),staleLine=Object.values(staleBase.nodes).flatMap(item=>item.lines)[0];staleLine.text=`${staleLine.text} (an older wording)`;
+  const edited=structuredClone(social.document);Object.values(edited.nodes).flatMap(item=>item.lines)[0].text='A new wording.';
+  const stale=await put({path:social.path,data:edited,base:staleBase,revision:social.revision});
+  assert.equal(stale.status,409,'a field that moved in code since the Studio loaded it is a conflict, never overwritten');
+  const outside=await put({path:'narrative-runtime/../../src/main.js',data:social.document,revision:''});
+  assert.equal(outside.status,400,'only generated code documents are accepted on this path');
 } finally {
   if (studio.exitCode === null && studio.signalCode === null) {
     const exited = new Promise((resolve) => studio.once('exit', resolve));

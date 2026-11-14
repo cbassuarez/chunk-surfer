@@ -144,6 +144,15 @@ white; the exposure comes down and the focus comes back last; the sun stays on h
 its complement. Condensation was tried and removed: it didn't work or match. This is
 technique, not a copy of the film. `game/neural-transition.js`. Reduce Flash caps it.
 
+*2026-11-14:* the painted leaks read as a digital filter, so the fog is now Seb's own
+Super 8 (reels 5072 and 5068, `scripts/build-film-leak-atlas.py`), added to the frame's
+exposure. Real fog is crimson at its reach and a cool white where it is worst, not the
+red-orange-yellow ramp above. Each crossing picks its reel and one of two treatments,
+interchangeably: with the lens (flare, melt, after-image as before) or film only (the fog
+and its own burn carry the white). `game/film-leak.js`. `test/film-leak.spec.mjs` pins the
+frame order that keeps it safe; measured on renders, every combination stays at or under
+one flash a second in any quarter of the screen.
+
 **The door is the van door.** A car door can't be opened against the water outside
 it until the pressure equalises, which means the cab has to fill. So in a stuck
 memory the door does nothing while you keep trying, and it opens once you stop. That

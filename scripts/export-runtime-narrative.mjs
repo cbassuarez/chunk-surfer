@@ -7,9 +7,11 @@
 // in code. This reads the SOURCE itself with the TypeScript parser and collects
 // every dialogue line ({who, text}), thought (lines: [...]), choice (an item of
 // a choices/options array with text or label) and inspection (inspect(a, b) or
-// {first, again}) wherever it sits, then writes one read-only studio document
-// per module into content/narrative-runtime/. The game never reads these: they
-// are a view of the code, regenerated on every studio launch.
+// {first, again}) wherever it sits, then writes one studio document per module
+// into content/narrative-runtime/. The game never reads these: they are a view
+// of the code, regenerated on every studio launch. Every line also keeps the
+// pieces it was read from (literal spans vs fixed parts), so a Studio save can
+// write edited words back into the module (tools/narrative-studio/write-back.mjs).
 //
 //   npm run studio:runtime                              write
 //   node scripts/export-runtime-narrative.mjs --check  exit 1 if stale
@@ -70,31 +72,47 @@ function bindContext(node,context){
 }
 const sourceOf = (node, fallback) => ORIGIN.get(node)?.source ?? fallback;
 const helperFor = node => (ORIGIN.get(node)?.helpers ?? HELPERS).get(node?.name);
-function textOf(expr, src) {
+
+// PIECES. Every text shown in the studio is also kept as the pieces it was
+// read from, so a studio edit can be written back into the module. A piece is
+// either a literal with its span in its own file ({t, lit}), which the studio
+// may rewrite, or fixed text ({t}): a constant, a {hole}, a transformed value.
+// Whether a literal belongs to ONE line (and so may be edited from that line)
+// is decided where the line is emitted: see owned() in extractModule.
+const joined = (pieces) => pieces == null ? null : pieces.map((p) => p.t).join('');
+const fixed = (t) => [{ t }];
+const literalPiece = (node, src, kind, t) => ({ t, lit: { file: ORIGIN.get(node)?.file ?? CURRENT_CONTEXT?.file, start: node.start, end: node.end, raw: src.slice(node.start, node.end), kind } });
+const variants = (list) => {
+  const kept = list.filter((v) => v != null && joined(v) !== '');
+  return kept.flatMap((v, i) => i ? [{ t: ' / ' }, ...v] : v);
+};
+const quasiPiece = (q, src) => q.value.cooked == null ? { t: q.value.raw } : literalPiece(q, src, 'quasi', q.value.cooked);
+function textPieces(expr, src) {
   if (!expr) return null;
   src = sourceOf(expr, src);
   const constants = ORIGIN.get(expr)?.constants ?? CONSTANTS;
-  if (expr.type === 'ParenthesizedExpression') return textOf(expr.expression, src);
-  if (expr.type === 'Identifier') return constants.get(expr.name) ?? null;
-  if (expr.type === 'MemberExpression' && !expr.computed) { const v = constants.get(src.slice(expr.start, expr.end)); if (v != null) return v; }
-  if (expr.type === 'Literal' && typeof expr.value === 'string') return expr.value;
+  if (expr.type === 'ParenthesizedExpression') return textPieces(expr.expression, src);
+  if (expr.type === 'Identifier') { const v = constants.get(expr.name); return v == null ? null : fixed(v); }
+  if (expr.type === 'MemberExpression' && !expr.computed) { const v = constants.get(src.slice(expr.start, expr.end)); if (v != null) return fixed(v); }
+  if (expr.type === 'Literal' && typeof expr.value === 'string') return [literalPiece(expr, src, 'string', expr.value)];
   if (expr.type === 'TemplateLiteral') {
-    let out = '';
-    expr.quasis.forEach((q, i) => { out += q.value.cooked ?? q.value.raw; if (expr.expressions[i]) out += `{${src.slice(expr.expressions[i].start, expr.expressions[i].end).replace(/\s+/g, ' ')}}`; });
+    const out = [];
+    expr.quasis.forEach((q, i) => { out.push(quasiPiece(q, src)); if (expr.expressions[i]) out.push({ t: `{${src.slice(expr.expressions[i].start, expr.expressions[i].end).replace(/\s+/g, ' ')}}` }); });
     return out;
   }
   if (expr.type === 'BinaryExpression' && expr.operator === '+') {
-    const a = textOf(expr.left, src), b = textOf(expr.right, src);
+    const a = textPieces(expr.left, src), b = textPieces(expr.right, src);
     if (a == null && b == null) return null;
-    return `${a ?? `{${src.slice(expr.left.start, expr.left.end)}}`}${b ?? `{${src.slice(expr.right.start, expr.right.end)}}`}`;
+    return [...(a ?? fixed(`{${src.slice(expr.left.start, expr.left.end)}}`)), ...(b ?? fixed(`{${src.slice(expr.right.start, expr.right.end)}}`))];
   }
   if (expr.type === 'ConditionalExpression') {
-    const a = textOf(expr.consequent, src), b = textOf(expr.alternate, src);
+    const a = textPieces(expr.consequent, src), b = textPieces(expr.alternate, src);
     if (a == null && b == null) return null;
-    return [a, b].filter((v) => v != null && v !== '').join(' / ');
+    return variants([a, b]);
   }
   return null;
 }
+const textOf = (expr, src) => joined(textPieces(expr, src));
 
 function objectProps(obj) {
   const props = new Map();
@@ -161,32 +179,34 @@ function collectHelpers(ast) {
   for (const st of ast.body) visit(st);
   return out;
 }
-function valueText(expr, env, src, depth = 0) {
+function valuePieces(expr, env, src, depth = 0) {
   if (!expr || depth > 6) return null;
   src = sourceOf(expr, src);
-  if (expr.type === 'ParenthesizedExpression') return valueText(expr.expression, env, src, depth);
-  if (expr.type === 'Identifier' && env.has(expr.name)) { const b = env.get(expr.name); return b ? valueText(b.node, b.env, src, depth + 1) : null; }
-  if (expr.type === 'CallExpression' && src.slice(expr.callee.start, expr.callee.end) === 'String' && expr.arguments[0]) return valueText(expr.arguments[0], env, src, depth + 1);
+  if (expr.type === 'ParenthesizedExpression') return valuePieces(expr.expression, env, src, depth);
+  if (expr.type === 'Identifier' && env.has(expr.name)) { const b = env.get(expr.name); return b ? valuePieces(b.node, b.env, src, depth + 1) : null; }
+  if (expr.type === 'CallExpression' && src.slice(expr.callee.start, expr.callee.end) === 'String' && expr.arguments[0]) return valuePieces(expr.arguments[0], env, src, depth + 1);
   // name.toUpperCase() and the like, as speaker labels are often written.
+  // The shown text is not the literal's, so it cannot be written back.
   if (expr.type === 'CallExpression' && expr.callee.type === 'MemberExpression' && !expr.callee.computed && ['toUpperCase', 'toLowerCase', 'trim'].includes(expr.callee.property.name)) {
-    const inner = valueText(expr.callee.object, env, src, depth + 1);
-    return inner == null ? null : inner[expr.callee.property.name]();
+    const inner = joined(valuePieces(expr.callee.object, env, src, depth + 1));
+    return inner == null ? null : fixed(inner[expr.callee.property.name]());
   }
   if (expr.type === 'TemplateLiteral') {
-    let out = '';
-    expr.quasis.forEach((q, i) => { out += q.value.cooked ?? q.value.raw; const h = expr.expressions[i]; if (h) out += valueText(h, env, src, depth + 1) ?? `{${src.slice(h.start, h.end).replace(/\s+/g, ' ')}}`; });
+    const out = [];
+    expr.quasis.forEach((q, i) => { out.push(quasiPiece(q, src)); const h = expr.expressions[i]; if (h) out.push(...(valuePieces(h, env, src, depth + 1) ?? fixed(`{${src.slice(h.start, h.end).replace(/\s+/g, ' ')}}`))); });
     return out;
   }
   if (expr.type === 'BinaryExpression' && expr.operator === '+') {
-    const a = valueText(expr.left, env, src, depth + 1), b = valueText(expr.right, env, src, depth + 1);
-    return a == null && b == null ? null : `${a ?? `{${src.slice(expr.left.start, expr.left.end)}}`}${b ?? `{${src.slice(expr.right.start, expr.right.end)}}`}`;
+    const a = valuePieces(expr.left, env, src, depth + 1), b = valuePieces(expr.right, env, src, depth + 1);
+    return a == null && b == null ? null : [...(a ?? fixed(`{${src.slice(expr.left.start, expr.left.end)}}`)), ...(b ?? fixed(`{${src.slice(expr.right.start, expr.right.end)}}`))];
   }
   if (expr.type === 'ConditionalExpression' || expr.type === 'LogicalExpression') {
-    const a = valueText(expr.consequent ?? expr.left, env, src, depth + 1), b = valueText(expr.alternate ?? expr.right, env, src, depth + 1);
-    return a == null && b == null ? null : [a, b].filter((v) => v != null && v !== '').join(' / ');
+    const a = valuePieces(expr.consequent ?? expr.left, env, src, depth + 1), b = valuePieces(expr.alternate ?? expr.right, env, src, depth + 1);
+    return a == null && b == null ? null : variants([a, b]);
   }
-  return textOf(expr, src);
+  return textPieces(expr, src);
 }
+const valueText = (expr, env, src, depth = 0) => joined(valuePieces(expr, env, src, depth));
 // The object a helper call builds: key -> {node, env}.
 function shapeOf(expr, env, src, depth = 0) {
   src = sourceOf(expr, src);
@@ -219,13 +239,18 @@ function callShape(call, env, src, depth = 0) {
   return shapeOf(body, bound, sourceOf(body,src), depth + 1);
 }
 const LINE_ARRAYS = /^(lines|remarks|barks|thoughts|murmurs|overheard)$/;
-function stringsIn(node, out = []) {
+// Plain strings in a (nested) array literal, each as its pieces.
+function stringsIn(node, src, out = []) {
   if (!node) return out;
-  if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
-  else if (node.type === 'TemplateLiteral' && !node.expressions.length) out.push(node.quasis[0].value.cooked);
-  else if (node.type === 'ArrayExpression') for (const el of node.elements) stringsIn(el, out);
+  src = sourceOf(node, src);
+  if (node.type === 'Literal' && typeof node.value === 'string') out.push([literalPiece(node, src, 'string', node.value)]);
+  else if (node.type === 'TemplateLiteral' && !node.expressions.length) out.push([quasiPiece(node.quasis[0], src)]);
+  else if (node.type === 'ArrayExpression') for (const el of node.elements) stringsIn(el, src, out);
   return out;
 }
+// The pieces of every emitted line and choice, for write-back. Kept beside
+// the items rather than in them, so the documents stay exactly what they were.
+const PIECES = new WeakMap();
 
 // Build source-only module contexts. Imported line constructors retain their
 // own AST, constants and helper scope; argument nodes retain the caller's scope.
@@ -295,21 +320,26 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
     return nodes.get(id);
   };
   const authoredWords=text=>/[\p{L}\p{N}]/u.test(String(text||'').replace(/\{[^{}]*\}/g,''));
-  const emitLine = (path, item, at) => { if (!authoredWords(item.text)) return; const n = node(path); n.lines.push(item); n.at ??= at; };
-  const emitChoice = (path, item, at) => { if (!authoredWords(item.text)) return; const n = node(path); n.choices.push(item); n.at ??= at; };
+  // A literal is this line's own when it is written inside the expression
+  // that made the line, in this module. A literal inside a helper's body or a
+  // constant is shared by every line built from it, so it stays fixed here.
+  const owned=(pieces,owner)=>pieces&&pieces.map(p=>p.lit&&p.lit.file===file&&p.lit.start>=owner.start&&p.lit.end<=owner.end?p:{t:p.t});
+  const remember=(item,owner,pieces)=>PIECES.set(item,Object.fromEntries(Object.entries(pieces).map(([k,v])=>[k,owned(v,owner)])));
+  const emitLine = (path, item, at, owner, pieces) => { if (!authoredWords(item.text)) return; const n = node(path); n.lines.push(item); n.at ??= at; if (owner) remember(item, owner, pieces); };
+  const emitChoice = (path, item, at, owner, pieces) => { if (!authoredWords(item.text)) return; const n = node(path); n.choices.push(item); n.at ??= at; if (owner) remember(item, owner, pieces); };
 
-  function lineValues(expr,path,who,at){
+  function lineValues(expr,path,who,at,owner,whoPieces){
     expr=unwrapFreeze(expr,source);if(!expr)return false;
     if(expr.type==='ConditionalExpression'){
       const condition=sanitize(source.slice(expr.test.start,expr.test.end)).slice(0,80);
-      const a=lineValues(expr.consequent,[...path,`when-${condition}`],who,at);
-      const b=lineValues(expr.alternate,[...path,`otherwise-${condition}`],who,at);
+      const a=lineValues(expr.consequent,[...path,`when-${condition}`],who,at,owner,whoPieces);
+      const b=lineValues(expr.alternate,[...path,`otherwise-${condition}`],who,at,owner,whoPieces);
       return a&&b;
     }
     if(expr.type!=='ArrayExpression')return false;
     for(const el of expr.elements){
-      if(!el)continue;const text=textOf(el,source);
-      if(text!=null)emitLine(path,{who:who||'thought',text,source:`${file}:${lineAt(el)}`},at);
+      if(!el)continue;const pieces=textPieces(el,source),text=joined(pieces);
+      if(text!=null)emitLine(path,{who:who||'thought',text,source:`${file}:${lineAt(el)}`},at,owner,{who:who?whoPieces:fixed('thought'),text:pieces});
       else visit(el,path,{inChoices:false});
     }
     return true;
@@ -320,22 +350,23 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
     if (n.type === 'ObjectExpression') {
       const props = objectProps(n), at = lineAt(n);
       const whoExpr = props.get('who') ?? props.get('speaker');
-      const who = textOf(whoExpr, source) ?? (whoExpr ? `{${source.slice(whoExpr.start, whoExpr.end).replace(/\s+/g, ' ')}}` : null);
-      const text = textOf(props.get('text'), source);
+      const whoPieces = textPieces(whoExpr, source) ?? (whoExpr ? fixed(`{${source.slice(whoExpr.start, whoExpr.end).replace(/\s+/g, ' ')}}`) : null);
+      const who = joined(whoPieces);
+      const textP = textPieces(props.get('text'), source), text = joined(textP);
       let consumed = false;
       // An option the player picks (prompt) before the line it says.
-      const prompt = textOf(props.get('prompt'), source);
-      if (prompt != null && text != null) emitChoice(path, { text: prompt, source: `${file}:${at}` }, at);
+      const promptP = textPieces(props.get('prompt'), source), prompt = joined(promptP);
+      if (prompt != null && text != null) emitChoice(path, { text: prompt, source: `${file}:${at}` }, at, n, { text: promptP });
       if (who != null && text != null) {
         const line = { who, text, source: `${file}:${at}` };
         const q = props.get('quotes'), quotes = textOf(q, source); if (quotes) line.quotes = quotes; else if (q) line.quotesExpr = source.slice(q.start, q.end);
-        emitLine(path, line, at); consumed = true;
+        emitLine(path, line, at, n, { who: whoPieces, text: textP }); consumed = true;
       } else if (ctx.inChoices && (text != null || props.has('label'))) {
-        const label = text ?? textOf(props.get('label'), source);
+        const labelP = text != null ? textP : textPieces(props.get('label'), source), label = joined(labelP);
         if (label) {
           const target = textOf(props.get('goto') ?? props.get('next') ?? props.get('to') ?? props.get('target') ?? props.get('node'), source);
           const id = textOf(props.get('id'), source);
-          emitChoice(path, { text: label, target, choiceId: id, source: `${file}:${at}` }, at); consumed = true;
+          emitChoice(path, { text: label, target, choiceId: id, source: `${file}:${at}` }, at, n, { text: labelP }); consumed = true;
         }
       }
       // A thing with its own id (a page, a voice, a topic) groups what it says.
@@ -346,17 +377,18 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
       if(props.has('answer')){
         const label=props.get('question')??props.get('label');
         const value=['ArrowFunctionExpression','FunctionExpression'].includes(label?.type)?returnOf(label):label;
-        const text=valueText(value,new Map(),source);
-        if(text!=null)emitChoice(path,{text,choiceId:ownId,source:`${file}:${at}`},at);
+        const pieces=valuePieces(value,new Map(),source),text=joined(pieces);
+        if(text!=null)emitChoice(path,{text,choiceId:ownId,source:`${file}:${at}`},at,n,{text:pieces});
       }
       const lines = props.get('lines');
       const next=textOf(props.get('goto')??props.get('next'),source);
       if(lines&&next!=null)node(path).goto=next;
-      const linesHandled=lines&&lineValues(lines,path,who,at);
-      const first = textOf(props.get('first'), source), again = textOf(props.get('again'), source);
+      const linesHandled=lines&&lineValues(lines,path,who,at,n,whoPieces);
+      const firstP = textPieces(props.get('first'), source), againP = textPieces(props.get('again'), source);
+      const first = joined(firstP), again = joined(againP);
       if (first != null && again != null) {
-        emitLine(path, { who: 'inspect', text: first, source: `${file}:${at}` }, at);
-        emitLine(path, { who: 'inspect', text: `(again) ${again}`, source: `${file}:${at}` }, at);
+        emitLine(path, { who: 'inspect', text: first, source: `${file}:${at}` }, at, n, { who: fixed('inspect'), text: firstP });
+        emitLine(path, { who: 'inspect', text: `(again) ${again}`, source: `${file}:${at}` }, at, n, { who: fixed('inspect'), text: [{ t: '(again) ' }, ...againP] });
       }
       for (const p of n.properties) {
         if (p.type !== 'Property') { visit(p, path, { inChoices: false }); continue; }
@@ -375,35 +407,39 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
     if (n.type === 'CallExpression' && n.callee.type === 'Identifier' && helperFor(n.callee)) {
       const shape = callShape(n, new Map(), source), at = lineAt(n);
       if (shape) {
-        const get = (k) => shape.get(k), txt = (k) => get(k) ? valueText(get(k).node, get(k).env, source) : null;
+        const get = (k) => shape.get(k), pcs = (k) => get(k) ? valuePieces(get(k).node, get(k).env, source) : null, txt = (k) => joined(pcs(k));
         const whoB = get('who') ?? get('speaker');
-        const who = whoB ? (valueText(whoB.node, whoB.env, source) ?? `{${source.slice(whoB.node.start, whoB.node.end).replace(/\s+/g, ' ')}}`) : null;
-        const text = txt('text'), label = txt('label'), prompt = txt('prompt');
+        const whoP = whoB ? (valuePieces(whoB.node, whoB.env, source) ?? fixed(`{${source.slice(whoB.node.start, whoB.node.end).replace(/\s+/g, ' ')}}`)) : null;
+        const who = joined(whoP);
+        const textP = pcs('text'), labelP = pcs('label'), promptP = pcs('prompt');
+        const text = joined(textP), label = joined(labelP), prompt = joined(promptP);
         const target = txt('goto') ?? txt('next') ?? txt('to');
         if(shape.has('lines'))for(const arg of n.arguments){
           if(arg?.type!=='ObjectExpression')continue;
           const options=objectProps(arg),next=textOf(options.get('next')??options.get('goto'),source);
           if(next!=null)node(path).goto=next;
         }
-        if (prompt != null && text != null) emitChoice(path, { text: prompt, target, source: `${file}:${at}` }, at);
-        if (text != null && who != null) emitLine(path, { who, text, source: `${file}:${at}` }, at);
-        else if (label != null && shape.has('value') && txt('value') != null) emitLine(path, { who: txt('type') || n.callee.name, text: `${label}: ${txt('value')}`, source: `${file}:${at}` }, at);
-        else if ((text ?? label) != null && (target != null || ctx.inChoices || shape.has('hideWhenAsked'))) emitChoice(path, { text: text ?? label, target, choiceId: txt('id'), source: `${file}:${at}` }, at);
-        else if (text != null) emitLine(path, { who: txt('type') || n.callee.name, text, source: `${file}:${at}` }, at);
+        const typeP = pcs('type'), kindP = joined(typeP) ? typeP : fixed(n.callee.name);
+        if (prompt != null && text != null) emitChoice(path, { text: prompt, target, source: `${file}:${at}` }, at, n, { text: promptP });
+        if (text != null && who != null) emitLine(path, { who, text, source: `${file}:${at}` }, at, n, { who: whoP, text: textP });
+        else if (label != null && shape.has('value') && txt('value') != null) emitLine(path, { who: txt('type') || n.callee.name, text: `${label}: ${txt('value')}`, source: `${file}:${at}` }, at, n, { who: kindP, text: [...labelP, { t: ': ' }, ...pcs('value')] });
+        else if ((text ?? label) != null && (target != null || ctx.inChoices || shape.has('hideWhenAsked'))) emitChoice(path, { text: text ?? label, target, choiceId: txt('id'), source: `${file}:${at}` }, at, n, { text: text != null ? textP : labelP });
+        else if (text != null) emitLine(path, { who: txt('type') || n.callee.name, text, source: `${file}:${at}` }, at, n, { who: kindP, text: textP });
         // Arrays of plain strings handed to a builder (n('odette', ['…']), guest(…, remarks)).
         for (const [k, b] of shape) if (LINE_ARRAYS.test(k)) {
           const expr = b.node.type === 'CallExpression' && b.node.callee.type === 'MemberExpression' ? b.node.callee.object : b.node;
           const arr = expr.type === 'Identifier' && b.env.has(expr.name) ? b.env.get(expr.name)?.node : expr;
-          if (arr?.type === 'ArrayExpression') for (const t of stringsIn(arr)) emitLine(path, { who: who || label || n.callee.name, text: t, source: `${file}:${lineAt(arr)}` }, at);
+          const speakerP = who ? whoP : label ? labelP : fixed(n.callee.name);
+          if (arr?.type === 'ArrayExpression') for (const t of stringsIn(arr, source)) emitLine(path, { who: who || label || n.callee.name, text: joined(t), source: `${file}:${lineAt(arr)}` }, at, n, { who: speakerP, text: t });
         }
       }
     }
     if (n.type === 'CallExpression') {
       const callee = source.slice(n.callee.start, n.callee.end);
       if (/(^|\.)inspect$/.test(callee) && n.arguments.length >= 1) {
-        const a = textOf(n.arguments[0], source), b = textOf(n.arguments[1], source);
-        if (a != null) emitLine(path, { who: 'inspect', text: a, source: `${file}:${lineAt(n)}` }, lineAt(n));
-        if (b != null) emitLine(path, { who: 'inspect', text: `(again) ${b}`, source: `${file}:${lineAt(n)}` }, lineAt(n));
+        const aP = textPieces(n.arguments[0], source), bP = textPieces(n.arguments[1], source), a = joined(aP), b = joined(bP);
+        if (a != null) emitLine(path, { who: 'inspect', text: a, source: `${file}:${lineAt(n)}` }, lineAt(n), n, { who: fixed('inspect'), text: aP });
+        if (b != null) emitLine(path, { who: 'inspect', text: `(again) ${b}`, source: `${file}:${lineAt(n)}` }, lineAt(n), n, { who: fixed('inspect'), text: [{ t: '(again) ' }, ...bP] });
       }
     }
     if (n.type === 'FunctionDeclaration' && n.id?.name) { for (const c of children(n)) visit(c, [...path, n.id.name], { inChoices: false }); return; }
@@ -425,13 +461,15 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
     for (const v of decl.declarations) {
       if (v.id?.type !== 'Identifier' || !LINE_CONSTANT.test(v.id.name)) continue;
       const arr = unwrapFreeze(v.init, source);
-      if (arr?.type === 'ArrayExpression') for (const t of stringsIn(arr)) emitLine([v.id.name], { who: 'text', text: t, source: `${file}:${lineAt(arr)}` }, lineAt(arr));
+      if (arr?.type === 'ArrayExpression') for (const t of stringsIn(arr, source)) emitLine([v.id.name], { who: 'text', text: joined(t), source: `${file}:${lineAt(arr)}` }, lineAt(arr), v, { who: fixed('text'), text: t });
     }
   }
   return nodes;
 }
 
-export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText = new Set() } = {}) {
+// edits (optional Map) receives, per line/choice id, the pieces its who/text
+// were read from: what the studio's write-back patches.
+export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText = new Set(), edits = null } = {}) {
   // These current conversations are source-owned, not imported legacy trees.
   // A shared short reply such as "There you are." or "Yes." in an unrelated
   // canonical document cannot remove an actual beat from either bench/prologue.
@@ -454,7 +492,7 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText =
       return [`${prefix}.${target}`,target,`${nodeId.split('.')[0]}.${target}`].map(sanitize).find(c=>out[c]);
     };
     if(n.goto){const target=resolveTarget(n.goto);if(target)doc.goto=target;else doc.targetName=n.goto;}
-    n.lines.forEach((line, i) => doc.lines.push({ id: `${nodeId}.l${i}`, ...line }));
+    n.lines.forEach((line, i) => { doc.lines.push({ id: `${nodeId}.l${i}`, ...line }); if (edits && PIECES.has(line)) edits.set(`${nodeId}.l${i}`, PIECES.get(line)); });
     n.choices.forEach((choice, i) => {
       const item = { id: `${nodeId}.c${i}`, text: choice.text, source: choice.source };
       if (choice.choiceId) item.choiceId = choice.choiceId;
@@ -463,15 +501,16 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText =
         if (hit) item.goto = hit; else item.targetName = choice.target;
       }
       doc.choices.push(item);
+      if (edits && PIECES.has(choice)) edits.set(item.id, PIECES.get(choice));
     });
     if (!doc.choices.length) delete doc.choices;
   }
   if (!entries.length) return null;
   const experience=EXPERIENCE_LABELS[rel];
   return {
-    schemaVersion: 1, id, title: experience?.title??`Runtime · ${rel}`, status: 'reference', readOnly: true, entry:out[experience?.entry]?experience.entry:entries[0], entries,
+    schemaVersion: 1, id, title: experience?.title??`Runtime · ${rel}`, status: 'reference', fromCode: true, entry:out[experience?.entry]?experience.entry:entries[0], entries,
     tags: ['runtime', 'derived',...(experience?.tags||[])], regions: [], module: `src/${rel}`,
-    notes: `Generated from src/${rel} by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.`,
+    notes: `Generated from src/${rel} by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.`,
     nodes: out,
   };
 }
@@ -486,7 +525,7 @@ export async function exportRuntimeNarrative({ write = true, onProgress = null }
       for (const n of Object.values(doc.nodes || {})) { for (const line of n.lines || []) canonicalText.add(line.text); for (const choice of n.choices || []) canonicalText.add(choice.text); }
     } catch (_) {}
   }
-  const documents = [], index = [], contextCache=new Map();
+  const documents = [], index = [], contextCache=new Map(), edits = new Map();
   for (const full of await walk(SRC)) {
     const rel = relative(SRC, full).split(sep).join('/');
     if (SKIP.some((re) => re.test(rel))) continue;
@@ -499,8 +538,10 @@ export async function exportRuntimeNarrative({ write = true, onProgress = null }
     const skipNodePrefixes = rel === 'data/conservatory-script.js'
       ? [...nodes.keys()].map((k) => k.split('.')[0]).filter((k) => canonicalIds.has(`conservatory.${k.toLowerCase()}`))
       : [];
-    const doc = documentFor(rel, nodes, { skipNodePrefixes, canonicalText });
+    const docEdits = new Map();
+    const doc = documentFor(rel, nodes, { skipNodePrefixes, canonicalText, edits: docEdits });
     if (!doc) continue;
+    edits.set(doc.id, docEdits);
     // A trace whose quoted source is computed at runtime has no literal to
     // check here; that is a fact about the code, not an authoring error.
     const result = validateNarrativeDocument(doc);result.errors=result.errors.filter((e)=>!/\.quotes$/.test(e.path));result.ok=!result.errors.length;
@@ -523,7 +564,7 @@ export async function exportRuntimeNarrative({ write = true, onProgress = null }
     }
     for (const name of await readdir(RUNTIME_NARRATIVE_DIR)) if (/^runtime\..*\.story\.json$/.test(name)&&!files.has(name)) await rm(resolve(RUNTIME_NARRATIVE_DIR, name));
   }
-  return { files, index };
+  return { files, index, edits };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename)) {

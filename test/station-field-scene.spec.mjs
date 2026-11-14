@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {stationFieldVisit,STATION_FIELD_VISITS} from '../src/data/station-field-visits.js';
 import {MEMORY_FIELD_VISIT} from '../src/data/memory-field.js';
 import {memoryFieldRenderFrame} from '../src/render/memory-field-frame.js';
-import {createStationFieldScene,normalizeStationFieldCheckpoint,walkStationField,stationFieldFocus,stationFieldReceipt} from '../src/game/station-field-scene.js';
+import {createStationFieldScene,normalizeStationFieldCheckpoint,walkStationField,stationFieldFocus,stationFieldReceipt,stationFieldVanDoor} from '../src/game/station-field-scene.js';
+import {STATION_FIELD_CRASH,stationFieldCrashSeconds,stationFieldCrashHeight,stationFieldCrashCovers} from '../src/data/station-field-crash.js';
 import {createSourceSpaceRuntime} from '../src/game/source-space-runtime.js';
 import {buildChapelOutskirtsGodPreset} from '../src/game/chunk-surf-god.js';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} ≈ ${b}`);
@@ -28,7 +29,10 @@ function leave(scene,visit){walkToward(scene,visit.returnDoor.x,visit.returnDoor
 test('station data references the actual first-fourth templates and reserves canonical fifth',()=>{
  assert.deepEqual(Object.keys(STATION_FIELD_VISITS),['first','second','third','fourth']);assert.equal(stationFieldVisit('fifth'),null);
  for(const id of Object.keys(STATION_FIELD_VISITS)){
-  const v=stationFieldVisit(id,{connectionId:'field-return-a'});assert.equal(v.memoryVisit,MEMORY_FIELD_VISIT[id]);assert.equal(v.connectionId,'field-return-a');assert.equal(v.returnDoor.open,true);
+  const v=stationFieldVisit(id,{connectionId:'field-return-a'});
+  // The crash field is the same visit with everything but its door taken out.
+  if(v.crash){for(const key of['id','door','day','sunAlt','sunAz'])assert.equal(v.memoryVisit[key],MEMORY_FIELD_VISIT[id][key]);for(const key of['bag','jumper','wheel'])assert.equal(v.memoryVisit[key],null);assert.equal(v.memoryVisit.bare,true);}
+  else assert.equal(v.memoryVisit,MEMORY_FIELD_VISIT[id]);assert.equal(v.connectionId,'field-return-a');assert.equal(v.returnDoor.open,true);
  }
  assert.equal(stationFieldVisit('third',{connectionId:'forged-lock'}).connectionId,'field-return');
 });
@@ -70,7 +74,7 @@ test('a return without a witnessed landmark is valid retreat and never releases 
 });
 
 test('each prescribed connection earns a receipt only after real approach, aimed inspection and actual outward return',async()=>{
- for(const[fieldId,connectionId]of[['first','field-return'],['second','field-return'],['third','field-return-a'],['fourth','field-return-b']]){
+ for(const[fieldId,connectionId]of[['first','field-return'],['second','field-return'],['third','field-return-a'],['third','field-return-b']]){
   const h=await make(fieldId,{connectionId});assert.equal(h.scene.interact(),false,'no remote source inspection from the spawn');
   walkToward(h.scene,h.visit.landmark.x,h.visit.landmark.z,1.2);inspect(h.scene,h.visit);
   assert.equal(h.scene.serialize().witness.inspected,true);assert.ok(h.saves.some(s=>s.reason==='landmark-inspected'));assert.equal(h.returns.length,0);
@@ -121,8 +125,8 @@ test('foot contacts follow accepted body travel and neither waiting nor pause pr
 });
 
 test('saved return-ready work retries its exact receipt after reload, and one scene never calls completion twice',async()=>{
- const h=await make('fourth',{connectionId:'field-return-b'});walkToward(h.scene,h.visit.landmark.x,h.visit.landmark.z);inspect(h.scene,h.visit);leave(h.scene,h.visit);const ready=h.scene.serialize();assert.equal(ready.stage,'returning');assert.equal(h.returns.length,1);
- const resumed=await make('fourth',{connectionId:'field-return-b',checkpoint:ready});resumed.scene.update(.1);assert.equal(resumed.returns.length,0,'reload cannot claim a black frame that belonged to the previous viewer');resumed.scene.render();assert.equal(resumed.overlays.at(-1).coverAlpha,1);assert.equal(resumed.returns.length,0);resumed.scene.update(.1);resumed.scene.update(.1);assert.equal(resumed.returns.length,1);assert.deepEqual(resumed.returns[0].receipt,h.returns[0].receipt);h.scene.exit();resumed.scene.exit();
+ const h=await make('third',{connectionId:'field-return-b'});walkToward(h.scene,h.visit.landmark.x,h.visit.landmark.z);inspect(h.scene,h.visit);leave(h.scene,h.visit);const ready=h.scene.serialize();assert.equal(ready.stage,'returning');assert.equal(h.returns.length,1);
+ const resumed=await make('third',{connectionId:'field-return-b',checkpoint:ready});resumed.scene.update(.1);assert.equal(resumed.returns.length,0,'reload cannot claim a black frame that belonged to the previous viewer');resumed.scene.render();assert.equal(resumed.overlays.at(-1).coverAlpha,1);assert.equal(resumed.returns.length,0);resumed.scene.update(.1);resumed.scene.update(.1);assert.equal(resumed.returns.length,1);assert.deepEqual(resumed.returns[0].receipt,h.returns[0].receipt);h.scene.exit();resumed.scene.exit();
 });
 
 test('actual scene receipt is consumed once by the real station runtime without changing canonical recording state',async()=>{
@@ -163,4 +167,73 @@ test('a held or explicitly rejected opaque overlay cannot acknowledge a return p
  let accepted=false;const covers=[],h=await make('first',{paintOverlay:frame=>{covers.push(frame.coverAlpha);return accepted;}});h.scene.setLook({yaw:Math.PI,pitch:0});h.scene.interact();for(let n=0;n<5;n++)h.scene.update(.1);
  h.scene.render();h.scene.update(.1);assert.equal(h.returns.length,0,'overlay refusal is not a rendered cover');accepted=true;h.scene.pause();h.scene.render();h.scene.resume();h.scene.update(.1);assert.equal(h.returns.length,0,'a paused presentation did not earn an active-frame acknowledgement');
  h.scene.render();assert.equal(covers.at(-1),1);h.scene.update(.1);assert.equal(h.returns.length,1);h.scene.exit();
+});
+
+// THE CRASH FIELD. One press, the van, and one of two ways back.
+const crashField=options=>make(STATION_FIELD_CRASH.fieldId,options);
+function pressCrashDoor(h){walkToward(h.scene,h.visit.landmark.x,h.visit.landmark.z,1.2);inspect(h.scene,h.visit);assert.ok(h.scene.view().crash,'the van is coming');}
+const until=(scene,seconds,step=.1)=>{for(let t=0;t<seconds-1e-9;t+=step)scene.update(step);};
+test('the crash field is the door and nothing else, with no Ophanim',async()=>{
+ const h=await crashField();const v=h.visit;assert.equal(v.fieldId,'fourth');assert.equal(v.crash,STATION_FIELD_CRASH);
+ h.scene.render();const meshes=new Set(h.frames.at(-1).actual.props.map(p=>p.mesh));
+ assert.ok(meshes.has('mf_door_leaf'));for(const mesh of['mf_fence_post','mf_pole','mf_tree_trunk','dp_detached_wheel','mf_hubcap'])assert.ok(!meshes.has(mesh),mesh);
+ assert.ok(!h.frames.at(-1).actual.props.some(p=>/:bag$|jumper|fault-/.test(p.id)));
+ pressCrashDoor(h);until(h.scene,6);assert.equal(h.scene.view().deformation.phase,'quiet','nothing comes apart out there');h.scene.exit();
+});
+test('the door gives one action, then nothing; the way in goes; the van follows him until it commits',async()=>{
+ const h=await crashField();pressCrashDoor(h);
+ assert.equal(stationFieldFocus(h.scene.serialize(),h.visit),null,'no more action for that door');assert.equal(h.scene.interact(),false);
+ assert.ok(h.saves.some(s=>s.reason==='crash-start'));assert.equal(h.scene.view().state.crash.target.x,h.scene.serialize().x);
+ // Walk while it is high: it stays over him.
+ h.scene.setLook({yaw:Math.PI/2});h.scene.input('forward',true);until(h.scene,2);h.scene.input('forward',false);
+ const over=h.scene.serialize();near(over.crash.target.x,over.x);near(over.crash.target.z,over.z);
+ const frame=h.scene.view().crash;assert.ok(frame.height>200&&!frame.committed&&!frame.landed);
+ // The way he came in has gone with it.
+ walkToward(h.scene,h.visit.returnDoor.x,h.visit.returnDoor.z-1,.3);
+ assert.equal(stationFieldFocus(h.scene.serialize(),h.visit)?.kind??null,null);h.scene.exit();
+});
+test('a step aside at the end and it misses: the wreck stands there, and its own door is the way back, and counts',async()=>{
+ const h=await crashField({connectionId:'field-return-b'});pressCrashDoor(h);
+ until(h.scene,stationFieldCrashSeconds()-STATION_FIELD_CRASH.follow+.1);
+ const committed=h.scene.serialize().crash.target;
+ // Out from under it, across its width.
+ h.scene.setLook({yaw:Math.PI});h.scene.input('forward',true);until(h.scene,1.6);h.scene.input('forward',false);
+ assert.equal(h.scene.view().crash.landed,true,'it is down');const at=h.scene.serialize();
+ assert.deepEqual(at.crash.target,committed,'it did not chase him once committed');assert.equal(at.crash.crushed,false);assert.equal(at.stage,'active');
+ assert.ok(h.saves.some(s=>s.reason==='van-landed'));assert.deepEqual(h.audio.events.at(-1),{type:'van-impact',crushed:false,gentle:false});
+ // The wreck refuses him.
+ const inside=walkStationField({...at,x:committed.x,z:committed.z+2,yaw:Math.PI},h.visit,{dt:.1,forward:1}).state;
+ assert.equal(stationFieldCrashCovers(at.crash,inside.x,inside.z),false);
+ // Its door.
+ const van=stationFieldVanDoor(at,h.visit);
+ walkToward(h.scene,van.x,van.z,1.4);const here=h.scene.serialize(),d=Math.hypot(van.x-here.x,van.z-here.z);
+ h.scene.setLook({yaw:Math.atan2(van.x-here.x,-(van.z-here.z)),pitch:Math.atan2(van.height-1.62,Math.max(.05,d))});
+ assert.equal(stationFieldFocus(h.scene.serialize(),h.visit).kind,'van-door');assert.equal(h.scene.interact(),true);
+ for(let n=0;n<6;n++){h.scene.update(.1);h.scene.render();}
+ assert.equal(h.returns.length,1);assert.equal(h.returns[0].reason,'used-return');assert.equal(h.returns[0].meaningful,true);
+ assert.deepEqual(h.returns[0].receipt,{fieldId:'fourth',landmarkWitnessed:true,returned:true,connectionId:'field-return-b'});h.scene.exit();
+});
+test('standing still, it lands on him: the black comes in at once, stays, and then the station',async()=>{
+ const h=await crashField();pressCrashDoor(h);until(h.scene,stationFieldCrashSeconds()+.1);
+ const at=h.scene.serialize();assert.equal(at.crash.crushed,true);assert.equal(at.stage,'returning');assert.equal(at.returnReason,'crushed');
+ assert.deepEqual(h.audio.events.at(-1),{type:'van-impact',crushed:true,gentle:false});
+ h.scene.update(.1);h.scene.update(.1);h.scene.render();assert.equal(h.overlays.at(-1).coverAlpha,1,'black within a fifth of a second, not a slow fade');
+ for(let t=0;t<STATION_FIELD_CRASH.black-.4;t+=.1){h.scene.update(.1);h.scene.render();}assert.equal(h.returns.length,0,'it stays black a while');
+ for(let n=0;n<6;n++){h.scene.update(.1);h.scene.render();}
+ assert.equal(h.returns.length,1);assert.equal(h.returns[0].reason,'crushed');assert.equal(h.returns[0].meaningful,true);
+ // A saved crushed return resumes as one; a forged one without the van does not.
+ const saved=normalizeStationFieldCheckpoint(clone(at),h.visit);assert.equal(saved.returnReason,'crushed');
+ assert.equal(normalizeStationFieldCheckpoint({...clone(at),crash:null},h.visit).returnReason,null);h.scene.exit();
+});
+test('Reduce Dread keeps the van and never puts it on him',async()=>{
+ const h=await crashField({presentation:()=>({reducedDread:true})});pressCrashDoor(h);
+ const start=h.scene.serialize();assert.equal(start.crash.gentle,true);assert.ok(Math.hypot(start.crash.target.x-start.x,start.crash.target.z-start.z)>4);
+ until(h.scene,stationFieldCrashSeconds()+.1);const at=h.scene.serialize();
+ assert.equal(at.crash.landedAt!=null,true);assert.equal(at.crash.crushed,false);assert.equal(at.stage,'active');h.scene.exit();
+});
+test('a reload mid-fall keeps the van where it was and when',async()=>{
+ const h=await crashField();pressCrashDoor(h);until(h.scene,3);const saved=h.scene.serialize();h.scene.exit();
+ const resumed=await crashField({checkpoint:clone(saved)});assert.deepEqual(resumed.scene.serialize(),saved);
+ near(resumed.scene.view().crash.height,stationFieldCrashHeight(saved.elapsed-saved.crash.at));
+ until(resumed.scene,stationFieldCrashSeconds());assert.equal(resumed.scene.serialize().crash.landedAt,saved.crash.at+stationFieldCrashSeconds());resumed.scene.exit();
 });

@@ -39,10 +39,20 @@ export function stepVehicle(s,h,input={},roadSampler=roadSurfaceAt){
  for(const axle of[p.frontDistance,-p.rearDistance])for(const side of[-p.track/2,p.track/2])wheels.push(roadSampler(s.x+n*axle+c*side,s.z-c*axle+n*side));
  const grip=wheels.reduce((a,w)=>a+w.grip,0)/4,rolling=wheels.reduce((a,w)=>a+w.rolling,0)/4;
  const road=roadSampler(s.x,s.z);s.roadOffset=road.offset;s.surface=wheels.some(w=>w.kind==='verge')?'verge':wheels.some(w=>w.kind==='shoulder')?'shoulder':'asphalt';s.surfaceGrip=grip;s.roadHeight=road.height;
+ // Standing water (hydroplane.js) drags each tyre in it, the deeper side
+ // harder, and may lie on a crossfall the tyres cannot match. A road without
+ // water carries neither field and is unchanged.
+ const waterDrag=wheels.map(w=>Number(w.drag)||0),waterSum=waterDrag.reduce((a,d)=>a+d,0);
+ // Gravity pulls through the wheels on the ground, as grip does: averaged over
+ // all four, so a van whose middle already hangs over a drop still slides.
+ const crossfall=wheels.reduce((a,w)=>a+(Number(w.crossfall)||0),0)/4,acrossRoad=Math.cos(s.heading-(Number(road.heading)||0)),alongRoad=Math.sin(s.heading-(Number(road.heading)||0));
+ // Gravity's pull down the crossfall acts in full; the tyres push back only as
+ // far as their grip allows. Where it beats that grip the van cannot hold.
+ const fallAcross=G*crossfall*acrossRoad,slideAcross=Math.abs(fallAcross)>grip*G;
  const direction=Math.sign(u)||s.gear;
  const taper=s.gear===1?1-smooth(13.2,p.maxSpeed,Math.max(0,u)):1-smooth(2.8,p.maxReverse,Math.max(0,-u));
  let drive=s.throttle*(s.gear===1?Math.min(p.driveForce,p.power/Math.max(5,abs)):p.reverseForce)*s.gear*taper;
- const resistance=(rolling*p.mass*G+1.7*u*u+(s.throttle<.05?130+11*abs:0))*Math.sign(u);
+ const resistance=(rolling*p.mass*G+(1.7+waterSum)*u*u+(s.throttle<.05?130+11*abs:0))*Math.sign(u);
  const brake=s.brakeAmount*p.brakeForce*direction;
  // Static axle load plus bounded fore/aft load transfer; shared tyre budget
  // means hard braking spends grip that cannot also turn the van.
@@ -55,7 +65,7 @@ export function stepVehicle(s,h,input={},roadSampler=roadSurfaceAt){
  const frontScale=Math.min(1,frontMu*frontLoad/Math.max(1,Math.hypot(fxFront,fyFront))),rearScale=Math.min(1,rearMu*rearLoad/Math.max(1,Math.hypot(fxRear,fyRear)));
  fxFront*=frontScale;fyFront*=frontScale;fxRear*=rearScale;fyRear*=rearScale;
  const slope=Number.isFinite(road.gradientX)&&Number.isFinite(road.gradientZ)?road.gradientX*n-road.gradientZ*c:road.grade*Math.cos(s.heading-road.heading);
- let longitudinal=(fxFront+fxRear-resistance)/p.mass-G*slope;
+ let longitudinal=(fxFront+fxRear-resistance)/p.mass-G*slope+G*crossfall*alongRoad;
  let nextU=u+(longitudinal+s.yawRate*v)*h;
  // Overlap the just-released service pressure with clutch take-up. A steep
  // new cliff must not roll backwards during the throttle's short physical
@@ -71,16 +81,25 @@ export function stepVehicle(s,h,input={},roadSampler=roadSurfaceAt){
  const braking=brakeTarget>0||s.brakeAmount>0;
  if((braking||s.throttle<.05)&&Math.sign(nextU)!==Math.sign(u)&&abs<.15&&(abs>0||braking))nextU=0;
  nextU=clamp(nextU,-p.maxReverse-.1,p.maxSpeed+.1);
- const dynamicV=v+((fyFront+fyRear)/p.mass-s.yawRate*u)*h,dynamicR=s.yawRate+(p.frontDistance*fyFront-p.rearDistance*fyRear)/p.yawInertia*h;
+ const waterYaw=p.track/2*((waterDrag[1]+waterDrag[3])-(waterDrag[0]+waterDrag[2]))*u*abs;
+ const dynamicV=v+((fyFront+fyRear)/p.mass+fallAcross-s.yawRate*u)*h,dynamicR=s.yawRate+(p.frontDistance*fyFront-p.rearDistance*fyRear+waterYaw)/p.yawInertia*h;
  const targetR=nextU/p.wheelbase*Math.tan(s.wheelAngle),targetV=targetR*p.rearDistance;
- const blend=smooth(1.5,3.8,abs),follow=1-Math.exp(-h/.1);
+ // Below walking pace the van follows its wheels, which assumes they grip; a
+ // van sliding down a crossfall they cannot match is all dynamics.
+ const blend=slideAcross?1:smooth(1.5,3.8,abs),follow=1-Math.exp(-h/.1);
  s.lateralSpeed=mix(mix(v,targetV,follow),dynamicV,blend);s.yawRate=mix(mix(s.yawRate,targetR,follow),dynamicR,blend);
- if(abs<.05&&s.throttle<.01){s.lateralSpeed*=Math.exp(-h*12);s.yawRate*=Math.exp(-h*12);}
- if(input.brake&&nextU===0&&Math.abs(s.lateralSpeed)<.02&&Math.abs(s.yawRate)<.02)s.brakeHold=true;
+ if(abs<.05&&s.throttle<.01&&!slideAcross){s.lateralSpeed*=Math.exp(-h*12);s.yawRate*=Math.exp(-h*12);}
+ // A crossfall steeper than the tyres can grip slides the van whatever it is
+ // doing, stopped or braked included: a locked wheel slides too.
+ if(slideAcross)s.brakeHold=false;
+ else if(input.brake&&nextU===0&&Math.abs(s.lateralSpeed)<.02&&Math.abs(s.yawRate)<.02)s.brakeHold=true;
  // Static tyre reaction balances the slope at a deliberate complete stop.
  // Do not integrate the full kinetic brake force as an engine pointing back
  // down the hill. Steering and suspension remain live while held.
  if(s.brakeHold){nextU=0;s.lateralSpeed=0;s.yawRate=0;s.brakeAmount=1;s.throttle=0;longitudinal=0;}
+ // What the tyres are doing on water, for the cab's cues (sound, wheel, revs).
+ s.aquaplane=((Number(wheels[0].aquaplane)||0)+(Number(wheels[1].aquaplane)||0))/2;
+ s.wheelSpin=s.throttle>.05?1-rearScale:0;s.wheelLock=s.brakeAmount>.3?1-frontScale:0;
  s.speed=nextU;s.heading+=s.yawRate*h;
  const dx=(Math.sin(s.heading)*s.speed+Math.cos(s.heading)*s.lateralSpeed)*h,dz=(-Math.cos(s.heading)*s.speed+Math.sin(s.heading)*s.lateralSpeed)*h;
  s.x+=dx;s.z+=dz;s.odometer+=Math.hypot(dx,dz);s.wheelRotation+=(s.speed*h)/.34;

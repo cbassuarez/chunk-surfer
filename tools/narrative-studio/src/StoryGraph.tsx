@@ -81,8 +81,10 @@ function regionNodes(document: NarrativeDocument, positions: StoryLayout['positi
   });
 }
 
-function StoryGraphInner({ document, layout, selectedId, search, onSelect, onEdit, onTransaction }: {
+function StoryGraphInner({ document, layout, selectedId, search, wordsOnly = false, onSelect, onEdit, onTransaction }: {
   document: NarrativeDocument; layout: StoryLayout; selectedId: string | null; search: string;
+  // A document generated from code: beats can be arranged, not added or rewired.
+  wordsOnly?: boolean;
   onSelect: (id: string | null) => void; onEdit: (id: string) => void; onTransaction: (transaction: StoryTransaction) => void;
 }) {
   const [traceEnding, setTraceEnding] = useState<string | null>(null);
@@ -160,13 +162,13 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onEdi
   const endings = Object.values(document.nodes).filter((node) => node.type === 'ending');
   return <div className="graph-shell">
     <div className="canvas-toolbar">
-      <button onClick={addNode}>＋ Node</button><button onClick={removeNode} disabled={!selectedId || selectedId === document.entry}>Delete</button>
+      {!wordsOnly && <><button onClick={addNode}>＋ Node</button><button onClick={removeNode} disabled={!selectedId || selectedId === document.entry}>Delete</button></>}
       <button onClick={autoLayout}>Auto-layout</button>
       <label>Trace ending <select value={traceEnding || ''} onChange={(event) => setTraceEnding(event.target.value || null)}><option value="">Off</option>{endings.map((node) => <option key={node.id} value={node.id}>{node.id}</option>)}</select></label>
     </div>
     <ReactFlow
       nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onNodeDragStop={persistPositions}
-      onConnect={connect} onNodeClick={(_event: React.MouseEvent, node: Node) => !node.id.startsWith('region:') && onSelect(node.id)}
+      onConnect={connect} nodesConnectable={!wordsOnly} onNodeClick={(_event: React.MouseEvent, node: Node) => !node.id.startsWith('region:') && onSelect(node.id)}
       onNodeDoubleClick={(_event: React.MouseEvent, node: Node) => !node.id.startsWith('region:') && onEdit(node.id)}
       onPaneClick={() => onSelect(null)} fitView minZoom={.15} maxZoom={1.7} nodesDraggable snapToGrid snapGrid={[12, 12]}
       defaultEdgeOptions={{ type: 'smoothstep' }} colorMode="dark"

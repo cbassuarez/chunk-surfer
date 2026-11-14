@@ -70,8 +70,20 @@ float ewHomeArrivalWhite(vec3 ro,vec3 rd,float dist,float t){
   if(uHomeArrival.x<=0.0)return 0.0;
   return uHomeArrival.x*(1.0-ewHomeArrivalClear(ro,rd,dist,t));
 }
-vec3 ewHomeArrivalSnow(vec3 ro,vec3 rd){
-  vec3 snow=vec3(.745,.756,.763);
+// Snow driving past a few metres out, on the valley's wind. A white that never
+// moves reads as an empty screen, not weather.
+float ewHomeArrivalDrift(vec3 ro,vec3 rd,float t){
+  vec3 q=ro+rd*14.0;
+  vec2 wind=vec2(dot(q.xz,homeWind),dot(q.xz,vec2(-homeWind.y,homeWind.x)));
+  float gust=t*(1.0-uCalm);
+  return .6*ewNoise(vec2(wind.x*.16-gust*1.3,q.y*2.4+wind.y*.35))
+    +.4*ewNoise(vec2(wind.x*.41-gust*2.1,q.y*5.3+wind.y*.8)+vec2(3.1,8.4));
+}
+vec3 ewHomeArrivalSnow(vec3 ro,vec3 rd,float t){
+  // The valley's own overcast tone, so the whiteout prints as its sky does:
+  // pale paper with a light stipple. Brighter prints as bare paper and the
+  // drift vanishes; the denser bands dip a step so the print dots them.
+  vec3 snow=vec3(.640,.652,.660)*(1.0-.20*smoothstep(.45,.80,ewHomeArrivalDrift(ro,rd,t)));
   // Before the window itself is clear of snow, its light already reaches him
   // as a warm smudge in the white, the way a lamp reads through a blizzard.
   float aim=max(0.0,dot(rd,normalize(${v3(windowPoint)}-ro)));

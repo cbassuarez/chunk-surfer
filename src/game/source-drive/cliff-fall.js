@@ -65,7 +65,7 @@ function decomposeSettled(matrix){
  * answers every later second. Times are fall-local (0 = release), and the
  * motion is exact and deterministic: closed forms, one bisection, no clock.
  */
-export function createCliffFall({release,seaY=0,settledMatrix,settledAtLocal,g=C.g,pivotSeconds=C.pivotSeconds,direction=1,toLocal=p=>[...p],toWorld=p=>[...p],toLocalDir=v=>[...v],settledLocal=null,attitude='glide'}={}){
+export function createCliffFall({release,seaY=0,settledMatrix,settledAtLocal,g=C.g,pivotSeconds=C.pivotSeconds,direction=1,yawRate=C.yawRate,rollRate=C.rollRate,toLocal=p=>[...p],toWorld=p=>[...p],toLocalDir=v=>[...v],settledLocal=null,attitude='glide'}={}){
   const pos0=[...release.position],vel0=[...release.velocity];
   const h0=finite(release.heading),p0=finite(release.pitch),r0=finite(release.roll);
   const settled=decomposeSettled(settledMatrix);
@@ -89,8 +89,9 @@ export function createCliffFall({release,seaY=0,settledMatrix,settledAtLocal,g=C
   const pivotDrop=-.5*alpha*C.comBehindFront*Math.cos(p0)*pivotSeconds*pivotSeconds;
 
   const pitchAt=t=>t<=pivotSeconds?p0-.5*alpha*t*t:pivotEndPitch-omega0*(t-pivotSeconds);
-  const headingAt=t=>h0+C.yawRate*t;
-  const rollAt=t=>r0+C.rollRate*t;
+  // Free-flight spin: the van's own, when it slid off (door-teaser.js).
+  const headingAt=t=>h0+finite(yawRate,C.yawRate)*t;
+  const rollAt=t=>r0+finite(rollRate,C.rollRate)*t;
   const vyAt=t=>t<=pivotSeconds?vel0[1]-alpha*C.comBehindFront*Math.cos(p0)*t:pivotEndVy-g*(t-pivotSeconds);
 
   function flight(t){

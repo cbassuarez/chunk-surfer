@@ -3,7 +3,7 @@
   "id": "runtime.data.academic-floor-population",
   "title": "Runtime · data/academic-floor-population.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",
   "entries": [
     "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",
@@ -17,7 +17,7 @@
   ],
   "regions": [],
   "module": "src/data/academic-floor-population.js",
-  "notes": "Generated from src/data/academic-floor-population.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/data/academic-floor-population.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more": {
       "id": "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",

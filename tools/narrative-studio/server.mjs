@@ -15,6 +15,7 @@ import {
   validateProjectManifest,
 } from '../../src/narrative/contracts.js';
 import { exportRuntimeNarrative, RUNTIME_NARRATIVE_DIR } from '../../scripts/export-runtime-narrative.mjs';
+import { applyPatches, codeFields, planWriteBack } from './write-back.mjs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const STUDIO_ROOT = resolve(ROOT, 'tools/narrative-studio');
@@ -63,16 +64,21 @@ async function projectSnapshot() {
     try { layout = await readDocument(safeContentPath(layoutPath)); } catch (_) {}
     documents.push({ path, revision: loaded.revision, document: loaded.data, layoutPath, layoutRevision: layout.revision, layout: layout.data });
   }
-  // Dialogue still written in code: one read-only document per module,
-  // regenerated from src/ (scripts/export-runtime-narrative.mjs). The PUT
-  // endpoint refuses these paths: they are outside the writable roots.
+  // Dialogue still written in code: one document per module, regenerated
+  // from src/ (scripts/export-runtime-narrative.mjs). A save of one is written
+  // back into the module's literals (saveCodeDocument); codeFields tells the
+  // Studio which words are built in code and cannot change from one line.
   let runtimeIndex = { documents: [] };
   try { runtimeIndex = JSON.parse(await readFile(resolve(RUNTIME_NARRATIVE_DIR, 'index.json'), 'utf8')); } catch (_) {}
   for (const entry of runtimeIndex.documents || []) {
     try {
       const loaded = await readDocument(resolve(CONTENT_ROOT, entry.path));
-      documents.push({ path: entry.path, revision: loaded.revision, document: loaded.data, layoutPath: '', layoutRevision: '',
-        layout: { schemaVersion: 1, documentId: loaded.data.id, positions: {}, regions: {} }, readOnly: true, module: entry.module });
+      const id = loaded.data.id, layoutPath = `layout/${id}.layout.json`;
+      let layout = { data: { schemaVersion: 1, documentId: id, positions: {}, regions: {} }, revision: '' };
+      try { layout = await readDocument(safeContentPath(layoutPath)); } catch (_) {}
+      const fields = lastExport?.revisions.get(id) === loaded.revision ? codeFields(loaded.data, lastExport.edits.get(id)) : undefined;
+      documents.push({ path: entry.path, revision: loaded.revision, document: loaded.data, layoutPath, layoutRevision: layout.revision,
+        layout: layout.data, fromCode: true, module: entry.module, codeFields: fields });
     } catch (_) {}
   }
   const fallbackAudio = (await listFiles(resolve(CONTENT_ROOT, 'audio'), '.audio.json'))[0];
@@ -142,6 +148,7 @@ const studioApi = {
         if (req.method === 'GET' && url.pathname === '/api/project') return json(res, 200, await projectSnapshot());
         if (req.method === 'PUT' && url.pathname === '/api/document') {
           const input = await body(req);
+          if (String(input.path || '').startsWith('narrative-runtime/')) { const [status, result] = await saveCodeDocument(input); return json(res, status, result); }
           const full = safeContentPath(input.path);
           let current = '';
           try { current = await readFile(full, 'utf8'); } catch (_) {}
@@ -176,7 +183,54 @@ const studioApi = {
 
 await access(CONTENT_ROOT);
 // Bring the code's dialogue up to date before the first snapshot is served.
-const runtimeTotals = async () => { const { index } = await exportRuntimeNarrative({ write: true,onProgress:process.env.STUDIO_RUNTIME_TRACE?event=>console.log(JSON.stringify(event)):null }); return index.reduce((t, d) => ({ docs: t.docs + 1, lines: t.lines + d.lines, choices: t.choices + d.choices }), { docs: 0, lines: 0, choices: 0 }); };
+// The newest export's pieces are kept, keyed by document revision, so the
+// snapshot can say which words are built in code.
+let lastExport = null;
+const exportRuntime = async () => {
+  const result = await exportRuntimeNarrative({ write: true, onProgress: process.env.STUDIO_RUNTIME_TRACE ? event => console.log(JSON.stringify(event)) : null });
+  const revisions = new Map();
+  for (const [name, text] of result.files) if (name.endsWith('.story.json')) revisions.set(name.replace(/\.story\.json$/, ''), hash(text));
+  lastExport = { edits: result.edits, revisions };
+  return result;
+};
+const runtimeTotals = async () => { const { index } = await exportRuntime(); return index.reduce((t, d) => ({ docs: t.docs + 1, lines: t.lines + d.lines, choices: t.choices + d.choices }), { docs: 0, lines: 0, choices: 0 }); };
+
+// SAVING WORDS INTO CODE. The module is re-read at save time, never trusted
+// from the browser: the edit is diffed against the document the Studio
+// loaded (base), each changed field must still read in code as it did then,
+// and only the literals that field was read from are rewritten. Anything that
+// is not a word (beats, order, targets, conditions) is refused, and nothing
+// is written unless every edit can be.
+let saveLane = Promise.resolve();
+function saveCodeDocument(input) {
+  const run = async () => {
+    const name = String(input.path).slice('narrative-runtime/'.length);
+    if (!/^runtime\.[a-z0-9._-]+\.story\.json$/i.test(name)) return [400, { error: 'unknown code document' }];
+    const fresh = await exportRuntimeNarrative({ write: false });
+    const text = fresh.files.get(name);
+    if (!text) return [409, { error: 'That module no longer has dialogue the Studio can show' }];
+    const current = JSON.parse(text), revision = hash(text);
+    const base = input.base ?? (input.revision === revision ? current : null);
+    if (!base) return [409, { error: 'The module changed in code after the Studio loaded it. Reload, then make the edit again', revision }];
+    if (base.id !== current.id || input.data?.id !== current.id) return [422, { error: 'document does not match its module' }];
+    const plan = planWriteBack({ base, edited: input.data, current, edits: fresh.edits.get(current.id), module: current.module });
+    const problems = [...plan.refused, ...plan.conflicts];
+    if (problems.length) return [plan.refused.length ? 422 : 409, { error: `Not saved: ${problems[0].what} (${problems[0].where})${problems.length > 1 ? ` · ${problems.length - 1} more` : ''}`, refused: plan.refused, conflicts: plan.conflicts }];
+    if (!plan.patches.length) return [200, { ok: true, revision, document: current, codeFields: codeFields(current, fresh.edits.get(current.id)), changed: 0, alsoChanged: 0, files: [], warnings: [] }];
+    const files = await applyPatches(plan.patches, ROOT);
+    const after = await exportRuntime();
+    const savedText = after.files.get(name);
+    const saved = savedText ? JSON.parse(savedText) : null;
+    const items = new Map(Object.values(saved?.nodes || {}).flatMap((node) => [...node.lines, ...(node.choices || [])]).map((item) => [item.id, item]));
+    const warnings = plan.changes.filter((change) => (items.get(change.id)?.[change.field] ?? null) !== change.to)
+      .map((change) => `${change.id} reads differently after the save; check it in ${current.module}`);
+    return [200, { ok: true, revision: savedText ? hash(savedText) : '', document: saved, codeFields: saved ? codeFields(saved, after.edits.get(saved.id)) : {},
+      changed: plan.changes.length, alsoChanged: plan.alsoChanged.length, files, warnings }];
+  };
+  const result = saveLane.then(run, run);
+  saveLane = result.catch(() => {});
+  return result;
+}
 try { const t = await runtimeTotals(); console.log(`Runtime dialogue: ${t.docs} modules, ${t.lines} lines, ${t.choices} choices`); }
 catch (error) { console.warn(`Runtime dialogue export failed: ${error.message}`); }
 const server = await createViteServer({

@@ -1,6 +1,7 @@
-import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { loadProject, saveDocument, subscribeToChanges } from './api';
+import { loadProject, saveCodeDocument, saveDocument, subscribeToChanges } from './api';
+import { codeEdits, codeFieldProblem } from './code-edits.js';
 import { mergeRuntimeDocuments } from './runtime-refresh.js';
 import {storyMatchesSearch,storySearchNode} from './story-search.js';
 import { StoryComposer } from './StoryComposer';
@@ -68,6 +69,9 @@ export function App() {
   const [audioHistory, setAudioHistory] = useState<AudioHistoryState>({ past: [], future: [] });
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
   const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  // A code refresh arrives on a socket; it must see the current unsaved set.
+  const dirtyRef = useRef(dirtyStories);
+  dirtyRef.current = dirtyStories;
 
   const reload = useCallback(async () => {
     try {
@@ -79,7 +83,7 @@ export function App() {
       setDirtyStories(new Set()); setDirtyAudio(false); setDirtyMedia(false); setDirtyProject(false); setExternalChanges(new Set());
       setHistory({}); setAudioHistory({ past: [], future: [] });
       setRecoveryAvailable(!!localStorage.getItem(RECOVERY_KEY));
-      const fromCode = loaded.documents.filter((item) => item.readOnly).length;
+      const fromCode = loaded.documents.filter((item) => item.fromCode).length;
       const summary = `${loaded.documents.length - fromCode} story documents · ${fromCode} from code · ${loaded.audio.document.assets.length} audio assets`;
       // A deep link asks for one line; the studio selects per node, so say which
       // line was wanted rather than silently landing on its node.
@@ -98,8 +102,8 @@ export function App() {
         const requested=++refresh;
         loadProject().then((loaded)=>{
           if(disposed||requested!==refresh)return;
-          setSnapshot((current)=>mergeRuntimeDocuments(current,loaded));
-          setStatus(`Dialogue refreshed · ${loaded.documents.filter(item=>item.readOnly).length} modules from the game code`);
+          setSnapshot((current)=>mergeRuntimeDocuments(current,loaded,dirtyRef.current));
+          setStatus(`Dialogue refreshed · ${loaded.documents.filter(item=>item.fromCode).length} modules from the game code`);
         }).catch((error)=>{if(!disposed)setStatus(`Dialogue refresh failed: ${error instanceof Error?error.message:String(error)}`);});
         return;
       }
@@ -117,26 +121,44 @@ export function App() {
   const storyValidation = useMemo(() => {
     if (!document) return { ok: true, errors: [] };
     const result = validateNarrativeDocument(document);
-    if (!envelope?.readOnly) return result;
+    if (!envelope?.fromCode) return result;
     const errors = result.errors.filter((error: { path: string }) => !/\.quotes$/.test(error.path));
     return { ...result, ok: !errors.length, errors };
-  }, [document, envelope?.readOnly]);
+  }, [document, envelope?.fromCode]);
+  // Words built partly in code ({room}, a helper's prefix) have to survive an
+  // edit; the first one that does not is shown, and Save waits for it.
+  const codeProblem = useMemo(() => {
+    if (!envelope?.fromCode || !envelope.base) return '';
+    for (const edit of codeEdits(envelope.base, envelope.document).edits) {
+      const problem = codeFieldProblem(envelope.codeFields, edit.id, edit.field, edit.to);
+      if (problem) return `${edit.id}: ${problem}`;
+    }
+    return '';
+  }, [envelope]);
   const audioValidation = useMemo(() => audio ? validateAudioProject(audio) : { ok: true, errors: [] }, [audio]);
   const mediaValidation = useMemo(() => media ? validateMediaProject(media) : { ok: true, errors: [] }, [media]);
-  const authored = useMemo(() => (snapshot?.documents || []).filter((item) => !item.readOnly), [snapshot?.documents]);
+  const authored = useMemo(() => (snapshot?.documents || []).filter((item) => !item.fromCode), [snapshot?.documents]);
   const projectValidation = useMemo(() => snapshot ? validateProjectManifest(snapshot.project, { documents: authored.map((item) => item.document), documentIds: authored.map((item) => item.document.id) }) : { ok: true, errors: [] }, [snapshot, authored]);
   const unreachable = useMemo(() => document ? Object.keys(document.nodes).filter((id) => !reachableNodeIds(document).has(id)) : [], [document]);
   const activeSelectedNodeId = document && selectedNodeId && document.nodes[selectedNodeId] ? selectedNodeId : document?.entry || null;
 
   const updateStory = (transaction: StoryTransaction, dirty = true) => {
     if (!snapshot || !envelope) return;
-    // Dialogue written in code is shown here, never edited here.
-    if (envelope.readOnly) { if ('selectedId' in transaction) setSelectedNodeId(transaction.selectedId ?? null); if (dirty) setStatus(`Read-only: generated from ${envelope.module || 'the game code'}. Edit the module; the studio refreshes it.`); return; }
+    // Dialogue written in code: its words change here, its structure does not.
+    if (envelope.fromCode && dirty) {
+      const { edits, refused } = codeEdits(envelope.base ?? envelope.document, transaction.document);
+      const locked = edits.map((edit) => envelope.codeFields?.[edit.id]?.[edit.field as 'who' | 'text']?.locked).find(Boolean);
+      if (refused.length || locked) {
+        if ('selectedId' in transaction) setSelectedNodeId(transaction.selectedId ?? null);
+        setStatus(`${refused[0]?.what || locked} · ${envelope.module}`);
+        return;
+      }
+    }
     if (dirty) setHistory((current) => {
       const item = current[envelope.document.id] || { past: [], future: [] };
       return { ...current, [envelope.document.id]: { past: [...item.past.slice(-99), { document: envelope.document, layout: envelope.layout, selectedId: activeSelectedNodeId }], future: [] } };
     });
-    setSnapshot({ ...snapshot, documents: snapshot.documents.map((item) => item.document.id === envelope.document.id ? { ...item, document: transaction.document, layout: transaction.layout } : item) });
+    setSnapshot({ ...snapshot, documents: snapshot.documents.map((item) => item.document.id === envelope.document.id ? { ...item, ...(item.fromCode && dirty ? { base: item.base ?? item.document } : {}), document: transaction.document, layout: transaction.layout } : item) });
     if ('selectedId' in transaction) setSelectedNodeId(transaction.selectedId ?? null);
     if (dirty) setDirtyStories((current) => new Set(current).add(envelope.document.id));
   };
@@ -176,8 +198,23 @@ export function App() {
   };
 
   const saveStory = useCallback(async () => {
-    if (!snapshot || !envelope || envelope.readOnly) return;
+    if (!snapshot || !envelope) return;
     setStatus(`Saving ${envelope.document.title}…`);
+    if (envelope.fromCode) {
+      try {
+        const saved = await saveCodeDocument(envelope.path, envelope.revision, envelope.document, envelope.base ?? envelope.document);
+        // A layout file is only made once a beat has actually been placed.
+        const layout = envelope.layoutRevision || Object.keys(envelope.layout.positions || {}).length
+          ? await saveDocument(envelope.layoutPath, envelope.layoutRevision, envelope.layout) : { revision: envelope.layoutRevision };
+        setSnapshot({ ...snapshot, documents: snapshot.documents.map((item) => item.document.id === envelope.document.id
+          ? { ...item, document: saved.document || item.document, base: undefined, revision: saved.revision, codeFields: saved.codeFields, layoutRevision: layout.revision } : item) });
+        setDirtyStories((current) => { const next = new Set(current); next.delete(envelope.document.id); return next; });
+        setHistory((current) => { const next = { ...current }; delete next[envelope.document.id]; return next; });
+        const shared = saved.alsoChanged ? ` · ${saved.alsoChanged} more line${saved.alsoChanged === 1 ? '' : 's'} share${saved.alsoChanged === 1 ? 's' : ''} those words in code and changed too` : '';
+        setStatus(saved.changed ? `Saved ${saved.changed} edit${saved.changed === 1 ? '' : 's'} into ${envelope.module}${shared}${saved.warnings?.length ? ` · ${saved.warnings[0]}` : ''}` : `Saved ${envelope.document.title}`);
+      } catch (error) { setStatus(`Save blocked: ${error instanceof Error ? error.message : String(error)}`); }
+      return;
+    }
     try {
       const story = await saveDocument(envelope.path, envelope.revision, envelope.document);
       const layout = await saveDocument(envelope.layoutPath, envelope.layoutRevision, envelope.layout);
@@ -268,10 +305,10 @@ export function App() {
   // Authored documents first, then the dialogue still written in code. Search
   // reaches into the lines themselves, so any sentence the game says is findable.
   const visibleDocuments = useMemo(() => (snapshot?.documents || []).filter((item) => storyMatchesSearch(item,search))
-    .sort((a, b) => Number(!!a.readOnly) - Number(!!b.readOnly)), [snapshot?.documents, search]);
+    .sort((a, b) => Number(!!a.fromCode) - Number(!!b.fromCode)), [snapshot?.documents, search]);
 
   if (!snapshot || !document || !audio || !media || !envelope) return <div className="loading"><div className="studio-mark">CS</div><p>{status}</p></div>;
-  const saveDisabled = tab === 'story' ? !!envelope.readOnly || !dirtyStories.has(document.id) || !storyValidation.ok
+  const saveDisabled = tab === 'story' ? !dirtyStories.has(document.id) || !storyValidation.ok || !!codeProblem
     : tab === 'audio' ? !dirtyAudio || !audioValidation.ok
     : tab === 'media' ? !dirtyMedia || !mediaValidation.ok
     : !dirtyProject || !projectValidation.ok;
@@ -301,15 +338,15 @@ export function App() {
         <div className="story-list">{visibleDocuments.map((item) => <button key={item.document.id} className={item.document.id === document.id ? 'is-active' : ''} onClick={() => {
           setSelectedDocumentId(item.document.id); setSelectedNodeId(storySearchNode(item,search)); setStoryView('compose'); }}>
           <i style={{ background: item.document.regions.find((region) => region.kind === 'ending')?.color || item.document.regions[0]?.color }} />
-          <span><b>{item.document.title}</b><small>{item.readOnly ? `${item.module} · read-only` : item.document.id} · {Object.keys(item.document.nodes).length} nodes</small></span>
+          <span><b>{item.document.title}</b><small>{item.fromCode ? item.module : item.document.id} · {Object.keys(item.document.nodes).length} nodes</small></span>
           {dirtyStories.has(item.document.id) && <em>●</em>}
         </button>)}</div>
         <div className="validation-summary"><span className={storyValidation.ok && !unreachable.length ? 'valid' : 'invalid'}>{storyValidation.ok ? 'Schema valid' : `${storyValidation.errors.length} errors`}</span><span>{unreachable.length ? `${unreachable.length} unreachable` : 'All nodes reachable'}</span></div>
       </aside>
-      <main className="story-main">{envelope.readOnly && <div className="read-only-banner">From the game code: <code>{envelope.module}</code>. Read-only here; edit the module and the studio refreshes this document.</div>}{storyView === 'compose' && activeSelectedNodeId
-        ? <StoryComposer document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} onTransaction={updateStory} onSelect={setSelectedNodeId} onCue={(id) => openCue(id, true)} />
-        : <StoryGraph document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} search={search} onSelect={setSelectedNodeId} onEdit={(id) => { setSelectedNodeId(id); setStoryView('compose'); }} onTransaction={updateStory} />}</main>
-      {storyView === 'map' && <StoryInspector document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} onTransaction={updateStory} onCue={(id) => openCue(id, true)} />}
+      <main className="story-main">{envelope.fromCode && <div className={`code-banner${codeProblem ? ' code-banner--problem' : ''}`}>{codeProblem || <>Written in <code>{envelope.module}</code>. Edit the words here; Save writes them into the module. Beats, their order, where choices lead and conditions stay in code.</>}</div>}{storyView === 'compose' && activeSelectedNodeId
+        ? <StoryComposer document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} codeFields={envelope.fromCode ? envelope.codeFields || {} : undefined} onTransaction={updateStory} onSelect={setSelectedNodeId} onCue={(id) => openCue(id, true)} />
+        : <StoryGraph document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} search={search} wordsOnly={!!envelope.fromCode} onSelect={setSelectedNodeId} onEdit={(id) => { setSelectedNodeId(id); setStoryView('compose'); }} onTransaction={updateStory} />}</main>
+      {storyView === 'map' && <StoryInspector document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} codeFields={envelope.fromCode ? envelope.codeFields || {} : undefined} onTransaction={updateStory} onCue={(id) => openCue(id, true)} />}
       {previewOpen && <StoryPreview document={document} onCue={(id) => openCue(id)} />}
     </div> : tab === 'media' ? <MediaWorkspace project={media} selectedId={selectedMediaId} onSelected={setSelectedMediaId} onProject={updateMedia} />
     : <AudioWorkspace project={audio} selectedCueId={selectedCueId} documents={snapshot.documents} onSelectedCue={setSelectedCueId} onProject={updateAudio} onStatus={setStatus} />}

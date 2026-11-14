@@ -87,7 +87,7 @@ export function createMemoryFieldRenderer({renderer=R3,props=P3,resolveAsset=ass
     last=memoryFieldRenderFrame(state,visit,{...look,hasWheel});
     if(transformFrame)last=transformFrame(last,{state,visit,look})||last;
     const sun=memoryFieldSunDirection(visit);
-    renderer.r3dSetMemorySky?.({sun,day:visit.day,sunScale:look.sunScale??visit.sunScale,fault:look.skyFault||0,cloud:visit.cloud,edge:look.edge??1});
+    renderer.r3dSetMemorySky?.({sun,day:visit.day,sunScale:look.sunScale??visit.sunScale,fault:look.skyFault||0,cloud:visit.cloud,edge:look.edge??1,film:look.skyFilm||0});
     // The closing field closes on the sun, wherever that is on the screen.
     let centre=[.5,.5];
     const neural=look.neural||null;

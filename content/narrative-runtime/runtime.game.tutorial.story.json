@@ -3,7 +3,7 @@
   "id": "runtime.game.tutorial",
   "title": "Runtime · game/tutorial.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "STEPS.light.line",
   "entries": [
     "STEPS.light.line",
@@ -21,7 +21,7 @@
   ],
   "regions": [],
   "module": "src/game/tutorial.js",
-  "notes": "Generated from src/game/tutorial.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/game/tutorial.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "STEPS.light.line": {
       "id": "STEPS.light.line",

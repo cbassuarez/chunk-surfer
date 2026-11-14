@@ -20,7 +20,7 @@ test('the formation is submitted once without proxy blocks and keeps old terrain
 });
 test('the actual opening hull never intersects the retained road-base footprints through the fall',()=>{
  const a=worldAt(292),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed:6,furthest:292}});let count=0,min=Infinity;
- try{c.start();for(let i=0;i<300&&!c.snapshot().commitment;i++)c.update(1/120);assert.ok(c.snapshot().commitment);for(let i=0;i<1200&&!c.snapshot().finished;i++){const s=c.snapshot();if(s.worldOwner!=='drive')break;const body=s.vehiclePose.bodyMatrix;for(const x of[-1.04,0,1.04])for(const y of[0,1.3,2.57])for(const z of[-3.25,-.35,2.55]){const p=coastalLocalPoint(coastalWorldPoint([x,y,z],body));min=Math.min(min,clearance(p[0],p[2]));count++;}c.update(1/120);}assert.ok(count>10000);assert.ok(min>6.5,`actual hull clearance ${min}`);}finally{c.dispose();}
+ try{c.start();for(let i=0;i<120*12&&!c.snapshot().commitment;i++)c.update(1/120);assert.ok(c.snapshot().commitment,'the van never left the edge');for(let i=0;i<1200&&!c.snapshot().finished;i++){const s=c.snapshot();if(s.worldOwner!=='drive')break;const body=s.vehiclePose.bodyMatrix;for(const x of[-1.04,0,1.04])for(const y of[0,1.3,2.57])for(const z of[-3.25,-.35,2.55]){const p=coastalLocalPoint(coastalWorldPoint([x,y,z],body));min=Math.min(min,clearance(p[0],p[2]));count++;}c.update(1/120);}/* the fall starts straight from the slide, with no scripted run-up */assert.ok(count>3000,'too little of the fall was sampled');assert.ok(min>6.5,`actual hull clearance ${min}`);}finally{c.dispose();}
 });
 
 // Distance between the full projected conservative body envelope and every
@@ -46,8 +46,10 @@ test('the entire projected hull envelope clears every retained bay with ordinary
   const a=worldAt(292),controller=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed,furthest:292}});
   let minimum=Infinity,frames=0,previous=null,firstReturn=false;
   try{
-   controller.start();for(let i=0;i<500&&!controller.snapshot().commitment;i++)controller.update(dt);
-   assert.ok(controller.snapshot().commitment);
+   // The van goes over when it physically leaves the wash (hydroplane.js), a
+   // few metres past where a line on the road used to take the controls.
+   controller.start();for(let i=0;i<12/dt&&!controller.snapshot().commitment;i++)controller.update(dt);
+   assert.ok(controller.snapshot().commitment,'the van never left the edge');
    for(let i=0;i<1500&&!controller.snapshot().finished;i++){
     const s=controller.snapshot(),pose=s.vehiclePose;
     if(previous)assert.ok(Math.hypot(...['x','y','z'].map(k=>pose.position[k]-previous.position[k]))<.5,'clearance must not come from a body teleport');
@@ -58,7 +60,11 @@ test('the entire projected hull envelope clears every retained bay with ordinary
     }else if(!firstReturn){assert.equal(s.coverAlpha,1,'handoff remains fully covered');firstReturn=true;}
     previous=pose;controller.update(dt);
    }
-   assert.ok(frames>250);assert.ok(minimum>6.5,`full hull ${speed}m/s,${dt}s clearance ${minimum}`);
+   // 6.5 m was the margin of the one scripted release. The van now leaves from
+   // wherever it slid off, so the margin varies: from an ordinary approach it is
+   // 7.4-7.8 m at any speed up to the van's top speed; set down at the gate
+   // already doing 9 m/s it is 5.5 m. Never grazing is the requirement.
+   assert.ok(frames>(dt<1/100?150:75),'too little of the fall was sampled');assert.ok(minimum>4,`full hull ${speed}m/s,${dt}s clearance ${minimum}`);
    assert.ok(firstReturn&&controller.snapshot().finished);
   }finally{controller.dispose();}
  }

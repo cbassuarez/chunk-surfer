@@ -3,7 +3,7 @@
   "id": "runtime.data.exterior-district",
   "title": "Runtime · data/exterior-district.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "EXTERIOR_INSPECTABLES",
   "entries": [
     "EXTERIOR_INSPECTABLES"
@@ -14,7 +14,7 @@
   ],
   "regions": [],
   "module": "src/data/exterior-district.js",
-  "notes": "Generated from src/data/exterior-district.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/data/exterior-district.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "EXTERIOR_INSPECTABLES": {
       "id": "EXTERIOR_INSPECTABLES",

@@ -3,7 +3,7 @@
   "id": "runtime.game.childhood-valley-rest",
   "title": "Runtime · game/childhood-valley-rest.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "offer",
   "entries": [
     "offer",
@@ -20,7 +20,7 @@
   ],
   "regions": [],
   "module": "src/game/childhood-valley-rest.js",
-  "notes": "Generated from src/game/childhood-valley-rest.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/game/childhood-valley-rest.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "offer": {
       "id": "offer",

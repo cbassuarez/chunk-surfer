@@ -114,6 +114,20 @@ test('on the real crossings the fog only steps back between frames of the same s
   }
 });
 
+test('the burn goes one way with the white, never flickering between its frames',()=>{
+  for(const kind of['enter','arrive','leave','emerge'])for(let k=0;k<40;k++){
+    const seed=(k+.5)/40;if(!filmLeakRoll(seed).filmOnly)continue;
+    const run=ATLAS.reels[filmLeakRoll(seed).reel].burn,rising=kind==='enter'||kind==='leave';let prev=null;
+    for(let t=0;t<=neuralSeconds(kind);t+=1/60){
+      const n=neuralFrame(kind,t),b=filmLeakFrame({leak:n.leak,white:n.white,time:n.time,seed}).burn;
+      if(!b.scale)continue;
+      const at=run.indexOf(b.a);
+      if(prev!==null)assert.ok(rising?at>=prev:at<=prev,`${kind} burn went from ${prev} back to ${at}`);
+      prev=at;
+    }
+  }
+});
+
 test('the post shader takes the film, and the painted leak is gone',()=>{
   const r3d=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
   const post=r3d.slice(r3d.indexOf('const POST_FRAG'),r3d.indexOf('export function r3dPostShaderSources'));

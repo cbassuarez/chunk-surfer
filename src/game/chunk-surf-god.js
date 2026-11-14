@@ -279,18 +279,16 @@ export function buildBellsGodPreset(depth = 0, options = {}) {
     state,
     position: {
       x: LANDSCAPE_ORIGIN.x,
-      y: LANDSCAPE_ORIGIN.y + SOURCE_BELLS.from - Math.max(SOURCE_BELLS.entryStandoff, along),
+      y: LANDSCAPE_ORIGIN.y + Math.min(SOURCE_BELLS.arrival, SOURCE_BELLS.from - along),
       facing: 0,
     },
   };
 }
 
 // The three acts, by the depths they actually occupy.
+// The walk between the bells is gone: the tower road is walked in the Rind and
+// arrives at the doors, so the passage starts there.
 export const BELLS_GOD_STOPS = Object.freeze([
-  { id: 'bells-head', label: 'BELLS — HEAD OF THE PASSAGE', depth: SOURCE_BELLS.entryStandoff },
-  { id: 'bells-architecture', label: 'BELLS — ARCHITECTURE', depth: 90 },
-  { id: 'bells-null', label: 'BELLS — WHERE TIME IS NULL', depth: 200 },
-  { id: 'bells-ring', label: 'BELLS — THE RING', depth: 330 },
   { id: 'bells-doors', label: 'BELLS — THE DOORS', depth: 440 },
   { id: 'bells-door', label: 'BELLS — THE TOWER DOOR', depth: 530 },
 ]);

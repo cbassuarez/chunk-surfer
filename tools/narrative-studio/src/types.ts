@@ -179,6 +179,11 @@ export type ProjectManifest = {
   timeline?: TimelineEntry[];
 };
 
+// Per line/choice id, for documents generated from code: a field built
+// entirely in code is locked; a partly built one lists the parts to keep.
+export type CodeField = { locked?: string; keep?: string[] };
+export type CodeFields = Record<string, { who?: CodeField; text?: CodeField }>;
+
 export type DocumentEnvelope = {
   path: string;
   revision: string;
@@ -186,9 +191,14 @@ export type DocumentEnvelope = {
   layoutPath: string;
   layoutRevision: string;
   layout: StoryLayout;
-  // Generated from dialogue still written in src/: shown, never saved.
-  readOnly?: boolean;
+  // Generated from dialogue written in src/. Its words are edited here and a
+  // save writes them back into the module; its structure stays in code.
+  fromCode?: boolean;
   module?: string;
+  codeFields?: CodeFields;
+  // The document as loaded, before this session's edits: what a save is
+  // diffed against on the server.
+  base?: NarrativeDocument;
 };
 
 export type ProjectSnapshot = {

@@ -6,14 +6,16 @@
 // It is also what failing cells do, one mechanism among several: a surge, then nothing,
 // and what comes back comes back slowly. That is in how this behaves, not how it looks.
 //
-//   the leaks    film fogging from the edge of the gate: deep red at its reach, then
-//                orange, yellow, white where it is worst, on a hand-cranked twelve frames
-//                a second. Out-of-focus light drifting over the lens.
+//   the leaks    film fogging from the edge of the gate: crimson at its reach, a cool
+//                white where it is worst, on a hand-cranked twelve frames a second. It is
+//                scanned Super 8, and each crossing is its own roll (game/film-leak.js).
 //   the flare    light swelling from one point, its edge fringed by a cheap lens.
 //   the melt     the focus goes, every highlight swells, the frame is exposed twice.
 //   the white    blinding, not faded to: the highlights clip first.
 //   the return   the exposure comes down first and the focus last, as he comes to.
 //   the after    back in the room, the sun is still on his eye, in its complement.
+// About half the crossings are film only: the leaks and their own burn carry the white, and
+// the flare, the melt and the after are not there.
 //
 // PHOTOSENSITIVITY IS NOT OPTIONAL HERE. Whole-screen brightness rises and falls at most
 // twice in any one second, and the twelve-frame stepping moves only the leak's edge, never

@@ -318,29 +318,20 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   const next={x:arrival.x,y:arrival.y-.5};
   assert.equal(runtime.geometry.canStep(arrival.x,arrival.y,next.x,next.y).ok,true);
   runtime.onStep(arrival,next);
+  // THE WALK BETWEEN THE BELLS IS GONE (2026-11-14). The tower road is walked
+  // in the Rind; taking it arrives here, two metres short of the door field,
+  // and nothing of the old passage behind that can be stood on or seen.
   const head=runtime.bellsFrame();
   assert.equal(head.active,true);
+  assert.equal(arrival.y-origin.y,SOURCE_BELLS.arrival);
+  assert.ok(SOURCE_BELLS.arrival>SOURCE_BELLS.doors.from&&SOURCE_BELLS.arrival-SOURCE_BELLS.doors.from<=6,'just short of the doors');
   assert.equal(head.depth,SOURCE_BELLS.from-(next.y-origin.y));
-  assert.equal(head.resolve,0);assert.equal(head.atRoom,false);
-  for(const piece of SOURCE_BELL_PASSAGE.filter(piece=>piece.contact)){
-    assert.ok(runtime.geometry.cellAt(origin.x+piece.x,origin.y+piece.y));
-  }
-
-  const entry = SOURCE_BELL_PASSAGE.find((entry) => entry.id === 'bells-field-14');
-  const body = sourceBellContactShape(entry);
-  runtime.setPlayerPosition({ x: origin.x + body.x, y: origin.y + body.y + body.ry - 0.1, facing: 0.37 });
-  const contact = runtime.tickBellField(0.1);
-  assert.equal(contact.moved, true, 'live runtime consumes the physical field collision');
-  assert.equal(contact.contacts[0].id, entry.id);
-  assert.equal(contact.noise, 0, 'this authored bell is mute');
-  assert.equal(contact.reset, null);
-  assert.equal(runtime.state().bellField.hits, 1, 'contact state is carried into the Source save snapshot');
-
-  // Halfway down, the room is on its way and the walk has something left in it.
-  runtime.setPlayerPosition({ x: origin.x, y: origin.y + (SOURCE_BELLS.resolveFrom + SOURCE_BELLS.resolveTo) / 2, facing: 0 });
-  const middle = runtime.bellsFrame();
-  assert.ok(middle.resolve > .4 && middle.resolve < .6);
-  assert.ok(middle.remaining > 0);
+  assert.equal(head.atRoom,false);
+  assert.equal(runtime.geometry.cellAt(arrival.x,origin.y+SOURCE_BELLS.open+1),null,'the ground stops behind him');
+  assert.equal(runtime.geometry.canStep(arrival.x,arrival.y,arrival.x,origin.y+SOURCE_BELLS.open+1).ok,false);
+  for(const piece of SOURCE_BELL_PASSAGE)assert.equal(runtime.geometry.cellAt(origin.x+piece.x,origin.y+piece.y)&&piece.y>SOURCE_BELLS.open?true:false,false,piece.id);
+  assert.equal(runtime.propInstances?.(arrival.x,arrival.y)?.some?.(p=>/^bells-(arch|field|null|ring)/.test(p.id))??false,false,'none of the passage\'s bells are standing');
+  assert.equal(runtime.objective?.()?.label?.includes('BELLS')??false,false);
 
   // THE TOWER DOOR IS LOCKED until the two seeded doors have been walked through.
   const doors = runtime.doorFieldDoors();

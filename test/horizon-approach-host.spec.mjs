@@ -146,9 +146,10 @@ function departureFixture(){
     px:0,py:0,renderMove:{},motionRig:{},trail:['old'],r3dCache:cache,
     R3:{r3dSetFacing:facing=>calls.push({facing})},saveCommit:value=>{Object.assign(save,value);calls.push('commit');},
     syncSourceRender:value=>calls.push({source:structuredClone(value)}),
+    ensureCtx(){},warmHorizonBells(){},horizonBells:null,ringHorizonBell:(state,event)=>calls.push({bell:event.id}),
   });
   vm.runInContext(actualFunction('arriveFromHorizonApproach')+'\n'+actualFunction('beginHorizonApproach'),context);
-  return{context,calls,stack,point,save,cache,event:type=>options.onEvent({type})};
+  return{context,calls,stack,point,save,cache,event:(type,extra={})=>options.onEvent({type,...extra})};
 }
 
 test('both actual live Horizon decision callbacks immediately restore their chosen Source destination',()=>{
@@ -179,4 +180,17 @@ test('a non-live Horizon preview releases its borrowed scene without a field tra
   f.calls.length=0;f.event(HORIZON_APPROACH_EVENT.DECLINED);
   assert.equal(f.stack.length,0);assert.ok(f.calls.some(call=>call?.source?.force));
   assert.equal(f.calls.some(call=>call?.choose||call==='cathedral-fight'),false);
+});
+
+test('taking the tower in the closed space commits the route and keeps him walking; St Brendan\'s door hands him on',()=>{
+  const f=departureFixture();f.context.beginHorizonApproach({live:true});
+  f.calls.length=0;f.event(HORIZON_APPROACH_EVENT.ACCEPTED,{walking:true,exit:'tower'});
+  assert.ok(f.calls.some(call=>call?.decide===true),'the route is the night\'s at once');
+  assert.equal(f.calls.some(call=>call?.choose),false,'but there is no cut: he is still on the road');
+  assert.equal(f.stack.length,1);assert.ok(f.calls.some(call=>call?.persist));
+  f.event(HORIZON_APPROACH_EVENT.BELL,{id:'tower-bell-c',strikes:[]});assert.ok(f.calls.some(call=>call?.bell==='tower-bell-c'));
+  f.save.chunkSurf={phase:'horizon',finale:{bust:{decision:'accepted'}}};f.calls.length=0;
+  f.event(HORIZON_APPROACH_EVENT.TOWER_REACHED,{exit:'tower'});
+  assert.equal(f.calls.some(call=>call?.decide!==undefined),false,'not decided twice');
+  assert.ok(f.calls.some(call=>call?.choose==='tower'));assert.deepEqual(f.calls.find(call=>call?.place),{place:f.point});assert.equal(f.stack.length,0);
 });

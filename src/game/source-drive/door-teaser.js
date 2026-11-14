@@ -15,6 +15,7 @@ import {resetWheelHands,wheelHandDiagnostics} from './geometry/wheel-hands-pose.
 import {DRIVE_TIME_SKIPS,createTimeSkipDirector,hazardSceneRows} from './time-skips.js';
 import {openingWorldAt} from './opening-road.js';
 import {DRIVE_MEMORY_BREAK,driveMemoryBreakFrame} from './memory-break.js';
+import {DRIVE_HYDROPLANE,hydroplaneSampler,departureSeverity} from './hydroplane.js';
 // The complete cab/box envelope must clear the retained road formation, not
 // merely its centre. This seaward release leaves a measured 6.78m projected
 // hull margin while preserving the existing supported lead-in and wreck site.
@@ -99,7 +100,7 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
   const length=Math.hypot(release.position.x-capture.position.x,release.position.z-capture.position.z),lead=edge?0:clamp(2*length/(Math.abs(drive.speed)+6.5),1,3);
   const endHeading=rearFirst||edge?capture.heading:capture.heading+angleDelta(release.heading,capture.heading),endPitch=edge?capture.pitch:rearFirst?-release.pitch:release.pitch;
   const end=edge?capture:{...release,heading:endHeading,pitch:endPitch,roll:0,bodyMatrix:Array.from(bodyAt(release.position,endHeading,endPitch))};
-  const f={age:0,lead,capture,velocity,release:end,releaseVelocity:edge?velocity:velocityWorld,travelSign:Math.sign(drive.speed)||1,rearFirst,wheelRate:edge?drive.speed/.34:(rearFirst?-1:1)*6.5/.34,reason:edge?'actual-cliff-support-loss':'forward-road-plane-crossing',support,look:{...look},programmeStart:drive.programTime,wheelStart:drive.wheelRotation};
+  const f={age:0,lead,capture,velocity,release:end,releaseVelocity:edge?velocity:velocityWorld,travelSign:Math.sign(drive.speed)||1,rearFirst,wheelRate:edge?drive.speed/.34:(rearFirst?-1:1)*6.5/.34,reason:edge?'actual-cliff-support-loss':'past-the-water-fallback',support,edge,departureThrottle:drive.throttle||0,severity:departureSeverity(drive),departure:{speed:drive.speed,lateralSpeed:drive.lateralSpeed,yawRate:drive.yawRate,aquaplane:drive.aquaplane||0,wheelLock:drive.wheelLock||0,wheelSpin:drive.wheelSpin||0},look:{...look},programmeStart:drive.programTime,wheelStart:drive.wheelRotation};
   // The fall, integrated from the actual capture: the supporting axle pivots
   // (or neither does, off the edge), then gravity owns the rest.
   f.fall=createCliffFall({
@@ -107,6 +108,9 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
     seaY:COASTAL_MEMORY_LAYOUT.seaY,
     settledMatrix:multiply(COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL),
     settledAtLocal:14,pivotSeconds:edge?0:CLIFF_FALL.pivotSeconds,direction:rearFirst?-1:1,attitude:'hold',
+    // How it goes over is how it left: the slide's spin carries into the air,
+    // and a van going off sideways trips on the edge and rolls.
+    yawRate:edge?clamp(drive.yawRate,-1.4,1.4):CLIFF_FALL.yawRate,rollRate:edge?CLIFF_FALL.rollRate*(1+5*clamp(Math.abs(drive.lateralSpeed)/5,0,1.4)):CLIFF_FALL.rollRate,
     toLocal:coastalToLocal,toWorld:coastalToWorld,toLocalDir:coastalDirToLocal,
   });
   f.contactFlight=f.fall.entryTime;f.contact=airborne(f,f.contactFlight);f.coveredAt=lead+f.contactFlight+.28;f.finishedAt=f.coveredAt+2.4;force=f;keys.clear();handControl=null;
@@ -130,10 +134,10 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
  function view(){let p=force?forcedPose():{...livePose(),timeSec,cinematicTime:storyAt(Math.max(drive.furthest,-drive.z)),phase:timeSec<.65?'sound-lead':cut?'time-skip':'free-drive',coverAlpha:timeSec<.65?1:Math.max(cutCover(),1-smooth((timeSec-.65)/.65)),
   tuning:cut?driveMemoryBreakFrame(cut,breakSpec):null,
   stretch:skips?{index:skips.index(),id:skips.stretch()?.id||null,time:skips.time(),cuts:skips.cuts()}:null,worldOwner:'drive',cliffCommitted:false,controlOwner:controlsEnabled()?'player':'opening-entry',controlsEnabled:controlsEnabled(),...radioLeanPose()};if(!started){p.phase='idle';p.coverAlpha=0;p.worldOwner='return';}if(skip){p={...p,phase:skip.age<.28?'skip-cover':'return',coverAlpha:skip.age<.28?mix(skip.alpha,1,smooth(skip.age/.28)):1-smooth((skip.age-.28)/.7),worldOwner:skip.age<.28?skip.owner:'return'};}if(finished){p.phase='complete';p.coverAlpha=0;p.worldOwner='return';}return p;}
- function synchronize(){const p=view();drive.paused=paused||hostPaused||disposed||finished||!started||p.worldOwner!=='drive';if(force){const pull=smooth(force.age/.38),wet=p.waterSeconds||0;Object.assign(drive,{x:anchor.x,z:anchor.z,heading:anchor.heading,roadHeight:anchor.height,speed:p.speed,programTime:force.programmeStart+force.age,furthest:Math.max(drive.furthest,304),throttle:wet>0?0:p.phase==='departure'?.28+.69*pull:.16,engineLoad:wet>0?0:p.phase==='departure'?.20+.75*pull:.33,brakeAmount:0,brakeHold:false,bodyPitch:0,bodyRoll:0,bodyHeave:0,wheelRotation:force.wheelStart+force.age*force.wheelRate});}const cinematic=doorDriveCinematicFrame(p.cinematicTime);cinematic.controlsLocked=!p.controlsEnabled;cinematic.phase=p.phase;cinematic.worldTimeSec=timeSec;cinematic.motionTimeSec=timeSec;cinematic.warningWheelAge=warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt);drive.openingCinematic=cinematic;return p;}
- function complete(){if(finished)return;finished=true;synchronize();if(!notified){notified=true;onComplete({skipped:!!skip,timeSec,duration:timeSec});}}
+ function synchronize(){const p=view();drive.paused=paused||hostPaused||disposed||finished||!started||p.worldOwner!=='drive';if(force){const pull=smooth(force.age/.38),wet=p.waterSeconds||0;Object.assign(drive,{x:anchor.x,z:anchor.z,heading:anchor.heading,roadHeight:anchor.height,speed:p.speed,programTime:force.programmeStart+force.age,furthest:Math.max(drive.furthest,304),throttle:wet>0?0:p.phase==='departure'?.28+.69*pull:force.edge?force.departureThrottle:.16,engineLoad:wet>0?0:p.phase==='departure'?.20+.75*pull:.33,wheelSpin:wet>0?0:force.edge?force.departureThrottle:0,aquaplane:0,brakeAmount:0,brakeHold:false,bodyPitch:0,bodyRoll:0,bodyHeave:0,wheelRotation:force.wheelStart+force.age*force.wheelRate});}const cinematic=doorDriveCinematicFrame(p.cinematicTime);cinematic.controlsLocked=!p.controlsEnabled;cinematic.phase=p.phase;cinematic.worldTimeSec=timeSec;cinematic.motionTimeSec=timeSec;cinematic.warningWheelAge=warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt);drive.openingCinematic=cinematic;return p;}
+ function complete(){if(finished)return;finished=true;synchronize();if(!notified){notified=true;onComplete({skipped:!!skip,timeSec,duration:timeSec,severity:force?.severity??null});}}
  function coveredReturn(){if(returned||!started||disposed||view().worldOwner!=='return')return;returned=true;onCoveredReturn({skipped:!!skip,timeSec,phase:'impact-black',coverAlpha:1});}
- function snapshot(){const p=view();return{phase:p.phase,coverAlpha:p.coverAlpha,worldOwner:p.worldOwner,timeSec,duration:96,variableDuration:true,controlsEnabled:p.controlsEnabled,clippedSeconds,started,paused:paused||hostPaused,finished,disposed,skipped:!!skip,coveredReturn:returned,vehiclePose:clone(p),driveState:clone(drive),look:{...look},settings:{...settings},roadOutcomes:skips?.outcomes?.()||[],worldMotionClock:{timeSec,warningStartedAt,warningWheelAge:warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt)},weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase,commitment:force?{at:force.programmeStart-C.programmeStart,lead:force.lead,capture:clone(force.capture),reason:force.reason,rearFirst:force.rearFirst,contactFlight:force.contactFlight,release:clone(force.release),support:clone(force.support)}:null};}
+ function snapshot(){const p=view();return{phase:p.phase,coverAlpha:p.coverAlpha,worldOwner:p.worldOwner,timeSec,duration:96,variableDuration:true,controlsEnabled:p.controlsEnabled,clippedSeconds,started,paused:paused||hostPaused,finished,disposed,skipped:!!skip,coveredReturn:returned,vehiclePose:clone(p),driveState:clone(drive),look:{...look},settings:{...settings},roadOutcomes:skips?.outcomes?.()||[],worldMotionClock:{timeSec,warningStartedAt,warningWheelAge:warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt)},weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase,commitment:force?{at:force.programmeStart-C.programmeStart,lead:force.lead,capture:clone(force.capture),reason:force.reason,severity:force.severity,departure:clone(force.departure),rearFirst:force.rearFirst,contactFlight:force.contactFlight,release:clone(force.release),support:clone(force.support)}:null};}
  function start(){if(started||disposed||finished)return false;started=true;resetWheelHands();synchronize();return true;}
  function setPaused(value){if(disposed||finished)return false;paused=!!value;if(paused)keys.clear();synchronize();return paused;}
  function step(h){
@@ -147,18 +151,18 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
    cut.waiting=!canReplace&&nextAge>=breakSpec.placeAt;
    cut.age=cut.waiting?Math.min(nextAge,breakSpec.placeAt-1e-5):nextAge;
    if(cut.age<breakSpec.coverAt||cut.age>breakSpec.revealAt)
-     stepDrive(drive,h,{...Object.fromEntries([...keys].map(k=>[k,true])),...(steerAnalog!=null?{steer:steerAnalog}:{})},openingDriveColliders(drive),{roadSampler:openingRoadSurfaceAt});
+     stepDrive(drive,h,{...Object.fromEntries([...keys].map(k=>[k,true])),...(steerAnalog!=null?{steer:steerAnalog}:{})},openingDriveColliders(drive),{roadSampler:hydroplaneSampler(openingRoadSurfaceAt,drive)});
    else drive.programTime+=h;
    if(!cut.placed&&canReplace&&cut.age>=breakSpec.placeAt){placeStretch(skips.advance({to:cut.to}));cut.placed=true;}
    if(cut.age>=breakSpec.seconds)cut=null;
   }
   else{
    const before=openingRoadSurfaceAt(drive.x,drive.z);drive.paused=false;
-   stepDrive(drive,h,timeSec<.8?{}:{...Object.fromEntries([...keys].map(k=>[k,true])),...(steerAnalog!=null?{steer:steerAnalog}:{})},openingDriveColliders(drive),{roadSampler:openingRoadSurfaceAt});
+   stepDrive(drive,h,timeSec<.8?{}:{...Object.fromEntries([...keys].map(k=>[k,true])),...(steerAnalog!=null?{steer:steerAnalog}:{})},openingDriveColliders(drive),{roadSampler:hydroplaneSampler(openingRoadSurfaceAt,drive)});
    const r=openingRoadSurfaceAt(drive.x,drive.z),support=openingCliffSupport(drive),vx=Math.sin(drive.heading)*drive.speed+Math.cos(drive.heading)*drive.lateralSpeed,vz=-Math.cos(drive.heading)*drive.speed+Math.sin(drive.heading)*drive.lateralSpeed,forwardRoadVelocity=vx*Math.sin(r.heading)-vz*Math.cos(r.heading);
    if(warningStartedAt==null&&r.distance>=288)warningStartedAt=timeSec;
    if(support.departed)commit({edge:true,support});
-   else if(before.distance<C.commitDistance&&r.distance>=C.commitDistance&&forwardRoadVelocity>0)commit();
+   else if(before.distance<DRIVE_HYDROPLANE.to+6&&r.distance>=DRIVE_HYDROPLANE.to+6&&forwardRoadVelocity>0)commit();
    else if(skips&&timeSec>=.8){const request=skips.update(drive,h);if(request){
      if(request.kind==='continuous')skips.advance({to:request.to,continuous:true,distance:request.distance});
      else cut={age:0,serial:++cutSerial,reason:request.reason,from:request.from,to:request.to,destination:timeSkips.stretches[request.to]?.id,

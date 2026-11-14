@@ -323,3 +323,46 @@ test('the copy never says the word Seb has ruled out, and Lyle is he',()=>{
     assert.doesNotMatch(text,/Lyle[^.]{0,40}\b(she|her)\b/,f);
   }
 });
+test('the tower road: St Brendan\'s ring either side, clear of the road, and the ones that sound look like the rest',async()=>{
+  const {HORIZON_TOWER_BELLS,HORIZON_SOUNDING_BELLS,HORIZON_TOWER_WALK,horizonBellDue,horizonBellPose,horizonBellStrikes}=await import('../src/data/horizon-tower-bells.js');
+  const {horizonTowerBellProps,HORIZON_BELL_MESHES}=await import('../src/render/horizon-approach-frame.js');
+  const sizes=new Set(HORIZON_TOWER_BELLS.map(b=>b.size));for(const size of['regular','miniature','architectural'])assert.ok(sizes.has(size),size);
+  assert.ok(HORIZON_TOWER_BELLS.every(b=>b.ring>=1&&b.ring<=8),'only the ring');assert.ok(new Set(HORIZON_TOWER_BELLS.map(b=>b.side)).size===2,'either side');
+  for(const b of HORIZON_TOWER_BELLS){
+    // Wheel and swing clear the road wherever the wheel faces.
+    const reach=b.size==='architectural'?Math.abs(Math.cos(b.yaw))*1.1*b.scale+.1*b.scale:1.2*b.scale;
+    assert.ok(b.offset-reach>C.variants.closed.roadHalfWidth,`${b.id}: ${b.offset} vs ${reach}`);
+    assert.ok(b.r>HORIZON_TOWER_WALK.from&&b.r<HORIZON_TOWER_WALK.arrive);
+  }
+  assert.ok(HORIZON_SOUNDING_BELLS.length>=4&&HORIZON_SOUNDING_BELLS.length<HORIZON_TOWER_BELLS.length/2,'some, not most');
+  // Nothing sets one off where you would expect: never at the bell itself for all of them.
+  assert.ok(HORIZON_SOUNDING_BELLS.some(b=>b.sound.at<b.r-3),'one goes long before he gets there');
+  assert.ok(HORIZON_SOUNDING_BELLS.some(b=>b.sound.at>b.r+3),'one goes after he has passed it');
+  assert.ok(HORIZON_SOUNDING_BELLS.some(b=>b.sound.still),'one waits for him to stop');
+  const l=HORIZON_SOUNDING_BELLS.find(b=>b.sound.still);assert.equal(horizonBellDue(l,{along:l.sound.from+1,still:l.sound.still}),true);assert.equal(horizonBellDue(l,{along:l.sound.from+1,still:0}),false);
+  // A sounding bell is drawn exactly like the others until it sounds.
+  const base={...freshHorizonApproach({occupant:'lyle'}),offerOpen:true,elapsed:5};
+  const quiet=horizonTowerBellProps(base),rung=horizonTowerBellProps({...base,tower:{rung:{[l.id]:4.4},still:0,reached:false}});
+  assert.equal(quiet.length,HORIZON_TOWER_BELLS.length*5);assert.ok(quiet.every(p=>HORIZON_BELL_MESHES.includes(p.mesh)));
+  assert.ok(quiet.filter(p=>p.id.includes(l.id)).every((p,k)=>p.matrix.every((v,j)=>v===quiet.filter(q=>q.id.includes(l.id))[k].matrix[j])));
+  assert.notDeepEqual(rung.find(p=>p.id==='ha:'+l.id).matrix,quiet.find(p=>p.id==='ha:'+l.id).matrix,'and swings when it does');
+  assert.equal(horizonTowerBellProps({...base,offerOpen:false}).length,0,'not before the road is offered');
+  // It swings from hanging still, strikes twice, and comes back to hanging still.
+  assert.equal(horizonBellPose(l,0).angle,0);assert.equal(horizonBellPose(l,10).angle,0);
+  const[hand,back]=horizonBellStrikes(l);assert.ok(hand.at>0&&back.at>hand.at);
+});
+test('taking the tower walks on down the road, the bells sound once each, and St Brendan\'s door hands him on',()=>{
+  const V=C.variants.closed,T=horizonTowerBearing('closed');
+  let s=walk({...freshHorizonApproach({occupant:'sarah',condition:true}),arrived:true,offerOpen:true,frame:spaceAtMap(V.sign,V.radius,1,T),yaw:Math.PI-T},5).state;
+  assert.equal(s.decided,'accepted');assert.ok(s.tower&&!s.tower.reached);
+  const before=horizonApproachMap(s).r;const{state,events}=walk(s,30);
+  assert.ok(horizonApproachMap(state).r>before);
+  const bells=events.filter(e=>e.type===E.BELL);assert.equal(new Set(bells.map(e=>e.id)).size,bells.length,'once each');assert.ok(bells.length>=4);
+  assert.equal(events.filter(e=>e.type===E.TOWER_REACHED).length,1);assert.equal(state.tower.reached,true);
+  // No way back onto the other roads.
+  let back={...s,yaw:-T};back=walk(back,20).state;
+  assert.ok(Math.abs(wrapAngle(horizonApproachMap(back).phi-T))<.3);assert.ok(horizonApproachMap(back).r>=5-1e-6);
+  // Coming back after a defeat, taking it is arriving.
+  const again=walk({...freshHorizonApproach({occupant:'sarah',defeats:1}),arrived:true,offerOpen:true,frame:spaceAtMap(V.sign,V.radius,1,T),yaw:Math.PI-T},5);
+  assert.equal(again.state.tower,null);assert.equal(again.events.find(e=>e.type===E.ACCEPTED).walking,false);
+});

@@ -29,6 +29,22 @@ function larkBuffer(context,seconds=6){
 export function createMemoryFieldAudio({context,destination}={}){
   let bus=null,running=[],noise=null,lark=null,larkSource=null,larkGain=null,windGain=null,windFilter=null,rustleGain=null,rainGain=null,waterGain=null;
   let nextBreath=0,nextTick=0,stuck=false,paused=false,stopped=false,visitId=null,started=false;const knocked=new Set();
+  // The crash field's van on its way down: air tearing past it, and its horn,
+  // jammed on, louder the nearer it gets. Made when it starts, gone when it lands.
+  let fall=null,landed=false;
+  function startFall(){
+    if(fall||!bus||!noise)return;
+    const rush=loop(noise,{filter:'bandpass',frequency:300,q:.6,gain:0}),horn=context.createGain(),tone=context.createBiquadFilter();
+    tone.type='lowpass';tone.frequency.value=1500;horn.gain.value=0;tone.connect(horn);horn.connect(bus);
+    const oscillators=[392,494].map(f=>{const o=context.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(tone);o.start();running.push(o);return o;});
+    fall={rush,horn,tone,oscillators};
+  }
+  function endFall(at=now()){
+    if(!fall)return;
+    const ending=fall;fall=null;
+    for(const level of[ending.rush.level.gain,ending.horn.gain]){level.cancelScheduledValues(at);level.setValueAtTime(level.value,at);level.linearRampToValueAtTime(0,at+.03);}
+    setTimeout(()=>{for(const o of ending.oscillators)try{o.stop();}catch{}try{ending.rush.source.stop();}catch{}},400);
+  }
   const now=()=>context?.currentTime||0;
   function loop(buffer,{gain=0,filter=null,frequency=800,q=.7}={}){
     const source=context.createBufferSource();source.buffer=buffer;source.loop=true;
@@ -85,7 +101,17 @@ export function createMemoryFieldAudio({context,destination}={}){
       if(t>=nextBreath)nextBreath=t+breathe(1,t,d)+.4+d*1.6;
       if(d>.38&&t>=nextTick&&visit?.door){nextTick=t+.72;thud({from:1500,to:1100,gain:.012+.018*d,seconds:.018,at:t});}
       // Somebody at the glass. In the last of it they are still there.
-      const knockAt=visit?.id==='fourth'?[24]:visit?.id==='fifth'?[12,31]:[];
+      const crash=state?.crash;
+      if(crash&&!crash.landed&&!landed){
+        startFall();
+        // Loudness by distance, as a thing coming at you is heard: barely, and
+        // then all at once.
+        const k=1/(1+Math.max(0,crash.distance)/35);
+        set(fall?.rush.level.gain,.42*k**1.3,.08);set(fall?.rush.shape?.frequency,260+1700*k,.08);
+        set(fall?.horn.gain,.085*k,.08);set(fall?.tone.frequency,900+1400*k,.08);
+      }
+      // Somebody at the glass. The crash field's door has nobody behind it.
+      const knockAt=visit?.crash?[]:visit?.id==='fourth'?[24]:visit?.id==='fifth'?[12,31]:[];
       for(const at of knockAt)if(state.elapsed>=at&&!knocked.has(at)){knocked.add(at);playCabBleed(context,bus,'knock',{level:.9});}
     },
     event(event={}){
@@ -95,6 +121,19 @@ export function createMemoryFieldAudio({context,destination}={}){
       else if(event.type==='dead')burst({type:'bandpass',from:2600,to:2200,q:3,gain:.022,attack:.002,hold:.004,release:.03,at:t});
       else if(event.type==='give'){thud({from:90,to:40,gain:.3,seconds:.5,at:t});burst({type:'bandpass',from:4200,to:900,q:.7,gain:.09,attack:.08,hold:1.1,release:1.8,at:t});burst({type:'lowpass',from:600,to:240,gain:.12,attack:.4,hold:2,release:3,at:t+.4});}
       else if(event.type==='through')breathe(1.4,t);
+      else if(event.type==='van-impact'){
+        landed=true;endFall(t);
+        // The ground taking it: the weight, the body folding, glass, earth.
+        thud({from:72,to:22,gain:.95,seconds:1.5,at:t});thud({from:140,to:40,gain:.5,seconds:.35,at:t});
+        burst({type:'lowpass',from:420,to:90,gain:.5,attack:.004,hold:.2,release:1.6,at:t});
+        burst({type:'bandpass',from:2600,to:520,q:.6,gain:.32,attack:.002,hold:.22,release:.9,at:t+.01});
+        burst({type:'bandpass',from:1200,to:700,q:1.4,gain:.12,attack:.01,hold:.5,release:1.4,at:t+.18});
+        for(const[d,f]of[[.04,6200],[.11,5200],[.19,7100],[.33,4800]])burst({type:'highpass',from:f,to:f,q:1,gain:.05,attack:.001,hold:.02,release:.12,at:t+d});
+        // On him: the hit, and then nothing at all.
+        if(event.crushed){bus.gain.cancelScheduledValues(t);bus.gain.setValueAtTime(1,t);bus.gain.setTargetAtTime(0,t+.16,.03);}
+        // Beside him: the metal ticking as it cools.
+        else for(let k=0;k<9;k++)thud({from:2100,to:1700,gain:.018*(1-k/12),seconds:.015,at:t+2.2+k*(.9+.37*Math.sin(k*2.1))});
+      }
     },
     setPaused(value){
       const next=!!value;if(next===paused||!bus)return;paused=next;

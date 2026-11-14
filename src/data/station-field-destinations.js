@@ -84,7 +84,7 @@ export function stationFieldReceipt(session, value = {}) {
     && checkpoint.connectionId === field.connectionId && checkpoint.witness?.landmarkId === visit.landmark.id
     && checkpoint.witness.inspected === true;
   const returned = checkpoint?.stage === 'returning'
-    && ['crossed-return', 'used-return'].includes(checkpoint.returnReason);
+    && ['crossed-return', 'used-return', 'crushed'].includes(checkpoint.returnReason);
   return { fieldId: field.fieldId, connectionId: field.connectionId,
     failed: value.reason === 'unavailable' || !!value.error,
     meaningful: witnessed && returned && value.meaningful === true && receipt.fieldId === field.fieldId

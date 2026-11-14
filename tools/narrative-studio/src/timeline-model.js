@@ -1,5 +1,5 @@
-// Source-owned conversations are first-class timeline entries while their
-// modules remain the editing authority. This is a view; project.json stays the
+// Source-owned conversations are first-class timeline entries; their words
+// are saved back into their modules. This is a view; project.json stays the
 // canonical manifest for documents the Studio can write.
 const openingModule='src/data/opening-prologue.js';
 const sourceModules=[
@@ -10,7 +10,7 @@ const sourceModules=[
 ];
 
 export function projectStudioTimeline(project,documents){
-  const byModule=new Map(documents.filter(item=>item.readOnly).map(item=>[item.module,item.document.id]));
+  const byModule=new Map(documents.filter(item=>item.fromCode).map(item=>[item.module,item.document.id]));
   const unique=ids=>[...new Set(ids)];
   return(project.timeline||[]).map(entry=>{
     const ids=[...(entry.documents||[])];

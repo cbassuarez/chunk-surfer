@@ -3,7 +3,7 @@
   "id": "runtime.data.source-pages",
   "title": "Runtime · data/source-pages.js",
   "status": "reference",
-  "readOnly": true,
+  "fromCode": true,
   "entry": "SOURCE_PAGES.take-main-b3-a.body",
   "entries": [
     "SOURCE_PAGES.take-main-b3-a.body",
@@ -207,7 +207,7 @@
   ],
   "regions": [],
   "module": "src/data/source-pages.js",
-  "notes": "Generated from src/data/source-pages.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "notes": "Generated from src/data/source-pages.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "SOURCE_PAGES.take-main-b3-a.body": {
       "id": "SOURCE_PAGES.take-main-b3-a.body",

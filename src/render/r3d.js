@@ -19,6 +19,7 @@ import {DRIVE_MEMORY_BREAK_GLSL,driveMemoryBreakUniforms} from './radio-dial-sta
 import { assetUrl } from '../platform/paths.js';
 import { filmLeakFrame } from '../game/film-leak.js';
 import { FILM_LEAK_ATLAS } from '../data/film-leak-atlas.js';
+import { FIELD_SKY_FILM } from '../data/field-sky-film.js';
 import { HUSH_POSTURE_REVISION } from '../data/generated/hush-last-posture-support.js';
 import { CAB_RADIO_PACK } from '../data/cab-radio.js';
 import { CAB_DASH_PACK } from '../data/cab-dash.js';
@@ -1289,6 +1290,9 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
 uniform vec3 uMoonMeaning; // radius scale, blood, what the colour loss will take back
 uniform vec4 uMemorySun;   // direction, on
 uniform vec4 uMemorySky;   // time of day, sun scale, fault, cloud
+// The field's sky film is read through uSourceLayer: no sampler is left in this shader
+// (test/world-sampler-budget), and a field never reads the Source layer (bindFieldSkyFilm).
+uniform vec4 uMemoryFilm;  // how far the film has come in (0..3), tiles per unit, drift (tiles a second)
 vec3 memoryDaySky(vec3 dir){
   float fault=clamp(uMemorySky.z,0.0,1.0);
   if(fault>0.01){
@@ -1309,7 +1313,29 @@ vec3 memoryDaySky(vec3 dir){
   float sd=acos(clamp(dot(dir,sun),-1.0,1.0)),sr=0.035*max(0.2,uMemorySky.y);
   // Soft-edged, and burned away near the sun: a hard cloud edge prints as a black line.
   cloud=smoothstep(0.46,0.86,cloud)*smoothstep(0.0,0.14,up)*clamp(uMemorySky.w,0.0,1.0)*smoothstep(0.08,0.5,sd);
-  col=mix(col,mix(vec3(1.0,0.99,0.96),vec3(1.0,0.72,0.50),late),cloud*0.86);
+  vec3 cloudInk=mix(vec3(1.0,0.99,0.96),vec3(1.0,0.72,0.50),late);
+  float develop=uMemoryFilm.x;
+  if(develop>0.001){
+    // THE SKY IS FILM, coming in a stage at a time, each over the last. Measured on the
+    // plate: open sky L .54 (saturation .15), cloud shade .59, cloud tops .72.
+    const float filmTurn=${FIELD_SKY_FILM.turn.toFixed(4)};
+    vec2 filmAt=mat2(cos(filmTurn),-sin(filmTurn),sin(filmTurn),cos(filmTurn))*vec2(cp.x,cp.y*1.4)*uMemoryFilm.y+uMemoryFilm.zw*uTime;
+    vec3 film=texture(uSourceLayer,filmAt).rgb;
+    float filmL=dot(film,vec3(0.2126,0.7152,0.0722)),filmSat=max(film.r,max(film.g,film.b))-min(film.r,min(film.g,film.b));
+    float skyward=smoothstep(0.0,0.16,up),offSun=smoothstep(0.08,0.5,sd);
+    float lightIn=clamp(develop,0.0,1.0),lifted=clamp(develop-1.0,0.0,1.0),shaped=clamp(develop-2.0,0.0,1.0);
+    // The game's own clouds give way as the film's light comes in.
+    col=mix(col,cloudInk,cloud*0.86*(1.0-lightIn));
+    // Its light: soft light, centred on its open blue.
+    vec3 under=clamp(col,0.0,1.0);float filmLight=clamp(0.5+(filmL-0.56)*4.5,0.0,1.0);
+    col=mix(col,(1.0-2.0*filmLight)*under*under+2.0*filmLight*under,lightIn*skyward*mix(0.6,1.0,offSun));
+    // Its brightest, lifted: screened, in the hour's cloud colour.
+    float bright=clamp((filmL-0.57)*5.0,0.0,1.0)*offSun;
+    col=mix(col,vec3(1.0)-(vec3(1.0)-clamp(col,0.0,1.0))*(vec3(1.0)-cloudInk*bright*0.9),lifted*skyward);
+    // Its shapes: the film's clouds, shaded by the film. Soft-edged, for the reason above.
+    float matte=smoothstep(0.36,0.74,filmL-1.2*filmSat)*smoothstep(0.0,0.14,up)*clamp(uMemorySky.w/0.6,0.0,1.0)*offSun;
+    col=mix(col,cloudInk*mix(0.72,1.06,smoothstep(0.55,0.76,filmL)),matte*0.86*shaped);
+  }else col=mix(col,cloudInk,cloud*0.86);
   col+=mix(vec3(1.0,0.94,0.78),vec3(1.0,0.55,0.28),late)*exp(-sd/(sr*5.0))*0.9;
   col+=vec3(1.0,0.96,0.86)*exp(-sd/0.55)*0.22;
   col=mix(col,vec3(1.6,1.55,1.4),1.0-smoothstep(sr*0.92,sr*1.02,sd));
@@ -8031,6 +8057,9 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uSourceReady'),sourceSurfaceTexture&&!hushBodyTextureActive?1:0);
   gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,unit13Texture);gl.uniform1i(U('uSourceSurface'),13);
   gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,sourceLayerTexture);gl.uniform1i(U('uSourceLayer'),14);
+  // A field's sky film takes unit 14, and the uSourceLayer sampler with it, while the field
+  // is up: Source never runs in a field, so the Source layer is never read there.
+  bindFieldSkyFilm(U);
   const propTargets=P3.propTargets();
   gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);
   gl.uniform1f(U('uLitApparitions'),propTargets.litApparitionsVisible?1:0);
@@ -8173,9 +8202,46 @@ export function r3dSetPerception({chroma=1,contrast=1,narrowing=0,lift=0,centre=
 export function r3dPerceptionStats(){return{armed:perceptionArmed,...perception,memorySky:memorySky?{...memorySky}:null};}
 // `sun` is a direction. Null puts the night back.
 export function r3dSetMemorySky(frame=null){
-  memorySky=frame&&Array.isArray(frame.sun)?{sun:frame.sun,day:Number(frame.day)||0,sunScale:Number(frame.sunScale)||1,fault:Number(frame.fault)||0,cloud:Number.isFinite(frame.cloud)?frame.cloud:.6,edge:Number.isFinite(frame.edge)?frame.edge:1}:null;
+  memorySky=frame&&Array.isArray(frame.sun)?{sun:frame.sun,day:Number(frame.day)||0,sunScale:Number(frame.sunScale)||1,fault:Number(frame.fault)||0,cloud:Number.isFinite(frame.cloud)?frame.cloud:.6,edge:Number.isFinite(frame.edge)?frame.edge:1,film:Number.isFinite(frame.film)?Math.max(0,Math.min(3,frame.film)):0}:null;
+  if(!memorySky)fieldSkyFilm.video?.pause();
   return !!memorySky;
 }
+// THE FIELDS' SKY IS FILM (data/field-sky-film.js). A <video> that plays only while a field's
+// sky asks for it, uploaded when it has a new frame. It sits in the page, a few pixels and
+// almost transparent, because a browser may stop a video it thinks nobody can see.
+const fieldSkyFilm={video:null,tex:null,shown:-1,ready:false};
+function fieldSkyFilmVideo(){
+  if(fieldSkyFilm.video)return fieldSkyFilm.video;
+  const video=document.createElement('video');
+  video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.setAttribute('aria-hidden','true');
+  Object.assign(video.style,{position:'fixed',left:'0',top:'0',width:'2px',height:'2px',opacity:'0.01',pointerEvents:'none',zIndex:'-1'});
+  const url=assetUrl(FIELD_SKY_FILM.url);video.src=url.href||String(url);
+  document.body?.appendChild(video);
+  return fieldSkyFilm.video=video;
+}
+function bindFieldSkyFilm(U){
+  const want=!!memorySky&&memorySky.film>0;
+  if(!want){gl.uniform4f(U('uMemoryFilm'),0,FIELD_SKY_FILM.scale,0,0);return;}
+  const video=fieldSkyFilmVideo(),rate=pixelMeshSettings.reduceMotion?1:FIELD_SKY_FILM.playbackRate;
+  if(video.playbackRate!==rate)video.playbackRate=rate;
+  if(video.paused)video.play().catch(()=>{});
+  if(!fieldSkyFilm.tex){
+    fieldSkyFilm.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,fieldSkyFilm.tex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([117,143,156,255]));
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+  }
+  gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,fieldSkyFilm.tex);
+  if(video.readyState>=2&&video.currentTime!==fieldSkyFilm.shown){
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,video);gl.generateMipmap(gl.TEXTURE_2D);
+    fieldSkyFilm.shown=video.currentTime;fieldSkyFilm.ready=true;
+  }
+  const drift=pixelMeshSettings.reduceMotion?0:1;
+  gl.uniform4f(U('uMemoryFilm'),fieldSkyFilm.ready?memorySky.film:0,FIELD_SKY_FILM.scale,FIELD_SKY_FILM.drift[0]*drift,FIELD_SKY_FILM.drift[1]*drift);
+}
+export function r3dFieldSkyFilmStats(){const v=fieldSkyFilm.video;return{film:memorySky?.film||0,ready:fieldSkyFilm.ready,playing:!!v&&!v.paused,time:v?.currentTime||0,size:[v?.videoWidth||0,v?.videoHeight||0]};}
 function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellingColour=0,unravellingScene=null}={}){
   // post upscale to screen
   gl.useProgram(progPost);
