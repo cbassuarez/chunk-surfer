@@ -34,7 +34,7 @@ const trackerStart=main.indexOf('function trackFinalBattleProgress(');
 assert.ok(trackerStart>=0&&trackerStart<start,'the actual Source battle progress tracker must be present');
 const tracker=main.slice(trackerStart,start);
 
-function fixture({continuation=false,blocked=false}={}) {
+function fixture({continuation=false,blocked=false,chapter='III',contactCycle=3,adapter='combat-v1'}={}) {
   const calls = { commits: [], saves: [], results: [], losses: [], aborts: [], despawns: 0, speeches: [], releases:0,progress:[] };
   const save={run:freshRunRecord({id:'run:test',now:1})};
   let saved = normalizeSourceReplayManifest({ ...freshSourceReplayManifest({ runId: 'run:test' }),
@@ -44,8 +44,8 @@ function fixture({continuation=false,blocked=false}={}) {
     resolveFinalEncounter: result => { calls.results.push(result); return { handled: true, completed: false }; },
     failFinalEncounter: result => { calls.losses.push(result); return { handled: true }; },
     cancelFinalEncounter: result => { calls.aborts.push(result); return { handled: true }; } };
-  const scope = vm.createContext({ request: { adapter: 'combat-v1',chapter:'III', battleAttemptId: state.finalEncounter.activeBattleId,
-    victories: 2, rescueEligible: true, rigAvailable: true, tells: [], bodyReturnAssist: false },
+  const scope = vm.createContext({ request: { adapter,chapter,contactCycle,victoriesRequired:3,battleAttemptId: state.finalEncounter.activeBattleId,
+    victories: contactCycle-1, rescueEligible: true, rigAvailable: true, tells: [], bodyReturnAssist: false },
   chunkSurfRuntime: runtime, sourceFinalCombatOpen: false, sourceFinalCombatRetryAt: 0,
   sourceContinuationScene:continuation?{releaseContact:()=>calls.releases++}:null,
   scenes:{top:()=>scope.sourceContinuationScene,blocksInput:()=>blocked},
@@ -68,6 +68,21 @@ function fixture({continuation=false,blocked=false}={}) {
   calls.commits.length = 0; calls.despawns = 0;
   return { scope, runtime, state, calls,save };
 }
+
+test('only committed Source combat forwards its current chapter and closing sequence authority', () => {
+  for (const [chapter, contactCycle, sourceContactFinal] of [
+    ['I', 1, false], ['II', 2, false], ['III', 1, false],
+    ['I', 3, true], ['II', 3, true], ['III', 3, true],
+  ]) {
+    const { scope } = fixture({ chapter, contactCycle, continuation: chapter !== 'I' });
+    assert.ok(scope.options);
+    assert.equal(scope.options.sourceContactChapter, chapter);
+    assert.equal(scope.options.sourceContactFinal, sourceContactFinal);
+  }
+  const { scope, calls } = fixture({ chapter: 'II', contactCycle: 2, continuation: true, adapter: null });
+  assert.equal(scope.options, undefined, 'approach and warning cannot construct the desktop combat');
+  assert.equal(calls.progress.length, 0);
+});
 
 test('main forwards the exact battle identity and preserves the live partial-win world', () => {
   const { scope, calls, state,save } = fixture();

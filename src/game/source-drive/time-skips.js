@@ -6,7 +6,8 @@
 // lorry over the line on a bend, a van like his stopped with no lights, a bus
 // pulling out. Not quick actions, just situations: steer round it, or don't.
 // If he is about to touch it, the station changes first, so he never sees
-// whether it hit. Every cut sounds and looks like turning the radio dial.
+// whether it hit. The finite receiver interruption shares its clock with a
+// complete acquisition loss; clearing the figure instead earns intact road.
 //
 // A stretch ends on road actually driven forward, never on a clock: waiting, or
 // reversing, cannot push the journey on (source-drive-door-teaser.test).
@@ -14,6 +15,7 @@
 // Pure: road distance/lateral in, poses, boxes and the cut request out. The
 // door teaser (door-teaser.js) owns the van, the scene and the radio.
 import {DRIVE_BODY_FOOTPRINT} from './vehicle-contacts.js';
+import {DRIVE_MEMORY_BREAK} from './memory-break.js';
 
 const freeze=Object.freeze;
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
@@ -22,14 +24,12 @@ const smooth=x=>{const t=clamp(x);return t*t*(3-2*t);};
 const LANE=-1.35;
 
 export const DRIVE_TIME_SKIPS=freeze({
-  // The dial: out of the picture, the van placed at the next stretch in the dark
-  // middle, and back in. Contact is cut this far ahead of it. The turn stays
-  // short and soft: the road stays visible under the static, so a cut reads as
-  // the dial moving rather than as a blackout.
-  cut:freeze({seconds:.72,placeAt:.45,contactLead:.32}),
+  // Held pedals, wheel, body, windscreen and receiver phrase carry through a
+  // fully covered replacement. Partial television static cannot hide a reset.
+  cut:DRIVE_MEMORY_BREAK,
   stretches:freeze([
     freeze({id:'road',start:freeze({d:-600,lateral:LANE,speed:13}),station:'service',until:freeze({metres:330})}),
-    freeze({id:'figure',start:freeze({d:-470,lateral:LANE,speed:13}),station:'music',rain:.06,until:freeze({metres:300,passed:140}),
+    freeze({id:'figure',start:freeze({d:-470,lateral:LANE,speed:13}),station:'music',rain:.06,until:freeze({metres:300,passed:140}),avoidanceJoin:3,
       hazard:freeze({kind:'figure',d:-392,lateral:-1.05})}),
     // Back down the road, later on. The boards say the same miles again.
     freeze({id:'again',start:freeze({d:-560,lateral:LANE,speed:12}),station:'company',rain:.1,fog:.04,until:freeze({metres:260})}),
@@ -104,7 +104,8 @@ export function contactWithin(drive,box,lead,{boxVelocity=[0,0]}={}){
  * `distanceOf(drive)` reads the van's road distance.
  */
 export function createTimeSkipDirector({skips=DRIVE_TIME_SKIPS,worldAt,distanceOf}={}){
-  let index=0,time=0,busAt=null,cuts=0,driven=0,lastD=null,passedAt=null;
+  let index=0,time=0,busAt=null,cuts=0,driven=0,lastD=null,startD=null,passedAt=null;
+  const outcomes=[];
   const stretch=()=>skips.stretches[index];
   function box(vanD){
     const s=stretch(),h=s?.hazard;if(!h)return null;
@@ -122,8 +123,13 @@ export function createTimeSkipDirector({skips=DRIVE_TIME_SKIPS,worldAt,distanceO
       const s=stretch();if(!s?.until)return null;
       time+=Math.max(0,Number(dt)||0);
       const vanD=distanceOf(drive),b=box(vanD);
-      if(lastD!=null&&vanD>lastD)driven+=vanD-lastD;lastD=vanD;
+      startD??=vanD;driven=Math.max(driven,vanD-startD);lastD=vanD;
       if(b&&contactWithin(drive,b,skips.cut.contactLead,{boxVelocity:b.velocity}))return{reason:'contact',from:index,to:index+1};
+      // Clearing the actual figure is a different outcome. Stay on this road,
+      // with the same hands, station, speed and controls. The replayed bend is
+      // reserved for an unresolved contact, not secretly charged after a miss.
+      if(b?.kind==='figure'&&Number.isInteger(s.avoidanceJoin)&&vanD>b.d+b.halfZ+DRIVE_BODY_FOOTPRINT.rear+3)
+        return{kind:'continuous',reason:'avoided-figure',from:index,to:s.avoidanceJoin,distance:vanD};
       // `passed` counts metres, not a flag: clearing the hazard earns the cut
       // only after real driven distance beyond it, so each span stays long.
       const beyond=Number(s.until.passed)||0;
@@ -133,7 +139,11 @@ export function createTimeSkipDirector({skips=DRIVE_TIME_SKIPS,worldAt,distanceO
       return null;
     },
     /** Move on to the next stretch; returns where and how the van starts it. */
-    advance(){index=Math.min(skips.stretches.length-1,index+1);time=0;busAt=null;driven=0;lastD=null;passedAt=null;cuts+=1;return stretch();},
+    advance({to=index+1,continuous=false,distance=null}={}){
+      const from=index;index=Math.max(0,Math.min(skips.stretches.length-1,to));time=0;busAt=null;driven=0;lastD=distance;startD=distance;passedAt=null;
+      if(!continuous)cuts+=1;outcomes.push({from,to:index,kind:continuous?'uninterrupted-avoidance':'memory-break'});return stretch();
+    },
+    outcomes:()=>outcomes.map(row=>({...row})),
     driven:()=>driven,
     hazard:drive=>box(distanceOf(drive)),
   };

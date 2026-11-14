@@ -106,3 +106,24 @@ test('an earned chapter win preserves the delayed door arrival as a passive repe
  assert.equal(s.hush.mode,'yield');assert.equal(s.recovery,null);
  assert.deepEqual([s.hush.x,s.hush.z,s.hush.feet],origin,'winning does not invent a new actor position');
 });
+
+test('the fast physical pursuit can be outrun with a burst, gains on baseline flight, and still captures hesitation',()=>{
+ for(const chapter of ['II','III']){
+  const flee=run=>{
+   let s=body(chapter);Object.assign(s,{yaw:0,recovery:null,grace:0});
+   Object.assign(s.hush,{z:s.z+6,arrival:null,warningAnnounced:true,mode:'follow',trail:[{kind:'walk',x:s.x,z:s.z,feet:s.feet,chartId:s.chartId,level:s.level}],lastRecorded:{...s}});
+   const initial=Math.hypot(s.x-s.hush.x,s.z-s.hush.z);let moved=0,hushTravel=0;
+   for(let i=0;i<60;i++){
+    const before=s;const result=stepSourceContinuation(s,{dt:1/60,forward:1,run,offerHushContact:true});s=result.state;moved+=result.acceptedTravelMetres;
+    const accepted=Math.hypot(s.hush.x-before.hush.x,s.hush.z-before.hush.z);hushTravel+=accepted;
+    assert.ok(accepted<=7.8/60+1e-7,'Hush cannot gain by relocating');assert.equal(s.recovery,null,'fresh flight leaves a usable decision window');
+   }
+   return{s,initial,moved,hushTravel,gap:Math.hypot(s.x-s.hush.x,s.z-s.hush.z)};
+  };
+  const baseline=flee(false),burst=flee(true);
+  assert.ok(Math.abs(baseline.moved-7.5)<1e-6);assert.ok(Math.abs(burst.moved-8.25)<1e-6);
+  assert.ok(baseline.gap<baseline.initial,'baseline flight can lose ground');assert.ok(burst.gap>burst.initial,'the deliberate burst buys ground');
+  let s=baseline.s;for(let i=0;i<600&&!s.recovery;i++)s=stepSourceContinuation(s,{dt:1/60,offerHushContact:true}).state;
+  assert.equal(s.recovery?.contact,'pending','waiting is a real physical catch, with the choice still outstanding');
+ }
+});

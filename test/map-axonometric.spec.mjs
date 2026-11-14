@@ -58,7 +58,12 @@ function rendererHarness({dpr=1}={}){
  const methods={save(){stack.push({...state});},restore(){for(const k of Object.keys(state))delete state[k];Object.assign(state,stack.pop());},measureText:t=>({width:String(t).length*6})};
  const ctx=new Proxy(state,{get(t,k){if(k in methods)return methods[k];if(k in t)return t[k];return(...args)=>commands.push({kind:k,args,state:{...state}});},set(t,k,v){t[k]=v;return true;}});
  const bindings={uiDraw:fn=>fn({ctx,dpr,...uiCellMetrics()}),uiCellMetrics,createMapAxonometricProjection,mapArchitecturalHeight,mapPolygonBounds,headingVector,measureElectronicText,
-  drawElectronicText:(ctx,value,x,y,options)=>{commands.push({kind:'electronicText',args:[String(value).toUpperCase(),x,y],options:{...options},state:{...state}});return drawElectronicText(ctx,value,x,y,options);}};
+  drawElectronicText:(ctx,value,x,y,options)=>{
+   commands.push({kind:'electronicText',args:[String(value).toUpperCase(),x,y],options:{...options},state:{...state}});
+   const from=commands.length,result=drawElectronicText(ctx,value,x,y,options);
+   for(let i=from;i<commands.length;i++)commands[i].electrode=true;
+   return result;
+  }};
  let source=readFileSync(new URL('../src/render/map-architecture-view.js',import.meta.url),'utf8');const names=[];
  source=source.replace(/import\s*\{([^}]+)\}\s*from\s*['"][^'"]+['"];\s*/g,(_,list)=>{names.push(...list.split(',').map(n=>n.trim()));return'';}).replace(/export function /g,'function ');
  const draw=new Function(...names,`${source};return drawArchitecturalMap`)(...names.map(name=>bindings[name]));
@@ -74,7 +79,7 @@ test('rendered rooms use canonical surface polygons and expose the exact same pr
  const hit=result.hits.find(h=>h.payload.spaceId==='space:room-a');assert.equal(hit.id,'bag:space:space:room-a');assert.equal(hit.polygons.length,1);
  assert.ok(pointInMapPolygon(result.projectedPoints['space:room-a'],hit.polygons[0]));
  assert.equal(JSON.stringify(m),before);assert.equal(h.stack.length,0);assert.deepEqual(h.state,{globalAlpha:.7,shadowBlur:8});
- assert.ok(h.commands.filter(c=>c.kind==='stroke'||c.kind==='fill').every(c=>c.state.shadowBlur===0),'CAD geometry has no blanket phosphor bloom');
+ assert.ok(h.commands.filter(c=>!c.electrode&&(c.kind==='stroke'||c.kind==='fill')).every(c=>c.state.shadowBlur===0),'only the LCD lettering emits');
 });
 test('topology restrictions remove walls and area hits; hidden adversary telemetry never produces a body marker',()=>{
  const h=rendererHarness(),m=model();m.policy.showMapTopology=false;m.policy.showExactPlayer=false;m.hush={active:true,sensed:true,visible:false,floorId:'g',position:{x:10,y:3}};
@@ -126,7 +131,7 @@ test('a story prop target has its own authoritative diamond and true elevation i
  const h=rendererHarness(),m=model();m.waypoint={id:'story:bell',kind:'prop',label:'BELL CONTACT',floorId:'tower',height:19,position:{x:17,y:3}};
  const result=h.draw({model:m,nav:{floorId:'g',viewMode:'stack'},viewport});
  const expected=result.projection.point({...m.waypoint.position,height:19,floorId:'tower'});near(result.waypoint.rawPoint.x,expected.x);near(result.waypoint.rawPoint.y,expected.y);
- assert.equal(h.commands.filter(c=>c.kind==='fill'&&c.state.fillStyle==='#dfbd73').length,1);
+ assert.equal(h.commands.filter(c=>!c.electrode&&c.kind==='fill'&&c.state.fillStyle==='#dfbd73').length,1);
  assert.ok(h.commands.some(c=>c.kind==='electronicText'&&c.args[0].includes('BELL CONTACT')));
  assert.ok(!result.hits.some(hit=>hit.payload.spaceId==='story:bell'),'story markers do not become invented selectable rooms');
  const floor=rendererHarness(),floorResult=floor.draw({model:m,nav:{floorId:'g',viewMode:'floor'},viewport});
@@ -137,7 +142,7 @@ test('matching room targets deduplicate while different story positions sharing 
   const h=rendererHarness(),m=model();m.spaces[0].roomId='a';m.spaces[0].waypoint=true;
   m.waypoint={kind,roomId:'a',spaceId:kind==='space'?'space:room-a':null,label:'ROOM A',floorId:'g',height:0,position:{...m.spaces[0].position}};
   const result=h.draw({model:m,nav:{floorId:'g',viewMode:'floor'},viewport});
-  assert.equal(result.waypoint.spaceId,'space:room-a');assert.equal(h.commands.filter(c=>c.kind==='fill'&&c.state.fillStyle==='#dfbd73').length,1);
+  assert.equal(result.waypoint.spaceId,'space:room-a');assert.equal(h.commands.filter(c=>!c.electrode&&c.kind==='fill'&&c.state.fillStyle==='#dfbd73').length,1);
  }
  const h=rendererHarness(),m=model();m.spaces[0].roomId='a';m.waypoint={kind:'position',roomId:'a',label:'RETURN',corrupted:true,floorId:'g',height:0,position:{x:17,y:8}};
  const result=h.draw({model:m,nav:{floorId:'g',viewMode:'floor'},viewport});assert.equal(result.waypoint.spaceId,null);
@@ -183,7 +188,8 @@ test('every map readout label uses sharp electronic glyphs and matching fixed-RO
  const labels=h.commands.filter(c=>c.kind==='electronicText');assert.ok(labels.length>=6);
  assert.ok(labels.every(c=>c.options.mode==='lcd'&&c.options.baseline==='middle'));
  assert.ok(!h.commands.some(c=>c.kind==='fillText'||c.kind==='strokeText'||c.kind==='measureText'),'no native-font path is used under the survey glass');
- assert.ok(h.commands.some(c=>c.kind==='fillRect'),'the real LCD renderer emits physical matrix pixels');
+ assert.ok(h.commands.some(c=>c.electrode&&c.kind==='rect'),'the real LCD renderer emits physical matrix pixels');
+ assert.ok(h.commands.some(c=>c.electrode&&c.kind==='fill'&&c.state.shadowBlur>0),'lit map labels cast a local halo');
  const metrics=uiCellMetrics();for(const label of labels){
   const width=measureElectronicText(label.args[0],{fontSize:label.options.fontSize});
   const left=label.args[1]-(label.options.align==='center'?width/2:label.options.align==='right'?width:0);

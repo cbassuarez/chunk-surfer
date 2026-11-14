@@ -5,6 +5,7 @@ import {createPrologueDrive} from '../src/game/source-drive/prologue-drive.js';
 import {createOpeningPrologueDirection,openingMemoryInstances} from '../src/game/opening-prologue-direction.js';
 import {ELLERY_PUBLIC_FRONT_PROPS,ELLERY_PUBLIC_FRONT} from '../src/data/ellery-public-front.js';
 import {localLightConeDescriptor,localLightConeWeight} from '../src/render/local-light-cone.js';
+import {cameraBasis} from '../src/render/camera-basis.js';
 
 const metrics=JSON.parse(readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url),'utf8'));
 const point=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]];
@@ -66,6 +67,20 @@ test('the full-width Cinematic frame aims at its real subject without the remove
     const wheel=f.scene.props.find(p=>p.mesh==='drive_wheel');close3(j.target,[wheel.x,wheel.y+.05,wheel.z]);
    }
   }
+ }finally{d.dispose();}
+});
+
+test('the unchanged apparition is framed above the five-reply exchange, with the school and hand shots retained',()=>{
+ const d=createPrologueDrive();d.start();
+ try{
+  const f=createOpeningPrologueDirection().compose(d.frame(metrics),{semanticPhase:'recognition',stageId:'interval',snap:true}),j=f.journey;
+  const basis=cameraBasis(j.yaw,j.pitch),delta=j.hole.map((n,k)=>n-j.eye[k]),dot=v=>v.reduce((sum,n,k)=>sum+n*delta[k],0),depth=dot(basis.forward);
+  // The physical driving renderer's actual .65 tan-half-FOV. This measures
+  // the optical centre, not a claim that every refracted ring pixel fits.
+  const imageY=.5-dot(basis.up)/(2*.65*depth);
+  assert.ok(imageY>.15&&imageY<.30,`the eye/void centre is in the upper picture: ${imageY}`);
+  close(j.radius,1.15);close3(j.hole,[0,44,-115]);
+  assert.equal(f.journey.memoryInstanceCount,openingMemoryInstances().length);
  }finally{d.dispose();}
 });
 

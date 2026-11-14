@@ -4,6 +4,8 @@
 import {uiDrawHardware} from './ui.js';
 import {drawHardwarePrint} from './hardware-faceplate.js';
 import {drawSevenSegmentNumber,measureSevenSegment,drawTraceCell} from './dual-trace-display.js';
+import {drawLcdWell,drawLcdCover,lcdElectrodeOffset,LCD_INK} from './lcd-material.js';
+import {hardwareEffectsReduced,hardwareMotionReduced} from './hardware-material.js';
 
 // Source keeps no time: no digits, and only the colon going, like a clock that has
 // lost its power. It has its own phase and shares nothing with the 3D 6:00 ruin.
@@ -52,15 +54,16 @@ export function navigatorClockGeometry(housing,{cellW=8.45,cellH=20,dpr=1}={}){
 
 export function paintNavigatorClock(ctx,housing,readout,metrics={}){
   const state=navigatorClockState(readout,{now:metrics.now}),g=navigatorClockGeometry(housing,metrics);if(!ctx||!state||!g)return null;
-  const dpr=metrics.dpr||1,printDpr=dpr*Math.min(1,(metrics.cellH||20)/20),ink='#233b2b',opacity=Number.isFinite(ctx.globalAlpha)?ctx.globalAlpha:1;
+  const dpr=metrics.dpr||1,printDpr=dpr*Math.min(1,(metrics.cellH||20)/20),ink=LCD_INK.signal,opacity=Number.isFinite(ctx.globalAlpha)?ctx.globalAlpha:1;
+  const view=hardwareMotionReduced()?null:metrics.view;
+  const bounds={...g.clock,dpr},offset=lcdElectrodeOffset(view,dpr,.46);
+  const glow=(metrics.reducedEffects??hardwareEffectsReduced())?0:1.1*dpr;
   ctx.save();ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
-  // The header remains legible etched aluminium; its new clock owns a small
-  // separate gasket and reflective polarizer, not VFD glow over the map.
   const identity=metrics.identity===false?null:drawHardwarePrint(ctx,'AUDIOCORP FN-12',g.identity.x+dpr,g.identity.y,
     {width:g.identity.w-2*dpr,height:g.identity.h,color:'#333830',finish:'etched',darkPanel:false,dpr:printDpr});
-  ctx.fillStyle='#1c2922';ctx.fillRect(g.clock.x-dpr,g.clock.y-dpr,g.clock.w+2*dpr,g.clock.h+2*dpr);
-  ctx.fillStyle='#a8b99b';ctx.fillRect(g.clock.x,g.clock.y,g.clock.w,g.clock.h);
+  drawLcdWell(ctx,bounds);
   ctx.beginPath();ctx.rect(g.clock.x+dpr,g.clock.y+dpr,g.clock.w-2*dpr,g.clock.h-2*dpr);ctx.clip();
+  ctx.save();ctx.translate(offset.x,offset.y);
   ctx.strokeStyle=ink;ctx.lineWidth=Math.max(.8*dpr,g.height*.065);ctx.globalAlpha=opacity*.80;
   ctx.beginPath();ctx.arc(g.icon.x,g.icon.y,g.icon.r,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.moveTo(g.icon.x,g.icon.y-g.icon.r*.60);ctx.lineTo(g.icon.x,g.icon.y);ctx.lineTo(g.icon.x+g.icon.r*.52,g.icon.y+g.icon.r*.28);ctx.stroke();
@@ -71,11 +74,13 @@ export function paintNavigatorClock(ctx,housing,readout,metrics={}){
   }
   ctx.globalAlpha=opacity;
   if(!state.blank&&(!state.settling||state.digitsLit)){
-    drawSevenSegmentNumber(ctx,state.value.slice(0,2),g.hours.x,g.hours.y,g.height,{color:ink,dormant:ink,lcd:true});
-    drawSevenSegmentNumber(ctx,state.value.slice(3),g.minutes.x,g.minutes.y,g.height,{color:ink,dormant:ink,lcd:true});
+    const electrodes={color:ink,dormant:ink,lcd:true,glow,lcdHalo:LCD_INK.halo};
+    drawSevenSegmentNumber(ctx,state.value.slice(0,2),g.hours.x,g.hours.y,g.height,electrodes);
+    drawSevenSegmentNumber(ctx,state.value.slice(3),g.minutes.x,g.minutes.y,g.height,electrodes);
   }
   const dot=g.height*.11;
-  if(!state.blank||state.colonLit)for(const at of[.32,.70])drawTraceCell(ctx,g.colon.x+(g.colon.w-dot)/2,g.colon.y+g.height*at-dot/2,dot,dot,ink,{chamfer:dot*.15});
+  if(!state.blank||state.colonLit)for(const at of[.32,.70])drawTraceCell(ctx,g.colon.x+(g.colon.w-dot)/2,g.colon.y+g.height*at-dot/2,dot,dot,ink,{chamfer:dot*.15,glow,halo:LCD_INK.halo});
+  ctx.restore();drawLcdCover(ctx,bounds,view);
   ctx.restore();return{state,geometry:g,identity};
 }
 

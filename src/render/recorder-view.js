@@ -1,3 +1,4 @@
+import { drawRecorderRig } from './recorder-rig.js';
 // One physical recorder in every transport state. The approved instrument owns
 // the faceplate, display stack and three bottom housings; this adapter owns
 // scene layout and authored content, never a second transport illustration.
@@ -198,6 +199,9 @@ export function drawRecorderFace(view = {}) {
   if (!view.rect) return null;
   const mode = view.mode || TRANSPORT.RECORD;
   const special = mode === TRANSPORT.BROWSE ? drawTakeList : mode === TRANSPORT.LISTEN ? drawGuide : mode === TRANSPORT.CHECK ? drawCheck : null;
-  return drawRecorderInstrument({ ...view, label: view.label || LABEL[mode] },
+  const paint = () => drawRecorderInstrument({ ...view, label: view.label || LABEL[mode] },
     special ? { drawContent: layout => special(layout.body, view) } : {});
+  const layout = recorderFaceLayout(view.rect);
+  if (view.rig && drawRecorderRig(view, layout, paint)) return layout.body;
+  return view.rigOnly ? null : paint();
 }

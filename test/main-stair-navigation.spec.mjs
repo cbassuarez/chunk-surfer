@@ -82,7 +82,10 @@ assert.equal(roomHash('grand_upper_stair_hall'),'59f5833a906073cc9c18963dea91ba7
 // from 4.5m to 3.5m (see the note beside '.' and ',' in floorplan/legend.js).
 // The two stair halls carry their own profile ceilings and did not move, which
 // is the check working — a stair edit still cannot resize a landing in silence.
-assert.equal(roomHash('practice_wing'),'092c33fcc013d2743595c0c56988c366a110ec700b18ebc9393204da7cc5fd76');
+// The retired side passage now starts sealed under the existing closure order;
+// its leaf is still copied open by False Ellery. Only those door-state flags
+// change this hash; the eight classrooms and their normal entrances stay put.
+assert.equal(roomHash('practice_wing'),'cd94059e58c2526f7892e431087dc2e56907a92dc5ce02319524ae1f3d1bd209');
 
 const hallLogical=FP.toRuntimePoint(MAIN_STAIR_LAYOUT.groundHall);
 const hallPhysical=FP.logicalToPhysical(hallLogical.x,hallLogical.y);

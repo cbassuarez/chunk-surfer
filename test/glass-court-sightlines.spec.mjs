@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as FP from '../src/world/floorplan.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
-import {CELL,F,ZONE} from '../src/data/floorplan/legend.js';
+import {BORROWED_INTERIOR_ZONE_BIT,CELL,F,ZONE} from '../src/data/floorplan/legend.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
 import {GLASS_COURT as C} from '../src/data/glass-court.js';
 import {GLASS_COURT_SIGHTLINES as S} from '../src/data/glass-court-sightlines.js';
@@ -85,10 +85,15 @@ test('the production floorplan adapter caches framed and ordinary exterior slice
  const away=FP.physicalRenderPlanFor(point.x,point.y);
  assert.notEqual(front.key,away.key);assert.ok(front.key.includes(':'+S.windowId+':'));
  assert.ok(away.key.includes(':no-inward-window:'));
+ assert.deepEqual(front.exteriorPortal,buildingWindowPortal(buildingWindowForExteriorObserver(outside)));
+ assert.equal(away.exteriorPortal,null);
  const garden=index(front,84.25,10.25);
  assert.equal(front.floor[garden],0);assert.equal(front.ceil[garden],17);
  assert.notEqual(away.floor[garden],0,'an unrelated street observer does not receive a second exposed interior');
  const jamb=index(front,83.25,3.25);assert.equal(front.solid[jamb],1);assert.equal(front.rgba[jamb*4+2]&F.SOLID,F.SOLID);
+ assert.equal(front.rgba[jamb*4+3]&BORROWED_INTERIOR_ZONE_BIT,BORROWED_INTERIOR_ZONE_BIT,'the renderer can ignore the borrowed solid jamb for rays outside the aperture');
+ assert.equal(front.rgba[garden*4+3],front.zone[garden]|BORROWED_INTERIOR_ZONE_BIT,'borrowed air carries the same mask while retaining the room zone');
+ assert.equal(away.rgba[garden*4+3],away.zone[garden]);
  for(const [x,z] of [[65.25,9.25],[110.25,30.25]]){
   const i=index(front,x,z);
   for(const field of ['solid','floor','ceil','flags','zone','material'])assert.equal(front[field][i],away[field][i],`${field} changed outside the two approved existing rooms`);
@@ -96,10 +101,18 @@ test('the production floorplan adapter caches framed and ordinary exterior slice
  assert.equal(FP.physicalRenderPlanFor(outsideRuntime.x,outsideRuntime.y),front,'ordinary cache reuse retains the same framed slice');
 });
 
+test('the covered garden keeps its real shelter but leaves overhead street rays to the meshes',()=>{
+ const point=FP.logicalAtPhysical(73.75/CELL-.5,11.25/CELL-.5,{floor:0});
+ const slice=FP.physicalRenderPlanFor(point.x,point.y),at=index(slice,73.75,11.25);
+ assert.equal(FP.cellAt(point.x,point.y).flags&F.SKY,0,'the walkway remains sheltered in the gameplay plan');
+ assert.equal(slice.ceil[at],9.5);
+ assert.equal(slice.rgba[at*4+2]&(F.SKY|F.WALLED),F.SKY|F.WALLED,'the real overhang has no upward grid header');
+});
+
 test('actual delivered greenhouse and street slices admit reciprocal views without changing the door',()=>{
  const insidePoint=body(greenhouse.x,greenhouse.z),inside=FP.physicalRenderPlanFor(insidePoint.x,insidePoint.y);
  const front=FP.physicalRenderPlanFor(outsideRuntime.x,outsideRuntime.y);
- assert.ok(inside.key.includes(S.windowId));
+ assert.ok(inside.key.includes('GH-'),'the actual greenhouse owns its long-side reciprocal outlook');
  for(const slice of [inside,front]){
   const d0=index(slice,84.25,S.fanlight.planeZ+.25);assert.equal(slice.floor[d0],0);assert.equal(slice.ceil[d0],5.5);
   assert.equal(slice.rgba[d0*4+2]&F.SOLID,0,'the final renderer bytes contain the real high opening');

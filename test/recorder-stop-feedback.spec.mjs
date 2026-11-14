@@ -16,6 +16,7 @@ function fixture(cells=4){
   chapelTapeCaseAvailable:()=>true,cancelApparitionApplause(){},micCheckActive:()=>false,
   pressControl:(id,options)=>pressControl(id,{...options,now}),pressPromptControl:(id,options)=>{rejected.push({id,...options});pressControl(id,{...options,now});},
   recordingPressurePerformance:{stopPress:frame=>brakes.push(frame)},recordingPressureFrame:()=>({hunter:h.takeHunter}),
+  recordingStopConfirmation:{refuse(){},request:()=>false},
   SPEECH:{say:line=>spoken.push(line.text)},stopTake:()=>{recording=false;cancelControlScope('recording:');}});
  vm.runInContext(main.slice(from,until)+'\n}',h);
  return{h,spoken,rejected,brakes,recording:()=>recording,clock:value=>{now=value;}};

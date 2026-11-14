@@ -40,6 +40,7 @@ import {
 } from '../platform/storage/browserStorage.js';
 import {
   initGameStorage,
+  currentStorage,
   storageWritesBlocked,
   loadGameState,
   saveSettingsQueued,
@@ -48,7 +49,7 @@ import {
   deleteSaveQueued,
   deleteProfileQueued,
 } from '../platform/storage/storageService.js';
-import { LEGACY_SAVE_KEYS as STORAGE_LEGACY_SAVE_KEYS, LEGACY_PROFILE_KEYS } from '../platform/storage/types.js';
+import { LEGACY_SAVE_KEYS as STORAGE_LEGACY_SAVE_KEYS, LEGACY_PROFILE_KEYS, SAVE_SLOT_AUTOSAVE } from '../platform/storage/types.js';
 import { freshChunkSurfState, inferLegacyChunkSurf, normalizeChunkSurfState } from './chunk-surf-state.js';
 import {
   freshChapelTowerState,
@@ -57,6 +58,7 @@ import {
 } from './chapel-tower-state.js';
 import { normalizeDoorSave } from './door-runtime.js';
 import { freshCombatBuild, normalizeCombatBuild } from './combat-progression.js';
+import { CASSETTE_LEDGER_SCHEMA } from './cassette-ledger.js';
 import { freshCombatLoadout, normalizeCombatLoadout } from './combat-loadout.js';
 import { freshPowerState, normalizePowerState } from './conservatory-power.js';
 import { freshDockHauntingState, normalizeDockHauntingState } from './get-in.js';
@@ -78,6 +80,14 @@ import { freshNightClock, normalizeNightClock } from './night-clock.js';
 import { freshNightDeadline, normalizeNightDeadline } from './night-deadline.js';
 import { retainedNightMediaKeys, pendingNightArchivePatch } from './night-failure-archive.js';
 import { SOURCE_REST_SEATS } from './source-rest-seat.js';
+import { HOME_VALLEY_REST_LOCI, HOME_VALLEY_REST_SITE } from './childhood-valley-rest.js';
+import {
+  createElleryCaughtCheckpoint,
+  elleryCaughtRestore,
+  normalizeElleryCaughtCheckpoint,
+  normalizeElleryCaughtReceipt,
+  preferElleryCaughtRecoveryMirror,
+} from './ellery-caught-checkpoint.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -95,6 +105,8 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   view: null,
   cameraRevision: 0,
   checkpointRevision: 0,
+  elleryCaughtCheckpoint: null,
+  elleryCaughtReceipt: null,
   takes: [],
   items: [],
   props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
@@ -184,6 +196,13 @@ export function normalizeEndingCutsceneCheckpoint(value) {
   const arrival = String(value.arrival || '');
   if (!ENDING_IDS.includes(endingId) || !ENDING_CUTSCENE_ARRIVALS.has(arrival)) return null;
   const variant=normalizeEndingVariant(endingId,value.variant,arrival);
+  let valleyRest=null;
+  if(Object.hasOwn(value,'restSite')||Object.hasOwn(value,'restLocus')){
+    if(endingId!=='contact-lost'||arrival!=='rested'||variant!=='source-rest'
+      ||value.restSite!==HOME_VALLEY_REST_SITE||!HOME_VALLEY_REST_LOCI.includes(value.restLocus)
+      ||Object.hasOwn(value,'restLock'))return null;
+    valleyRest={restSite:value.restSite,restLocus:value.restLocus};
+  }
   let restLock=null;
   if(endingId==='contact-lost'&&arrival==='rested'&&variant==='source-rest'&&Object.hasOwn(value,'restLock')){
     const marker=value.restLock,runId=marker?.runId,seatId=marker?.seatId;
@@ -192,7 +211,7 @@ export function normalizeEndingCutsceneCheckpoint(value) {
       ||typeof seatId!=='string'||!SOURCE_REST_SEATS.some(seat=>seat.id===seatId))return null;
     restLock={runId,seatId};
   }
-  return { schema: 1, endingId, arrival, ...(variant?{variant}:{}),...(restLock?{restLock}:{}) };
+  return { schema: 1, endingId, arrival, ...(variant?{variant}:{}),...(restLock?{restLock}:{}),...valleyRest };
 }
 
 // The destination is already real before the cinematic's metrics can load.
@@ -314,6 +333,27 @@ function migrateSaveToV4(data, meta) {
   }, meta);
 }
 
+function hasCleanB3Take(source, run) {
+  if (!run?.id) return false;
+  const ledger = source.cassettes;
+  if (ledger?.runId === run.id && ledger.schema === CASSETTE_LEDGER_SCHEMA && Array.isArray(ledger.cassettes)) {
+    // History keeps the clean outcome after a cassette is lost or recorded over.
+    return ledger.cassettes.some(cassette => Array.isArray(cassette?.history) && cassette.history.some(
+      take => take?.kind === 'take' && take.roomId === 'main_b3' && take.outcome === 'clean',
+    ));
+  }
+  // Before cassette history, the accepted-take ledger and recorder kept this
+  // evidence. Older saves still carried the accepted rooms as plain IDs.
+  if (run.ledger.takes.rooms.includes('main_b3')) return true;
+  if (Array.isArray(source.rec?.tapes)) {
+    return source.rec.tapes.some(take => take?.roomId === 'main_b3'
+      && !take.debug && !take.authored && !take.continuous
+      && (take.status === 'accepted' || (take.status == null && take.counted !== false)));
+  }
+  const legacyRooms = source.rec?.takes ?? source.takes;
+  return Array.isArray(legacyRooms) && legacyRooms.includes('main_b3');
+}
+
 function normalizeSaveV4(data, meta = null) {
   const base = freshSave();
   const source = data && typeof data === 'object' ? data : {};
@@ -349,18 +389,20 @@ function normalizeSaveV4(data, meta = null) {
     view:Number.isFinite(Number(source?.view?.yaw))&&Number.isFinite(Number(source?.view?.pitch))?{yaw:Number(source.view.yaw),pitch:Number(source.view.pitch)}:null,
     cameraRevision:Math.max(0,Math.floor(finiteNumber(source.cameraRevision,0))),
     checkpointRevision:Math.max(0,Math.floor(finiteNumber(source.checkpointRevision,0))),
+    elleryCaughtCheckpoint: normalizeElleryCaughtCheckpoint(source.elleryCaughtCheckpoint, { runId: run?.id }),
+    elleryCaughtReceipt: normalizeElleryCaughtReceipt(source.elleryCaughtReceipt, { runId: run?.id }),
     flags: normalizeFieldKitOwnership(source.flags),
     recordistRelease: normalizeRecordistRelease(source.recordistRelease,{runId:run?.id||''}),
     takes: Array.isArray(source.takes) ? source.takes : [],
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
     encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
-    // Context is supplied only at the save boundary. The completion flag is
-    // already committed by the bench drill, including its authored skip exit;
-    // old completed saves therefore receive the same one-time starter issue.
+    // Resolve one-time awards at the save boundary. Drafts and context-free
+    // normalization preserve their receipts.
     combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared, source.flags, {
       tutorialComplete: source.flags?.['combat.trained'] === true,
       combatAssistance: run?.rules?.values?.combatAssistance || 'standard',
+      b3TakeAccepted: source.combatBuild?.b3LeadEarned !== true && hasCleanB3Take(source, run),
     }),
     bagLoadout: normalizeCombatLoadout(source.bagLoadout),
     fieldKit: resolveFieldKit(source.fieldKit, meta),
@@ -515,7 +557,9 @@ export async function saveLoadAsync({ gameVersion = 'LOCAL', kind = null, adapte
     const loaded = await loadGameState({ gameVersion });
     meta = sanitizeMeta(loaded.profile || freshMeta());
     if (loaded.save) {
-      const withSettings = { ...loaded.save, settings: loaded.settings || loaded.save.settings };
+      const mirror = safeParse(firstStored([SAVE_KEY])?.raw);
+      const recovered = storageWritesBlocked() ? loaded.save : preferElleryCaughtRecoveryMirror(loaded.save, mirror);
+      const withSettings = { ...recovered, settings: loaded.settings || recovered.settings };
       save = withSettings.version === SAVE_VERSION
         ? normalizeSaveV4(withSettings, meta)
         : (migrateSaveToV4(withSettings, meta) || normalizeSaveV4(withSettings, meta));
@@ -586,6 +630,55 @@ export function saveCommitSilent(patch = {}) {
   Object.assign(save, patch);
   save = normalizeSaveV4(save, meta);
   return save;
+}
+
+export function commitElleryCaughtCheckpoint({ milestoneId, pose, live = {} } = {}) {
+  const current = getSave();
+  const checkpoint = createElleryCaughtCheckpoint({ ...current, ...live }, { milestoneId, pose });
+  if (!checkpoint) return null;
+  saveCommit({ elleryCaughtCheckpoint: checkpoint });
+  return checkpoint;
+}
+
+function persistElleryCaughtSave(current) {
+  if (transientState()) return Promise.resolve(true);
+  const snapshot = structuredClone(current);
+  const receipt = snapshot.elleryCaughtReceipt;
+  // Update the synchronous recovery mirror before entering the asynchronous
+  // storage queue. It is selected on load only when it advances the same run's
+  // recovery receipt. The receipt and restored state always travel together.
+  write(SAVE_KEY, snapshot);
+  const matches = stored => stored?.run?.id === receipt.runId
+    && stored?.elleryCaughtReceipt?.eventId === receipt.eventId
+    && stored?.elleryCaughtReceipt?.sequence === receipt.sequence;
+  const mirrored = !storageWritesBlocked() && matches(safeParse(firstStored([SAVE_KEY])?.raw));
+  const queued = saveGameQueued(snapshot).then(async result => {
+    if (mirrored || result !== true) return mirrored;
+    // A storage adapter can decline to overwrite a newer schema without
+    // throwing. Only acknowledge durable retry after reading its receipt.
+    return matches(await currentStorage()?.loadSave(SAVE_SLOT_AUTOSAVE));
+  }).catch(() => mirrored);
+  return mirrored ? Promise.resolve(true) : queued;
+}
+
+export function restoreElleryCaughtCheckpoint({ eventId, expectedCheckpointRevision } = {}) {
+  const scope = transientState();
+  const restored = elleryCaughtRestore(getSave(), { eventId, expectedCheckpointRevision });
+  if (!restored) return null;
+  const normalized = normalizeSaveV4(restored, scope?.meta || meta);
+  if (scope) {
+    scope.save = normalized;
+    scope.writes.push({ type: 'save', patch: structuredClone(normalized) });
+  } else {
+    save = normalized;
+  }
+  return { save: normalized, persisted: persistElleryCaughtSave(normalized) };
+}
+
+export function retryElleryCaughtPersistence(eventId) {
+  const current = getSave();
+  if (!eventId || current.elleryCaughtReceipt?.eventId !== eventId) return Promise.resolve(false);
+  return persistElleryCaughtSave(current);
 }
 
 export function metaCommit(patch = {}) {

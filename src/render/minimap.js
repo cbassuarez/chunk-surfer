@@ -579,7 +579,7 @@ export function drawMinimap(model, opts = {}) {
   if (!model || typeof model !== 'object' || !model.player) return;
   const { cols,rows } = uiSize();
   const width = Math.min(Math.max(26,Math.floor(opts.bounds?.w||32)),Math.max(26,cols-4));
-  const height = Math.min(Math.max(13,Math.floor(opts.bounds?.h||17)),Math.max(13,rows-5));
+  const height = Math.min(Math.max(13,Number(opts.bounds?.h)||17),Math.max(13,rows-5));
   const x0 = Math.floor(opts.bounds?.x ?? (cols - width - 2));
   const y0 = Math.floor(opts.bounds?.y ?? 2);
   const now = opts.now || 0;
@@ -646,8 +646,8 @@ export function drawMinimap(model, opts = {}) {
   });
   // The LCD is physical hardware beside the VFD, outside its aperture clip and
   // after its smoked cover. Map glow and target pulses never repaint its ink.
-  if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry,{nowMs:now});
-  if(nightClock)drawNavigatorClock({x:x0,y:y0,w:width,h:height},nightClock);
+  if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry,{nowMs:now,view:opts.view});
+  if(nightClock)drawNavigatorClock({x:x0,y:y0,w:width,h:height},nightClock,{view:opts.view});
 }
 
 // The compact shared device is the same semantic navigator, not a clock-only

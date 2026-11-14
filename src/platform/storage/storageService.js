@@ -13,6 +13,7 @@ import { createSixLoopStorage } from './six-loop-storage.js';
 
 let storage = null;
 let initialized = false;
+let initializing = null;
 let pending = Promise.resolve();
 let erasing = false;
 // The night after the staged crash lives in memory (six-loop-storage.js): the
@@ -27,59 +28,69 @@ export function createGameStorage({ kind = detectStorageBackendKind(), gameVersi
 export function currentStorage() { return storage; }
 export function storageReady() { return initialized; }
 
-export async function initGameStorage({ gameVersion = 'LOCAL', kind = null, adapter = null } = {}) {
-  await initDiagnostics();
-  storage = createGameStorage({ kind: kind || detectStorageBackendKind(), gameVersion, adapter });
-  try {
-    await storage.init();
+export function initGameStorage({ gameVersion = 'LOCAL', kind = null, adapter = null } = {}) {
+  if (initializing) return initializing;
+  initialized = false;
+  // Reserve the attempt before diagnostics or adapter setup can yield. A
+  // second caller and early preference writes must join this same backend.
+  const attempt = Promise.resolve().then(async () => {
+    await initDiagnostics();
+    let ready = createGameStorage({ kind: kind || detectStorageBackendKind(), gameVersion, adapter });
+    try {
+      await ready.init();
+    } catch (error) {
+      await logWarn('storage init failed; falling back to browser', error?.message || error);
+      ready = new BrowserStorage({ gameVersion });
+      await ready.init().catch(() => {});
+    }
+    // Never expose a DesktopStorage whose async adapter is still null.
+    storage = sixLoopActive() ? createSixLoopStorage(ready) : ready;
     initialized = true;
-  } catch (error) {
-    await logWarn('storage init failed; falling back to browser', error?.message || error);
-    storage = new BrowserStorage({ gameVersion });
-    await storage.init().catch(() => {});
-    initialized = true;
-  }
-  if (sixLoopActive()) storage = createSixLoopStorage(storage);
-  return storage;
+    return storage;
+  });
+  initializing = attempt;
+  const release = () => { if (initializing === attempt) initializing = null; };
+  attempt.then(release, release);
+  return attempt;
 }
 
 export async function loadGameState({ gameVersion = 'LOCAL' } = {}) {
-  if (!storage) await initGameStorage({ gameVersion });
-  const settings = await storage.loadSettings().catch(() => defaultSettings());
-  const profile = await storage.loadProfile().catch(() => defaultProfile());
-  const save = await storage.loadSave(SAVE_SLOT_AUTOSAVE).catch(() => null);
+  const ready = await (initializing || (initialized && storage ? storage : initGameStorage({ gameVersion })));
+  const settings = await ready.loadSettings().catch(() => defaultSettings());
+  const profile = await ready.loadProfile().catch(() => defaultProfile());
+  const save = await ready.loadSave(SAVE_SLOT_AUTOSAVE).catch(() => null);
   return { settings, profile, save: save ? normalizePersistedSave({ ...save, settings: save.settings || settings }, { profile, settings }) : null };
 }
 
 function enqueue(task) {
   if (erasing) return Promise.resolve(false);
-  pending = pending.then(task, task).catch((error) => logWarn('storage write failed', error?.message || error));
+  const ready = initializing || (initialized ? storage : null);
+  if (!ready) return Promise.resolve(false);
+  // Capture this attempt's resulting store, including its browser fallback.
+  // A later explicit reinitialization cannot redirect an already queued write.
+  const write = async () => task(await ready);
+  pending = pending.then(write, write).catch((error) => logWarn('storage write failed', error?.message || error));
   return pending;
 }
 
 export function saveSettingsQueued(settings) {
-  if (!storage) return Promise.resolve(false);
-  return enqueue(() => storage.saveSettings(settings).then(() => true));
+  return enqueue((ready) => ready.saveSettings(settings).then(() => true));
 }
 
 export function saveProfileQueued(profile) {
-  if (!storage) return Promise.resolve(false);
-  return enqueue(() => storage.saveProfile(profile).then(() => true));
+  return enqueue((ready) => ready.saveProfile(profile).then(() => true));
 }
 
 export function saveGameQueued(save) {
-  if (!storage) return Promise.resolve(false);
-  return enqueue(() => storage.saveGame(SAVE_SLOT_AUTOSAVE, save).then(() => true));
+  return enqueue((ready) => ready.saveGame(SAVE_SLOT_AUTOSAVE, save).then(() => true));
 }
 
 export function deleteSaveQueued() {
-  if (!storage) return Promise.resolve(false);
-  return enqueue(() => storage.deleteSave(SAVE_SLOT_AUTOSAVE).then(() => true));
+  return enqueue((ready) => ready.deleteSave(SAVE_SLOT_AUTOSAVE).then(() => true));
 }
 
 export function deleteProfileQueued() {
-  if (!storage) return Promise.resolve(false);
-  return enqueue(async () => { const profile = defaultProfile(); await storage.saveProfile(profile); return true; });
+  return enqueue(async (ready) => { const profile = defaultProfile(); await ready.saveProfile(profile); return true; });
 }
 
 export async function loadLatestCausalTape() { return storage?.loadLatestCausalTape?.() || null; }

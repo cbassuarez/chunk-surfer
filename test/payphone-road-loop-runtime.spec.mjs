@@ -5,6 +5,8 @@ import { SOURCE_PRE_TAPE } from '../src/data/source-level.js';
 import { buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { PAYPHONE_LOOP_ROUTE as route, planPayphoneRoadLoop } from '../src/game/payphone-road-loop.js';
+import { OUTSKIRTS_VAN_CRASH } from '../src/data/outskirts-van-crash.js';
+import { OUTSKIRT_STRETCH_START, OUTSKIRT_STRETCH_METRES } from '../src/data/source-outskirts-arrival.js';
 
 const near = (a,b,label='') => assert.ok(Math.abs(a-b)<1e-7,`${label}: ${a} != ${b}`);
 // Freeze the existing performance-driven broken-phone lamps as well as the
@@ -125,6 +127,37 @@ test('save/reload retains loop copies, lamp histories, current kiosk and clocks 
   assert.deepEqual(restored.state().outskirtsExperience.history,historyBefore);
   near(restored.outskirtsCharacterFrame().clock,f.runtime.outskirtsCharacterFrame().clock);
   assert.deepEqual(restored.state().outskirtsExperience.lampsOff,saved.outskirtsExperience.lampsOff);
+});
+
+test('the empty motorway stays visible and traversable after any physical phone wrap',()=>{
+  const crashStart = OUTSKIRT_STRETCH_START + OUTSKIRTS_VAN_CRASH.pass * OUTSKIRT_STRETCH_METRES;
+  for (const laps of [0, 1, 2, 3, 4]) {
+    const f = fixture();
+    const { runtime } = f;
+    for (let i = 0; i < laps; i += 1) {
+      f.position.y += (runtime.payphoneRoadLoopFrame().along - route.end - .173) / CELL;
+      runtime.setPlayerPosition(f.position);
+      rebase(f);
+    }
+    assert.equal(runtime.payphoneRoadLoopFrame().turns, laps);
+    runtime.setPayphoneRoadLoopHolding(false);
+    f.position.y += (runtime.payphoneRoadLoopFrame().along - crashStart - .25) / CELL;
+    runtime.setPlayerPosition(f.position);
+    assert.equal(runtime.outskirtsPassAt(), OUTSKIRTS_VAN_CRASH.pass);
+    const parts = scene(runtime, f.position);
+    assert.equal(parts.filter(p => p.mesh === 'm62_carriageway').length, 9);
+    assert.equal(parts.filter(p => p.mesh === 'm62_route_marker').length, 1);
+    const outsiders = parts.filter(p => !p.id.startsWith(`r${OUTSKIRTS_VAN_CRASH.pass + laps}-`));
+    assert.deepEqual(outsiders.map(p => p.id), [], `a town or neighboring pass becomes visible after ${laps} wraps`);
+
+    for (let at = .25; at < OUTSKIRT_STRETCH_METRES; at += CELL) {
+      const next = { ...f.position, y: f.position.y - 1 };
+      assert.ok(runtime.geometry.canStep(f.position.x, f.position.y, next.x, next.y).ok,
+        `the forward lane is blocked at ${at}m after ${laps} wraps`);
+      runtime.setPlayerPosition(next);
+      f.position = next;
+    }
+  }
 });
 
 test('live locomotion keeps its stride derivative and the recorded earlier double keeps its world anchor',()=>{

@@ -81,6 +81,7 @@ export function createBattleInterferenceDirector({
   let identity = null;
   let liveLine = null;
   let disabledForSession = false;
+  let windowCleanup = null;
   const sessions = new Map();
 
   const settings = () => normalizePersonalInterferenceSettings(getSettings());
@@ -186,12 +187,32 @@ export function createBattleInterferenceDirector({
     ][variant % 3];
   }
 
+  function prepareBattleWindows(session, context) {
+    if (windowCleanup || !windowEnabled() || !session.entered || !session.stage || session.effectToken) return;
+    const scene = context || getContext(session.encounterId, session.battleId) || {};
+    session.effectToken = effects?.begin?.({
+      stage: session.stage,
+      encounterId: session.encounterId,
+      intensity: settings().intensity,
+      reducedMotion: scene.reducedMotion,
+      fullscreen: !!scene.fullscreen,
+    });
+    // Death tableaux use a separate pool. Warm it while combat continues.
+    void Promise.resolve(effects?.prepareMedia?.({count:4})).catch(()=>null);
+  }
+
+  function prepareLatestBattleWindows() {
+    const session = [...sessions.values()].findLast(entry => entry.entered && entry.stage);
+    if (session) prepareBattleWindows(session);
+  }
+
   async function enter(session) {
     const context = getContext(session.encounterId, session.battleId) || {};
     choreography?.prepareBattle?.({
       battleId:session.channelBattle||session.battleId,encounterId:session.encounterId,
       reducedMotion:!!context.reducedMotion,
     });
+    session.entered = true;
     if (!enabled() || !session.stage) return !!session.channelBattle;
     session.variant = deterministicVariant([
       session.encounterId,
@@ -203,19 +224,7 @@ export function createBattleInterferenceDirector({
     // Window consent is its own module. Start the native prewarm before the
     // first await so identity masking, artifact I/O, or a slow microphone query
     // can never make a valid cast miss all of its external surfaces.
-    if (windowEnabled()) {
-      session.effectToken = effects?.begin?.({
-        stage: session.stage,
-        encounterId: session.encounterId,
-        intensity: settings().intensity,
-        reducedMotion: context.reducedMotion,
-        fullscreen: !!context.fullscreen,
-      });
-      // Death tableaux reuse a separate media pool. Build it beside the four
-      // projectile surfaces on arrival so losing never constructs a window on
-      // the result beat or extends retry timing.
-      void Promise.resolve(effects?.prepareMedia?.({count:4})).catch(()=>null);
-    }
+    prepareBattleWindows(session, context);
     if (session.stage !== 'foreshadow') await ensureRecord(context);
     const run = context.run || {};
     session.profileInfluence = profileInfluence(getProfileState(), {
@@ -262,7 +271,10 @@ export function createBattleInterferenceDirector({
     session.fireballCasts.set(scene.castId,scene);
     session.windowEvents.push(`fireball:${scene.movementId}:${scene.rayCount}`);
     void Promise.resolve(choreography?.fireballCast?.({battleId:session.channelBattle,castId:scene.castId})).catch(()=>null);
-    if(windowEnabled())void Promise.resolve(effects?.beginFireballCast?.(scene,{token:session.effectToken})).catch(()=>null);
+    if(windowEnabled() && session.effectToken){
+      session.nativeCastId = scene.castId;
+      void Promise.resolve(effects?.beginFireballCast?.(scene,{token:session.effectToken})).catch(()=>null);
+    }
     return scene;
   }
 
@@ -270,9 +282,16 @@ export function createBattleInterferenceDirector({
   // right now and where each of them is. Opening, moving and closing a surface
   // are all the same statement, so they are all this.
   function syncFireballCast(session,{castId='',rays=[],choreography=null}={}){
-    if(!windowEnabled())return false;
-    const active=session.fireballCasts.get(String(castId||''));
-    if(!active&&rays.length)return false;
+    if(!windowEnabled()||!session.effectToken||!session.nativeCastId)return false;
+    if(!castId&&!rays.length){
+      session.nativeCastId=null;
+      return effects?.syncFireballCast?.(null,[],{token:session.effectToken})===true;
+    }
+    // A new opt-in may present a later throw. A throw that the canvas
+    // already owns never reappears on the desktop mid-flight or at impact.
+    if(castId!==session.nativeCastId)return false;
+    const active=session.fireballCasts.get(castId);
+    if(!active)return false;
     // The native router either accepts every live ray or the complete volley
     // stays in the in-canvas fallback. Presentation is never a combat fence.
     return effects?.syncFireballCast?.(active||null,rays,{token:session.effectToken,choreography})===true;
@@ -373,6 +392,7 @@ export function createBattleInterferenceDirector({
 
   async function finish(session, result = 'abort', metrics = {}) {
     if (!session.stage) return null;
+    session.entered = false;
     try {
       if (enabled() && session.stage !== 'foreshadow') {
         await ensureRecord(getContext(session.encounterId, session.battleId) || {});
@@ -405,8 +425,8 @@ export function createBattleInterferenceDirector({
     } finally {
       liveLine = null;
       await choreography?.finishBattle?.({battleId:session.channelBattle||session.battleId,result});
-      await effects?.end?.(session.effectToken);
-      sessions.delete(session.key);
+      if (session.effectToken) await effects?.end?.(session.effectToken);
+      if (sessions.get(session.key) === session) sessions.delete(session.key);
     }
     return record;
   }
@@ -454,20 +474,31 @@ export function createBattleInterferenceDirector({
     return record;
   }
 
+  function closeBattleWindows() {
+    if (windowCleanup) return windowCleanup;
+    for (const session of sessions.values()) {
+      session.effectToken = null;
+      session.nativeCastId = null;
+    }
+    windowCleanup = Promise.resolve().then(async () => {
+      await effects?.emergencyRestore?.({ notify: false });
+      await choreography?.emergencyRestore?.();
+    }).finally(() => { windowCleanup = null; }).then(prepareLatestBattleWindows);
+    return windowCleanup;
+  }
+
   async function settingsChanged() {
     identityCache.clear(); identity = null; liveLine = null;
     if (settings().enabled) disabledForSession = false;
-    if (!windowEnabled()){
-      await effects?.emergencyRestore?.({ notify: false });
-      await choreography?.emergencyRestore?.();
-    }
+    if (!windowEnabled()) return closeBattleWindows();
+    if (windowCleanup) await windowCleanup;
+    prepareLatestBattleWindows();
   }
 
   async function emergencyDisable() {
     disabledForSession = true;
     identityCache.clear(); identity = null; liveLine = null;
-    await effects?.emergencyRestore?.({ notify: false });
-    await choreography?.emergencyRestore?.();
+    await closeBattleWindows();
     onEmergency();
   }
 

@@ -16,6 +16,9 @@ import { fitWorldLetteringLine } from './world-lettering-layout.js';
 import { createThreePhysicalPrint } from './three-physical-print.js';
 import {FIELD_WRAPPED_PRINT,facetedWrappedPrintGeometry,torchGripRingYs} from './wrapped-tool-print.js';
 import { buildRadioContactModel } from './radio-contact-model.js';
+import { assetUrl } from '../platform/paths.js';
+import { buildRetainedHeldTool } from './held-keepsake-tools.js';
+export { warmRetainedHeldItem, retainedHeldItemReady } from './held-keepsake-tools.js';
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, finite(n, lo)));
@@ -24,6 +27,23 @@ const COLORS = Object.freeze({ steel: '#92988e', edge: '#c5c8bb', rubber: '#242a
 const BUTTONS = Object.freeze({ classic: ['#bc6b57', '#bcbda9', '#c9a151'], signal: ['#bc6b57', '#729aa9', '#d0bc64'], 'sea-glass': ['#d09179', '#a7bda0', '#bcbda9'] });
 const FACE = Object.freeze({ aluminum: '#b0b3a5', black: '#232c27', olive: '#5e6645', witness: '#454b36' });
 const lettering = new WeakMap();
+let badgeTemplate = null, badgePending = null;
+// The same film holder inspected in the case. Keep the retained model rather
+// than inventing an ID card or pretending the intentionally inert item is a fist.
+export function badgeHandToolReady() { return !!badgeTemplate; }
+export async function warmBadgeHandTool({ template = null, resolveAsset = assetUrl } = {}) {
+  if (template) { badgeTemplate = template.scene || template; return true; }
+  if (badgeTemplate) return true;
+  if (badgePending) return badgePending;
+  badgePending = (async () => {
+    const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+    const response = await fetch(resolveAsset('assets/items/badge.glb'));
+    if (!response.ok) throw new Error(`Film badge asset: HTTP ${response.status}`);
+    const parsed = await new GLTFLoader().parseAsync(await response.arrayBuffer(), '');
+    badgeTemplate = parsed.scene; return true;
+  })().finally(() => { badgePending = null; });
+  return badgePending;
+}
 export const warmBattleHandToolLettering = options => ensureWorldLetteringFonts(options);
 function pinnedBake(group, draw) {
   const state = lettering.get(group);
@@ -262,7 +282,9 @@ function torch(group, cosmetics) {
       const p = clamp(frame.progress), playerAction = lit && frame.active !== false && frame.side !== 'enemy';
       const pressure = frame.controlPressure != null && Number.isFinite(Number(frame.controlPressure))
         ? clamp(frame.controlPressure) : frame.impactFired !== false && p >= .28 && p < .72 ? 1 : 0;
-      lens.material.emissiveIntensity = playerAction && frame.impactFired === true ? .08 + (frame.action === 'whiteout' ? 1.25 : .38) * Math.sin(Math.PI * p) : 0;
+      lens.material.emissiveIntensity = frame.fieldCarry
+        ? (frame.lightOn === true ? .08 : 0)
+        : playerAction && frame.impactFired === true ? .08 + (frame.action === 'whiteout' ? 1.25 : .38) * Math.sin(Math.PI * p) : 0;
       const travel = playerAction ? .0012 * pressure : 0;
       cap.position.x = capRest[0] - switchAxis[0] * travel; cap.position.z = capRest[2] - switchAxis[2] * travel;
       controls.trigger.position[0] = switchPosition[0] - switchNormal[0] * travel; controls.trigger.position[2] = switchPosition[2] - switchNormal[2] * travel;
@@ -378,6 +400,31 @@ function spanner(group) {
   return { bounds: { width: .078, height: .279, depth: .029 }, contacts: { right: handleGrip('spanner') }, controls: {}, update() {} };
 }
 
+function badge(group) {
+  if (!badgeTemplate) throw new Error('The retained film badge must load before it can be held.');
+  const holder = badgeTemplate.clone(true);
+  holder.name = 'retained film badge';
+  holder.traverse(node => {
+    if (!node.isMesh) return;
+    node.geometry = node.geometry.clone();
+    node.material = Array.isArray(node.material) ? node.material.map(material => material.clone()) : node.material.clone();
+    node.castShadow = true; node.receiveShadow = true;
+  });
+  // 75.6 mm stamped case, with its original sprung clip and all three filters.
+  // It lies across the index and middle pads of the existing open cradle. The
+  // whole supported assembly inclines toward the player; the object alone is
+  // never detached from its contacts to make a prettier inventory picture.
+  holder.scale.setScalar(.075);
+  holder.rotation.x = -Math.PI / 2;
+  holder.position.set(.052, -.07255, 0);
+  group.add(holder);
+  const grip = structuredClone(BOX_CRADLE);
+  delete grip.ring; delete grip.pinky;
+  const bounds = new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3());
+  return { bounds: { width: bounds.x, height: bounds.y, depth: bounds.z },
+    contacts: { right: grip }, controls: {}, update() {} };
+}
+
 /**
  * Return a physical tool and immutable object-space contact locations. Contact
  * normals point out from the supported surface. The right wrist is a preferred
@@ -388,8 +435,8 @@ export function buildBattleHandTool(tool = 'self', cosmetics = {}) {
   const appearance = { ...normalizeFieldKit({ cosmetics: cosmetics.cosmetics || cosmetics }).cosmetics, witnessEndings: cosmetics.witnessEndings || [] };
   const group = new THREE.Group(); group.name = `battle tool: ${id}`;
   const letters = { disposed: false, bakes: 0, jobs: [], error: '' }; lettering.set(group, letters);
-  const builders = { recorder, torch, fork, radio, rig, coffee, spanner };
-  const detail = builders[id]?.(group, appearance) || { bounds: { width: 0, height: 0, depth: 0 }, contacts: { right: null }, controls: {}, update() {} };
+  const builders = { recorder, torch, fork, radio, rig, coffee, spanner, badge };
+  const detail = builders[id]?.(group, appearance) || buildRetainedHeldTool(id, group) || { bounds: { width: 0, height: 0, depth: 0 }, contacts: { right: null }, controls: {}, update() {} };
   calibrateControls(detail.controls, id);
   // A second alias prevents old callers confusing the little finger with a
   // sixth digit; both names refer to the exact same supported pad target.
@@ -397,8 +444,10 @@ export function buildBattleHandTool(tool = 'self', cosmetics = {}) {
   // The renderer borrows this group as the hand's rigid parent. Capture only
   // our resources before external hands, sleeves or other children attach.
   const resources = ownedResources(group);
+  const inspectionBounds = new THREE.Box3().setFromObject(group);
   let disposed = false;
   return { id, group, contacts: detail.contacts, controls: detail.controls, bounds: detail.bounds,
+    inspectionBounds, carryIncline: detail.carryIncline ?? (id === 'badge' ? .55 : 0),
     letteringReady: Promise.all(letters.jobs).then(() => ({ ready: !letters.disposed && !letters.error, bakes: letters.bakes, error: letters.error })),
     letteringStatus: () => ({ ready: !letters.disposed && !letters.error && (!letters.jobs.length || worldLetteringFontsStatus().ready), bakes: letters.bakes, error: letters.error }),
     update(actionOrFrame = {}, progress = 0, extras = {}) {
@@ -409,6 +458,7 @@ export function buildBattleHandTool(tool = 'self', cosmetics = {}) {
     },
     dispose() {
       if (disposed) return; disposed = true; letters.disposed = true;
+      detail.disposeExtra?.();
       if(detail.disposeResources)detail.disposeResources();
       else{
         for (const item of resources.geometries) item.dispose();

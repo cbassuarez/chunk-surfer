@@ -24,12 +24,34 @@ function onSlab(ant,x,z){
   const s=ant.slab,c=Math.cos(s.yaw),n=Math.sin(s.yaw),dx=x-s.x,dz=z-s.z,u=dx*c-dz*n,v=dx*n+dz*c;
   return Math.abs(u)<=s.halfX&&Math.abs(v)<=s.halfZ;
 }
+function routePosition(ant,distance){
+  const{lengths,total}=table(ant),d=Math.max(0,Math.min(total,distance));
+  let k=1;while(k<lengths.length-1&&lengths[k]<d)k++;
+  const[a,b]=[ant.path[k-1],ant.path[k]],span=Math.max(1e-6,lengths[k]-lengths[k-1]);
+  const u=clamp01((d-lengths[k-1])/span);
+  return {x:a[0]+(b[0]-a[0])*u,z:a[1]+(b[1]-a[1])*u,yaw:Math.atan2(b[0]-a[0],a[1]-b[1])};
+}
+
+// The render rig needs interpolation and stable footfall anchors in path
+// metres. The encounter still reads the original discrete gameplay poses.
+export function antRoutePosition(ant,distance){
+  const point=routePosition(ant,distance),halfTurn=ant.length*.31;
+  const before=routePosition(ant,distance-halfTurn),after=routePosition(ant,distance+halfTurn);
+  if(Math.hypot(after.x-before.x,after.z-before.z)>1e-7)point.yaw=Math.atan2(after.x-before.x,before.z-after.z);
+  return point;
+}
+export function antRouteAt(ant,t){
+  const {travelled}=table(ant),sample=Math.max(0,Number(t)||0)/STEP;
+  const index=Math.min(travelled.length-1,Math.floor(sample)),next=Math.min(travelled.length-1,index+1);
+  const from=travelled[index],to=travelled[next],distance=from+(to-from)*clamp01(sample-index);
+  let last=index;
+  if(to===from)while(last>0&&travelled[last-1]===from)last--;
+  return {distance,rest:to>from?0:Math.max(0,(sample-last)*STEP)};
+}
 /** Where the ant is `t` seconds after he first sees it. */
 export function antPoseAt(ant,t){
-  const{lengths,total,travelled}=table(ant),time=Math.max(0,Number(t)||0),index=Math.min(travelled.length-1,Math.floor(time/STEP));
-  const d=travelled[index];let k=1;while(k<lengths.length-1&&lengths[k]<d)k++;
-  const[a,b]=[ant.path[k-1],ant.path[k]],span=Math.max(1e-6,lengths[k]-lengths[k-1]),u=clamp01((d-lengths[k-1])/span);
-  const x=a[0]+(b[0]-a[0])*u,z=a[1]+(b[1]-a[1])*u,yaw=Math.atan2(b[0]-a[0],-(b[1]-a[1])),moving=antMovingAt(time)&&d<total;
+  const{total,travelled}=table(ant),time=Math.max(0,Number(t)||0),index=Math.min(travelled.length-1,Math.floor(time/STEP));
+  const d=travelled[index],{x,z,yaw}=routePosition(ant,d),moving=antMovingAt(time)&&d<total;
   const slab=onSlab(ant,x,z);
   return{x,z,y:slab?ant.slab.height:.004,yaw,moving,onSlab:slab,progress:total?d/total:1,gone:d>=total,
     // Two leg frames, changing as it steps; still when it stops to feel about.

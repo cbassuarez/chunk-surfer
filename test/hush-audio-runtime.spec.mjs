@@ -146,4 +146,28 @@ test('instrument HOLD discards real acoustic events before propagation and memor
   }finally{runtime.destroy();}
 });
 
+test('heard events report whether the real presence accepted their target',()=>{
+  let accept=false,occlusion=0;
+  const heard=[];
+  const runtime=createHushAudioRuntime({
+    presence:{publicSnapshot:()=>({active:true,position:{x:8,y:0},roomId:'r',floorId:'g'}),
+      offerSoundTarget:()=>accept},
+    playerSpatial:()=>({position:{x:0,y:0},roomId:'r',floorId:'g'}),
+    occlusionDb:()=>occlusion, onHeard:payload=>heard.push(payload),
+  });
+  const emit=()=>emitAcousticEvent({kind:'radio_squelch',source:{kind:'equipment',id:'radio'},
+    spatial:{position:{x:7,y:0},roomId:'r',floorId:'g'},
+    provenance:{radioDeployment:true},semantics:{deliberate:true}});
+  try {
+    emit();
+    assert.equal(heard[0].targetAccepted,false);
+    accept=true;
+    emit();
+    assert.equal(heard[1].targetAccepted,true);
+    occlusion=80;
+    emit();
+    assert.equal(heard.length,2,'the blocked radio never reaches the hearing callback');
+  } finally {runtime.destroy();}
+});
+
 console.log('hush audio runtime tests ok');

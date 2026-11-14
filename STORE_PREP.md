@@ -96,3 +96,34 @@ workflow; do not use either merely to test preparation.
 - Windows 10/11
 - Linux Ubuntu
 - Steam Deck/Proton
+
+### Graphics startup acceptance for the next build
+
+The recovery implementation is source work, not completed Windows/Linux
+acceptance or a change to the current itch download. Run this matrix against
+the exact Windows ZIP and both Linux AppImage/deb release artifacts, and record
+their version/hash, OS, GPU/driver, WebView2 or WebKitGTK version, and display
+session with the result. Every row below remains manual validation pending.
+
+| Platform | Required GPU/display coverage | Status |
+| --- | --- | --- |
+| Windows 10/11 | NVIDIA RTX 50 laptop with AMD or Intel hybrid graphics | Pending |
+| Windows 10/11 | AMD and Intel graphics | Pending |
+| Linux | NVIDIA, AMD and Intel under X11; AppImage and deb | Pending |
+| Linux | NVIDIA, AMD and Intel under Wayland; AppImage and deb | Pending |
+
+For each configuration, verify a cold launch, quit/reopen, the default graphics
+path, `--graphics-recovery`, and reuse of the successful backend cache. Confirm
+an actually visible, updating game window as well as successful boot and frame
+readback. A GL probe or browser smoke test does not prove OS compositor output.
+
+Use a controlled shader-failure build to verify bounded automatic retries and
+the final readable failure/retry state when every eligible mode fails. A slow
+load or unrelated JavaScript failure must not start a graphics restart loop.
+Check that existing saves/settings survive recovery and that explicit graphics
+environment overrides remain in force. Retest the normal release artifact after
+the fault-injection build; do not publish the injected failure.
+
+The tester-confirmed RTX 5070 laptop workaround combined Vulkan and the
+high-performance GPU request. Record that as a successful combined workaround,
+not separate proof of backend selection or automatic recovery in a new package.

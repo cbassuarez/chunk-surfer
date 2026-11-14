@@ -367,9 +367,12 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.ok(pass >= 0 && pass < portals && portals < targets, 'openings are not drawn into the physical void’s own prop targets');
   assert.match(draw, /light:voidTorch/, 'the torch is no stronger out where there is nothing to light');
   assert.match(r3d, /uniform vec4 uTorch;[\s\S]*pool/, 'the void shader draws no torch pool');
-  assert.match(r3d, /const RAIN_GLSL = GLASS_COURT_RAIN_GLSL\+OUTSKIRTS_BUS_RAIN_GLSL\+`[\s\S]*float rainVolume\(/, 'the shared rain composition lost its ordinary volume');
-  assert.equal((r3d.match(/`\+RAIN_GLSL\+/g) || []).length, 2, 'the building and the corridors do not fall through the same rain');
-  assert.match(r3d, /uniform float uRain;[\s\S]*rainVolume\(uEyeCells\+uWorldPatternOffset\/\.5,wd,distanceM\)/, 'the void shader must retain world-anchored rain across the loop rebase');
+  assert.match(r3d, /const RAIN_GLSL\s*=\s*GLASS_COURT_RAIN_GLSL\s*\+\s*OUTSKIRTS_BUS_RAIN_GLSL\s*\+\s*RAIN_FIELD_GLSL/);
+  assert.equal((r3d.match(/`\s*\+\s*RAIN_GLSL\s*\+/g) || []).length, 2, 'the building and the corridors fall through the same rain');
+  const physicalShader = r3d.slice(r3d.indexOf('const SOURCE_VOID_PHYSICAL_FRAG ='), r3d.indexOf('export function r3dSourceVoidPhysicalShader'));
+  assert.match(physicalShader, /traceRainField\(\s*uEyeCells\s*\+\s*uWorldPatternOffset\s*\/\s*0?\.5\s*,\s*wd\s*,/, 'the void shader keeps rain world-anchored across the loop rebase');
+  assert.match(physicalShader, /distanceM\s*\/\s*\(\s*0?\.5\s*\*\s*max\(\.001,dot\(wd,rainForward\)\)\)/, 'convert view metres to distance along this ray in cells');
+  assert.match(physicalShader, /if\(uRain>\.001&&uOpticalEffects>\.0&&uDriveWeather\.w<\.5\)/, 'the drive owns its own rain and pane');
   assert.doesNotMatch(r3d, /streak\*clamp\(uRain/, 'the painted rain streaks are back');
   const sync = main.slice(main.indexOf('function syncSourceRender('), main.indexOf('// ── ARRIVING IN THE BELFRY'));
   assert.match(sync, /r3dSetSourcePortals\?\.\(chunkSurfRuntime\.outskirtPortals\?\.\(x,y\)/, 'the Source render sync does not tell the renderer where the openings are');

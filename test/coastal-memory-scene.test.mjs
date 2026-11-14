@@ -29,6 +29,16 @@ async function make(extra = {}) {
 }
 const equal = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} ≈ ${b}`);
 
+test('a kept box withdraws its world pickup but remains physically handleable without granting a listening receipt',async()=>{
+ let calls=0;
+ const {scene}=await make({checkpoint:checkpoint({pose:{...layout.spawn,z:0}}),isBoxTaken:()=>true,onPickUp:()=>calls++});
+ scene.update(.25);scene.update(.25);scene.update(.25);
+ const before=scene.snapshot();scene.key({key:'f'});
+ assert.equal(calls,1);assert.equal(scene.view().boxTaken,true);assert.equal(scene.view().canPickUp,false);
+ assert.equal(scene.view().recordingHeard,false);assert.deepEqual(scene.snapshot().recordingReceipt,before.recordingReceipt);
+ scene.exit();
+});
+
 test('swept walking normalizes diagonals, follows support, slides and never tunnels across a blocked strip', () => {
   const pose = { x: 0, z: 0, feet: 5, yaw: Math.PI / 2, pitch: -.4 };
   const cardinal = walkCoastalMemoryPose(pose, { dt: .25, forward: 1 }, layout);

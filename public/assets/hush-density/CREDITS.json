@@ -1,10 +1,23 @@
 {
   "asset": "public/assets/hush-density.glb",
-  "identity": "The Thick Part",
-  "source": "tools/chunk_surfer/build-hush-density-study.py --production",
-  "anatomicalSources": [],
-  "geometry": "Original procedural solid-fold sculpture, continuous remeshed geometry, authored19-control skin and finite tentacular/pressure deformation.",
-  "conceptReference": "artifacts/hush-mythology-directions/density.png; generated design reference, not projected onto geometry.",
-  "license": "Project-authored original assets; project licensing applies.",
-  "priorHumanAsset": "public/assets/pressure-character.glb remains unchanged for explicitly borrowed human references."
+  "identity": "The Last Posture",
+  "authoring": "tools/chunk_surfer/build-hush-last-posture.py",
+  "editableSource": "assets/source/hush-last-posture.blend",
+  "geometry": "MakeHuman hm08 CC0 anatomical topology and original envelopes, locally anonymized and posed/sculpted for The Last Posture. No old pressure fold/hood sculpt, capsule union or projected concept texture.",
+  "sources": {
+    "base.obj": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+    "default_weights.mhw": "0f3641d651ae3d00ad6b4ccee43142edb109d3bd909d27d9e4139ef1beed8625",
+    "default.mhskel": "99f179bce0aa850b45d4191a1d0d234c5851f881c057439470ded3bddf729a24",
+    "LICENSE.ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "caucasian-male-old.target.gz": "123cb7758c86aa2aa71d80ea0c8f5f4b3e96f394180edc1682e34720c4949df6",
+    "universal-male-old-averagemuscle-averageweight.target.gz": "3721ecc3f7a6af1d7c22ef20c709b1d37402445b3d203fe31e762b12356b59a6",
+    "caucasian-male-young.target.gz": "ffe69537e53148edff2776204ba48cf3bf1f3cbc72966592c8a562ab80b07333",
+    "universal-male-young-averagemuscle-averageweight.target.gz": "e814651195c53971503d9823d6841216718a561951ef064f81d132297f4fa494"
+  },
+  "sourceLicense": "tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
+  "sourceUrl": "https://github.com/makehumancommunity/mpfb2/tree/master/src/mpfb/data/3dobjs",
+  "rig": "Original hierarchical anatomical armature with articulated fingers and finite authored clips.",
+  "conceptReference": "User-selected generated image last-posture-v2.png, consulted as silhouette/weight reference, not projected as texture.",
+  "license": "CC0-1.0 anatomical base and source envelopes; bespoke adaptation, rig and clips authored for Chunk Surfer.",
+  "retainedPriorAsset": "Exact previous hush-density GLB/stats/credits retained under artifacts/hush-last-posture/baseline/."
 }

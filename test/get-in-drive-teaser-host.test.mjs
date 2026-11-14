@@ -7,7 +7,7 @@ import * as FP from '../src/world/floorplan.js';
 
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
-function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,rendererOK=true,audioError=null,onRestore=null,onDoorsClose=null,onReturnTick=null,returnToBlack=false}={}){
+function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,rendererOK=true,audioError=null,onRestore=null,onDoorsClose=null,onReturnTick=null,returnToBlack=false,lifeFlash=false,loadLifeFlashAtlas,getPresentation}={}){
  const calls=[],counts={fetch:0,rendererInitialize:0,rendererDispose:0,render:0,readout:0,audioCreate:0,audioInitialize:0,audioDispose:0,controllerStart:0,controllerDispose:0,restore:0,close:0,done:0,exit:0,pause:0,joint:0},errors=[],completed=[],covers=[];
  const state={held:false,time:0,started:false,controllerPaused:false,audioPaused:null,disposed:false,rejectRender:false},context={id:'existing-context'},destination={id:'existing-monitor'},metrics={id:'owned-metrics'};
  const mark=(event,detail)=>calls.push({event,time:state.time,detail});
@@ -23,19 +23,22 @@ function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,r
   sync(...args){mark('audio-sync',args);},joint(value){counts.joint++;mark('joint',value);},
   dispose(){counts.audioDispose++;mark('audio-dispose');},diagnostics(){return{paused:state.audioPaused};},
  };
- const phase=()=>state.time<C.soundLeadEnd?'sound-lead':state.time<C.impactStart?'approach':state.time<C.returnStart?'impact-black':state.time<C.duration?'return':'complete';
+ const phase=()=>state.time<C.soundLeadEnd?'sound-lead':lifeFlash&&state.time>=2&&state.time<4?'fall':state.time<C.impactStart?'approach':state.time<C.returnStart?'impact-black':state.time<C.duration?'return':'complete';
  const controller={
   start(){counts.controllerStart++;state.started=true;mark('controller-start');},
   setPaused(value){state.controllerPaused=value;mark('controller-pause',value);},
   update(dt){if(state.started&&!state.controllerPaused)state.time=Math.min(C.duration,state.time+dt);},
-  frame(value){assert.equal(value,metrics);const returned=state.time>=C.impactStart;return{phase:phase(),timeSec:state.time,paused:state.controllerPaused,worldOwner:returned?'return':'drive',finished:state.time>=C.duration,coverAlpha:state.time<C.soundLeadEnd||returned&&state.time<C.returnStart?1:returned?Math.max(0,1-(state.time-C.returnStart)/(C.duration-C.returnStart)):0,renderFrame:returned?null:{driveState:{speed:7,time:state.time},scene:{cut:{sources:[]},predicaments:{sources:[]}},weather:{},evolution:{}}};},
+  frame(value){assert.equal(value,metrics);const returned=state.time>=C.impactStart;return{phase:phase(),timeSec:state.time,paused:state.controllerPaused,worldOwner:returned?'return':'drive',finished:state.time>=C.duration,coverAlpha:state.time<C.soundLeadEnd||returned&&state.time<C.returnStart?1:returned?Math.max(0,1-(state.time-C.returnStart)/(C.duration-C.returnStart)):0,
+    ...(lifeFlash?{commitment:{contactFlight:2},vehiclePose:{fallSeconds:state.time-2,cliffCommitted:state.time>=2}}:{}),
+    renderFrame:returned?null:{driveState:{speed:7,time:state.time,openingCinematic:{schema:1}},scene:{cut:{sources:[]},predicaments:{sources:[]}},weather:{},evolution:{}}};},
   dispose(){counts.controllerDispose++;state.disposed=true;mark('controller-dispose');},
  };
- const scene=makeGetInDriveTeaserScene({context,destination,returnToBlack,
+ const scene=makeGetInDriveTeaserScene({context,destination,returnToBlack,loadLifeFlashAtlas,getPresentation,
   fetcher:async url=>{counts.fetch++;mark('fetch',url);if(fetchGate)await fetchGate.promise;return{ok:fetchOK,json:async()=>metrics};},
   createRenderer:()=>renderer,createController:()=>controller,
   createAcoustics:options=>{assert.equal(options.context,context);assert.equal(options.destination,destination);assert.equal(options.gain,.5);assert.equal(options.tapeTransport,undefined);counts.audioCreate++;mark('audio-create');return audio;},
   isHeld:()=>state.held,paintCover:value=>covers.push({time:state.time,alpha:value}),
+  paintLifeFlash:(atlas,frame)=>mark('life-flash',{atlas,frame}),
   onRestore:()=>{counts.restore++;mark('restore');onRestore?.();},
   onDoorsClose:()=>{counts.close++;mark('doors-close');onDoorsClose?.();},
   onReturnTick:dt=>{mark('return-tick',dt);onReturnTick?.(dt);},
@@ -46,6 +49,32 @@ function fixture({fetchGate=null,rendererGate=null,audioGate=null,fetchOK=true,r
  const prepare=async()=>{advance(.3);assert.ok(scene.pending());await scene.pending();};
  return{scene,state,calls,counts,errors,completed,covers,advance,prepare};
 }
+
+test('life flash follows the physical fall, defers atlas loading, and respects presentation settings',async()=>{
+ const gate=deferred(),atlas={},settings={};
+ const h=fixture({lifeFlash:true,loadLifeFlashAtlas:()=>gate.promise,getPresentation:()=>settings});
+ await h.prepare();
+ assert.equal(h.scene.view().ready,true,'the optional image cannot hold the drive');
+ assert.equal(h.scene.view().lifeFlash.ready,false);
+ gate.resolve(atlas);await flush();
+ h.advance(3.22);h.scene.render();
+ assert.equal(h.scene.view().phase,'fall');
+ assert.equal(h.scene.view().lifeFlash.frame,null,'early flight is uninterrupted');
+ h.advance(.4);h.scene.render();
+ assert.equal(h.calls.at(-1).detail.atlas,atlas);
+ assert.ok(h.calls.at(-1).detail.frame.envelope>.9);
+ assert.ok(h.calls.findLast(call=>call.event==='audio-sync').detail[0].openingCinematic.lifeFlash>.9);
+ settings.reducedMotion=true;h.scene.render();
+ assert.equal(h.calls.at(-1).detail.frame.steady,true);
+ settings.flashMode='off';h.scene.render();
+ assert.equal(h.scene.view().lifeFlash.frame,null);
+ delete settings.flashMode;h.state.held=true;h.scene.render();
+ assert.equal(h.scene.view().lifeFlash.frame,null,'the covered pause cannot show a frozen exposure');
+ h.state.held=false;h.advance(.4);h.scene.render();
+ assert.equal(h.scene.view().lifeFlash.frame,null,'the image clears at physical contact');
+ assert.equal(h.calls.findLast(call=>call.event==='audio-sync').detail[0].openingCinematic.lifeFlash,undefined);
+ h.scene.exit();
+});
 
 test('the title stays opaque before async acquisition and one owned context supplies a transient drive',async()=>{
  const gate=deferred(),h=fixture({fetchGate:gate});assert.equal(h.scene.worldPresentation,'hidden');h.scene.render();assert.equal(h.covers.at(-1).alpha,1,'the very first host paint cannot flash the room after the title');assert.equal(h.counts.fetch,0);h.advance(.2);h.scene.render();assert.equal(h.scene.worldPresentation,'hidden');assert.equal(h.covers.at(-1).alpha,1);assert.equal(h.counts.fetch,0);

@@ -43,7 +43,7 @@ export function faceplateModuleLayout({cols=80,rows=45}={}){
   return{mode:'bottom',physicalSize:size,contentSize:{cols:size.cols,rows:Math.max(8,Math.floor(top-.6))},
     territory:{x:0,y:top,w:size.cols,h:height},
     map:{x:1,y:top+.55,w:mapWidth-1.5,h:Math.max(1,height-1.1)},
-    lcd:{x:mapWidth+1,y:top+2.7,w:Math.max(1,size.cols-mapWidth-2),h:Math.min(3.45,Math.max(1,height-3.25))},
+    lcd:{x:mapWidth+1,y:top+1.7,w:Math.max(1,size.cols-mapWidth-2),h:Math.min(4.45,Math.max(1,height-2.25)),conditionRail:true},
     clockHousing:{x:0,y:top-.3,w:size.cols,h:height},
     identity:{x:mapWidth+1,y:top+.55,w:Math.max(1,size.cols-mapWidth-11.5),h:1}};
 }

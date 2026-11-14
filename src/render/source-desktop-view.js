@@ -7,7 +7,9 @@ import { hushDensityFromCaptured, normalizeHushDensityPose } from '../game/hush-
 import { pressureInstances, pressureSurfaceInstances } from './pressure-volume.js';
 import {installHushCosmosMaterial,HUSH_COSMOS} from './hush-cosmos.js';
 import { assetUrl } from '../platform/paths.js';
+import { characterMorphs, parseCharacterAsset, sampleCharacterFrame } from './character-asset.js';
 import { createSourceDesktopDither } from './source-desktop-dither.js';
+import { createHushStageBackplane } from './hush-stage-backplane.js';
 import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
 import { sourceDesktopFailureBeat, SOURCE_DESKTOP_BREACH_SECONDS } from '../game/source-desktop-state.js';
@@ -21,6 +23,14 @@ const phases = new Set(['contained', 'sealed', 'dissolving', 'desktop', 'reformi
 const intents = new Set(['broadcast', 'conceal', 'overload', 'loop', 'silence']);
 
 export const SOURCE_DESKTOP_PRESSURE_ASSET = 'assets/hush-density.glb';
+
+export async function loadSourceDesktopPressureAsset(loader, url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Density rig unavailable (${response.status})`);
+  const bytes = await response.arrayBuffer();
+  const asset = parseCharacterAsset(bytes);
+  return { asset, character: await loader.parseAsync(bytes, '') };
+}
 
 // Compatibility target metadata for both performers. The stellar material
 // samples world direction; neither this size nor a cropped viewport pins it.
@@ -47,9 +57,12 @@ export function sourceDesktopDensityPerformance(state, capturedPerformance = {})
   const compression = kind === 'overload' ? .36 + smooth(progress) * .58
     : kind === 'silence' ? .84 : kind === 'loop' ? .63 : kind === 'conceal' ? .46 : .34;
   return normalizeHushDensityPose({ ...entry,
-    phase: entry.phase + (reduced ? 0 : state.clock * .30),
-    rate: reduced ? 0 : .30,
-    traction: reduced ? 0 : kind === 'overload' ? .72 : kind === 'loop' ? .68 : kind === 'silence' ? .12 : .36,
+    // The stage root is stationary. Its authored response can load or listen,
+    // but a battle clock cannot spend walking distance under planted feet.
+    phase: entry.phase, rate: 0, traction: 0, drive: 0, clearanceTurn: 0, doorDrop: 0, doorX: 0, doorZ: 0, doorEngaged: false,
+    // The framed stage borrows the posture, not world-space footfall anchors
+    // or a prior high-speed release from its now absent navigation root.
+    feet: null, release: 0, pivot: false, pivotStart: null, pivotProgress: 0, settlingFeet: false, unsupported: false,
     compression, retained: Math.max(entry.retained, kind === 'silence' ? .84 : .32),
     attention: reduced ? 0 : kind === 'loop' ? (progress - .5) * .68 : entry.attention * .5,
     event: reduced || kind === 'silence' ? 'still' : kind === 'overload' ? 'load' : 'notice',
@@ -59,84 +72,41 @@ export function sourceDesktopDensityPerformance(state, capturedPerformance = {})
   });
 }
 
-// Sample the same descriptor as the world pressure pass. Reading the authored
-// tracks directly makes repeated times and two-clip blends deterministic; an
-// AnimationMixer's cached bindings can otherwise retain last frame's additive
-// fold offsets. Every track falls back to its original local value.
-export function createSourceDesktopPressureSampler(THREE, root, animations) {
-  const bindings = new Map(), clips = new Map(), joints = new Map(), restBones = [], restMorphs = [];
+// Use the world renderer's actual pose, including post-clip support solves.
+// Convert model-space joint matrices to local matrices; Three adds its own
+// presentation transform once via the scene root and skinned-mesh binding.
+export function createSourceDesktopPressureSampler(THREE, root, asset) {
+  const joints = [], morphMeshes = [];
+  const named = new Map(asset.nodes.map((node, index) => [node.name, index]));
+  const entries = new Map(asset.entries.map(entry => [entry.name, entry]));
   root.traverse(node => {
     if (node.isBone) {
-      joints.set(node.name, node);
-      restBones.push({ node, position: node.position.clone(), quaternion: node.quaternion.clone(), scale: node.scale.clone() });
+      const index = named.get(node.name);
+      if (index === undefined) throw new Error(`Desktop pressure joint unavailable: ${node.name}`);
+      joints.push({ node, index, parent: asset.nodes[index].parent });
     }
-    if (node.isMesh && node.morphTargetInfluences) restMorphs.push({ node, values: [...node.morphTargetInfluences] });
+    if (node.isSkinnedMesh && node.morphTargetInfluences) {
+      const entry = entries.get(node.name);
+      if (entry?.morphCount) morphMeshes.push({ node, entry });
+    }
   });
-  for (const clip of animations) {
-    const tracks = new Map();
-    for (const track of clip.tracks) {
-      let binding = bindings.get(track.name);
-      if (!binding) {
-        const property = THREE.PropertyBinding.create(root, track.name);
-        property.bind();
-        const rest = new Float64Array(track.getValueSize());
-        property.getValue(rest, 0);
-        binding = { property, rest, output: new Float64Array(rest.length), rotation: track.ValueTypeName === 'quaternion' };
-        bindings.set(track.name, binding);
-      }
-      tracks.set(track.name, track.createInterpolant());
-    }
-    clips.set(clip.name, { duration: clip.duration, tracks });
-  }
-  const vector = new THREE.Vector3(), quaternion = new THREE.Quaternion(), target = new THREE.Quaternion();
+  const localMatrix = new THREE.Matrix4(), parentInverse = new THREE.Matrix4();
   function sample(descriptor = {}) {
-    for (const { node, position, quaternion, scale } of restBones) {
-      node.position.copy(position); node.quaternion.copy(quaternion); node.scale.copy(scale);
+    const { world, local } = sampleCharacterFrame(asset, descriptor);
+    for (const { node, index, parent } of joints) {
+      localMatrix.fromArray(world[index]);
+      if (parent >= 0) localMatrix.premultiply(parentInverse.fromArray(world[parent]).invert());
+      localMatrix.decompose(node.position, node.quaternion, node.scale);
     }
-    for (const { node, values } of restMorphs) node.morphTargetInfluences.splice(0, values.length, ...values);
-    let layers = descriptor.clips;
-    if (!layers) layers = descriptor.blend ? [
-      { name: descriptor.clip, time: descriptor.time, loop: descriptor.loop, weight: 1 - (descriptor.blend.weight ?? 0) },
-      { name: descriptor.blend.clip, time: descriptor.blend.time, loop: descriptor.blend.loop, weight: descriptor.blend.weight ?? 0 },
-    ] : [{ name: descriptor.clip, time: descriptor.time, loop: descriptor.loop, weight: 1 }];
-    if (!Array.isArray(layers) || !layers.length || layers.length > 2) throw new Error('Desktop pressure requires one or two clip layers');
-    const sampled = layers.map(layer => {
-      const name = layer.name ?? layer.clip, clip = name ? clips.get(name) : null;
-      if (name && !clip) throw new Error(`Desktop pressure clip unavailable: ${name}`);
-      const time = Math.max(0, finite(layer.time));
-      return { clip, time: clip ? layer.loop && clip.duration > 0 ? time % clip.duration : Math.min(time, clip.duration) : 0,
-        weight: Math.max(0, finite(layer.weight, 1)) };
-    });
-    const a = sampled[0], b = sampled[1], fraction = b ? b.weight / Math.max(1e-9, a.weight + b.weight) : 0;
-    const held = sampled.every(layer => layer.weight === 0);
-    for (const [name, binding] of bindings) {
-      const first = held ? binding.rest : a.clip?.tracks.get(name)?.evaluate(a.time) || binding.rest;
-      let value = first;
-      if (b && !held) {
-        const second = b.clip?.tracks.get(name)?.evaluate(b.time) || binding.rest;
-        value = binding.output;
-        if (binding.rotation) quaternion.fromArray(first).slerp(target.fromArray(second), fraction).toArray(value);
-        else for (let index = 0; index < first.length; index++) value[index] = first[index] + (second[index] - first[index]) * fraction;
-      }
-      binding.property.setValue(value, 0);
+    for (const { node, entry } of morphMeshes) {
+      const weights = characterMorphs(entry, local, descriptor);
+      for (let i = 0; i < entry.morphCount; i++) node.morphTargetInfluences[i] = weights[i];
     }
-    for (const [name, extra] of Object.entries(descriptor.joints || {})) {
-      const bone = joints.get(name); if (!bone) continue;
-      if (extra.rotation) bone.quaternion.multiply(quaternion.fromArray(extra.rotation));
-      if (extra.translation) bone.position.add(vector.fromArray(extra.translation));
-    }
-    root.traverse(node => {
-      if (!node.isMesh) return;
-      for (const [name, value] of Object.entries(descriptor.morphs || {})) {
-        const index = node.morphTargetDictionary?.[name];
-        if (index !== undefined) node.morphTargetInfluences[index] = value;
-      }
-    });
     root.updateMatrixWorld(true);
     return descriptor;
   }
-  return { sample, dispose() { for (const { property } of bindings.values()) property.unbind(); },
-    debug: () => ({ clips: [...clips.keys()], joints: joints.size, tracks: bindings.size }) };
+  return { sample, dispose() { joints.length = 0; morphMeshes.length = 0; },
+    debug: () => ({ clips: [...asset.clips.keys()], joints: joints.length }) };
 }
 
 export function sourceDesktopGlyphLines(limit = 48) {
@@ -504,6 +474,10 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     dither = createSourceDesktopDither(THREE,renderer,{assetUrl:path});
     scene = new THREE.Scene(); camera = new THREE.OrthographicCamera(-3, 3, 1.75, -1.75, .05, 40);
     camera.position.set(0, 2.35, 7); camera.lookAt(0, 1.1, 0);
+    const backplane = createHushStageBackplane(THREE, .70);
+    backplane.position.z = -1.2;
+    own(backplane.geometry); own(backplane.material);
+    scene.add(backplane);
     ambient = new THREE.HemisphereLight('#afc4b2', '#19221e', 1.1); scene.add(ambient);
     const key = new THREE.DirectionalLight('#c7d4be', 12); key.position.set(-3, 4, 4); scene.add(key);
     const rim = new THREE.DirectionalLight('#a8bdc7', 7); rim.position.set(3, 3, -3); scene.add(rim);
@@ -520,7 +494,10 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     rake = new THREE.SpotLight('#e1dcba', 4.0, 8, .09, .85, 1.4); rake.position.set(-2.8, .65, 3);
     rake.target.position.set(.25, 1.0, 0); scene.add(rake, rake.target);
     const loader = new GLTFLoader();
-    const [character, propPack] = await Promise.all([loader.loadAsync(path(SOURCE_DESKTOP_PRESSURE_ASSET)), loader.loadAsync(path('assets/conservatory-props.glb')),dither.ready]);
+    const [{ asset, character }, propPack] = await Promise.all([
+      loadSourceDesktopPressureAsset(loader, path(SOURCE_DESKTOP_PRESSURE_ASSET)),
+      loader.loadAsync(path('assets/conservatory-props.glb')), dither.ready,
+    ]);
     collect(character.scene); collect(propPack.scene);
     if (disposed) { for (const value of owned) value.dispose?.(); for (const texture of textures) texture.dispose(); return false; }
     bodyRoot = character.scene; bodyRoot.name = 'source-desktop-density'; scene.add(bodyRoot);
@@ -529,8 +506,8 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       if (node.isSkinnedMesh) { bodyMeshCount++; node.frustumCulled = false; }
     });
     echoRoot = cloneRig(bodyRoot); echoRoot.name = 'source-desktop-loop-overprint'; echoRoot.visible = false; scene.add(echoRoot);
-    bodySampler = createSourceDesktopPressureSampler(THREE, bodyRoot, character.animations);
-    echoSampler = createSourceDesktopPressureSampler(THREE, echoRoot, character.animations);
+    bodySampler = createSourceDesktopPressureSampler(THREE, bodyRoot, asset);
+    echoSampler = createSourceDesktopPressureSampler(THREE, echoRoot, asset);
     const bodyFinish = finishSourceDesktopPressure(THREE, bodyRoot, { own });
     const echoFinish = finishSourceDesktopPressure(THREE, echoRoot, { own });
     materials.push(...bodyFinish.cores); bodyGlows.push(...bodyFinish.glows);
@@ -546,7 +523,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       const root = found.clone(true); root.position.set(spec.x, .08, spec.z); root.scale.setScalar(spec.scale); root.rotation.y = spec.yaw;
       scene.add(root); modelGroups.push(root); modelIds.push(spec.id);
     }
-    if (!bodyMeshCount || !bodyRoot.getObjectByName('density_root') ||
+    if (!bodyMeshCount || !['posture_root','pelvis','chest','head','thigh_L','thigh_R','foot_L','foot_R'].every(name=>bodyRoot.getObjectByName(name)) ||
       !['pressure_approach', 'density_listen', 'density_idle'].every(name => animationClips.includes(name))) {
       throw new Error('Density rig or authored performance is unavailable');
     }
@@ -567,7 +544,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       dither:dither?.debug(),
       pressureAsset: SOURCE_DESKTOP_PRESSURE_ASSET,
       skinnedMeshes: bodyMeshCount, bones: bodySampler?.debug().joints || 0, animationClips, modelIds,
-      pressureFinish: { core: 'world-fixed-violet-stellar-field', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
+      pressureFinish: { core: 'world-fixed-black-stellar-field', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
         surfaceMeshes: bodySurfaces.length,
         coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
         maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },

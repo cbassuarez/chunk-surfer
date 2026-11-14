@@ -118,7 +118,7 @@ function hallChallenges() {
     ], [
       { insert:['RETURN'], blackout:['ONLY'], scrape:['ANSWER'], notice:'THE OTHER HAND WRITES RETURN AND RESTORES ANSWER.' },
       { blackout:['REVERSED'], scrape:['STRINGS'], notice:'THE OTHER HAND BLACKS OUT REVERSED.' },
-    ], { claim:'THE BENT RIG CAN GRAFT SIGNAL WORDS.' }),
+    ], { claim:'THE SERVICE INTERFACE CAN GRAFT SIGNAL WORDS.' }),
     challenge('hall-return', 'THE RETURN',
       'THE ROOM RETURNS EVERY SOUND SMALLER EXCEPT YOUR VOICE WHICH COMES BACK AT THE SAME LEVEL', [
         reading('room-returns-sound', ['THE', 'ROOM', 'RETURNS', 'EVERY', 'SOUND'], ['VOICE'], 5, { meaning:'The room returns sound.' }),

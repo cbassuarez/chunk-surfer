@@ -1,8 +1,10 @@
 import { makePracticeFightScene } from './practice-fight.js';
 import { sourceDesktopInputActive } from './source-desktop-focus.js';
+import { desktopParryCueFor } from './desktop-parry-cues.js';
 import { makeBattlePreparation } from './battle-preparation.js';
 import { preparationBattleTools } from './combat-operating-facts.js';
 import { drawEncounterSplash } from '../render/encounter-view.js';
+import { createHushBattleBody, fieldSignalCage } from '../render/hush-battle-body.js';
 import { SOURCE_DESKTOP_BREACH_SECONDS, sourceDesktopFailureBeat } from './source-desktop-state.js';
 import { paintSourceDesktopDiagnostic, sourceDesktopDiagnosticLayout } from '../render/source-desktop-view.js';
 import { combatCheckpointSnapshot, restoreCombatCheckpoint } from './combat-checkpoint.js';
@@ -16,7 +18,7 @@ import { resolveFieldKit } from './field-kit.js';
 
 import * as scenes from './scenes.js';
 import { uiCellMetrics, uiSize, uiFill, uiText, uiStrokeRect, uiLine, uiDraw } from '../render/ui.js';
-import { drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
+import { drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText, machinePanelBody } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
@@ -30,6 +32,7 @@ import {
   drawCombatActionTile,
   drawCombatGauge,
   drawCombatToolTile,
+  drawCombatControlTabs,
   drawEnemyVoidStage,
   drawFirstPersonHands,
   drawHallApparitions,
@@ -44,6 +47,9 @@ import {
   drawTurnGlyph,
 } from '../render/combat-view.js';
 import { combatHudLayout } from '../render/combat-hud-layout.js';
+import {combatReadoutState,drawCombatReadouts} from '../render/combat-readouts.js';
+import {drawHallRoster} from '../render/hall-roster.js';
+import {combatStageOverlayLayout,fitBattleStageThoughts} from '../render/combat-stage-overlays.js';
 import {
   COMBAT_ACTION,
   COMBAT_TOOL,
@@ -112,9 +118,10 @@ export function combatChoiceSeconds(state, turn = state?.turns || 0) {
 }
 
 export function cathedralCombatLayout({ cols = 80, rows = 40 } = {}) {
-  const h = Math.min(14, Math.max(10, Math.floor(rows * .44)), Math.max(6, rows - 4));
-  return { x: 2, y: rows - h - 1, w: Math.max(14, cols - 4), h,
-    world: { x: 0, y: 3, w: cols, h: Math.max(0, rows - h - 5) } };
+  const w=Math.max(36,cols-8),x=Math.floor((cols-w)/2);
+  const panel=machinePanelBody(x-2,1,w+4,rows-2,{footer:'CONTROLS'});
+  const layout=combatHudLayout({panel,mode:'command'});
+  return {...panel,world:layout.stage,controls:layout.deck};
 }
 
 // Which techniques are fired as moves in the fight (vs passives that change the
@@ -255,6 +262,26 @@ function turnDuration(actionId) {
     : ORDINARY_TURN_SECONDS;
 }
 
+function playBridgeArc(pair) {
+  const { ctx, destination } = pair || {};
+  if (!ctx || !destination || ctx.state !== 'running') return;
+  const seconds = .085;
+  const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let seed = 4417;
+  for (let i = 0; i < data.length; i++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const t = i / ctx.sampleRate;
+    const envelope = Math.min(1, t / .0018) * Math.exp(-t * 72) * (1 - i / data.length);
+    data[i] = ((seed / 4294967296 - .5) * .12 + Math.sin(2 * Math.PI * 210 * t) * .045) * envelope;
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(destination);
+  source.onended = () => source.disconnect();
+  source.start();
+}
+
 export function makeCombatScene({
   battle,
   playSound,
@@ -288,6 +315,10 @@ export function makeCombatScene({
   onMovementInterlude = null,
   onMovementCompleted = null,
   sourceDesktop = null,
+  chapelDesktop = null,
+  desktopParryCue = desktopParryCueFor(battle?.combat?.id),
+  desktopParryCues = desktopParryCue ? [desktopParryCue] : [],
+  hushBody = createHushBattleBody(battle),
   onCheckpoint = null,
   skipOpening = false,
   director = null,
@@ -305,7 +336,7 @@ export function makeCombatScene({
   onDefeatScreen = null,
 } = {}) {
   if (battle?.combat?.practice) return makePracticeFightScene({
-    battle,seed,difficulty,loadout,resources,getAudio,audio,practiceClues,onWin,onLose,onAbort,encounterIntro,
+    battle,seed,difficulty,loadout,resources,getAudio,audio,practiceClues,onWin,onLose,onAbort,encounterIntro,hushBody,
   });
   if (!battle?.combat) throw new Error(`missing signal combat definition: ${battle?.id || 'unknown'}`);
   const voice = createSamDialogVoice({ volume: 0.26, getAudio });
@@ -378,7 +409,7 @@ export function makeCombatScene({
     return { ...frame, active:true, clock:now,
       commandMinHeight:uiCellMetrics().cellH * 24, commandMinWidth:Math.max(960,uiCellMetrics().cellW * 114),
       paused:(!!topScene && topScene !== scene) || (typeof document !== 'undefined' &&
-        (document.hidden || (sourceDesktop?.mode?.()==='native' && !sourceDesktopInputActive(sourceDesktop)))),
+        (document.hidden || (!chapelOffer && sourceDesktop?.mode?.()==='native' && !sourceDesktopInputActive(sourceDesktop)))),
       phase:phase === 'desktop-breach' ? 'dissolving' : frame.breached || desktopStarted ? 'desktop' : 'contained',
       transition:phase === 'desktop-breach' ? Math.min(1,desktopElapsed / SOURCE_DESKTOP_BREACH_SECONDS) : frame.breached ? 1 : 0,
       breach:phase === 'desktop-breach' ? {elapsed:desktopElapsed} : null,
@@ -471,7 +502,7 @@ export function makeCombatScene({
     });
   }
 
-  function commitParry(tier = PARRY_TIER.LATE) {
+  function commitParry(tier = PARRY_TIER.LATE, surface = 'game') {
     if (!resolution || resolution.parryTried) return false;
     resolution.parryBuffered = false;
     resolution.parryTried = true;
@@ -480,16 +511,115 @@ export function makeCombatScene({
     resolution.parried = !!state.last?.parried;
     resolution.parryTier = state.last?.parryTier || tier;
     if (resolution.parried) {
+      if (parryCues.get(resolution.intent?.id)?.ringing && !state.last.received) {
+        state.ringing = resolution.before.ringing;
+      }
       const weight = tier === PARRY_TIER.PERFECT ? .44
         : tier === PARRY_TIER.GOOD ? .30 : .18;
       fx?.flash?.(70, `rgba(120,220,255,${weight})`);
       audio?.menuMove?.();
     }
+    if (chapelOffer) closeChapelOffer(chapelOffer.phase === 'live' && resolution.parried ? 'hit' : 'cancel', surface);
     persistCheckpoint();
     return true;
   }
 
+  const parryCues = new Map(desktopParryCues.map(cue => [cue.attackId, cue]));
+  const playedDesktopCues = new Set();
+  let chapelOffer = null;
+  let chapelLast = null;
+  let chapelPrepared = false;
+  let preparingDesktop = false;
+
+  function prepareChapelDesktop() {
+    if (!parryCues.size || chapelPrepared || preparingDesktop || !chapelDesktop?.isAvailable()) return;
+    preparingDesktop = true;
+    const cue = [...parryCues.values()].find(entry => entry.movementId === movement()?.id) || parryCues.values().next().value;
+    void chapelDesktop.prepare(cue.theme).then(prepared => { chapelPrepared = prepared; }).finally(() => { preparingDesktop = false; });
+  }
+
+  function closeChapelOffer(outcome = 'cancel', surface = null) {
+    const offer = chapelOffer;
+    if (!offer) return;
+    const { attackId, theme } = offer.cue;
+    chapelLast = { attackId, outcome, surface };
+    chapelOffer = null;
+    void chapelDesktop.end(outcome);
+    if (outcome === 'hit') resources.playDesktopParry?.({ theme, attackId, stage: outcome });
+    if (outcome === 'miss' && resolution === offer.beat) resolution.desktopMissCue = offer.cue;
+  }
+
+  function offerChapelParry() {
+    const cue = parryCues.get(resolution.intent?.id);
+    if (!cue || playedDesktopCues.has(cue.attackId) || !chapelPrepared || !chapelDesktop.isAvailable()
+      || !state.last?.enemyHits?.some(hit => hit.intentId === cue.attackId)
+      || (state.result && !state.last?.sourceEnemyReaction?.lost)) return;
+    // A projectile that has already launched owns its own answer. Reserve the
+    // shared space only between casts, with the in-window guard always live.
+    if (fireballExchange.snapshot().active) return;
+    const reaction = parryWindow();
+    if (!reaction) return;
+    const offer = { cue, phase: 'opening', age: 0, response: 0, beat: resolution, start: reaction.openSeconds };
+    chapelOffer = offer;
+    void chapelDesktop.begin({
+      attackId: cue.attackId,
+      theme: cue.theme,
+      responseSeconds: cue.responseSeconds,
+      reducedMotion: shakeMode() !== 'full',
+      reduceFlash: flashMode() !== 'full',
+      onHit: () => {
+        if (chapelOffer !== offer || offer.phase !== 'live' || resolution !== offer.beat) return;
+        if (parryWindow()?.armed) commitParry(PARRY_TIER.GOOD, 'desktop');
+      },
+      onCancel: () => { if (chapelOffer === offer) closeChapelOffer(); },
+    }).then(painted => {
+      if (chapelOffer !== offer) return;
+      if (!painted || resolution !== offer.beat || !chapelDesktop.isAvailable()) {
+        closeChapelOffer();
+        return;
+      }
+      offer.phase = 'live';
+      playedDesktopCues.add(cue.attackId);
+      resolution.elapsed = Math.max(resolution.elapsed, offer.start);
+      resources.playDesktopParry?.({ theme: cue.theme, attackId: cue.attackId, stage: 'open' });
+    });
+  }
+
+  function advanceChapelParry(dt) {
+    const offer = chapelOffer;
+    if (!offer) return dt;
+    if (resolution !== offer.beat || !chapelDesktop.isAvailable()) {
+      closeChapelOffer();
+      return dt;
+    }
+    if (offer.phase === 'opening') {
+      offer.age += dt;
+      if (offer.age >= .65) {
+        closeChapelOffer();
+        return dt;
+      }
+      return Math.min(dt, Math.max(0, offer.start - resolution.elapsed));
+    }
+    offer.response += dt;
+    const reaction = parryWindow();
+    if (!reaction) {
+      closeChapelOffer();
+      return dt;
+    }
+    const approach = reaction.widthSeconds * .97;
+    if (offer.response >= offer.cue.responseSeconds) {
+      closeChapelOffer('miss');
+      return dt;
+    }
+    // The desktop attack stretches the ordinary guard's approach. Its timing
+    // grade and the in-window input stay live while the player reaches for it.
+    return dt * approach / offer.cue.responseSeconds;
+  }
+
   function attemptParry(event = {}) {
+    // The painted desktop offer and the main controls share one last input
+    // frame. Once the offer has missed, its returning strike is committed.
+    if (resolution?.desktopMissCue) return true;
     const opportunity = parryWindow();
     if (!opportunity || resolution?.impactFired) return false;
     const keyboardPress = event.key === ' ' || event.key === 'Enter' || event.key === 'z';
@@ -546,6 +676,7 @@ export function makeCombatScene({
   // the floor settle onto — see practice-click.js and practice-metronomes.js.
   let practiceClick = null;
   let musicFinished = false;
+  let tabRows = [];
   let toolRows = [];
   let moveRows = [];
   // Inputs remember the cap they started on. Releasing over another tile, or
@@ -947,6 +1078,7 @@ export function makeCombatScene({
   }
 
   function beginMovement(index = state.movementIndex, {resume=false} = {}) {
+    prepareChapelDesktop();
     const next = movement(index);
     fireballExchange.setMovement({
       id:next?.id||'',index,
@@ -1167,10 +1299,20 @@ export function makeCombatScene({
     const after = resolution.after;
     const last = after.last || {};
     const enemyBeatImpact = resolution.side === 'enemy';
+    if (resolution.desktopMissCue && !resolution.parried) {
+      const { theme, attackId } = resolution.desktopMissCue;
+      resources.playDesktopParry?.({ theme, attackId, stage: 'miss' });
+    }
     // The player's tool sound belongs to the player beat; the enemy beat is the
     // opponent's, so it plays no tool. dealt is zeroed for the enemy beat's
     // audio/fx because it carries over from the player step (see below).
-    if (!enemyBeatImpact) resources.playTool?.(resolution.action.tool, resolution.action.id);
+    if (!enemyBeatImpact) {
+      resources.playTool?.(resolution.action.tool, resolution.action.id);
+      if (last.bridge?.route === 'rec') {
+        resources.playTool?.(COMBAT_TOOL.RECORDER, COMBAT_ACTION.MONITOR);
+        playBridgeArc(getAudio?.());
+      }
+    }
     const impactDealt = enemyBeatImpact ? 0 : (last.dealt || 0);
     resources.playImpact?.({
       dealt: impactDealt,
@@ -1245,6 +1387,9 @@ export function makeCombatScene({
       spawnPopup({ value: last.composureTo - last.composureFrom, kind: 'heal', anchor: 'hands' });
     }
     if (last.perfect) spawnPopup({ text: 'NEGATED', role: 'ui-amber', anchor: 'hands' });
+    if (!enemyBeat && last.bridge?.route === 'rec') {
+      spawnPopup({ text: 'WIRE ARC → RECORDER', role: 'ui-amber', anchor: 'hands' });
+    }
     if (after.take && !before.take && last.action === COMBAT_ACTION.MONITOR) {
       spawnPopup({ text: 'CAPTURED', role: 'ui-blue', anchor: 'enemy' });
     }
@@ -1559,6 +1704,7 @@ export function makeCombatScene({
       parryEarly: false,
     };
     phase='resolve';
+    offerChapelParry();
     persistCheckpoint();
   }
 
@@ -1619,6 +1765,7 @@ export function makeCombatScene({
     };
     const progress = ease(resolution.elapsed / resolution.duration);
     const transitioned = resolution.after.last?.transition != null;
+    const body = resolution.impactFired ? state : resolution.before;
     return {
       movementIndex: resolution.before.movementIndex,
       coherence: lerp(
@@ -1627,97 +1774,31 @@ export function makeCombatScene({
         progress,
       ),
       maxCoherence: resolution.before.movementMaxCoherence,
-      composure: lerp(resolution.before.composure, resolution.after.composure, progress),
-      maxComposure: resolution.before.maxComposure,
+      composure: body.composure,
+      maxComposure: body.maxComposure,
       progress,
     };
   }
 
-  function renderCathedral() {
-    const { cols, rows } = uiSize();
-    const panel = cathedralCombatLayout({ cols, rows });
-    const width = Math.max(1, Math.floor(panel.w - 2));
-    const text = (row, value, role = 'ui-secondary', alpha = 1) =>
-      uiText(panel.x + 1, panel.y + row, String(value || '').slice(0, width), role, alpha);
-    const visual = visualState();
-    const movement = battle.combat.movements[visual.movementIndex];
-    // Keep the crossing, its bell frame and accumulated damage in view. Only
-    // the command band and the two small lines above it belong to the HUD.
-    uiFill(0, 0, cols, 2.8, 'rgba(7,10,13,.58)');
-    uiText(2, .35, battle.combat.objective.slice(0, Math.max(1, cols - 4)), 'ui-primary');
-    uiText(2, 1.45, `PHASE ${battle.combat.cathedralPhase}/2 · ${movement?.title || ''}`.slice(0, Math.max(1, cols - 4)), 'ui-secondary', .8);
-    uiFill(panel.x, panel.y, panel.w, panel.h, 'rgba(7,10,13,.9)');
-    uiStrokeRect(panel.x, panel.y, panel.w, panel.h, UI_COLOR.frame, .4, 1);
-    toolRows = []; moveRows = []; channelRows = []; apparitionRows = [];
-    reactionRect = null; fireballRect = null; skipRect = null;
-    text(.35, `COMPOSURE ${Math.ceil(visual.composure)}/${visual.maxComposure} · RETURN ${Math.ceil(visual.coherence)}/${visual.maxCoherence} · CHARGE ${state.charge} · TORCH ${Math.round(state.battery * 100)}%`, 'ui-label');
-    text(1.5, state.take ? `LOADED · ${state.take.label}${state.take.tag === 'cathedral-reference' && !state.openingReferenceUsed ? ' · ONE SAFE ANSWER' : ''}` : 'RECORDER · NO TAKE LOADED', state.take ? 'ui-blue' : 'ui-secondary');
-
-    if (phase === 'talk' && cur) {
-      text(3, whoOf(cur).toUpperCase(), 'ui-label');
-      const view = currentBattleDialogueView({ width: Math.max(12, cols - 8), rows: 4 });
-      view.rows.forEach((line, index) => {
-        text(4.1 + index, line, 'ui-primary');
-        registerBattleReviewRow(cur, line, panel.x + 1, panel.y + 4.1 + index, width);
-      });
-      text(panel.h - 1.2, view.hasMore ? `MORE ${view.page + 1}/${view.pageCount} · PRESS CONTINUE` : 'PRESS CONTINUE', 'ui-amber');
-      return;
-    }
-    if (['arrival', 'ready', 'prepare', 'result-choreography'].includes(phase)) {
-      text(3.3, phase === 'prepare' ? 'PREPARE YOUR TOOLS · TURNS PAUSED' : phase === 'ready' ? 'YOUR TURN' : notice || 'LISTEN TO THE CROSSING', 'ui-amber');
-      return;
-    }
-    const intent = resolution?.side === 'enemy' ? resolution.intent : predictedCombatIntent(state);
-    text(2.7, `INTENT · ${intent?.label || 'THE RETURN IS QUIET'}`, 'ui-amber');
-    const reaction = parryWindow();
-    if (reaction && resolution) {
-      reactionRect = { x: panel.x, y: panel.y + 4, w: panel.w, h: panel.h - 4 };
-      const x = panel.x + 1, y = panel.y + 5.1, w = panel.w - 2;
-      uiFill(x, y, w, .8, 'rgba(255,255,255,.06)');
-      uiFill(x + w * reaction.openProgress, y, w * (reaction.impactProgress - reaction.openProgress), .8, 'rgba(120,220,255,.25)');
-      uiFill(x + w * reaction.perfectProgress, y, w * (reaction.impactProgress - reaction.perfectProgress), .8, 'rgba(120,220,255,.55)');
-      uiLine(x + w * reaction.impactProgress, y - .3, x + w * reaction.impactProgress, y + 1.1, UI_COLOR.danger, .9, 1.3);
-      uiFill(x + w * clamp(reaction.progress, 0, 1) - .2, y - .2, .4, 1.2, UI_COLOR.primary);
-      const prompt = activeInputPromptDevice() === 'controller' ? promptLine([{ action: 'confirm', label: 'PARRY' }]) : '[SPACE] PARRY';
-      text(7, resolution.parried ? `${PARRY_TIERS[resolution.parryTier]?.label || 'PARRIED'} · HIT TURNED` : reaction.spent ? resolution.after.last?.received ? 'CONTACT LANDED' : 'COUNTER HELD · NO DAMAGE' : `${reaction.armed ? 'NOW' : 'WAIT FOR CONTACT'} · ${prompt}`, reaction.armed ? 'ui-counter' : 'ui-secondary');
-      text(panel.h - 1.2, resolution.after.last?.notice || notice, 'ui-amber');
-      return;
-    }
-    if (turnClock && ['tool', 'move'].includes(phase)) {
-      const filled = Math.round(12 * Math.max(0, turnClock.left) / turnClock.limit);
-      text(3.8, `${'█'.repeat(filled)}${'·'.repeat(12 - filled)} · ANSWER BEFORE THE NEXT STRIKE`, turnClock.left <= 1.5 ? 'ui-danger' : 'ui-secondary');
-    } else text(3.8, phase === 'resolve' ? resolution?.after.last?.notice || 'RESOLVING' : 'GUIDED · LISTEN, THEN ANSWER', 'ui-secondary');
-
-    const compact = panel.h < 13;
-    const drawRow = (list, selected, y, h, minimumWidth, draw, destination) => {
-      const count = Math.max(1, Math.min(list.length, Math.floor(panel.w / minimumWidth)));
-      const start = Math.min(Math.max(0, selected - Math.floor(count / 2)), Math.max(0, list.length - count));
-      const shown = list.slice(start, start + count), gap = .6;
-      const w = (panel.w - 2 - gap * Math.max(0, shown.length - 1)) / Math.max(1, shown.length);
-      shown.forEach((entry, slot) => {
-        const index = start + slot, rect = { x: panel.x + 1 + slot * (w + gap), y: panel.y + y, w, h };
-        draw(entry, { ...rect, selected: index === selected, focused: (destination === toolRows ? phase === 'tool' : phase === 'move') && index === selected,
-          executing: phase === 'resolve' && resolution?.side === 'player' && resolution.action?.id === entry.id });
-        destination.push({ ...rect, index, id: entry.id });
-      });
-    };
-    if (!compact || phase === 'tool') drawRow(tools(), selectedTool, 5, compact ? 2.3 : 2.2, 14, drawCombatToolTile, toolRows);
-    const renderedMoves = phase === 'resolve' && resolution ? [{ ...resolution.action, enabled: true }] : moves();
-    if (!compact || phase !== 'tool') drawRow(renderedMoves, selectedMove, compact ? 5 : 7.7, compact ? 2.3 : 3, 17, drawCombatActionTile, moveRows);
-    if (!compact) {
-      const highlighted = phase === 'tool' ? null : renderedMoves[selectedMove];
-      text(11, highlighted ? combatMoveSubtext(state, highlighted).long : `${activeTool().label} · ${activeTool().ready === false ? 'UNAVAILABLE' : 'READY'}`, 'ui-secondary', .75);
-    }
-    text(panel.h - 1.2, phase === 'tool' ? '[←→] TOOL · [↓] ACTIONS' : phase === 'move' ? '[←→] ACTION · [ENTER] ACT · [↑] TOOL' : 'RESOLVING · [ENTER] CONTINUE', 'ui-label', .85);
-  }
 
   const scene = {
     id: `battle:${battle.id}`,
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'battle',
+    conditionView() {
+      const visible = resolution && !resolution.impactFired ? resolution.before : state;
+      const reserve = state.techniques?.includes('deep-reserve') ? 2 * GRID : 0;
+      const baseline = Math.max(1, Math.floor(Number(state.definition?.baseComposure) || 8 * GRID)
+        + (Number(state.difficulty?.composureBonus) || 0) + reserve);
+      return {composure:visible.composure, ceiling:visible.maxComposure,
+        baseline:Math.max(baseline, visible.maxComposure), injuries:state.injuries,
+        authored:!!state.sourceDesktop};
+    },
     textReviewSuspend() { revealReviewedLine(); },
     textReviewResume() { refreshReviewedBattleText(); },
+    cancelChapelDesktop() { closeChapelOffer(); },
+    focus() { prepareChapelDesktop(); },
 
     // ESCAPE, BUT ONLY FOR THE ONE QUESTION.
     //
@@ -1733,8 +1814,10 @@ export function makeCombatScene({
 
     enter() {
       resetDeckControls();
+      hushBody?.warm();
       if (typeof window !== 'undefined') window.addEventListener('blur', resetDeckControls);
       sceneEntered = true;
+      prepareChapelDesktop();
       if (state.practice) {
         const rig = getAudio?.();
         practiceClick = createPracticeClick({ ctx: rig?.ctx, context: rig?.ctx, destination: rig?.destination });
@@ -1781,6 +1864,9 @@ export function makeCombatScene({
 
     exit() {
       persistCheckpoint();
+      hushBody?.dispose();
+      closeChapelOffer();
+      void chapelDesktop?.dispose();
       void Promise.resolve(sourceDesktop?.end?.(state.result?.result || 'abort')).catch(() => null);
       preparationMenu?.dispose(); preparationMenu = null;
       resetDeckControls();
@@ -1827,6 +1913,12 @@ export function makeCombatScene({
         dialogue: cur ? { text: textOf(cur), lead: leadOf(cur), typed, page: talkPage, reviewTarget: cur.reviewTarget } : null,
         bark: bark ? { text: textOf(bark), reviewTarget: bark.reviewTarget } : null,
         sourceDesktop:sourceDesktop ? { ...desktopFrame(),presentation:sourceDesktop.debug?.(),waiting:phase==='desktop-breach'&&(!desktopReady||desktopCompleting&&!desktopInputReady) } : null,
+        chapelDesktop:chapelDesktop ? {
+          phase:chapelOffer?.phase || 'idle', prepared:chapelPrepared, shown:playedDesktopCues.size > 0,
+          theme:chapelOffer?.cue.theme || null,
+          remaining:chapelOffer?.phase === 'live' ? Math.max(0, chapelOffer.cue.responseSeconds - chapelOffer.response) : null,
+          last:chapelLast,
+        } : null,
         checkpoint:cathedral ? cathedralCheckpoint() : combatCheckpoint(),
         preparation: preparationMenu?.snapshot() || null,
         preparationDone,
@@ -1866,13 +1958,16 @@ export function makeCombatScene({
           elapsed: resolution.elapsed,
           duration: resolution.duration,
           action: resolution.action.id,
+          intentId: resolution.intent?.id || null,
           side: resolution.side,
           parry: parryWindow(),
         } : null,
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
         turnClock: turnClock ? { ...turnClock } : null,
+        readouts:combatReadoutState(resolution&&!resolution.impactFired?resolution.before:state),
         inputRects: {
+          tabs:tabRows.map(row=>({...row})),
           channels: channelRows.map(row => ({ ...row })),
           tools: toolRows.map(row => ({ ...row })),
           moves: moveRows.map(row => ({ ...row })),
@@ -1886,7 +1981,7 @@ export function makeCombatScene({
 
     update(dt) {
       refreshReviewedBattleText();
-      if (sourceDesktop?.mode?.() === 'native' && !sourceDesktopInputActive(sourceDesktop)) {
+      if (!chapelOffer && sourceDesktop?.mode?.() === 'native' && !sourceDesktopInputActive(sourceDesktop)) {
         sourceDesktop.frame?.({...desktopFrame(),paused:true}); return;
       }
       if (phase === 'desktop-breach') {
@@ -1925,8 +2020,16 @@ export function makeCombatScene({
       waterAudio.setPhase(submersionSnapshot);
       musicSession?.setSubmersion?.(submersionSnapshot);
       voice.setEnvironment?.(submersionSnapshot);
-      fireballExchange.update(dt,{
-        enabled:!state.result && ['tool','move','resolve'].includes(phase),
+      // The opening movement can announce the circuit a beat ahead of the
+      // ordinary cast interval. Leave it room, without touching a live ray.
+      const committed = currentCombatIntent(state)?.id;
+      const movementId = movement()?.id;
+      const holdingWindow = !!chapelOffer || (chapelPrepared && chapelDesktop.isAvailable()
+        && [...parryCues.values()].some(cue => !playedDesktopCues.has(cue.attackId)
+          && (committed === cue.attackId || (cue.movementId === movementId && state.turnsInMovement <= 2))));
+      fireballExchange.update(dt, {
+        enabled: !state.result && ['tool','move','resolve'].includes(phase),
+        allowSpawn: !holdingWindow,
       });
       // Only while the deck is his and nothing else owns the screen. A bark, a
       // checkpoint or an authored line is not time the player was given.
@@ -1961,7 +2064,7 @@ export function makeCombatScene({
         return;
       }
       if (phase === 'resolve' && resolution) {
-        resolution.elapsed += dt;
+        resolution.elapsed += advanceChapelParry(dt);
         const opportunity = parryWindow();
         if (opportunity?.buffered && opportunity.armed && !resolution.parryTried) {
           commitParry(PARRY_TIER.LATE);
@@ -2172,6 +2275,11 @@ export function makeCombatScene({
         skipDrill();
         return true;
       }
+      const tab=tabRows.find(row=>y>=row.y&&y<row.y+row.h&&x>=row.x&&x<row.x+row.w);
+      if(tab){
+        phase=tab.id;takeConfirmation=false;
+        pressDeckControl(`combat:tab:${tab.id}`,e);audio?.menuMove?.();return true;
+      }
       const section = apparitionRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (section) {
         state = reduceCombat(state, { type: COMBAT_ACTION.TARGET, targetId: section.id });
@@ -2216,21 +2324,21 @@ export function makeCombatScene({
     },
 
     render() {
+      tabRows=[];
       refreshReviewedBattleText();
       preparationMenu?.visible(scenes.top({ includeOverlay:true }) === scene);
       if (phase === 'prepare') {
         // Preparation is the held encounter title, with the same opponent and
         // darkness behind the case. The live fight's meters/hands start at READY.
-        drawEncounterSplash(battle,{phase:'versus',reducedMotion:true,showTitle:false});
+        drawEncounterSplash(battle,{phase:'versus',reducedMotion:true,showTitle:false,hushBody});
         return;
       }
       // The reprise is a real handoff to the room renderer. Leaving this panel
       // composited underneath the child scene makes the old fight read as the
       // replayed space and hides the very evidence Source is weaponising.
       if (phase === 'interlude') return;
-      if (cathedral) { renderCathedral(); return; }
       const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, 'rgba(2,2,3,0.97)');
+      uiFill(0, 0, cols, rows, '#020203');
       const w = Math.max(36, cols - 8);
       const x = Math.floor((cols - w) / 2);
       const choosing = ['tool', 'move'].includes(phase);
@@ -2260,6 +2368,7 @@ export function makeCombatScene({
                 const opportunity = parryWindow();
                 if (opportunity && !opportunity.spent) {
                   if (opportunity.buffered) return `CONTACT ARMED · ${parryPrompt}`;
+                  if (chapelOffer?.phase === 'live') return `${chapelOffer.cue.gamePrompt} / ${parryPrompt}`;
                   return opportunity.armed
                     ? `${parryPrompt} · ${PARRY_TIERS[opportunity.tier]?.label || ''}`
                     : `WAIT FOR CONTACT · ${parryPrompt}`;
@@ -2306,10 +2415,10 @@ export function makeCombatScene({
 
       // ── header: enemy name, signature rule, enemy phase pips ───────────────
       const enemyName = String(battle.enemy || battle.combat.enemy);
-      if (compact) uiText(panel.x, panel.y, enemyName.slice(0, panel.w - 20), 'ui-danger');
-      else drawVfdText(panel.x, panel.y, enemyName.slice(0, Math.max(6, Math.floor((panel.w - 24) / 2))), { scale: 2 });
+      if (compact&&!layout.dense) uiText(panel.x, panel.y, enemyName.slice(0, panel.w - 20), 'ui-danger');
+      else if(!compact) drawVfdText(panel.x, panel.y, enemyName.slice(0, Math.max(6, Math.floor((panel.w - 24) / 2))), { scale: 2 });
       const signature = battle.combat.signature;
-      if (signature?.label && !desktopIsland) {
+      if (signature?.label && !desktopIsland&&!layout.dense) {
         const tag = `SIGNATURE · ${signature.label}`;
         uiText(panel.x + Math.max(0, panel.w - tag.length), panel.y, tag, 'ui-amber', .66);
       }
@@ -2328,7 +2437,7 @@ export function makeCombatScene({
         x: layout.enemyGauge.x, y: enemyBarY, w: layout.enemyGauge.w,
         value: transitioned ? 0 : snap.movementCoherence,
         max: snap.movementMaxCoherence,
-        label: `${movementData?.title || 'COHERENCE'} ${visual.movementIndex + 1}/${movementCount}`,
+        label: `${layout.dense?enemyName:movementData?.title || 'COHERENCE'} ${visual.movementIndex + 1}/${movementCount}`,
         tone: 'enemy',
         now,
         ...ghostFor(barGhost.coherence),
@@ -2358,7 +2467,9 @@ export function makeCombatScene({
         x:panel.x*metrics.cellW,y:stageY*metrics.cellH,w:panel.w*metrics.cellW,h:stageH*metrics.cellH,
       });
       const sourceStage = !!presentation?.ready;
-      if (sourceStage && !desktopIsland) uiDraw(({ctx,dpr,cellW,cellH}) => ctx.clearRect(panel.x*cellW*dpr,stageY*cellH*dpr,panel.w*cellW*dpr,stageH*cellH*dpr));
+      const worldStage=cathedral;
+      if (sourceStage || desktopIsland) hushBody?.desktop();
+      if ((sourceStage||worldStage) && !desktopIsland) uiDraw(({ctx,dpr,cellW,cellH}) => ctx.clearRect(panel.x*cellW*dpr,stageY*cellH*dpr,panel.w*cellW*dpr,stageH*cellH*dpr));
       // The passive desktop is never an input target. Its ranged exchange has
       // a dedicated aperture in the command header, clear of the status line.
       fireballRect=desktopIsland
@@ -2370,10 +2481,10 @@ export function makeCombatScene({
       const dealtFlash = impactFx && impactFx.dealt > 0 ? Math.max(0, 1 - (now - impactFx.at) / .18) : 0;
       const hurtNow = impactFx && impactFx.received > 0 ? Math.max(0, 1 - (now - impactFx.at) / .35) : 0;
       const preparing = phase === 'prepare';
-      const ew = Math.min(40, Math.floor(panel.w * (preparing ? .27 : .36)));
+      const ew = state.apparitions?Math.min(68,panel.w*.60):Math.min(40, Math.floor(panel.w * (preparing ? .27 : .36)));
       const eh = Math.max(4, stageH - 1);
-      const ex = panel.x + (preparing ? Math.floor(panel.w * .84 - ew / 2) : Math.floor(panel.w * .56 - ew / 2)) + Math.round((1 - introIn) * panel.w * .45);
-      if (!sourceStage && !desktopIsland) drawEnemyVoidStage(battle.combat.id, {
+      const ex = state.apparitions?panel.x+panel.w*.38:panel.x + (preparing ? Math.floor(panel.w * .84 - ew / 2) : Math.floor(panel.w * .56 - ew / 2)) + Math.round((1 - introIn) * panel.w * .45);
+      if (!sourceStage && !desktopIsland&&!worldStage) drawEnemyVoidStage(battle.combat.id, {
         x: panel.x, y: stageY, w: panel.w, h: stageH,
         enemyBox: { x: ex, w: ew },
         resolveProgress: visual.progress,
@@ -2394,7 +2505,8 @@ export function makeCombatScene({
         // Seeded off the turn and the action so the swarm is stable frame to
         // frame instead of reshuffling every render.
         drawAttackNotes({
-          x: ex, y: stageY + 1, w: ew, h: Math.max(3, eh - 1),
+          x: ex, y: stageY + Math.min(1, stageH * .12), w: ew,
+          h: Math.max(.1, stageH - Math.min(1, stageH * .12)),
           count: Math.min(9, 3 + hits * 2),
           now,
           seed: (state.turn || 0) * 31 + (resolution.action?.kind || '').length * 7 + hits,
@@ -2417,22 +2529,29 @@ export function makeCombatScene({
       // THE HALL. One encounter has more than one thing in it, and a single
       // figure on the void stage cannot say so. The three bodies share the box
       // the being would have had, so the banner and attack notes still land.
-      const apparitions = combatApparitions(intentState);
-      if (sourceStage || desktopIsland) {
+      const apparitions = combatApparitions(snap);
+      if (sourceStage || desktopIsland||worldStage) {
         // The borrowed Pressure rig owns this stage; its code-bearing shell is
         // the same finite shelter the combat reducer can spend or lose.
       } else if (apparitions) {
         drawHallApparitions(apparitions, {
           x: ex, y: stageY + 1, w: ew, h: Math.max(3, eh - 1),
-          now, reducedMotion,
+          now, reducedMotion, captions:false,
           // They watch you. The lean follows the selected tool across the deck,
           // which is the only thing on screen that stands in for where he is.
           watch: Math.sin(now * .55) * .5,
           dim: transitioned ? .5 : 1,
         });
-      } else if (art?.procedural) {
-        drawSignalBeing(battle.combat.id, {
-          x: ex, y: stageY, w: ew, h: eh,
+      } else if (art?.procedural || hushBody) {
+        const cage = fieldSignalCage(battle);
+        const stage = { x:ex, y:stageY, w:ew, h:eh };
+        hushBody?.draw({ ...stage, x:ex + (reducedMotion ? 0 : dealtFlash * 1.4) }, {
+          clip:{x:panel.x,y:stageY,w:panel.w,h:stageH}, clock:now,
+          intentKind:intent?.kind, resolveProgress:visual.progress,
+          reducedMotion, reduceFlash:flashMode()!=='full',
+        });
+        if (cage || !hushBody) drawSignalBeing(cage || battle.combat.id, {
+          ...stage, cageOnly:!!cage,
           snr: state.snr,
           coherenceRatio: (transitioned ? 0 : snap.movementCoherence) / Math.max(1, snap.movementMaxCoherence),
           movementIndex: visual.movementIndex,
@@ -2526,16 +2645,16 @@ export function makeCombatScene({
       const lh = Math.min(12, stageH);
       const rh = Math.min(9, Math.max(4, stageH - 2));
       const introDrop = (1 - introIn);
-      if (!desktopIsland) drawFirstPersonHands(selectedToolId, {
+      if (!desktopIsland&&!worldStage) drawFirstPersonHands(selectedToolId, {
         stage: { x: panel.x, y: stageY, w: panel.w, h: stageH },
         left: {
-          x: panel.x + Math.floor(panel.w * .13) - introDrop * panel.w * .35,
+          x: panel.x + Math.floor(panel.w * (state.apparitions?.04:.13)) - introDrop * panel.w * .35,
           y: stageY + stageH - lh + introDrop * lh * .7,
           w: Math.min(32, Math.floor(panel.w * .28)),
           h: lh,
         },
         right: {
-          x: panel.x + Math.floor(panel.w * .62) - introDrop * panel.w * .18,
+          x: panel.x + Math.floor(panel.w * (state.apparitions?.22:.62)) - introDrop * panel.w * .18,
           y: stageY + stageH - rh + introDrop * rh * .9,
           w: Math.min(24, Math.floor(panel.w * .21)),
           h: rh,
@@ -2543,12 +2662,28 @@ export function makeCombatScene({
         ...handFrame,
       });
 
+      // The spark starts at the handheld jumper and ends at the deck's input.
+      // Reduced flash leaves the same route indication and take label.
+      if (!desktopIsland && resolution?.side === 'player' && resolution.impactFired
+        && resolution.after.last?.bridge?.route === 'rec' && flashMode() === 'full' && impactFx) {
+        const spark = Math.max(0, 1 - (now - impactFx.at) / .17);
+        if (spark > 0) {
+          const x = panel.x + panel.w * (state.apparitions ? .27 : .68);
+          const y = stageY + stageH - rh * .54;
+          for (const [dx,dy] of [[2.6,-.75],[1.8,-1.4],[-2.2,-.45],[.7,-1.8]]) {
+            uiLine(x,y,x+dx*.43,y+dy*.62,'#ffe19d',spark*.85,1.4);
+            uiLine(x+dx*.43,y+dy*.62,x+dx,y+dy,'#e69a4b',spark*.67,.9);
+          }
+        }
+      }
+
       // ── stage overlays: intent card (left) and stance triangle (right) ─────
       const showOverlays = !desktopIsland && !['arrival', 'talk', 'prepare', 'ready','desktop-breach'].includes(phase) && !reaction;
       const intentX = panel.x + 1;
       const intentW = Math.min(34, Math.floor(panel.w * .30));
+      const overlay=combatStageOverlayLayout({stage:layout.stage,panel,compact,group:!!state.apparitions,phase});
       if (showOverlays) {
-        if (phase === 'resolve' && resolution) {
+        if (phase === 'resolve' && resolution && overlay.rows) {
           const last = resolution.after.last || {};
           const impactLine = [
             last.dealt ? `-${last.dealt} COHERENCE` : '',
@@ -2562,28 +2697,39 @@ export function makeCombatScene({
           // just been hit by — a move they had never seen named.
           if (resolution.side === 'enemy' && strike) {
             const who = String(battle.enemy || 'THE SIGNAL').toUpperCase();
-            drawVfdText(intentX, stageY + 1, `${who} ${strike.verb}`.slice(0, intentW), { scale: 1, role: 'ui-danger' });
-            uiText(intentX, stageY + 2, `${strike.label} · ${strike.instrument}`.slice(0, intentW), 'ui-amber', .9);
             const verdict = strikeVerdict(last, { parried: resolution.parried });
-            uiText(intentX, stageY + 3, verdict.text.slice(0, intentW + 6), verdict.role, .95);
+            if(overlay.rows===1)uiText(intentX,overlay.top,`${strike.label} · ${verdict.text}`.slice(0,intentW),verdict.role,.95);
+            else{
+              drawVfdText(intentX,overlay.top,`${who} ${strike.verb}`.slice(0,intentW),{scale:1,role:'ui-danger'});
+              const detail=overlay.rows>=4?1:0;
+              if(detail)uiText(intentX,overlay.top+1,`${strike.label} · ${strike.instrument}`.slice(0,intentW),'ui-amber',.9);
+              uiText(intentX,overlay.top+1+detail,verdict.text.slice(0,intentW),verdict.role,.95);
+              if(overlay.rows>=3)uiText(intentX,overlay.top+2+detail,
+                (readMissed&&overlay.rows<5?'NOT WHAT YOU READ':impactLine).slice(0,intentW),
+                readMissed&&overlay.rows<5?'ui-danger':'ui-secondary',.8);
+              if(readMissed&&overlay.rows>=5)uiText(intentX,overlay.top+4,'NOT WHAT YOU READ','ui-danger',.8);
+            }
             // The blow that arrived was not the blow the recordist named. Said
             // plainly, at the moment it lands, so a misread reads as a thing
             // that happened rather than as the card having glitched.
-            if (readMissed) uiText(intentX, stageY + 5, 'NOT WHAT YOU READ', 'ui-danger', .8);
-            uiText(intentX, stageY + 4, impactLine.slice(0, intentW), 'ui-secondary', .75);
+          } else if (resolution.side === 'player' && last.bridge?.route === 'rec') {
+            drawVfdText(intentX,overlay.top,'BYPASS ARC · RECORDER FIRED',{scale:1,role:'ui-amber'});
+            if (overlay.rows>1) uiText(intentX,overlay.top+1,'CROSSED RETURN PRINTED','ui-blue',.8);
           } else if (last.perfect) {
-            drawVfdText(intentX, stageY + 1, 'PERFECT RESPONSE', { scale: 2, role: 'ui-counter' });
+            const scale=overlay.spacious?2:1;
+            drawVfdText(intentX,overlay.top,'PERFECT RESPONSE',{scale,role:'ui-counter'});
             const why = `${resolution.action.label} COUNTERS ${String(intent?.kind || '').toUpperCase()} — HIT NEGATED · TEMPO OPENS`;
-            uiText(intentX, stageY + 3, why.slice(0, intentW + 6), 'ui-amber', .8);
-            uiText(intentX, stageY + 4, impactLine.slice(0, intentW), 'ui-secondary', .75);
+            if(overlay.rows>scale)uiText(intentX,overlay.top+scale,why.slice(0,intentW),'ui-amber',.8);
+            if(overlay.rows>scale+1)uiText(intentX,overlay.top+scale+1,impactLine.slice(0,intentW),'ui-secondary',.75);
           } else {
-            drawVfdText(intentX, stageY + 1, impactLine.slice(0, intentW), { scale: 1, role: last.received ? 'ui-primary' : 'ui-counter' });
+            drawVfdText(intentX,overlay.top,impactLine.slice(0,intentW),{scale:1,role:last.received?'ui-primary':'ui-counter'});
           }
-        } else if (intentState.tempo) {
-          drawVfdText(intentX, stageY + 1, 'TEMPO OPEN', { scale: 2, role: 'ui-counter' });
-          uiText(intentX, stageY + 3, 'FREE ACTION · THE SIGNAL WAITS', 'ui-amber', .7);
-          regionRects.tempo = { x: intentX, y: stageY + 1, w: intentW, h: 3.2 };
-        } else if (intent && ['full','trace'].includes(state.difficulty.guidance)) {
+        } else if (intentState.tempo && overlay.rows) {
+          const scale=overlay.spacious?2:1;
+          drawVfdText(intentX,overlay.top,'TEMPO OPEN',{scale,role:'ui-counter'});
+          if(overlay.rows>scale)uiText(intentX,overlay.top+scale,'FREE ACTION · THE SIGNAL WAITS'.slice(0,intentW),'ui-amber',.7);
+          regionRects.tempo={x:intentX,y:overlay.top,w:intentW,h:Math.min(overlay.rows,scale+1)};
+        } else if (intent && overlay.rows && ['full','trace'].includes(state.difficulty.guidance)) {
           // Not a readout. A guess — see thought-trace.js. The recordist says
           // what they reckon is coming and what they mean to do about it, and
           // how sure they sound is itself the information the old INTENT · KIND
@@ -2609,42 +2755,41 @@ export function makeCombatScene({
           });
           const thoughtContext = { sceneId: `battle:${battle.id}`,
             nodeId: `movement:${movement(intentState.movementIndex)?.id || intentState.movementIndex}:intent:${intent.id || intent.kind}:phase:${intentState.phase || phase}` };
-          let intentRow = 1;
-          for (const line of thought) {
+          const stageThought=thought.slice();
+          if(state.enemyGuard){
+            const guarding=state.enemyGuard.mode==='parry'?'turn':'slip';
+            stageThought.push({text:`it's set to ${guarding} my swing.`,tone:'warn'});
+          }
+          let intentRow=0;
+          for (const line of fitBattleStageThoughts(stageThought,overlay.rows)) {
             const role = line.tone === 'miss' || line.tone === 'warn' ? 'ui-danger'
               : line.tone === 'plan' ? 'ui-counter'
                 : line.tone === 'stance' ? 'ui-amber' : 'ui-primary';
             const reviewed = battleThoughtReviewLine(line, thoughtContext);
             const displayed = textOf(reviewed).slice(0, intentW);
-            uiText(intentX, stageY + intentRow, displayed, role, line.tone === 'read' ? .82 : .95);
-            registerBattleReviewRow(reviewed, displayed, intentX, stageY + intentRow, intentW);
+            uiText(intentX,overlay.top+intentRow,displayed,role,line.tone==='read'?.82:.95);
+            registerBattleReviewRow(reviewed,displayed,intentX,overlay.top+intentRow,intentW);
             intentRow += 1;
           }
           // The surfer's guard is telegraphed here too, in the same voice:
           // swing into it and it slips or turns the hit, so the read is to set
           // up instead.
-          if (state.enemyGuard) {
-            const guarding = state.enemyGuard.mode === 'parry' ? 'turn' : 'slip';
-            const reviewed = battleThoughtReviewLine({ text: `it's set to ${guarding} my swing.`, tone: 'warn' }, thoughtContext);
-            const displayed = textOf(reviewed).slice(0, intentW);
-            uiText(intentX, stageY + intentRow, displayed, 'ui-danger', .85);
-            registerBattleReviewRow(reviewed, displayed, intentX, stageY + intentRow, intentW);
-            intentRow += 1;
-          }
-          regionRects.intent = { x: intentX, y: stageY + 1, w: intentW, h: intentRow + .2 };
+          regionRects.intent={x:intentX,y:overlay.top,w:intentW,h:intentRow};
         }
 
-        const stW = Math.max(20, Math.min(26, Math.floor(panel.w * .24)));
-        const stX = panel.x + panel.w - stW - 1;
+        const stW=overlay.stance.w;
+        const stX=overlay.stance.x;
+        const stY=stageY+1;
         const pendingShift = phase === 'move' ? moves()[selectedMove]?.stanceShift || null : null;
         const stanceId = String(state.stance?.id || 'reading').toUpperCase();
-        if (compact) {
-          uiText(stX, stageY + 1, `${stanceId} · ${String(state.snr || '').toUpperCase()}`.slice(0, stW), 'ui-amber', .75);
-          regionRects.stance = { x: stX, y: stageY + 1, w: stW, h: 1 };
-        } else {
-          uiText(stX, stageY + 1, `SNR · ${stanceId}`.slice(0, stW), 'ui-label', .62);
-          const stanceRect = drawStanceTriangle(stX, stageY + 2, stW, { snr: state.snr, pendingShift, compact: false });
-          regionRects.stance = { ...stanceRect, y: stageY + 1, h: stanceRect.h + 1 };
+        if(overlay.stance.visible&&overlay.stance.named){
+          const label=stW>=stanceId.length+9?`STANCE · ${stanceId}`:stanceId;
+          uiText(stX,overlay.stance.y,label.slice(0,stW),'ui-amber',.75);
+          regionRects.stance={...overlay.stance};
+        } else if(overlay.stance.visible) {
+          uiText(stX, stY, `SNR · ${stanceId}`.slice(0, stW), 'ui-label', .62);
+          const stanceRect = drawStanceTriangle(stX, stY + 1, stW, { snr: state.snr, pendingShift, compact: false });
+          regionRects.stance = { ...stanceRect, y: stY, h: stanceRect.h + 1 };
         }
       }
 
@@ -2688,33 +2833,15 @@ export function makeCombatScene({
       drawCombatGauge({
         x: layout.playerGauge.x, y: cmdY, w: layout.playerGauge.w,
         value: snap.composure, max: snap.maxComposure,
-        label: 'COMPOSURE',
+        label: 'YOU · COMPOSURE',
         now,
         ...ghostFor(barGhost.composure),
       });
-      const resourceText = (cell, text, role = 'ui-counter', alpha = .76) => {
-        if (!cell || cell.w < 3) return;
-        uiText(cell.x, cell.y, String(text).slice(0, Math.max(1, Math.floor(cell.w))), role, alpha);
-      };
-      const takeText = `TAKE · ${state.take ? `${state.take.label} / ${state.take.damage}` : 'EMPTY'}`;
-      resourceText(layout.resourceCells.take, takeText);
-      regionRects.take = layout.resourceCells.take;
-      // Charge, beside the take, because they are the two things the player
-      // spends. Drawn as filled and empty diamonds rather than a number: it is
-      // read at a glance, mid-beat, to answer one question — can I afford to be
-      // loud yet. It fills on a perfect counter or a landed parry, so a player
-      // watching it fill is watching their own reading pay out.
-      const charge = Math.max(0, Math.min(integer(state.maxCharge, 3), integer(state.charge, 0)));
-      const pips = `${'◆'.repeat(charge)}${'◇'.repeat(Math.max(0, integer(state.maxCharge, 3) - charge))}`;
-      resourceText(layout.resourceCells.charge, `CHARGE ${pips}`, charge > 0 ? 'ui-counter' : 'ui-secondary', charge > 0 ? .9 : .55);
-      regionRects.charge = layout.resourceCells.charge;
-      resourceText(layout.resourceCells.battery, `CELL · ${Math.round(state.battery * 100)}%`);
-      regionRects.battery = layout.resourceCells.battery;
-      const shortName = (id) => id.split('.').pop().replaceAll('-', ' ').toUpperCase();
-      const passives = state.techniques.filter((id) => !ACTIVE_TECHNIQUE_IDS.has(id));
-      const actives = state.techniques.filter((id) => ACTIVE_TECHNIQUE_IDS.has(id));
-      resourceText(layout.resourceCells.mods, `MODS · ${state.techniques.length}`, state.techniques.length ? 'ui-blue' : 'ui-secondary', state.techniques.length ? .75 : .5);
-      regionRects.mods = layout.resourceCells.mods;
+      drawCombatReadouts(layout,snap);
+      for(const[id,cell]of Object.entries(layout.resourceCells))regionRects[id]=cell;
+      const shortName=id=>id.split('.').pop().replaceAll('-', ' ').toUpperCase();
+      const passives=state.techniques.filter(id=>!ACTIVE_TECHNIQUE_IDS.has(id));
+      const actives=state.techniques.filter(id=>ACTIVE_TECHNIQUE_IDS.has(id));
 
       const interferenceLine = interference?.line?.();
       if (interferenceLine && !bark) {
@@ -2971,59 +3098,33 @@ export function makeCombatScene({
         listY = layout.tools.y;
       }
       if (state.apparitions) {
-        const selectedAction = phase === 'move' ? moves()[selectedMove]?.id : null;
-        const snapshot = combatApparitionsSnapshot(state, selectedAction);
-        const gap = .8;
-        const cardH = Math.max(2.1, layout.channels.h - .55);
-        const cards = snapshot?.members || [];
-        const cardW = (panel.w - gap * Math.max(0, cards.length - 1)) / Math.max(1, cards.length);
-        cards.forEach((card, index) => {
-          const x = panel.x + index * (cardW + gap);
-          const width = Math.max(1, Math.floor(cardW - 1));
-          const tint = card.defeated ? 'rgba(255,255,255,.012)'
-            : card.targeted ? 'rgba(242,168,30,.07)'
-              : card.acting ? 'rgba(214,64,48,.06)'
-                : card.parryReady ? 'rgba(120,150,214,.05)' : 'rgba(255,255,255,.018)';
-          const edge = card.defeated ? UI_COLOR.frame
-            : card.targeted ? UI_COLOR.amber
-              : card.acting ? UI_COLOR.danger
-                : card.parryReady ? UI_COLOR.blue : UI_COLOR.frame;
-          uiFill(x, listY, cardW, cardH, tint);
-          uiStrokeRect(x, listY, cardW, cardH, edge, card.targeted ? .72 : card.acting || card.parryReady ? .5 : .2, card.primary ? 1.35 : 1);
-          const nameStyle = card.defeated ? 'ui-label' : card.primary ? 'ui-amber' : card.acting ? 'ui-danger' : 'ui-primary';
-          uiText(x + .55, listY + .3, card.label.slice(0, width), nameStyle, card.defeated ? .35 : card.primary ? .95 : .78);
-          uiText(x + .55, listY + 1.05, `${card.seat} · ${card.roleLabel}`.slice(0, width), card.defeated ? 'ui-label' : 'ui-secondary', card.defeated ? .3 : .6);
-          const statusStyle = card.defeated ? 'ui-label'
-            : card.parryReady ? 'ui-blue'
-              : card.acting ? 'ui-danger'
-                : card.targeted ? 'ui-amber' : 'ui-label';
-          uiText(x + .55, listY + 1.72, card.status.slice(0, width), statusStyle, card.defeated ? .3 : .7);
-          if (!card.defeated) apparitionRows.push({ id: card.id, x, y: listY, w: cardW, h: cardH });
-        });
-        const initiative = (snapshot?.initiative || [])
-          .map((entry) => entry.defeated ? `× ${entry.label}` : entry.active ? `▶ ${entry.label}` : entry.label)
-          .join('  →  ');
-        uiText(panel.x, listY + cardH + .2, initiative.slice(0, panel.w), 'ui-blue', .6);
-        listY = layout.tools.y;
+        const selectedAction=phase==='move'?moves()[selectedMove]?.id:null;
+        const snapshot=combatApparitionsSnapshot(snap,selectedAction);
+        apparitionRows=drawHallRoster(snapshot,{...layout.channels,dense:layout.dense});
+        listY=layout.tools.y;
       }
       if (state.source) {
         const prediction = combatPrediction(state);
         const channelGap = .8;
-        const channelH = desktopIsland ? 1.35 : Math.max(2.1, layout.channels.h - .55);
+        const channelH = Math.max(.85,layout.channels.h-(layout.dense?.1:.55));
         const channelW = (panel.w - channelGap * (CHANNELS.length - 1)) / CHANNELS.length;
         CHANNELS.forEach((channel, index) => {
           const armed = channel.id === state.source.armed;
           const x = panel.x + index * (channelW + channelGap);
           uiFill(x, listY, channelW, channelH, armed ? 'rgba(242,168,30,.07)' : 'rgba(255,255,255,.018)');
           uiStrokeRect(x, listY, channelW, channelH, armed ? UI_COLOR.amber : UI_COLOR.frame, armed ? .72 : .2, armed ? 1.35 : 1);
-          uiText(x + .7, listY + .38, `${channel.glyph} ${channel.label}`.slice(0, Math.max(1, Math.floor(channelW - 5))), armed ? 'ui-amber' : 'ui-secondary', armed ? .9 : .58);
-          uiText(x + Math.max(1, channelW - 3), listY + .38, String(state.source.channels[channel.id]), armed ? 'ui-counter' : 'ui-label', armed ? 1 : .58);
+          uiText(x + .7, listY + (layout.dense?.08:.38), `${channel.glyph} ${channel.label}`.slice(0, Math.max(1, Math.floor(channelW - 5))), armed ? 'ui-amber' : 'ui-secondary', armed ? .9 : .58);
+          uiText(x + Math.max(1, channelW - 3), listY + (layout.dense?.08:.38), String(state.source.channels[channel.id]), armed ? 'ui-counter' : 'ui-label', armed ? 1 : .58);
           channelRows.push({ id: channel.id, x, y: listY, w: channelW, h: channelH });
         });
-        if (!desktopIsland) uiText(panel.x, listY + channelH + .2, `SIGNAL ROUTE · ${prediction.outcome.toUpperCase()}`.slice(0, panel.w), 'ui-blue', .6);
+        if (!desktopIsland&&!layout.dense) uiText(panel.x, listY + channelH + .12, `SIGNAL ROUTE · ${prediction.outcome.toUpperCase()}`.slice(0, panel.w), 'ui-blue', .6);
         listY = layout.tools.y;
       }
 
+      if(choosing){
+        const tabs=drawCombatControlTabs({...layout.tabs,phase,toolLabel:activeTool().label});
+        tabRows=[tabs.tools,tabs.actions];regionRects.tabs=layout.tabs;
+      }
       const detailY = layout.detail.y;
       const centredWindow = (list, selected, visible) => {
         if (list.length <= visible) return { start: 0, items: list };
@@ -3037,8 +3138,8 @@ export function makeCombatScene({
       const visibleToolCount = Math.max(1, Math.min(toolList.length, Math.floor((panel.w + toolGap) / 14)));
       const toolWindow = centredWindow(toolList, selectedTool, visibleToolCount);
       const toolW = (panel.w - toolGap * Math.max(0, toolWindow.items.length - 1)) / Math.max(1, toolWindow.items.length);
-      const toolRect = compact ? layout.carousel : layout.tools;
-      const showToolRow = !compact || phase === 'tool';
+      const toolRect = layout.carousel;
+      const showToolRow = phase === 'tool';
       if (showToolRow) {
         listY = toolRect.y;
         toolWindow.items.forEach((tool, slot) => {
@@ -3058,15 +3159,16 @@ export function makeCombatScene({
 
       moveRows = [];
       const renderedMoves = phase === 'resolve' && resolution
-        ? [{ ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail }]
+        ? [{ ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail,
+            ...(resolution.after.last?.bridge?.route === 'rec' ? { bridge:null, consumesTake:false, captures:true } : {}) }]
         : moves();
       const moveGap = .75;
       const visibleMoveCount = Math.max(1, Math.min(renderedMoves.length, Math.floor((panel.w + moveGap) / 17)));
       const moveWindow = centredWindow(renderedMoves, selectedMove, visibleMoveCount);
-      const moveRect = compact ? layout.carousel : layout.actions;
+      const moveRect = layout.carousel;
       const moveY = moveRect.y;
       const moveW = (panel.w - moveGap * Math.max(0, moveWindow.items.length - 1)) / Math.max(1, moveWindow.items.length);
-      const showMoveRow = !compact || phase !== 'tool';
+      const showMoveRow = phase !== 'tool';
       if (showMoveRow) {
         moveWindow.items.forEach((move, slot) => {
           const index = moveWindow.start + slot;
@@ -3095,11 +3197,13 @@ export function makeCombatScene({
           const summary = `TOOLS · ${tool.label} · ${tool.ready === false ? 'LOCKED' : 'READY'}${modifierNames.length ? ` · MOD ${modifierNames.join(' / ')}` : ''}`;
           uiText(layout.detail.x, detailY, summary.slice(0, layout.detail.w), tool.ready === false ? 'ui-danger' : 'ui-secondary', .64);
         } else if (highlighted) {
-          const long = highlighted.enabled === false
-            ? `${highlighted.label} — ${highlighted.reason || 'UNAVAILABLE'}`
-            : combatMoveSubtext(state, highlighted).long;
+          const playerBridge = phase === 'resolve' && resolution?.side === 'player' ? resolution.after.last?.bridge : null;
+          const long = playerBridge?.route === 'rec' ? 'BYPASS ARC · RECORDER FIRED · TAKE REPLACED'
+            : highlighted.enabled === false
+              ? `${highlighted.label} — ${highlighted.reason || 'UNAVAILABLE'}`
+              : combatMoveSubtext(state, highlighted).long;
           const summary = `${long}${modifierNames.length ? ` · MOD ${modifierNames.join(' / ')}` : ''}`;
-          uiText(layout.detail.x, detailY, summary.slice(0, layout.detail.w), 'ui-secondary', .6);
+          uiText(layout.detail.x, detailY, summary.slice(0, layout.detail.w), highlighted.bridge?.chance || playerBridge?.route === 'rec' ? 'ui-amber' : 'ui-secondary', .72);
         }
       }
 

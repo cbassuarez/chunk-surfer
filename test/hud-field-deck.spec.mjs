@@ -46,13 +46,14 @@ test('production HUD paints one objective line before map acquisition and yields
     const save={flags:{'van.preparation.v1':true,...(mapTaken?{'bag.taken':true,'map.taken':true}:{})},run:{ledger:{}}};
     runInNewContext(`${hudSource}\ndrawStoryHud();`,{
       storyMode:true,paused:false,towerPersonalHud:null,usingSourceSpace:()=>false,
-      scenes:{blocksWorld:()=>false,suppressesHud:()=>false},towerWarningOwnsMoment:()=>false,
+      fieldInventoryVisible:()=>false,
+      scenes:{blocksWorld:()=>false,suppressesHud:()=>false},faceplateModuleStatus:()=>({enabled:false}),towerWarningOwnsMoment:()=>false,
       uiSize:()=>size,fieldDeckLayout,REC:{recState:()=>({takes:[],injuries:0}),isRecording:()=>false,batteryLevel:()=>1,isListening:()=>true},
       usingPlan:()=>false,currentStoryGuidanceFrame:()=>({target}),
       activeDifficulty:{navigation:{showMap:true,showBearing:true,showDistance:true,showRoom}},
       mapAvailable,getSave:()=>save,itemLost:()=>false,drawMinimap:(...args)=>maps.push(args),
       currentFacilityMapModel:()=>({}),performance:{now:()=>1000},recentMischief:()=>[],recentApparitions:()=>[],
-      workOrderAccepted:()=>false,lastExposureEvent:null,nightClockReadout,monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
+      workOrderAccepted:()=>false,lastExposureEvent:null,nightClockReadout,playerConditionTelemetry:()=>({}),monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
       storyGuidanceBearing:()=>bearing?{bearing:'SOUTHEAST',far:'VERY CLOSE'}:null,
       uiText:(x,y,text)=>calls.push({x,y,text}),chapelTowerState:()=>({phase:'recording'}),
       chunkSurfFinaleRouting:()=>({route:null}),SOURCE_FINALE_ROUTE:{TOWER:'tower'},CHAPEL_TOWER_PHASE:{},KEY_DEBUG:false,

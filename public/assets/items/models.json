@@ -100,6 +100,154 @@
       "origin": "authored",
       "source": "tools/chunk_surfer/reliquary-geometry.mjs",
       "triangles": 3704
+    },
+    {
+      "id": "door-wedge",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 1,
+      "triangles": 12
+    },
+    {
+      "id": "patch-leads",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 17,
+      "triangles": 4864
+    },
+    {
+      "id": "sealed-cells-b3",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 14,
+      "triangles": 1164
+    },
+    {
+      "id": "sealed-cells-pool",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 21,
+      "triangles": 2148
+    },
+    {
+      "id": "sealed-cells-rig",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 14,
+      "triangles": 1968
+    },
+    {
+      "id": "b3-session-card",
+      "origin": "existing",
+      "source": "public/assets/conservatory-props.glb",
+      "sourceSha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+      "meshes": [
+        {
+          "mesh": "b3_session_card"
+        }
+      ],
+      "triangles": 132
+    },
+    {
+      "id": "vale-guarantor-slip",
+      "origin": "existing",
+      "source": "public/assets/conservatory-props.glb",
+      "sourceSha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+      "meshes": [
+        {
+          "mesh": "loose_note"
+        }
+      ],
+      "triangles": 24
+    },
+    {
+      "id": "pub-opener",
+      "origin": "existing",
+      "source": "public/assets/pub-quest-props.glb",
+      "sourceSha256": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa",
+      "meshes": [
+        {
+          "mesh": "pub_bottle_opener"
+        }
+      ],
+      "triangles": 860
+    },
+    {
+      "id": "pub-orderbook",
+      "origin": "existing",
+      "source": "public/assets/pub-quest-props.glb",
+      "sourceSha256": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa",
+      "meshes": [
+        {
+          "mesh": "pub_order_book"
+        }
+      ],
+      "triangles": 84
+    },
+    {
+      "id": "pub-service-tray",
+      "origin": "existing",
+      "source": "public/assets/pub-quest-props.glb",
+      "sourceSha256": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa",
+      "meshes": [
+        {
+          "mesh": "pub_service_tray_loaded"
+        }
+      ],
+      "triangles": 2080
+    },
+    {
+      "id": "pub-tray-empties",
+      "origin": "existing",
+      "source": "public/assets/pub-quest-props.glb",
+      "sourceSha256": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa",
+      "meshes": [
+        {
+          "mesh": "pub_service_tray_empty"
+        }
+      ],
+      "triangles": 2080
+    },
+    {
+      "id": "pub-tray-bare",
+      "origin": "existing",
+      "source": "public/assets/pub-quest-props.glb",
+      "sourceSha256": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa",
+      "meshes": [
+        {
+          "mesh": "pub_service_tray_bare"
+        }
+      ],
+      "triangles": 896
+    },
+    {
+      "id": "lyle-music-box",
+      "origin": "existing",
+      "source": "public/assets/source-drive/coastal-memory/coastal-memory.glb",
+      "sourceSha256": "a68e46b3f6681dbf898ee6bc774bd26bc51b662066a53114055c4de5e500b9d5",
+      "meshes": [
+        {
+          "mesh": "cm_broken_music_box"
+        },
+        {
+          "mesh": "cm_broken_music_box_key"
+        }
+      ],
+      "triangles": 3612
+    },
+    {
+      "id": "ren-home-cassette",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 123,
+      "triangles": 17296
+    },
+    {
+      "id": "recording-cassette",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 8,
+      "triangles": 1342
     }
   ]
 }

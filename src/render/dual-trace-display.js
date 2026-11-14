@@ -38,23 +38,23 @@ export function measureSevenSegment(value,height=24){
   const g=sevenSegmentGeometry(height);
   return [...String(value)].reduce((sum,ch)=>sum+(ch==='.'?g.height*.12:g.advance),0);
 }
-function polygon(ctx,points,color,glow=0){
+function polygon(ctx,points,color,glow=0,halo=color){
   ctx.save();try{
-    ctx.fillStyle=color;ctx.shadowColor=glow?color:'transparent';ctx.shadowBlur=glow;
+    ctx.fillStyle=color;ctx.shadowColor=glow?halo:'transparent';ctx.shadowBlur=glow;
     ctx.shadowOffsetX=ctx.shadowOffsetY=0;
     ctx.beginPath();points.forEach(([x,y],index)=>index?ctx.lineTo(x,y):ctx.moveTo(x,y));
     ctx.closePath();ctx.fill();
   }finally{ctx.restore();}
 }
-export function drawTraceCell(ctx,x,y,w,h,color,{glow=0,chamfer=.8,alpha=1}={}){
+export function drawTraceCell(ctx,x,y,w,h,color,{glow=0,halo=color,chamfer=.8,alpha=1}={}){
   if(!(w>0&&h>0))return;
   const c=Math.min(chamfer,w/5,h/5);
   ctx.save();ctx.globalAlpha*=alpha;
   try{polygon(ctx,[[x+c,y],[x+w-c,y],[x+w,y+c],[x+w,y+h-c],
-    [x+w-c,y+h],[x+c,y+h],[x,y+h-c],[x,y+c]],color,glow);}finally{ctx.restore();}
+    [x+w-c,y+h],[x+c,y+h],[x,y+h-c],[x,y+c]],color,glow,halo);}finally{ctx.restore();}
 }
 export function drawSevenSegmentNumber(ctx,value,x,y,height,{color='#8dde9a',
-  dormant='#263c2a',brightness=1,lcd=false,align='left',glow=1.1}={}){
+  dormant='#263c2a',brightness=1,lcd=false,align='left',glow=lcd?0:1.1,lcdHalo=color}={}){
   const g=sevenSegmentGeometry(height),width=measureSevenSegment(value,height);
   let cursor=x-(align==='right'?width:align==='center'?width/2:0);
   ctx.save();
@@ -62,18 +62,18 @@ export function drawSevenSegmentNumber(ctx,value,x,y,height,{color='#8dde9a',
     for(const char of String(value)){
       if(char==='.'){
         drawTraceCell(ctx,cursor-g.height*.10,y+g.height-g.stroke,g.stroke,g.stroke,color,
-          {glow:lcd?0:glow,alpha:brightness});cursor+=g.height*.12;continue;
+          {glow,halo:lcdHalo,alpha:brightness});cursor+=g.height*.12;continue;
       }
       const lit=DIGITS[char]||'';
       for(const [name,points]of Object.entries(g.shapes)){
         if((char==='-'||char==='−'||char==='+')&&name!=='g')continue;
         const on=lit.includes(name);
         ctx.save();ctx.globalAlpha*=on?brightness:lcd?.10:1;
-        try{polygon(ctx,points.map(([xx,yy])=>[cursor+xx,y+yy]),on?color:dormant,on&&!lcd?glow:0);}
+        try{polygon(ctx,points.map(([xx,yy])=>[cursor+xx,y+yy]),on?color:dormant,on?glow:0,lcdHalo);}
         finally{ctx.restore();}
       }
       if(char==='+')drawTraceCell(ctx,cursor+(g.width-g.stroke)/2,y+g.height*.28,
-        g.stroke,g.height*.44,color,{glow:lcd?0:glow,alpha:brightness});
+        g.stroke,g.height*.44,color,{glow,halo:lcdHalo,alpha:brightness});
       cursor+=g.advance;
     }
   }finally{ctx.restore();}

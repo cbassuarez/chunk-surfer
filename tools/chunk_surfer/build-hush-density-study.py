@@ -1,8 +1,8 @@
 """The Thick Part: regeneratable, nonhuman, skinned density study.
 
-CPU geometry only. Default mode writes artifacts/hush-density-study/
-density-study.glb and density-study.stats.json; --production writes hush-density in
-public/assets while preserving the separate human reference asset.
+CPU geometry only. Default mode writes artifacts/hush-density-study/.
+The historical --production flag reproduces the old in-game shape and scale
+in artifacts/hush-density-study/legacy-build/ for comparison.
 Coordinates: metres, glTF Y-up, forward -Z. Joints use explicit game axes.
 """
 import bpy,bmesh,math,os,json,struct,hashlib,sys
@@ -11,7 +11,7 @@ from mathutils import Vector
 from math import sin,cos,pi
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../..'))
 PRODUCTION='--production'in sys.argv
-OUT=os.path.join(ROOT,'public/assets/hush-density'if PRODUCTION else'artifacts/hush-density-study');os.makedirs(OUT,exist_ok=True)
+OUT=os.path.join(ROOT,'artifacts/hush-density-study/legacy-build'if PRODUCTION else'artifacts/hush-density-study');os.makedirs(OUT,exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 def B(p):return Vector((p[0],-p[2],p[1]))
 def G(p):return np.array((p[0],p[2],-p[1]),float)
@@ -372,7 +372,7 @@ if PRODUCTION:
  doc['meshes']=meshes;doc['buffers'][0]['byteLength']=length;doc['extras'].update({'studyOnly':False,'globalReplacement':True,'assetIdentity':'hush-density','rootContactPolicy':'Existing gameplay root only; no new reach','materialReturnTriangleFraction':float(mask.mean())})
  production_zones.update({'combinedExportedVertices':entry_vertices,'uniqueSculptVertices':len(P),'returnTriangleFraction':float(mask.mean()),'surfaceSelection':'Deterministic inward-face normal zones,~8.35% of original triangles. Complementary core/return partitions share exact geometric positions, normals and skin values. Fullvolume is a separate render route, not another creature.'})
 raw=json.dumps(doc,separators=(',',':')).encode();raw+=b' '*((-len(raw))%4);binary=b''.join(chunks);binary+=b'\0'*((-len(binary))%4);result=struct.pack('<III',0x46546c67,2,12+8+len(raw)+8+len(binary))+struct.pack('<II',len(raw),0x4e4f534a)+raw+struct.pack('<II',len(binary),0x004e4942)+binary
-path=os.path.join(ROOT,'public/assets/hush-density.glb')if PRODUCTION else os.path.join(OUT,'density-study.glb');open(path,'wb').write(result)
+path=os.path.join(OUT,'hush-density.glb'if PRODUCTION else'density-study.glb');open(path,'wb').write(result)
 seams=[]
 for label,a,b in [('hold-load',('pressure_hold',1),('pressure_load',0)),('load-advance',('pressure_load',.5),('pressure_advance',0)),('advance-retained',('pressure_advance',.72),('density_retained',0)),('retained-reload',('density_retained',1),('density_reload',0)),('reload-advance',('density_reload',.5),('pressure_advance',0)),('retained-listen',('density_retained',1),('density_listen',0)),('approach-loop',('pressure_approach',0),('pressure_approach',2.4))]:
  A=deformed(motion(*a));C=deformed(motion(*b));seams.append({'id':label,'maximumVertexDifferenceM':float(np.linalg.norm(A-C,axis=1).max())})
@@ -396,5 +396,5 @@ if PRODUCTION:
  stats['poseJointDeltas']={'columns':['dx','dy','dz','eulerX','eulerY','eulerZ'],'N':N.tolist(),'L':L.tolist(),'R':R.tolist()}
  open(os.path.join(OUT,'CREDITS.json'),'w').write(json.dumps({'asset':'public/assets/hush-density.glb','identity':'The Thick Part','source':'tools/chunk_surfer/build-hush-density-study.py --production','anatomicalSources':[],'geometry':'Original procedural solid-fold sculpture, continuous remeshed geometry, authored19-control skin and finite tentacular/pressure deformation.','conceptReference':'artifacts/hush-mythology-directions/density.png; generated design reference, not projected onto geometry.','license':'Project-authored original assets; project licensing applies.','priorHumanAsset':'public/assets/pressure-character.glb remains unchanged for explicitly borrowed human references.'},indent=2)+'\n')
 open(os.path.join(OUT,'stats.json'if PRODUCTION else'density-study.stats.json'),'w').write(json.dumps(stats,indent=2)+'\n')
-if PRODUCTION:open(os.path.join(ROOT,'public/assets/hush-density.stats.json'),'w').write(json.dumps(stats,indent=2)+'\n')
+if PRODUCTION:open(os.path.join(OUT,'hush-density.stats.json'),'w').write(json.dumps(stats,indent=2)+'\n')
 print(json.dumps({k:stats[k]for k in['sha256','bytes','vertices','triangles','topology','restBounds','sampledAnimatedBounds','maximumSampledEdgeExtensionRatio','baseContact','transitionSeams','windowDepthProbes']},indent=2),flush=True)

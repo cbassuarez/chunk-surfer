@@ -22,7 +22,7 @@
 // blur, the player learns the wrong lesson about what is dangerous.
 
 import * as FP from './floorplan.js';
-import { F, ZONE } from '../data/floorplan/legend.js';
+import { F, HEADROOM, MATERIAL, ZONE } from '../data/floorplan/legend.js';
 
 // A room is an organ: it never moves, and nothing may knock a new hole into it.
 // Corridors (zone none) and stairs are the connective tissue that may change.
@@ -43,13 +43,84 @@ let heard = null;            // Float32Array, one per cell, 1 = just heard
 let w = 0, h = 0;
 let lastMutateAt = -1e9;
 let stats = { applied: 0, rejectedConnectivity: 0, rejectedObserved: 0, rejectedHeard: 0 };
+let mutationPlan = null;
+let originals = new Map();
 
 export function mutateInit() {
   const p = FP.floorplan();
   w = p.w; h = p.h;
+  mutationPlan = p.solid;
+  originals = new Map();
   heard = new Float32Array(w * h);
+  clearMutationPressure();
+}
+
+function clearMutationPressure() {
+  heard.fill(0);
   lastMutateAt = -1e9;
   stats = { applied: 0, rejectedConnectivity: 0, rejectedObserved: 0, rejectedHeard: 0 };
+}
+
+const cellKey = (x, y) => y * w + x;
+const sameCell = (a, b) => Object.keys(a).every(field => a[field] === b[field]);
+const cellStamp = cell => JSON.stringify(Object.values(cell));
+const maxMaterial = Math.max(...Object.values(MATERIAL));
+
+function rememberMutationCell(x, y) {
+  const key = cellKey(x, y);
+  if (!originals.has(key)) originals.set(key, { x, y, cell: FP.mutationCellState(x, y) });
+}
+
+export function saveMutationState() {
+  const cells = [];
+  for (const { x, y, cell: original } of originals.values()) {
+    const cell = FP.mutationCellState(x, y);
+    if (!sameCell(original, cell)) cells.push({ x, y, original: cellStamp(original), cell });
+  }
+  cells.sort((a, b) => a.y - b.y || a.x - b.x);
+  return { version: 1, w, h, cells };
+}
+
+function validMutationCell(original, cell) {
+  if (!cell || typeof cell !== 'object' || Array.isArray(cell)) return false;
+  if (Object.keys(cell).length !== Object.keys(original).length
+    || Object.keys(original).some(key => !Object.hasOwn(cell, key))) return false;
+  if (original.zone !== ZONE.none || !original.solid && !(original.flags & F.MUTABLE)) return false;
+  if (cell.zone !== ZONE.none || cell.flags !== F.MUTABLE) return false;
+  if (cell.solid !== 0 && cell.solid !== 1) return false;
+  if (!Number.isInteger(cell.material) || cell.material < 0 || cell.material > maxMaterial
+    || cell.solid && cell.material !== MATERIAL.none) return false;
+  if (!Number.isFinite(cell.floor) || !Number.isFinite(cell.ceil) || cell.ceil - cell.floor < HEADROOM
+    || Math.abs(cell.floor) > 100 || Math.abs(cell.ceil) > 100) return false;
+  return ['physicalX', 'physicalY'].every(key => FP.validMutationPhysicalCoordinate(cell[key], original[key]))
+    && ['layer', 'space', 'renderGroup'].every(key => typeof cell[key] === 'string' && cell[key].length <= 128);
+}
+
+export function loadMutationState(saved) {
+  if (!heard || mutationPlan !== FP.floorplan().solid) return false;
+  if (saved != null && (saved.version !== 1 || saved.w !== w || saved.h !== h || !Array.isArray(saved.cells)
+    || saved.cells.length > w * h)) return false;
+  const next = new Map();
+  for (const row of saved?.cells ?? []) {
+    const { x, y } = row || {};
+    if (!Number.isInteger(x) || !Number.isInteger(y) || x < 1 || y < 1 || x >= w - 1 || y >= h - 1 || FP.doorAt(x, y)) return false;
+    const key = cellKey(x, y);
+    if (next.has(key)) return false;
+    const original = originals.get(key)?.cell ?? FP.mutationCellState(x, y);
+    if (row.original !== cellStamp(original) || !validMutationCell(original, row.cell)) return false;
+    next.set(key, { x, y, original, cell: row.cell });
+  }
+  const updates = [];
+  for (const [key, { x, y, cell }] of originals) {
+    if (!next.has(key) && !sameCell(cell, FP.mutationCellState(x, y))) updates.push({ x, y, cell });
+  }
+  for (const { x, y, cell } of next.values()) {
+    if (!sameCell(FP.mutationCellState(x, y), cell)) updates.push({ x, y, cell });
+  }
+  FP.applyMutationCells(updates);
+  originals = new Map([...next].map(([key, { x, y, original }]) => [key, { x, y, cell: original }]));
+  clearMutationPressure();
+  return true;
 }
 
 export function mutateStats() { return { ...stats }; }
@@ -140,7 +211,7 @@ function mutableCandidates(view, pinned = null) {
 // `pinned` = cells that may not be sealed because something lies on them (an
 // unread page in a corridor that moves). Opening a wall beside one is fine.
 export function tryMutate(now, view, anchors = [], pinned = []) {
-  if (!heard || !FP.isLoaded()) return null;
+  if (!heard || !FP.isLoaded() || mutationPlan !== FP.floorplan().solid) return null;
   if ((now - lastMutateAt) / 1000 < MUTATE.cooldownSec) return null;
 
   const pinnedCells = pinned.length ? new Set(pinned.map((c) => `${Math.round(c.x)},${Math.round(c.y)}`)) : null;
@@ -157,6 +228,14 @@ export function tryMutate(now, view, anchors = [], pinned = []) {
   const from = { x: Math.round(view.px), y: Math.round(view.py) };
   if (!reachable(from, anchors, override)) { stats.rejectedConnectivity++; return null; }
 
+  rememberMutationCell(seal.x, seal.y);
+  rememberMutationCell(open.x, open.y);
+  const plan = FP.floorplan(), i = cellKey(open.x, open.y), source = FP.cellAt(seal.x, seal.y);
+  plan.floor[i] = source.floor;
+  plan.ceil[i] = source.ceil;
+  plan.flags[i] = F.MUTABLE;
+  plan.zone[i] = source.zone;
+  plan.material[i] = source.material;
   FP.setSolid(seal.x, seal.y, true);
   FP.setSolid(open.x, open.y, false);
   lastMutateAt = now;
@@ -186,15 +265,9 @@ function findWallBeside(seal, view) {
     const x = seal.x + dx, y = seal.y + dy;
     if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
     if (!FP.isSolid(x, y)) continue;
+    if (FP.floorplan().flags[cellKey(x, y)] & F.BRICKED) continue;
     if (touchesRoom(x, y)) continue;
     if (observed(x, y, view) || heardAt(x, y) > 0.02) continue;
-    const p = FP.floorplan();
-    const i = y * p.w + x;
-    p.floor[i] = src.floor;
-    p.ceil[i] = src.ceil;
-    p.flags[i] = F.MUTABLE;
-    p.zone[i] = src.zone;
-    p.material[i] = src.material;
     return { x, y };
   }
   return null;

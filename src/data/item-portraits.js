@@ -1,4 +1,4 @@
-// Physical objects share a GLB, an authored camera fit, and two ASCII stills.
+// Physical objects share a GLB, an authored camera fit, and two cached stills.
 // The Survey Indicator is physical gear; map-navigation and skill symbols
 // still retain their own drawing systems.
 import {VAN_KIT_MODELS,BENCH_MODELS} from './van-kit-models.js';
@@ -14,14 +14,37 @@ export const ITEM_PORTRAITS=Object.freeze({
   badge:item('badge',3.3),keyring:item('keyring',3.55),'chapel-key':item('chapel-key',3.45),
   'plant-spanner':item('plant-spanner',3.6),'marble-eyes':item('marble-eyes',4.1,{environmentIntensity:.75,exposure:.85}),'sheet-music':item('sheet-music',3.6),
   'music-box':item('music-box',4.6,{environmentIntensity:.85,exposure:1}),
+  'ren-home-cassette':item('ren-home-cassette',3.9),
+  'recording-cassette':item('recording-cassette',3.95),
+  'b3-session-card':item('b3-session-card',3.85),
+  'vale-guarantor-slip':item('vale-guarantor-slip',3.75),
+  'lyle-music-box':Object.freeze({...item('lyle-music-box',3.9),retainedMesh:'cm_broken_music_box'}),
+  'door-wedge':item('door-wedge',3.75),
+  'patch-leads':item('patch-leads',3.65),
+  'sealed-cells-b3':item('sealed-cells-b3',3.55),
+  'sealed-cells-pool':item('sealed-cells-pool',3.55),
+  'sealed-cells-rig':item('sealed-cells-rig',3.55),
+  'pub-opener':item('pub-opener',3.8),
+  'pub-orderbook':item('pub-orderbook',3.8),
+  'pub-service-tray':item('pub-service-tray',3.75),
+  'pub-tray-empties':item('pub-tray-empties',3.75),
+  'pub-tray-bare':item('pub-tray-bare',3.75),
 });
-const ALIASES=Object.freeze({torch:'light',rig:'interface',fork:'tuning-fork',spanner:'plant-spanner',bust:'marble-eyes','key-c17':'chapel-key','standard-keyring':'keyring','recorder-headphones':'recorder','recorder-+-headphones':'recorder','the-guards-coffee':'coffee'});
+const ALIASES=Object.freeze({torch:'light',rig:'interface',fork:'tuning-fork',spanner:'plant-spanner',bust:'marble-eyes','key-c17':'chapel-key','standard-keyring':'keyring','recorder-headphones':'recorder','recorder-+-headphones':'recorder','the-guards-coffee':'coffee',
+  'sealed-cells:b3':'sealed-cells-b3','sealed-cells:pool':'sealed-cells-pool','sealed-cells:rig':'sealed-cells-rig'});
 export function itemPortrait(value){
   // Equipment keeps its gameplay identity (light) while its selected physical
   // model changes. Only registered local assets can override that identity.
+  const id=typeof value==='object'?(value?.sourceId||value?.id||value?.icon):value;
+  if(ITEM_PORTRAITS[id]?.retainedMesh)return ITEM_PORTRAITS[id];
+  if(typeof id==='string'&&/^recording-cassette:[1-9]\d*$/.test(id))return ITEM_PORTRAITS['recording-cassette'];
+  if(id==='pub-service-tray'&&typeof value==='object'){
+    const load=String(value?.source?.value||value?.value||'').toLowerCase();
+    if(load==='empties')return ITEM_PORTRAITS['pub-tray-empties'];
+    if(load==='empty')return ITEM_PORTRAITS['pub-tray-bare'];
+  }
   const modelId=typeof value==='object'?(value?.modelId||value?.source?.modelId):null;
   if(modelId&&ITEM_PORTRAITS[modelId])return ITEM_PORTRAITS[modelId];
-  const id=typeof value==='object'?(value?.sourceId||value?.id||value?.icon):value;
   return ITEM_PORTRAITS[id]||ITEM_PORTRAITS[ALIASES[id]]||null;
 }
 export const ITEM_ASCII_OPTIONS=Object.freeze({

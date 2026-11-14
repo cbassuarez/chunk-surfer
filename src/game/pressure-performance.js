@@ -1,4 +1,5 @@
 import { normalizePressureGait, pressureGaitVisibility, PRESSURE_GAIT } from './pressure-gait.js';
+import { HUSH_CLEARANCE_LIMITS } from './hush-clearance.js';
 import { hushDensityUsesRole, normalizeHushDensityPose, stepHushDensityPose,
   interpolateHushDensityPose, hushDensityFromCaptured } from './hush-density-performance.js';
 
@@ -38,10 +39,21 @@ function normalizeActor(value) {
     glow: value.glow == null ? null : bounded(value.glow, 0, 3.2), mode: enumValue(value.mode, ['live', 'core', 'glow', 'off'], null),
     ...(value.referenceTrace === true ? { referenceTrace: true } : {}),
     ...(Number.isFinite(Number(value.clearanceM)) && value.clearanceM != null ? { clearanceM: bounded(value.clearanceM, .18, 2) } : {}),
+    ...(Number.isFinite(Number(value.upcomingClearanceM)) && value.upcomingClearanceM != null ? { upcomingClearanceM: bounded(value.upcomingClearanceM, .18, 2) } : {}),
     performance: { version: 1, role: p.role, heading: angle(p.heading), clip: enumValue(p.clip, PRESSURE_CLIPS, 'pressure_hold'),
       time: bounded(p.time, 0, MAX_TIME), loop: p.loop !== false, seed: Math.floor(bounded(p.seed, 0, 4294967295)),
       manifestation: bounded(p.manifestation, 0, 1), motion: enumValue(p.motion, PRESSURE_MOTIONS, 'idle'), cue,
       reducedMotion: p.reducedMotion === true, ...(gait ? { gait } : {}), ...(density ? { density } : {}) },
+  };
+}
+
+// Returns a physical cell position at the skinned body's presentation root.
+export function pressureBodyPosition(actor, cellMetres) {
+  if (!actor) return null;
+  const density = actor.performance?.density;
+  return {
+    x: actor.x + .5 + (Number(density?.doorX) || 0) / cellMetres,
+    z: actor.y + .5 + (Number(density?.doorZ) || 0) / cellMetres,
   };
 }
 
@@ -69,6 +81,7 @@ export function interpolatePressurePresentation(a, b, amount) {
     result.performance.time = lerp(x.performance.time, y.performance.time);
     result.performance.manifestation = lerp(x.performance.manifestation, y.performance.manifestation);
     if (x.clearanceM != null && y.clearanceM != null) result.clearanceM = lerp(x.clearanceM, y.clearanceM);
+    if (x.upcomingClearanceM != null && y.upcomingClearanceM != null) result.upcomingClearanceM = lerp(x.upcomingClearanceM, y.upcomingClearanceM);
     if (x.performance.density || y.performance.density) {
       const density = interpolateHushDensityPose(x.performance.density, y.performance.density, t);
       if (density) result.performance.density = density; else delete result.performance.density;
@@ -134,7 +147,16 @@ export function createPressurePerformance(initial = null) {
     const actorSeed = incoming.seed ?? old?.seed ?? seed;
     const density = hushDensityUsesRole(role) ? stepHushDensityPose(old?.density || hushDensityFromCaptured(old || { seed: actorSeed }), {
       dt, acceptedMetres: same ? Math.hypot(dx, dz) * .5 : 0,
+      acceptedDelta: same ? { x: (Math.cos(heading) * dx + Math.sin(heading) * dz) * .5,
+        z: (-Math.sin(heading) * dx + Math.cos(heading) * dz) * .5 } : { x: 0, z: 0 },
+      acceptedFloorDelta: same ? finite(incoming.floorH) - previous.floorH : 0,
       headingDelta: same ? angle(heading - old.heading) : 0, listenTurn: gait?.listenTurn || 0,
+      pivot: gait?.pivot && (gait.phase === 'advance' || gait.phase === 'recover' && !gait.recoveryReset)
+        ? { progress: gait.progress, turn: angle(gait.targetHeading - gait.startHeading), startHeadingDelta: angle(gait.startHeading - heading) } : null,
+      clearanceM: incoming.clearanceM, upcomingClearanceM: incoming.upcomingClearanceM,
+      doorPosture: incoming.doorPosture, heading,
+      normalWidthM: HUSH_CLEARANCE_LIMITS.nativeWidthM
+        * bounded(incoming.heightM, .4, 4, 2.18) / HUSH_CLEARANCE_LIMITS.nativeHeightM,
       listening: gait?.phase === 'listen' || motion === 'listen',
       blocked: gait?.blocked === true || gait?.phase === 'recover',
       loading: gait?.phase === 'load' || gait?.redirect === true,

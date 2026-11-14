@@ -219,8 +219,8 @@ function setScene(renderer,last){
 }
 function drawState(last){return{px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:320,tileW:640,tileH:640,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:last.ditherIntensity};}
 function clearScene(renderer,props){
-  for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection','r3dSetSourceRestHorizon'])renderer[name]?.(null);
-  for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);
+  for(const name of['r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection','r3dSetSourceRestHorizon'])renderer[name]?.(null);
+  for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetIndoorRain'])renderer[name]?.(0);
   for(const name of['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);props.setPressureInstances?.([]);
 }
 export function createStandingTearRenderer({renderer=R3,props=P3,onRelease=()=>{},installMeshes=installStandingTearMeshes,getReducedMotion=()=>false}={}){

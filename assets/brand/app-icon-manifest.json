@@ -1,0 +1,1079 @@
+{
+  "version": 2,
+  "default": "van",
+  "alternate": "ear",
+  "sourceMaster": "assets/brand/app-icon-van.png",
+  "masterSha256": "7bcb13b248948c3f8ef590fd67d3d4354771d9eebba754995a5c1830b517f041",
+  "vanIcnsSha256": "5d58cf1b57896fb0da5a8bc8f4cee7357b1d6c49b791b8989cf8018df310c352",
+  "earIcnsSha256": "c32a1ed54937b7dd8de36926bf67e97e5cf3b8e3379c1fefb7e142429c5ada53",
+  "atlasSha256": "6e56acca35260d26f25531f464cb355ca382dde2a9d1dc5ac510cd687e6e1d47",
+  "launch": {
+    "frameCount": 84,
+    "cell": 256,
+    "cellSize": 256,
+    "columns": 8,
+    "rows": 11,
+    "durationSeconds": 3.4,
+    "stages": [
+      {
+        "atSeconds": 0,
+        "name": "arrival"
+      },
+      {
+        "atSeconds": 0.95,
+        "name": "brake"
+      },
+      {
+        "atSeconds": 1.27,
+        "name": "settle"
+      },
+      {
+        "atSeconds": 3.4,
+        "name": "parked"
+      }
+    ],
+    "stagesSeconds": {
+      "accelerateEnd": 0.3,
+      "finalAccelerationStart": 0.8,
+      "brakeStart": 0.95,
+      "lockStart": 0.95,
+      "stop": 1.27,
+      "settleEnd": 2.35,
+      "smokeEnd": 1.65,
+      "poolEnd": 2.9,
+      "tracksEnd": 3.25
+    },
+    "weather": {
+      "rain": true,
+      "seed": 1987,
+      "rainDrops": 72,
+      "lightningAtSeconds": [
+        2.42
+      ],
+      "thunderAtSeconds": [
+        2.9
+      ],
+      "lightningDurationSeconds": 0.57,
+      "flashRanges": [
+        {
+          "fromSeconds": 2.38,
+          "toSeconds": 2.95,
+          "safeAtSeconds": 2.3
+        }
+      ],
+      "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+      "nativeAudio": false
+    }
+  },
+  "acquisition": {
+    "revision": "hero-vfd-acquisition-mix-4",
+    "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
+    "shaderModule": "src/render/pixel-mesh/shader.js",
+    "shaderExport": "PIXEL_MESH_FRAG",
+    "shaderFingerprint": "fnv1a32:cb6386a1",
+    "shaderCharacters": 95833,
+    "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
+    "startingProfile": "calm",
+    "profile": "van-icon-detail",
+    "colourResolve": "src/render/pixel-mesh/final-look.js#finalMaterialLightInk (Living Materials)",
+    "interference": "src/render/pixel-mesh/final-look.js#finalScreenInterference (moire)",
+    "screen": "crosshatch",
+    "fineDetail": "runtime formStipple / luma-edge crossover",
+    "coverage": "separate real scene alpha; premultiplied output",
+    "depth": "inverse real orthographic/perspective projection",
+    "toneMapping": "linear scene → ACES/exposure → sRGB → runtime acquisition, once",
+    "temporalMemory": false,
+    "pressureFinish": false,
+    "externalRawOverlay": false,
+    "pureOneBit": false,
+    "recordingMode": "hero mix of game VFD/acquisition; variant and output dependent",
+    "variants": {
+      "detail": {
+        "recordingMix": 0.45,
+        "toneAmount": 0.12
+      },
+      "ink": {
+        "recordingMix": 0.65,
+        "toneAmount": 0.15
+      }
+    },
+    "compactPolicy": {
+      "belowPixels": 64,
+      "recordingMix": 0.3,
+      "toneAmount": 0.1
+    },
+    "markPolicy": "src/render/world-light-treatment.js (marks-only)",
+    "screenPhase": "existing continuous held runtime phase, not floor(world*3.1)",
+    "fineRank": "runtime blueNoise / fineMarkFootprint in output pixels",
+    "tonePolicy": "recording capture uses real broad source luma and densityGamma; VFD whitePoint shapes the supporting form/colour branch"
+  },
+  "rasters": {
+    "16": {
+      "path": "assets/brand/app-icon-van-rasters/16.png",
+      "sha256": "52a69276636741079fe46be958e56234e132166c23fe3f05452743e6cdcb30f8",
+      "width": 16,
+      "height": 16,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 16,
+        "height": 16,
+        "sourceWidth": 16,
+        "sourceHeight": 16,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 12,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "24": {
+      "path": "assets/brand/app-icon-van-rasters/24.png",
+      "sha256": "64f5201f87f5fe58a2a37fb2540f4a2ba7cdee4cd2460b0efd36c6135698aabd",
+      "width": 24,
+      "height": 24,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 24,
+        "height": 24,
+        "sourceWidth": 24,
+        "sourceHeight": 24,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 12,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "30": {
+      "path": "assets/brand/app-icon-van-rasters/30.png",
+      "sha256": "c8cd60e3c9caee19511084f7146936ef6479594a0d6874185520b0bb3a499948",
+      "width": 30,
+      "height": 30,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 30,
+        "height": 30,
+        "sourceWidth": 30,
+        "sourceHeight": 30,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 12,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "32": {
+      "path": "assets/brand/app-icon-van-rasters/32.png",
+      "sha256": "5fbeb8be3733f145464ea4f7128f24fa8ed3ae3822869372302bc55dfb8e3c6a",
+      "width": 32,
+      "height": 32,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 32,
+        "height": 32,
+        "sourceWidth": 32,
+        "sourceHeight": 32,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 12,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "44": {
+      "path": "assets/brand/app-icon-van-rasters/44.png",
+      "sha256": "693d66cf330880398c6c4d85ed2bd4fe2643f823cab54a76fb1118754bfa785c",
+      "width": 44,
+      "height": 44,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 44,
+        "height": 44,
+        "sourceWidth": 44,
+        "sourceHeight": 44,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 28,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "48": {
+      "path": "assets/brand/app-icon-van-rasters/48.png",
+      "sha256": "7933907ed101768cb63d1f0512c9cc7d01d98df335164279b0d8fd559bfd234c",
+      "width": 48,
+      "height": 48,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 48,
+        "height": 48,
+        "sourceWidth": 48,
+        "sourceHeight": 48,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 28,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "50": {
+      "path": "assets/brand/app-icon-van-rasters/50.png",
+      "sha256": "fc9d98bbef682302a68bc05bc5966106ebd4852eca8ff72bda6092840453422a",
+      "width": 50,
+      "height": 50,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 50,
+        "height": 50,
+        "sourceWidth": 50,
+        "sourceHeight": 50,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 28,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "64": {
+      "path": "assets/brand/app-icon-van-rasters/64.png",
+      "sha256": "d95374033eec32c8773cae17f2697d1417b5629aca15883f1605339e5816ea72",
+      "width": 64,
+      "height": 64,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 64,
+        "height": 64,
+        "sourceWidth": 64,
+        "sourceHeight": 64,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 28,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "71": {
+      "path": "assets/brand/app-icon-van-rasters/71.png",
+      "sha256": "4419f64ad75659e99addaa4e32cddc487369651e284fdd094283bb26f6bb7fc6",
+      "width": 71,
+      "height": 71,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 71,
+        "height": 71,
+        "sourceWidth": 71,
+        "sourceHeight": 71,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "89": {
+      "path": "assets/brand/app-icon-van-rasters/89.png",
+      "sha256": "7e75e67b85abb8a1fbf53992ab910300d5aa8caeb39720dbe3c748a66dbc4824",
+      "width": 89,
+      "height": 89,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 89,
+        "height": 89,
+        "sourceWidth": 89,
+        "sourceHeight": 89,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "107": {
+      "path": "assets/brand/app-icon-van-rasters/107.png",
+      "sha256": "c9794668eba7066c9cb7ce86232a6f7da53177e7debda6131c1cac3ec2a3be89",
+      "width": 107,
+      "height": 107,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 107,
+        "height": 107,
+        "sourceWidth": 107,
+        "sourceHeight": 107,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "128": {
+      "path": "assets/brand/app-icon-van-rasters/128.png",
+      "sha256": "6b282e5d975c3ceabe859bcaf6cb9a68aa5caa081221c51b159d11c6da18b308",
+      "width": 128,
+      "height": 128,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 128,
+        "height": 128,
+        "sourceWidth": 128,
+        "sourceHeight": 128,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "142": {
+      "path": "assets/brand/app-icon-van-rasters/142.png",
+      "sha256": "9ed79857152360e81b647ea9b3fc90ff7a443092af2941695535cb722cd4a3f5",
+      "width": 142,
+      "height": 142,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 142,
+        "height": 142,
+        "sourceWidth": 142,
+        "sourceHeight": 142,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "150": {
+      "path": "assets/brand/app-icon-van-rasters/150.png",
+      "sha256": "356174af456e1b9723a3d5033b7e4fdb02f3cbbdb01593233a53f70d72524753",
+      "width": 150,
+      "height": 150,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 150,
+        "height": 150,
+        "sourceWidth": 150,
+        "sourceHeight": 150,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "256": {
+      "path": "assets/brand/app-icon-van-rasters/256.png",
+      "sha256": "c21a67fce3959fb87fcee48a2ef79204805c9c1895c9c3a32112ada88af4067c",
+      "width": 256,
+      "height": 256,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 256,
+        "height": 256,
+        "sourceWidth": 256,
+        "sourceHeight": 256,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "284": {
+      "path": "assets/brand/app-icon-van-rasters/284.png",
+      "sha256": "7a6b21ffe2ee0fa1cc7e3b571b41378a65dceeb9374782d5884734e5e064fa2c",
+      "width": 284,
+      "height": 284,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 284,
+        "height": 284,
+        "sourceWidth": 284,
+        "sourceHeight": 284,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "310": {
+      "path": "assets/brand/app-icon-van-rasters/310.png",
+      "sha256": "6dde3ca4759db59f543fd6fe4f60680a56322d36cb5f636a8d8c4c84e344403b",
+      "width": 310,
+      "height": 310,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 310,
+        "height": 310,
+        "sourceWidth": 310,
+        "sourceHeight": 310,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "512": {
+      "path": "assets/brand/app-icon-van-rasters/512.png",
+      "sha256": "6aba1a0c6b0652242f0a7f24762f8398120f337cce7f6c4e92ae549ec729dc70",
+      "width": 512,
+      "height": 512,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 512,
+        "height": 512,
+        "sourceWidth": 512,
+        "sourceHeight": 512,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    },
+    "1024": {
+      "path": "assets/brand/app-icon-van.png",
+      "sha256": "7bcb13b248948c3f8ef590fd67d3d4354771d9eebba754995a5c1830b517f041",
+      "width": 1024,
+      "height": 1024,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 1024,
+        "height": 1024,
+        "sourceWidth": 1024,
+        "sourceHeight": 1024,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail",
+        "weather": {
+          "kind": "world-space rain",
+          "rainInstances": 72,
+          "puddles": 7,
+          "ripples": 12,
+          "lightningIntensity": 0,
+          "oneShot": true,
+          "screenOverlay": false,
+          "metadata": {
+            "rain": true,
+            "seed": 1987,
+            "rainDrops": 72,
+            "lightningAtSeconds": [
+              2.42
+            ],
+            "thunderAtSeconds": [
+              2.9
+            ],
+            "lightningDurationSeconds": 0.57,
+            "flashRanges": [
+              {
+                "fromSeconds": 2.38,
+                "toSeconds": 2.95,
+                "safeAtSeconds": 2.3
+              }
+            ],
+            "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+            "nativeAudio": false
+          }
+        }
+      }
+    }
+  },
+  "smallOpticalFinish": {
+    "sizes": [
+      16,
+      24,
+      32
+    ],
+    "method": "Clear sub3% alpha fringe; minimum tail-lamp coverage projected from canonical lamp faces, independent of red brand paint",
+    "lampCentres": [
+      {
+        "x": 0.16147299994772646,
+        "y": 0.6429846258586882
+      },
+      {
+        "x": 0.4794023975150449,
+        "y": 0.6800262281178414
+      }
+    ]
+  },
+  "desktopPngs": {
+    "32x32.png": "22612733639aca782b87b45306e0b6b600c2893d8a295078b063966df65ec339",
+    "64x64.png": "8a95d62bdbd725339491fd89b9d284e9a67e32c5471b48b020dfaa24bd382243",
+    "128x128.png": "0105e70552f2c47f7fdaa238c2ffe018f4c16e7256f678a40974d9d3c4fd6126",
+    "128x128@2x.png": "29ba34229c21ce6a6c1d9d1de9b0a45e54a885ccc4d1efaf6dff7f1e48e66d42",
+    "icon.png": "e1eb4fbc64ba83c96cdc73704520a512af35e8def2cf521890fd154c85f7f736"
+  },
+  "startup": {
+    "packaged": true,
+    "source": "assets/brand/app-icon-startup.json",
+    "frameCount": 42,
+    "cell": 128,
+    "atlasBytes": 87242,
+    "posterBytes": 4495,
+    "totalDecodedBytes": 2818048,
+    "atlasSha256": "10265e781f9c4424157cd37b301782df37bb2375acdf9c4e123dfae615baa0a4",
+    "posterSha256": "aa9796f2876e0cee78c9b05f88e76fa8a579b650b8935b5d8b21e6e81684286c"
+  }
+}

@@ -4,6 +4,7 @@ import { freshSourceFalseReturn, normalizeSourceFalseReturn, stepSourceFalseRetu
 import { freshSourceEarthfallElleryAside, normalizeSourceEarthfallElleryAside, stepSourceEarthfallElleryAside, sourceEarthfallElleryAsideFrame } from '../src/game/source-earthfall-ellery-aside.js';
 import { fakeElleryHushActor } from '../src/render/fake-ellery-hush.js';
 import { pressureInstances } from '../src/render/pressure-volume.js';
+import { HUSH_DENSITY_LIMITS } from '../src/game/hush-density-performance.js';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const fixture = { spawn: { x: 0, z: 0, feet: 4.8, yaw: 0, pitch: 0 },
@@ -31,10 +32,13 @@ test('the accepted false-return sound starts a material event without treating s
     state = tick(state);
     const next = state.localHush;
     assert.ok(Math.hypot(next.x - before.x, next.z - before.z) <= 3.8 / 60 + 1e-8);
-    assert.ok(next.density.phase - before.density.phase <= 2 / 60 + 1e-8);
+    assert.ok(next.density.phase - before.density.phase <= HUSH_DENSITY_LIMITS.maxCyclesPerSecond / 60 + 1e-8);
   }
-  assert.ok(state.localHush.density.phase > .5);
-  assert.ok(state.localHush.density.residualDragMps > 2, 'brisk pursuit becomes bounded material drag, not a racing limb clock');
+  const density = state.localHush.density;
+  assert.ok(density.phase > .5);
+  assert.equal(density.event, 'notice', 'a fresh support reset cannot discard the accepted sound');
+  assert.ok(density.residualDragMps >= 3.8 - HUSH_DENSITY_LIMITS.maxCyclesPerSecond * HUSH_DENSITY_LIMITS.cycleMetres - 1e-8);
+  assert.ok(density.release > 0, 'brisk pursuit spends released support instead of racing the footfalls');
 });
 
 test('false-return density freezes under pause/protection and resumes identically after a JSON checkpoint', () => {
@@ -63,7 +67,7 @@ test('Earthfall keeps accepted chase traction, bounded phase and checkpoint iden
   for (let n = 0; n < 90; n++) {
     const phase = state.hushDensity.phase;
     state = stepSourceEarthfallElleryAside(state, { dt: 1 / 60 }).state;
-    assert.ok(state.hushDensity.phase - phase <= 2 / 60 + 1e-8);
+    assert.ok(state.hushDensity.phase - phase <= HUSH_DENSITY_LIMITS.maxCyclesPerSecond / 60 + 1e-8);
   }
   assert.ok(state.hushDensity.phase > .4);
   const frame = sourceEarthfallElleryAsideFrame(state), actor = fakeElleryHushActor(frame.localHush);

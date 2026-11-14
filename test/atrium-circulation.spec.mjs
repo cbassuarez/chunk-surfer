@@ -67,13 +67,13 @@ test('stage service treads and rails are real geometry at the actual collision h
   const tops=mesh.parts.filter(p=>p.kind==='box'&&p.args[1][1]===.05);
   assert.equal(tops.length,8);
   for(let i=0;i<8;i++){
-    const x=200+i,h=FP.floorAt(x,21);
+    const x=S.from.x*2+i,h=FP.floorAt(x,S.from.y*2+1);
     assert.ok(Math.abs(h-hallServiceTreadHeight(i))<1e-6);
     assert.ok(Math.abs(tops[i].args[0][1]+.025-h)<1e-6);
-    assert.ok(FP.ceilAt(x,21)-h>2.6);
-    if(i)assert.ok(Math.abs(h-FP.floorAt(x-1,21))<.22,'each ordinary riser is under220mm');
+    assert.ok(FP.ceilAt(x,S.from.y*2+1)-h>2.6);
+    if(i)assert.ok(Math.abs(h-FP.floorAt(x-1,S.from.y*2+1))<.22,'each ordinary riser is under220mm');
   }
-  assert.equal(FP.floorAt(199,22),0,'the outer leaf has a flush guarded landing');
-  assert.equal(FP.floorAt(208,21),-1.5,'the run joins the unchanged actual stage');
+  assert.equal(FP.floorAt(205,22),0,'the outer leaf has a flush guarded landing');
+  assert.equal(FP.floorAt(214,17),-1.5,'the run joins the unchanged actual stage');
   assert.ok(mesh.parts.some(p=>p.kind==='beam'),'the drop is guarded by visible handrails');
 });

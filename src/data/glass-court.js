@@ -15,11 +15,11 @@ const partitionSegments=[
 const lamps=[2,5,8,11].map(z=>({id:`glass-court-fluorescent-${z}`,x:2,y:3.25,z,color:[.82,.94,1],intensity:.86,radius:5.8,zone:ZONE.glasshouse}));
 lamps.push(...[13.3,15.7].map(z=>({id:`glass-court-changing-light-${z}`,x:2,y:2.95,z,color:[.85,.96,1],intensity:.82,radius:4,zone:ZONE.poolChanging})),{id:'glass-court-exit-globe',x:3.55,y:2.25,z:11.75,color:[1,.72,.42],intensity:.90,radius:4,zone:ZONE.glasshouse});
 export const GLASS_COURT=freeze({
-  id:'natatorium-glasshouse',revision:3,pack:'/assets/glass-court.glb',
+  id:'natatorium-glasshouse',revision:4,pack:'/assets/glass-court.glb',
   origin,logicalOrigin:glassCourtLogicalAt(origin.x,origin.z),floor,drawnFloor,
   bounds:{x0:82,x1:86,z0:15,z1:27},roofBounds:{x0:0,x1:4,z0:0,z1:12},roofAxis:'z',
   openSkyBounds:{x0:77,x1:94,z0:15,z1:27},
-  outdoorCourts:[{id:'west',x0:75,x1:82,z0:15,z1:27},{id:'east',x0:86,x1:95,z0:15,z1:27}],
+  outdoorCourts:[{id:'west',x0:74,x1:82,z0:15,z1:27},{id:'east',x0:86,x1:98,z0:15,z1:27}],
   // The west court's wall is the east end of the ground spine, and its door the
   // way out to the rain from the head of the basement stair. Nothing joins the
   // courts to the yard: the spine and its north spur lie between them, and an
@@ -82,7 +82,7 @@ for(const [tier,polygon,floor,map]of [
 export const GLASS_COURT_COLLIDERS=freeze([...GLASS_COURT_PHYSICAL_COLLIDERS.map(c=>({
   id:`glass-court:${c.id}`,kind:'obb',...glassCourtLogicalAt(c.x,c.z),yaw:0,
   width:c.width+2*GLASS_COURT.bodyRadius,depth:c.depth+2*GLASS_COURT.bodyRadius,
-  minElevation:c.minElevation,maxElevation:c.maxElevation,spaceId:c.z<27?'front_atrium':'natatorium',colliderGroup:'glass-court',bodyMargin:GLASS_COURT.bodyRadius,
+  minElevation:c.minElevation,maxElevation:c.maxElevation,spaceId:c.z<27?'front_atrium':'natatorium',colliderGroup:c.role==='fixed glazed exterior wall'||c.role==='glazed end beside paired door'?'glass-court-envelope':'glass-court',bodyMargin:GLASS_COURT.bodyRadius,
   physical:{x:c.x,z:c.z,width:c.width,depth:c.depth},
 })),...upperGuardColliders]);
 export const GLASS_COURT_LIGHTS=freeze(lamps.map(a=>({...a,...glassCourtWorld(a)})));

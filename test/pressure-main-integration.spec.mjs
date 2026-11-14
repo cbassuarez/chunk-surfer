@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { createPressurePerformance, normalizePressurePresentation } from '../src/game/pressure-performance.js';
 import { freshPressureGait } from '../src/game/pressure-gait.js';
-import { estimateHushClearance } from '../src/game/hush-clearance.js';
+import { estimateHushApproachClearance, estimateHushClearance, hushDoorPosture } from '../src/game/hush-clearance.js';
 
 const sourceText=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function productionFunction(name){
@@ -15,7 +15,7 @@ function productionFunction(name){
 }
 function harness(){
   const context={
-    pressurePerformance:createPressurePerformance(),normalizePressurePresentation,estimateHushClearance,buildingPresenceNavigation:null,recordingPressureVisualOrigin:null,
+    pressurePerformance:createPressurePerformance(),normalizePressurePresentation,estimateHushApproachClearance,estimateHushClearance,hushDoorPosture,buildingPresenceNavigation:null,recordingPressureVisualOrigin:null,
     storyMode:true,source:false,special:false,paused:false,focused:true,hushRunActive:false,top:null,worldView:null,blocked:false,
     reduced:false,now:1000,sourceFloor:4.2,sourceMode:{meeting:false},bracket:null,dockLook:null,plantHaulSnapshot:null,
     presence:{active:true,x:4,y:6,velocityX:2,velocityY:0,behaviorMode:'chase',spawnedAt:100},
@@ -26,7 +26,7 @@ function harness(){
   Object.assign(context,{
     scenes:{worldView:()=>context.worldView,top:()=>context.top,blocksWorld:()=>context.blocked},
     document:{hidden:false,hasFocus:()=>context.focused},performance:{now:()=>context.now},
-    usingSourceSpace:()=>context.source,usingSpecialSpace:()=>context.source||context.special,usingPlan:()=>true,
+    REC:{isRecording:()=>false},inB3Space:()=>false,usingSourceSpace:()=>context.source,usingSpecialSpace:()=>context.source||context.special,usingPlan:()=>true,
     hushActiveForPlayer:()=>context.presence.active,hushAbsenceLook:()=>({strength:.84,radiusM:5.8}),
     hushDreadAt:()=>.4,coverPeekAmount:()=>0,chapelTowerState:()=>({phase:'inactive'}),
     dockHauntingBodyLook:()=>context.dockLook,PRES:{presenceState:()=>context.presence},

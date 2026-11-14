@@ -1,14 +1,21 @@
-import { BATTLE_GEAR, normalizeCombatLoadout, assignCombatGearSlot, moveCombatGear } from './combat-loadout.js';
+import { isCarryItem } from './carry-items.js';
+import { normalizeCombatLoadout, assignCombatGearSlot, moveCombatGear } from './combat-loadout.js';
 import { normalizeCombatBuild, TECHNIQUE_DEFS, pullCombatTechnique, techniqueAvailability } from './combat-progression.js';
 import { connectSkillPatch, skillPatchSource } from './skill-patchbay.js';
 import { BATTLE_OPERATING_COPY } from './combat-operating-facts.js';
 
 // One explicit READY commits the draft, before any turn starts.
 export function createBattlePreparationModel({ loadout, equipment = [], build, hasRig = false } = {}) {
-  const available = [...new Set(equipment.filter(item => item?.present !== false)
-    .map(item => typeof item === 'string' ? item : item.id).filter(id => BATTLE_GEAR[id]))];
+  const entries = (Array.isArray(equipment) ? equipment : []).map(item => ({
+    id: String(typeof item === 'string' ? item : item?.id || item?.sourceId || '').trim().toLowerCase(),
+    present: item?.present !== false,
+  })).filter(item => isCarryItem(item.id));
+  const owned = [...new Set(entries.map(item => item.id))];
+  const available = [...new Set(entries.filter(item => item.present).map(item => item.id))];
   let tray = normalizeCombatLoadout(loadout);
-  tray = normalizeCombatLoadout({ ...tray, top:tray.top.filter(id => available.includes(id)) });
+  // Missing/deployed equipment still owns its reserved slot. Strip only items
+  // that were never owned, preserving every surviving bay's physical address.
+  tray = normalizeCombatLoadout({ ...tray, top:tray.top.map(id => owned.includes(id) ? id : null) });
   let skills = normalizeCombatBuild(build), selectedSlot = 0, selectedSkill = TECHNIQUE_DEFS[0].id, page = 'equipment';
   let committed = false, editing = false, details = false;
   // THE ITEM WAITING FOR A SLOT.
@@ -17,7 +24,7 @@ export function createBattlePreparationModel({ loadout, equipment = [], build, h
   // already full. It is not a mode the player turns on — it is the one question
   // that could not be answered for them, and it appears only when it is asked.
   let replacing = null;
-  const snapshot = () => ({ loadout:structuredClone(tray), build:structuredClone(skills), available:[...available],
+  const snapshot = () => ({ loadout:structuredClone(tray), build:structuredClone(skills), owned:[...owned], available:[...available],
     selectedSlot, selectedSkill, page, committed, hasRig, replacing, editing, details,
     skillStatus:techniqueAvailability(skills,selectedSkill,{hasRig}) });
   // Put it in the first free slot. Returns where it landed, or -1 if it could
@@ -31,7 +38,7 @@ export function createBattlePreparationModel({ loadout, equipment = [], build, h
   return {
     snapshot,
     tab(value) { if (!committed && ['equipment','skills'].includes(value)) { editing=value==='equipment'&&page==='equipment'?!editing:false;page=value;replacing=null;details=false; } return snapshot(); },
-    slot(index) { if(!committed){selectedSlot=Math.max(0,Math.min(tray.top.length,3,Math.floor(Number(index)||0)));details=true;if(!tray.top[selectedSlot])editing=true;}return snapshot(); },
+    slot(index) { if(!committed){selectedSlot=Math.max(0,Math.min(tray.capacity-1,Math.floor(Number(index)||0)));details=true;if(!tray.top[selectedSlot])editing=true;}return snapshot(); },
     back() {
       if(committed)return false;
       if(replacing){replacing=null;return true;}
@@ -70,7 +77,7 @@ export function createBattlePreparationModel({ loadout, equipment = [], build, h
     store() {
       if(committed)return false;
       const result=moveCombatGear(tray,tray.top[selectedSlot],'storage');tray=result.loadout;
-      selectedSlot=Math.min(selectedSlot,tray.top.length,3);
+      selectedSlot=Math.min(selectedSlot,tray.capacity-1);
       // Putting something back while an item is waiting answers the question by
       // making it moot: there is a slot now, so it takes it rather than leaving
       // the player looking at a picker for a choice they no longer have to make.

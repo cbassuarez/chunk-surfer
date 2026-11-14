@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import {lcdGeometry,deviceBox,paintedWord,matrixInk,within} from './helpers/lcd-geometry.mjs';
 
 const root=fileURLToPath(new URL('../src/',import.meta.url));
 const noop=()=>{};
@@ -12,7 +13,7 @@ async function fixture(){
   const context=vm.createContext({performance:{now:()=>1000}}),cache=new Map();
   const mocks=new Map(Object.entries({
     'render/ui.js':{uiDrawHardware:noop,uiGlyph:noop,uiText:noop},
-    'render/hardware-material.js':{hardwareMotionReduced:()=>false},
+    'render/hardware-material.js':{hardwareMotionReduced:()=>false,hardwareEffectsReduced:()=>false},
   }).map(([name,value])=>[path.join(root,name),value]));
   async function load(filename){
     if(cache.has(filename))return cache.get(filename);
@@ -37,21 +38,6 @@ function monitor(){
     clipped:false,segments48:16,segments24:8,peakKind:'level',
   }};
 }
-function recordingContext({native=true,alpha=1}={}){
-  const texts=[],rects=[],stack=[];
-  const keys=['globalAlpha','font','fillStyle','textAlign','textBaseline','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY'];
-  const ctx={globalAlpha:alpha,canvas:{ownerDocument:{fonts:{check:()=>native,load:()=>Promise.resolve([])}}},
-    save(){stack.push(Object.fromEntries(keys.map(key=>[key,this[key]])));},
-    restore(){Object.assign(this,stack.pop());},
-    beginPath:noop,closePath:noop,moveTo:noop,lineTo:noop,fill:noop,rect:noop,clip:noop,
-    createLinearGradient:()=>({addColorStop:noop}),
-    fillRect(x,y,w,h){rects.push({x,y,w,h,alpha:this.globalAlpha,color:this.fillStyle});},
-    measureText(){const size=Number(this.font?.match(/([\d.]+)px/)?.[1]||12);return {actualBoundingBoxAscent:size*.74,actualBoundingBoxDescent:size*.025};},
-    fillText(value,x,y,width){texts.push({value,x,y,width,font:this.font,alpha:this.globalAlpha,color:this.fillStyle});},
-  };
-  return {ctx,texts,rects};
-}
-
 test('assignment acceptance powers the tally without moving the progression gate',async()=>{
   const load=await fixture(),nav=await load('render/navigator-telemetry.js');
   const order=await load('game/work-order-state.js');
@@ -80,35 +66,28 @@ test('legacy visibility input remains compatible and explicit power state takes 
 test('normal and compact LCD retain the entire dormant bank and unchanged live neighbours',async()=>{
   const load=await fixture(),nav=await load('render/navigator-telemetry.js'),lcd=await load('render/navigator-lcd.js');
   for(const [w,h]of[[30.9,4.15],[26.9,3.15]])for(const scale of[1,1.5]){
-    const bounds={x:1,y:1,w,h},metrics={cellW:8.45*scale,cellH:20*scale,dpr:2};
+    const bounds={x:1,y:1,w,h},metrics={cellW:8.45*scale,cellH:20*scale,dpr:2,view:{x:0,y:0}};
     const input={takes:2,total:5,injuries:1,monitor:monitor()};
-    const off=recordingContext(),on=recordingContext();
-    const offLayout=lcd.paintNavigatorTelemetry(off.ctx,bounds,nav.navigatorTelemetryState({...input,takesEnabled:false}),metrics);
-    const onLayout=lcd.paintNavigatorTelemetry(on.ctx,bounds,nav.navigatorTelemetryState({...input,takesEnabled:true}),metrics);
-    assert.deepEqual(offLayout,onLayout);
-    assert.deepEqual(off.texts.slice(0,3).map(item=>item.value),['TAKES','88','/ 88']);
-    assert.ok(off.texts.slice(0,3).every(item=>item.alpha===.13));
-    assert.deepEqual(on.texts.slice(0,3).map(item=>item.value),['TAKES','02','/ 05']);
-    assert.ok(on.texts.slice(0,3).every(item=>item.alpha===1));
-    for(let i=0;i<3;i++)for(const field of['x','y','width','font'])assert.equal(off.texts[i][field],on.texts[i][field]);
-    assert.deepEqual(off.texts.slice(3),on.texts.slice(3),'injuries and monitor lettering must be unchanged');
-    assert.deepEqual(off.rects,on.rects,'hardware, scale and injuries geometry must be unchanged');
-    assert.equal(off.ctx.globalAlpha,1);
+    const off=lcdGeometry({alpha:.8}),on=lcdGeometry({alpha:.8});
+    const layout=lcd.paintNavigatorTelemetry(off.ctx,bounds,nav.navigatorTelemetryState({...input,takesEnabled:false}),metrics);
+    assert.deepEqual(layout,lcd.paintNavigatorTelemetry(on.ctx,bounds,nav.navigatorTelemetryState({...input,takesEnabled:true}),metrics));
+    for(const [key,dormant,live]of[['takeLabel','TAKES','TAKES'],['takeCount','88','02'],['capacity','/ 88','/ 05']]){
+      const box=deviceBox(layout[key],metrics),options={padding:2*metrics.dpr};
+      const offGlyphs=paintedWord(off.fills,dormant,box,options),onGlyphs=paintedWord(on.fills,live,box,options);
+      assert.equal(offGlyphs.length,dormant.replaceAll(' ','').length,dormant);
+      assert.equal(onGlyphs.length,live.replaceAll(' ','').length,live);
+      const offInk=matrixInk(off.fills,box,options);
+      assert.ok(offInk.every(draw=>draw.alpha<=.8*.13+1e-10),'all dormant electrodes are faint');
+      assert.ok(offGlyphs.every(draw=>Math.abs(draw.alpha-.8*.13)<1e-10),'dormant opacity applies exactly once');
+      assert.ok(onGlyphs.some(draw=>draw.alpha===.8),'the active bank drives visible electrodes');
+      assert.ok(!off.fills.some(draw=>draw.blur>0&&within(draw.ink,box,2*metrics.dpr)),'the dormant bank emits no halo');
+    }
+    const right=deviceBox(layout.monitorLabel,metrics).x-2*metrics.dpr;
+    assert.deepEqual(off.fills.filter(draw=>draw.ink.x>=right),on.fills.filter(draw=>draw.ink.x>=right),
+      'monitor hardware and live lettering remain unchanged');
+    assert.deepEqual(off.nativeText,[]);
+    assert.equal(off.ctx.globalAlpha,.8);
   }
-});
-
-test('dormant ROM lettering remains visible while the native LCD font loads',async()=>{
-  const load=await fixture(),nav=await load('render/navigator-telemetry.js'),lcd=await load('render/navigator-lcd.js');
-  const bounds={x:1,y:1,w:26.9,h:3.15},metrics={cellW:8.45,cellH:20,dpr:2};
-  const state=nav.navigatorTelemetryState({takesEnabled:false,takes:2,total:5,monitor:monitor()});
-  const {ctx,texts,rects}=recordingContext({native:false,alpha:.8});
-  const layout=lcd.paintNavigatorTelemetry(ctx,bounds,state,metrics);
-  assert.equal(texts.length,0);
-  const bank=rects.filter(r=>r.color==='#1c3424'&&r.x>=layout.takeLabel.x*16.9&&r.x<(layout.divider.x)*16.9);
-  assert.ok(bank.length>100,'the dormant label and digit ROMs must actually paint');
-  assert.ok(bank.some(r=>Math.abs(r.alpha-.8*.13)<1e-10),'apply dormant opacity exactly once');
-  assert.ok(bank.every(r=>r.alpha<=.8*.13+1e-10),'no active reading before acceptance');
-  assert.equal(ctx.globalAlpha,.8);
 });
 
 test('activation and reactivation never impersonate a completed take',async()=>{

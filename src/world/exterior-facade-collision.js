@@ -1,6 +1,8 @@
 // Exterior skins have physical projections beyond their logical rock. Resolve
 // the body's continuous world position against those exact placed surfaces.
-import {EXTERIOR_COLLISION_GEOMETRY} from '../data/generated/exterior-collision.js';
+import {EXTERIOR_COLLISION_GEOMETRY as SHARED_GEOMETRY} from '../data/generated/exterior-collision.js';
+import {ELLERY_GARDEN_COLLISION_GEOMETRY} from '../data/generated/ellery-garden-collision.js';
+const EXTERIOR_COLLISION_GEOMETRY={...SHARED_GEOMETRY,...ELLERY_GARDEN_COLLISION_GEOMETRY};
 
 export const EXTERIOR_FACADE_MESHES=Object.freeze(Object.keys(EXTERIOR_COLLISION_GEOMETRY));
 const EPS=1e-7,BUCKET=4;

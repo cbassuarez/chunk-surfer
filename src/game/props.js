@@ -4,7 +4,10 @@
 
 import { CELL, F, PLAN_SCALE, ZONE, isOutdoorZone } from '../data/floorplan/legend.js';
 import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
-import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
+import { MESH_SURFACE as SHARED_SURFACES, PROP_BOUNDS as SHARED_BOUNDS } from '../data/generated/prop-geometry.js';
+import {elleryConstructedInstance} from '../data/ellery-garden-approaches.js';
+import {BOX_OFFICE_BOUNDS,BOX_OFFICE_SURFACES} from '../data/box-office.js';
+const MESH_SURFACE={...SHARED_SURFACES,...BOX_OFFICE_SURFACES},PROP_BOUNDS={...SHARED_BOUNDS,...BOX_OFFICE_BOUNDS};
 import { WALL_CONTACT, wallContactAt, yawFromNormal } from '../world/wall-contact.js';
 import { propWallPose } from '../world/prop-wall-pose.js';
 import { propInscriptionAttachments } from '../world/prop-inscriptions.js';
@@ -61,13 +64,25 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS, {bounds=PROP_BOUNDS
   floorplan=fp;
   contactBounds=bounds;contactSurfaces=surfaces;
   if(placements===CONSERVATORY_PROPS){
-    placements=[...placements,...derivedDressing(fp)];
+    placements=[...placements.map(elleryConstructedInstance),...derivedDressing(fp)];
   }
   instances=placements.map(p=>instantiateProp(fp,p)).filter((p)=>!fp.isSolid(p.rx,p.ry));
   colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
   resolveContacts(fp);
   colliders=colliders.map(c=>({...c,physicalCollider:projectCollider(c)}));
   return instances;
+}
+
+// Immutable for the duration of a Work Order checkpoint. Restoring copies it
+// so a second retry starts from the same geometry and interaction anchors.
+export function capturePropLayout(){
+  return structuredClone({instances,colliders});
+}
+
+export function restorePropLayout(snapshot){
+  const restored=structuredClone(snapshot);
+  instances=restored.instances;
+  colliders=restored.colliders;
 }
 function projectCollider(c){
   const authored=c.physical,frame=c.physicalFrame;

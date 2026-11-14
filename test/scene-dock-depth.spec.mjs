@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {packedPropMeshes,placedMesh} from './helpers/packed-prop-mesh.mjs';
 const root=process.env.CS_GETIN_REPO||'/Users/seb/chunk-surfer';
 const stage=process.env.CS_GETIN_STAGE_DIR;
 const sourceURL=code=>'data:text/javascript;base64,'+Buffer.from(code).toString('base64');
@@ -115,6 +116,8 @@ if(!stage){
  const renderMath=['identity','multiply','modelMatrix'].map(name=>productionFunction(name,renderer)).join('\n');
  const ordinaryMatrix=new Function(renderMath+';return modelMatrix;')();
  const {sourceMatrix}=await import(pathToFileURL(path.join(root,'src/game/source-space-runtime.js')).href);
+ const {elleryConstructedInstance}=await import(pathToFileURL(path.join(root,'src/data/ellery-garden-approaches.js')).href);
+ const packed=packedPropMeshes({root});
  const point=(m,v)=>[0,1,2].map(k=>m[k]*v[0]+m[4+k]*v[1]+m[8+k]*v[2]+m[12+k]);
  const local=(m,v)=>{const d=v.map((x,k)=>x-m[12+k]);return[0,1,2].map(k=>(d[0]*m[k*4]+d[1]*m[k*4+1]+d[2]*m[k*4+2])/(m[k*4]**2+m[k*4+1]**2+m[k*4+2]**2));};
  const verts=b=>[b.min[0],b.max[0]].flatMap(x=>[b.min[1],b.max[1]].flatMap(y=>[b.min[2],b.max[2]].map(z=>[x,y,z])));
@@ -148,6 +151,14 @@ if(!stage){
   const wrench=get('getin-heavy-stillson'),wm=ordinary(wrench),wpts=verts(PROP_BOUNDS.stillson_wrench).map(v=>point(wm,v));
   const wb={min:[0,1,2].map(k=>Math.min(...wpts.map(v=>v[k]))),max:[0,1,2].map(k=>Math.max(...wpts.map(v=>v[k])))};
   assert.ok(Math.abs(wb.min[1]-.83)<.004,'wrench contacts ledge top');
-  assert.ok(wb.min[0]>=69.7-.004&&wb.max[0]<=71.9+.004&&wb.min[2]>=3.94-.004&&wb.max[2]<=4.56+.004,'wrench stays on its supporting ledge after grid projection');
+  const ledge=D.SCENE_DOCK_COLLIDERS.find(c=>c.id==='scene-dock-maintenance-ledge');assert.ok(ledge);
+  assert.equal(ledge.x,68.8,'the actual Ellery maintenance support follows the approved two-metre setback');
+  assert.ok(wb.min[0]>=ledge.x-ledge.width/2-.004&&wb.max[0]<=ledge.x+ledge.width/2+.004&&wb.min[2]>=ledge.y-ledge.depth/2-.004&&wb.max[2]<=ledge.y+ledge.depth/2+.004,'wrench stays wholly on its relocated supporting ledge after grid projection');
+  const fabric=elleryConstructedInstance(get('dock-scene-fabric'));assert.equal(fabric.mesh,'ellery_garden_dock');
+  const pose={id:fabric.id,x:Math.round(fabric.x*2)/2+(fabric.renderOffsetX||0),y:fabric.elevation||0,z:Math.round(fabric.y*2)/2+(fabric.renderOffsetZ||0),yaw:fabric.yaw||0,scale:fabric.scale||1};
+  const actual=placedMesh(pose,packed.mesh(fabric.mesh)),canonical=placedMesh(pose,packed.mesh('scene_dock_room_fabric'));
+  const surface=(mesh,x,z)=>{let top=-Infinity;for(const[a,b,c]of mesh.triangles){if(Math.max(a[1],b[1],c[1])-Math.min(a[1],b[1],c[1])>1e-6||a[1]>.834)continue;const den=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);if(Math.abs(den)<1e-10)continue;const u=((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/den,v=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/den;if(u>=-1e-6&&v>=-1e-6&&u+v<=1+1e-6)top=Math.max(top,a[1]);}return top;};
+  for(const x of[wb.min[0],wb.max[0]])for(const z of[wb.min[2],wb.max[2]])assert.ok(Math.abs(surface(actual,x,z)-wb.min[1])<.004,'actual private packed wood supports every wrench extremity');
+  for(const x of[69.72,71.88])for(const z of[3.96,4.54])assert.ok(Math.abs(surface(canonical,x,z)-.83)<1e-6,'the unchanged canonical/remembered pack retains its original full ledge');
  });
 }

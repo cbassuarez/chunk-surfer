@@ -29,7 +29,7 @@ try{
   const origin=built.state.landscapeOrigin;
   R.r3dInit(document.querySelector('#map'));R.r3dSetRenderScale(1);R.r3dSetLookProfile('explore',{transitionMs:0});
   R.r3dSetPixelMesh({reduceMotion:true,reduceFlash:true,memory:false});R.r3dSetFrontEndPlate('gameplay');R.r3dSetRainAmount(0);R.r3dSetAgitation(0);
-  R.r3dSetSourceFault(0);R.r3dSetSourceEmergency(0);R.r3dSetSourceWhiteout(0);R.r3dSetSourceShore(null);R.r3dSetDynamicProps([]);
+  R.r3dSetSourceEmergency(0);R.r3dSetSourceWhiteout(0);R.r3dSetSourceShore(null);R.r3dSetDynamicProps([]);
   const position=runtime.applyReceptionRelocation({x:-51.3,y:9,z:-450});
   const props=runtime.propInstances(position.x,position.y,{all:true,time:19,reducedMotion:true});
   P.setPropDiagnostics(true);P.setDiagnosticPropInstances(props);

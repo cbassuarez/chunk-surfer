@@ -228,10 +228,10 @@ test('the actual recorder clock holds a repair attempt during native focus loss 
   Object.assign(h.host,{
     maybeIndependentBattle:()=>{},maybeBattle:()=>{},tickNatatoriumDread:()=>{},tickTakeHunter:dt=>hunterTicks.push(dt),
     tickInstrument:()=>{},tickPracticeMetronomes:()=>{},tickPracticeStudent:()=>{},tickStopListening:()=>{},tickDreamFigure:()=>{},
-    environmentalTenorFired:true,currentFearPressure:()=>({tapeHiss:0}),TAKE_HISS:{},tickTakeSelfAudioMask:()=>{},tickMic:()=>{},
+    environmentalTenorFired:true,tickRecordingListen:()=>{},tickTakeSelfAudioMask:()=>{},tickMic:()=>{},
     tickRecordingHallucinations:()=>{},tickRecordingSlate:()=>{},spoilPendingMs:0,
   });
-  h.host.STORY.setTapeHissPressure=()=>{};vm.runInContext(fn('tickRecorder'),h.host);
+  vm.runInContext(fn('tickRecorder'),h.host);
   h.run('tickRecorder(1)');const before=copy(REC.recState()),head=copy(PB.tapeTransport());
   assert.equal(before.takeElapsed,1);assert.equal(before.takeTapeElapsed,1);
   h.focused=false;h.run('tickRecorder(900)');

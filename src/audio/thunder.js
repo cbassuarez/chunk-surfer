@@ -43,7 +43,21 @@ export function createThunderVoice({ context, destination } = {}) {
 
   const cache = new Map();
   const live = new Set();
-  let stopped = false;
+  let stopped = false, paused = false;
+  const disconnect=nodes=>{for(const node of nodes)try{node.disconnect();}catch{}};
+  function retire(voice){
+    if(!live.delete(voice))return;
+    if(voice.source){voice.source.onended=null;try{voice.source.stop();}catch{}disconnect([voice.source]);}
+    disconnect(voice.tail);
+  }
+  function play(voice){
+    if(stopped||paused||!live.has(voice))return;
+    if(voice.offset>=voice.buffer.duration){retire(voice);return;}
+    const source=context.createBufferSource();source.buffer=voice.buffer;source.connect(voice.tail[0]);
+    voice.source=source;voice.startedAt=context.currentTime;
+    source.onended=()=>{if(voice.source===source)retire(voice);};
+    try{source.start(voice.startedAt,voice.offset);}catch{retire(voice);}
+  }
 
   function render(event) {
     const seed = (Math.floor(Number(event?.seed) || 0) >>> 0) || 1;
@@ -80,9 +94,6 @@ export function createThunderVoice({ context, destination } = {}) {
 
       const now = context.currentTime;
       const far = thunderFar(distance);
-      const src = context.createBufferSource();
-      src.buffer = buffer;
-
       const gain = context.createGain();
       // The render is peak-normalised, so the whole distance law lives here and
       // in one place. The ceiling is 0.17 and it stays: 0.34 was a mastering
@@ -107,26 +118,34 @@ export function createThunderVoice({ context, destination } = {}) {
         shelves.push(low, high);
       }
 
-      const chain = [src, ...shelves, gain, ...(panner ? [panner] : [])];
-      for (let i = 0; i < chain.length - 1; i += 1) chain[i].connect(chain[i + 1]);
-      chain[chain.length - 1].connect(destination);
+      const tail = [...shelves, gain, ...(panner ? [panner] : [])];
+      for(let i=0;i<tail.length-1;i++)tail[i].connect(tail[i+1]);
+      tail[tail.length-1].connect(destination);
+      while(live.size>=CACHE_MAX)retire(live.values().next().value);
+      const voice={buffer,tail,source:null,offset:0,startedAt:now,seed:event.seed};live.add(voice);play(voice);
+      return live.has(voice);
+    },
 
-      try { src.start(now); } catch (_) { return false; }
-      live.add(chain);
-      src.onended = () => {
-        live.delete(chain);
-        for (const node of chain) { try { node.disconnect(); } catch (_) {} }
-      };
+    // Scene-owned weather holds the actual pressure waveform, not merely its
+    // output gain. A short pause therefore cannot expose a later tail on return.
+    setPaused(value){
+      const next=!!value;if(stopped||next===paused)return false;
+      paused=next;
+      for(const voice of [...live]){
+        if(next&&voice.source){
+          voice.offset+=Math.max(0,context.currentTime-voice.startedAt);
+          voice.source.onended=null;try{voice.source.stop();}catch{}disconnect([voice.source]);voice.source=null;
+          if(voice.offset>=voice.buffer.duration)retire(voice);
+        }else if(!next)play(voice);
+      }
       return true;
     },
+    snapshot(){return{paused,stopped,cached:cache.size,voices:[...live].map(v=>({seed:v.seed,offsetSeconds:Math.min(v.buffer.duration,v.offset+(v.source?Math.max(0,context.currentTime-v.startedAt):0)),duration:v.buffer.duration,playing:!!v.source}))};},
 
     stop() {
       stopped = true;
       cache.clear();
-      for (const chain of live) {
-        for (const node of chain) { try { node.stop?.(); } catch (_) {} try { node.disconnect(); } catch (_) {} }
-      }
-      live.clear();
+      for (const voice of [...live])retire(voice);
     },
   };
 }

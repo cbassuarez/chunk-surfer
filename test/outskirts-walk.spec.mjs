@@ -20,8 +20,11 @@ import { BUS_BODY_CORRIDOR, busBodyCorridorCentre } from '../src/game/bus-body-c
 const layout = outskirtsArrivalLayout();
 const wreckBytes=readFileSync(new URL('../public/'+VAN_WRECK_ASSET,import.meta.url));
 const wreckMeshes=new Set(JSON.parse(wreckBytes.subarray(20,20+wreckBytes.readUInt32LE(12))).meshes.map(m=>m.name));
+const motorwayBytes=readFileSync(new URL('../public/assets/source-drive/m62-land/m62-land.glb',import.meta.url));
+const motorwayMeshes=new Set(JSON.parse(motorwayBytes.subarray(20,20+motorwayBytes.readUInt32LE(12))).meshes.map(m=>m.name));
 for (const piece of layout) assert.ok(PROP_BOUNDS[piece.mesh]
   || (piece.mesh==='van_wreck_hull'&&wreckMeshes.has(piece.mesh)&&piece.fallbackMesh==='yard_van'&&PROP_BOUNDS[piece.fallbackMesh])
+  || (piece.m62Scenery && motorwayMeshes.has(piece.mesh))
   || (piece.mesh === BUS.mesh && piece.busPassage && piece.collision?.length)
   || (['outskirts_fold_guard', 'outskirts_overprint_body', 'outskirts_dog_handler', 'outskirts_vacant_dog'].includes(piece.mesh) && piece.collision?.length)
   || (piece.mesh === 'outskirts_slack_lead' && piece.collision === 'none'), `${piece.mesh} has not been generated`);
@@ -197,13 +200,46 @@ for (let k = 0; k < 29; k += 1) {
   walkTo(passStart(k + 1));
 }
 
-// The remaining darkness is still walked. The last recording is deliberately
-// not played by this test: main owns its live audio clock. Its pool is optional
-// and the old service stop cannot turn the final road into a compulsory gate.
+// Walk the committed listening approach, then test its save and the open
+// forward path. The playback clock is exercised separately in the host test.
 walkTo(OUTSKIRT_LAST_THRESHOLD.fromAlong - 1);
+const probeStep = (fromAcross, fromAlong, toAcross, toAlong) => runtime.geometry.canStep(
+  axis + fromAcross / CELL, built.position.y - (fromAlong - initialAlong) / CELL,
+  axis + toAcross / CELL, built.position.y - (toAlong - initialAlong) / CELL,
+);
+const { fromAlong, gateAlong, railAcross } = OUTSKIRT_LAST_THRESHOLD;
+for (const side of [-1, 1]) {
+  const flank = side * 36.5;
+  assert.equal(probeStep(flank, fromAlong - .25, flank, fromAlong + .25).why, 'last-light threshold',
+    'the widened floor bypasses the listening approach');
+  assert.ok(probeStep(flank, fromAlong + .25, flank, fromAlong - .25).ok,
+    'a save standing outside the guide can no longer return to its entrance');
+}
+assert.ok(probeStep(0, gateAlong - .25, 0, gateAlong + .25).ok, 'the throat cannot be entered');
+assert.equal(probeStep(0, gateAlong + .25, 0, gateAlong - .25).why, 'last-light threshold',
+  'the body can retreat past the closed throat');
+assert.ok(!lastInstances.some(p => p.id === 'end-last-backstop'), 'the backstop already bars the entrance');
 walkTo(OUTSKIRT_LAST_MARK.along);
 assert.ok(runtime.outskirtsLastLight().reached, 'the continuous route misses the actual pool mark');
-walkTo(OUTSKIRT_LAST_THRESHOLD.endpointAlong + 2, 0, { extent: 36 });
+assert.ok(lastInstances.some(p => p.id === 'end-last-backstop'), 'the closed backstop is not drawn');
+assert.equal(emitted.filter(e => e.id === 'last-light-backstop').length, 1, 'the backstop has no single closing cue');
+assert.equal(probeStep(railAcross + .1, gateAlong + .65, railAcross + .1, gateAlong + 1.15).why, 'last-light threshold',
+  'an old pose outside the guide can keep walking past the listening pool');
+runtime.setLastLightPlayback({ started: true, elapsed: 21 });
+runtime.setLastLightHold();
+assert.equal(probeStep(0, alongAt(position), 0, alongAt(position) + .5).why, 'last-light recording',
+  'the live recording no longer holds the body');
+runtime = createSourceSpaceRuntime({ initialState: JSON.parse(JSON.stringify(runtime.state())) });
+runtime.setPlayerPosition(position);
+frame();
+assert.equal(runtime.outskirtsLastLight().playback.elapsed, 21, 'reload loses the listening clock');
+assert.ok(lastInstances.some(p => p.id === 'end-last-backstop'), 'reload leaves the committed backstop open');
+assert.equal(probeStep(0, gateAlong + .25, 0, gateAlong - .25).why, 'last-light threshold',
+  'reload reopens the reverse path');
+runtime.setLastLightPlayback({ started: true, done: true, elapsed: 91.5 });
+runtime.setLastLightOut();
+walkTo(SOURCE_PRE_TAPE.roadLength * CELL + .25, 0, { extent: 2 });
+assert.equal(runtime.horizonApproachDue(), true, 'walking forward no longer reaches the live Horizon seam');
 assert.ok(moved >= OUTSKIRT_LAST_MARK.along - initialAlong && moved < 1300, `unexpected walk length ${moved}`);
 assert.equal(visitedPasses.size, 29);
 assert.ok(replayChecked && saveChecked);

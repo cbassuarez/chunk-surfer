@@ -10,7 +10,6 @@ import {makeCoastalMemoryScene,COASTAL_MEMORY_ASSETS} from '../game/coastal-memo
 import {coastalHandsHeldLocal} from '../game/coastal-memory/hands-scene.js';
 import {ensureWorldLetteringFonts,worldLetteringFont} from './world-lettering-fonts.js';
 import {physicalPrintPixels,uploadPhysicalPrint} from './physical-source-print.js';
-import {vanBrandInstances} from './van-brand.js';
 import {VAN_BRAND_PACK,VAN_BRAND_FITS} from '../data/van-brand.js';
 import {stepWindLeaves,windLeafProps} from '../world/wind-leaves.js';
 import {VAN_WRECK,VAN_WRECK_ASSET} from '../data/van-wreck.js';
@@ -29,13 +28,9 @@ export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotio
  const hands=frame.hands?.handling?{handling:true,winding:frame.hands.winding,
    heldLocal:frame.hands.heldLocal?.length===16&&frame.hands.heldLocal.every(Number.isFinite)?frame.hands.heldLocal:coastalHandsHeldLocal({eye,yaw,pitch,boxPose:frame.hands.boxPose,shake:frame.hands.shakeLevel,worldFromLocal:COASTAL_WORLD_FROM_LOCAL})}:null;
  const scene=makeCoastalMemoryScene({timeSec:reducedMotion?0:time,musicBoxTime:finite(frame.recordingOffset,time),includeWreck:true,mode:'foot',vehicleMetrics,hands});
+ if(frame.boxTaken&&!hands)scene.props=scene.props.filter(prop=>!['coastal-broken-music-box','coastal-music-box-key'].includes(prop.id));
  const level=clamp(frame.wreckLightLevel??0),lights=[],pierShadow=pose.z>=68;
- for(const prop of scene.props)if(prop.id==='coastal-sunken-same-van')prop.fixturePower=level;
- // This is explicitly the same van as the opening, settled underwater. Paint
- // follows its actual body/clip frame; unrelated wrecks and memories stay out.
- // The lettering was bent into the wreck pack with its panels (van-wreck.js
- // brand), so it rides the hull's own frame like the metal it is painted on.
- scene.props.push(...vanBrandInstances(scene.props.filter(prop=>prop.id==='coastal-sunken-same-van').map(prop=>({...prop,mesh:'drive_vehicle_body'}))).map(mark=>({...mark,mesh:VAN_WRECK.meshes.brand})));
+ for(const prop of scene.props)if(prop.id==='coastal-sunken-same-van'||prop.paintOf==='coastal-sunken-same-van')prop.fixturePower=level;
  const marker=scene.lamps.find(lamp=>lamp.id==='coastal-pier-near-marker');if(marker)marker.castsShadow=pierShadow;
  for(const lamp of scene.water.realHeadlamps){lamp.intensity*=level;if(level<.001||pierShadow)lamp.castsShadow=false;const m=lamp.vehicleBody;lights.push({position:[lamp.x,lamp.y,lamp.z],direction:[-m[8],-m[9],-m[10]],intensity:lamp.intensity});}
  return{scene,eye,yaw,pitch,coastalMemory:{active:true,siteMatrix:COASTAL_WORLD_FROM_LOCAL,waterY:0,time:reducedMotion?0:time,lights,flood:0},noteCopy:COASTAL_NOTE_COPY};
@@ -58,9 +53,9 @@ export function createCoastalMemoryRenderer({renderer=R3,props=P3,resolveAsset=a
  let initialized=false,released=false,pending=null,error=null,vehicleMetrics=null,last=null,releaseRange=null,leaves=null;
  const resident=()=>{const names=new Set(props.propMeshCatalog());return required.every(n=>names.has(n));};
  function clear(){
-  for(const name of ['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
+  for(const name of ['r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
   for(const name of ['r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetEmergencyShadows','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps','r3dSetLocalLights'])renderer[name]?.([]);
-  for(const name of ['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);
+  for(const name of ['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetIndoorRain'])renderer[name]?.(0);
   props.setDriveStudyFrame?.(null);props.setPressureInstances?.([]);
  }
  function initialize(){

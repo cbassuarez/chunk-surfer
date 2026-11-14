@@ -140,7 +140,7 @@ test('non-closing asynchronous action is single-flight and becomes usable again'
 });
 
 function sourceFixture() {
-  let saved = { flags: {}, chunkSurf: null }, calls = 0, snaps = 0, prepared = 0, releases = 0;
+  let saved = { flags: {}, chunkSurf: null }, calls = 0, snaps = 0, prepared = 0, releases = 0, approachStarts = 0;
   const functions = ['godEnterSourceReview', 'godEnterPreTape', 'godEnterBells', 'godEnterChapelOutskirts', 'godEnterHorizon'];
   const ctx = context(functions, {
     ...PRESETS, normalizeChunkSurfState, CHUNK_SURF_PHASE, REC, PB, godSourceReviewPending: false, godWarpController: null, CHAPEL_OUTER_CHECKPOINT: { x: 3, y: 4, facing: 0 },
@@ -153,9 +153,10 @@ function sourceFixture() {
       calls++;ctx.chunkSurfRuntime={state:()=>state,setPlayerPosition:noop};
       if(position){ctx.px=position.x;ctx.py=position.y;}
     }, syncSourceRender: noop, pushEvent: noop, placeHorizonBust: noop,
+    beginHorizonInterruption: () => { approachStarts++; return true; },
     R3: { r3dSnapCameraOnNextFrame: () => snaps++, r3dLoadHorizon: noop, r3dSetLookAngles:noop, r3dFacing:()=>0 },
   });
-  return { ctx, saved: () => saved, counts: () => ({ calls, snaps, prepared, releases }) };
+  return { ctx, saved: () => saved, counts: () => ({ calls, snaps, prepared, releases }), approachStarts: () => approachStarts };
 }
 const families = [
   [PRESETS.PRE_TAPE_GOD_STOPS, 'godEnterPreTape', PRESETS.buildPreTapeGodPreset],
@@ -172,6 +173,8 @@ for (const [stops, name, builder] of families) for (const stop of stops) {
       onClose: () => closes++, onError: error => errors.push(error) });
     assert.equal(row.id, stop.id); scene.key({ key: 'Enter' }); scene.key({ key: 'Enter' }); await turn();
     assert.deepEqual(errors, []); assert.equal(closes, 1);
+    assert.equal(f.approachStarts(), name === 'godEnterHorizon' ? 1 : 0,
+      'only the Horizon preset starts its live approach, exactly once');
     assert.deepEqual(f.counts(), { calls: 1, snaps: stop.across == null ? 1 : 2, prepared: 1, releases: 1 },
       'lateral pre-tape positioning needs a second final camera snap, other stops remain single-snap');
     const expected = builder(stop.depth, { drankCoffee: false, hasRig: false, marbleEyes: 'returned',
@@ -507,6 +510,7 @@ test('production take row grants both single rooms and the work order through th
   const f = tabsFixture(); let saved = {};
   Object.assign(f.ctx, { ROOM_CELLS, godInventoryBlocked: () => '', takePlaceAt: (x,y) => `mark ${x},${y}`, reconcileChapelTowerTakes: () => false,
     syncStopListeningProps: () => {},
+    PLANT: { plantHissing: () => false },
     saveCommit: patch => { saved = { ...saved, ...patch }; } });
   vm.runInContext(functionSource('godSetTakes') + '\nfunction godSetAllTakes(on){return godSetTakes(TARGETS,on);}', f.ctx);
   const rows = f.tabs().find(tab => tab.id === 'inventory').rows;

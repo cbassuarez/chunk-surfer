@@ -7,6 +7,7 @@ import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {GLASS_COURT as C,glassCourtWorld} from '../src/data/glass-court.js';
 import {GLASS_COURT_PRESENCES} from '../src/data/glass-court-presences.js';
+import {RAIN_FIELD_GLSL} from '../src/render/rain-field.js';
 import {glassCourtCoveredAt,glassCourtRoofHeightAt,GLASS_COURT_RAIN_GLSL} from '../src/render/glass-court-weather.js';
 
 test('shelter follows the real gabled roof and leaves the approach and sky above it exposed',()=>{
@@ -39,11 +40,14 @@ test('the actual main camera adapter uses physical metres and gates shelter on l
 
 test('the rain producer clips world columns rather than hiding weather beyond the roof',()=>{
   const renderer=fs.readFileSync('src/render/r3d.js','utf8'),main=fs.readFileSync('src/main.js','utf8');
-  assert.match(renderer,/const RAIN_GLSL = GLASS_COURT_RAIN_GLSL\+OUTSKIRTS_BUS_RAIN_GLSL\+`/);
-  const rainColumn=renderer.slice(renderer.indexOf('float rainColumn('),renderer.indexOf('// WALK THE COLUMNS'));
-  assert.ok(rainColumn.indexOf('glassCourtTrimRain(a,b)')>rainColumn.indexOf('vec3 b ='));
-  assert.ok(rainColumn.indexOf('glassCourtTrimRain(a,b)')<rainColumn.indexOf('outskirtsBusTrimRain(a,b,a0,b0,a1,b1)'));
-  assert.ok(rainColumn.indexOf('outskirtsBusTrimRain(a,b,a0,b0,a1,b1)')<rainColumn.indexOf('rayToSegment(ro, rd, a0, b0)'));
+  assert.match(renderer,/const RAIN_GLSL\s*=\s*GLASS_COURT_RAIN_GLSL\s*\+\s*OUTSKIRTS_BUS_RAIN_GLSL\s*\+\s*RAIN_FIELD_GLSL/);
+  const start = RAIN_FIELD_GLSL.indexOf('void accumulateRainColumn(');
+  const end = RAIN_FIELD_GLSL.indexOf('vec4 traceRainField(', start);
+  assert.ok(start >= 0 && end > start);
+  const column = RAIN_FIELD_GLSL.slice(start, end);
+  const glassTrim = column.search(/glassCourtTrimRain\(\s*a\s*,\s*b\s*\)/);
+  const busTrim = column.search(/outskirtsBusTrimRain\(/);
+  assert.ok(glassTrim >= 0 && glassTrim < busTrim, 'roof and bus shelter trim the same world streak');
   assert.match(GLASS_COURT_RAIN_GLSL,/uGlassCourtRainShelter<\.5\)return true/,
     'other shader programs retain their existing rain unless explicitly enabled');
   assert.match(main,/glassCourtRainShelter:usingPlan\(\)&&!usingSpecialSpace\(\)&&R3\.r3dGlassCourtReady\?\.\(\)===true/);

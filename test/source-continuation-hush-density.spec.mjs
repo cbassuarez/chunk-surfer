@@ -27,7 +27,7 @@ test('accepted supported metres drive one density tick and leave route position 
     advanceContinuationHush(actor, { dt: .02, player: player() });
     assert.ok(Math.abs(actor.animationClock - .02 * C.hush.speed * (n + 1)) < 1e-9);
     assert.ok(Math.abs(actor.z - (2 - .02 * C.hush.speed * (n + 1))) < 1e-9);
-    assert.ok(actor.density.phase - previousPhase <= .04 + 1e-10);
+    assert.ok(actor.density.phase - previousPhase <= .02 * HUSH_DENSITY_LIMITS.maxCyclesPerSecond + 1e-10);
     const representedSpeed=HUSH_DENSITY_LIMITS.maxCyclesPerSecond*HUSH_DENSITY_LIMITS.cycleMetres;
     assert.ok(Math.abs(actor.density.residualDragMps-(C.hush.speed-representedSpeed))<1e-9);
     previousPhase = actor.density.phase;
@@ -67,7 +67,7 @@ test('real portal coordinate jumps are not counted as travel and receiving falls
   for (let n = 0; n < 500 && !crossed; n++) {
     const before = actor.density.phase, chart = actor.chartId;
     advanceContinuationHush(actor, { dt: 1 / 120, player: p, events });
-    assert.ok(actor.density.phase - before <= 2 / 120 + 1e-10);
+    assert.ok(actor.density.phase - before <= HUSH_DENSITY_LIMITS.maxCyclesPerSecond / 120 + 1e-10);
     crossed = chart !== actor.chartId;
   }
   assert.equal(crossed, true); assert.ok(actor.fall);

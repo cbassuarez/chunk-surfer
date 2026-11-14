@@ -7,7 +7,7 @@ import { buildBattleHandTool } from '../src/render/battle-hand-tools.js';
 import { buildRadioContactModel } from '../src/render/radio-contact-model.js';
 import { battleHandFraming, battleHandPerformance, battleHandReach } from '../src/render/battle-hand-performance.js';
 
-const bytes=readFileSync(new URL('../public/assets/battle-hands/right.glb', import.meta.url));
+const bytes=readFileSync(new URL('../public/assets/battle-hands/recordist.glb', import.meta.url));
 const template=await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
 const BATTERY_SOLIDS=[
   {id:'battery shoe',bounds:new Box3(new Vector3(-.048,-.091,-.0445),new Vector3(.048,-.075,.0085))},

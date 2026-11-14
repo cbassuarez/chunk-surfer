@@ -490,17 +490,19 @@ test('rolling a calibration never starts a dream, summons Presence or publishes 
   let dreams=0;
   const context={
     nightDeadlineAllowsTransport,getSave:()=>({}),firstStrikeAudio:null,
-    cancelApparitionApplause(){},rollMetronomeRestart(){},ensureTapeAudio(){},PB:{isPlaying:()=>false,cueTapeEnd:()=>false},PLANT:{plantRecordingBlocked:()=>false},REC:{isSlating:()=>false,recState:()=>({takes:[]}),startRecording:()=>true},
+    cancelApparitionApplause(){},rollMetronomeRestart(){},ensureTapeAudio(){},workOrderFoley:{warm(){}},
+    PB:{isPlaying:()=>false,cueTapeEnd:()=>false},PLANT:{plantHissing:()=>true},REC:{isSlating:()=>false,recState:()=>({takes:[]}),startRecording:()=>true},
     takeRoom:'loading_dock',LEVEL_CHECK_ROOM:'loading_dock',armedTakeContamination:null,px:0,py:0,
     PROPS:{savePropState:()=>({})},saveCommit(){},ensureCtx(){},params:()=>new URLSearchParams('nomic=1'),
     MIC:{micIgnoreSpoilFor(){}},CUES:{CUE:{recorder:'recorder'},playCue(){}},emitRecorderTransport(){},updateAudio(){},
     STORY:{startTapeHiss(){}},TAKE_HISS:{min:0},SPEECH:{say(){}},framedLine:(_,line)=>line,LINES:{recStart:'Rolling.'},
     TUT:{tutorialActive:()=>false},flagTest:()=>false,beginDaydream:()=>dreams++,
+    flushMetronomeTakeEvents(){},recordingListenBeat:{reset(){}},
     beginSourceReplayTake:()=>assert.fail('calibration cannot seed a Source reprise'),
     emitProgress:()=>assert.fail('calibration cannot publish TAKE_STARTED'),
     summonPresence:()=>assert.fail('a setup measurement cannot summon Presence'),
   };
-  runInNewContext(`(${mainFunction('roll')})`,context)();
+  runInNewContext(`${mainFunction('plantBlocksTake')}\n(${mainFunction('roll')})`,context)();
   assert.equal(dreams,0,'a real calibration hands to the recording route without compulsory dream combat');
   assert.equal(context.activeSourceReplayTake,null);
 });

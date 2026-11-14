@@ -40,13 +40,15 @@ function reportAcoustic({
   sampleId = null,
   audibleToHush = true,
   audibleToMonitor = true,
+  acousticGain = 1,
+  radioDeployment = false,
 } = {}) {
   if (!acousticEmitter) return null;
   try {
     return acousticEmitter({
       kind: kind || inferAcousticKind(reason, level),
       level, x, y, reason, spoils, deliberate, sampleId,
-      playerGenerated, audibleToHush, audibleToMonitor,
+      playerGenerated, audibleToHush, audibleToMonitor, acousticGain, radioDeployment,
       source: { kind: sourceKind, id: sourceId },
     });
   } catch (error) {
@@ -96,7 +98,7 @@ export function takeDuration() {
 // scale `currentNoise()` reports, so the meter can put them on its own scale
 // without a second copy of these rules drifting away from these ones.
 //
-// SPOIL changes with difficulty and recorder headroom. CATCH remains the same
+// SPOIL changes with difficulty and recorder headroom. DANGER uses the same
 // world-hearing threshold, mapped into the microphone's meter scale: choosing
 // a quieter pickup does not make the recordist less audible to the building.
 export function noiseMarks() {
@@ -106,7 +108,7 @@ export function noiseMarks() {
     // floor above the room's own, and a mark at zero would be furniture.
     { level: recordingInputLevel(noiseFloor()), kind: 'floor', label: 'FLOOR' },
     { level: spoil, kind: 'spoil', label: 'SPOIL' },
-    { level: recordingInputLevel(ROOM_TONE.catchNoise), kind: 'catch', label: 'CATCH' },
+    { level: recordingInputLevel(ROOM_TONE.catchNoise), kind: 'catch', label: 'DANGER' },
   ].filter((mark) => mark.level > 0 && mark.label);
 }
 
@@ -114,17 +116,14 @@ export { spoilThreshold };
 
 // ── WHEN IT WENT WRONG ───────────────────────────────────────────────────────
 //
-// The take clock knew the second a noise landed and threw it away, so a spoiled
-// take could only ever say THAT it failed. These are the marks the location
-// strip draws: a near miss you got away with, and the one that ended it.
-//
-// Live only, and cleared at the top of every take. A spoiled take is never
-// sealed, so there is nothing to persist and nothing to migrate.
+// Noise events stay private until the attempt is filed on the sheet. The live
+// strip can show where a sound landed without classifying its quality.
 const TAKE_EVENT_LIMIT = 24;
 
 // Set by main.js. Kept as a sink so the recordist does not have to know what a
 // presence, a hunter or a building is.
-let loudNoiseSink = null;
+let loudNoiseSink = null, takeSpoilSink = null;
+export function setTakeSpoilSink(fn) { takeSpoilSink = typeof fn === 'function' ? fn : null; }
 export function setLoudNoiseSink(fn) { loudNoiseSink = typeof fn === 'function' ? fn : null; }
 
 export function takeEvents() {
@@ -141,7 +140,7 @@ function noteTakeEvent(kind, level, { ratio = null, cause = null } = {}) {
 }
 
 function handleRecordingNoise(level, reason, meta = {}) {
-  if (protectedTakeSource && meta.sourceId !== protectedTakeSource) return;
+  if (protectedTakeSource && meta.sourceId !== protectedTakeSource && meta.interruption !== 'contact') return;
   if (state.phase !== 'recording' || state.stalled || state.slating) return;
   const threshold = spoilThreshold();
   const inputLevel = recordingInputLevel(level);
@@ -181,7 +180,7 @@ const state = {
                         // and, now, your battery. Light attracts, and light runs out.
   battery: 1,           // 0..1. Drains only while it is actually burning.
   phase: 'idle',        // 'idle' | 'listening' | 'recording'
-  takeElapsed: 0,       // seconds of unbroken quiet
+  takeElapsed: 0,       // recording seconds, excluding slate and authored pauses
   takeDurationSeconds: 0, // latched when rolling; a settings refresh cannot move the finish line
   takeEvents: [],       // when noise landed in this take — see noteTakeEvent
   stalled: false,       // an instrument woke: the take is paused, not running,
@@ -291,6 +290,10 @@ export function takeSheet(id) {
   state.sheets.push(key);
   return true;
 }
+export function rewindSheetPickup(id) {
+  state.sheets = state.sheets.filter(value => value !== id);
+  state.sheetsTaken = state.sheetsTaken.filter(value => value !== id);
+}
 // Debug only (the god menu). Real acquisition goes through takeSheet.
 export function addSheet(id = 'sheet-goldberg-aria') {
   state.sheets.push(String(id));
@@ -399,6 +402,9 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
     // Whether this noise may fetch the take hunter. It follows audibleToHush
     // unless said otherwise: what the building cannot hear cannot answer.
     armsTakeHunter = audibleToHush,
+    interruption = null,
+    acousticGain = 1,
+    radioDeployment = false,
   } = options || {};
   // Preserve the pre-acoustic-system gameplay envelope exactly. Noise-floor
   // injury is a property of the operator/take, not of semantic source labels.
@@ -415,12 +421,12 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
   if (spoils) handleRecordingNoise(state.noise, reason, {
     sourceKind,sourceId,playerGenerated,deliberate,kind:kind || inferAcousticKind(reason, heard),
-    audibleToHush,armsTakeHunter,
+    audibleToHush,armsTakeHunter,interruption,
   });
   reportAcoustic({
     kind: kind || inferAcousticKind(reason, heard),
     level: heard, x, y, reason, sourceKind, sourceId, playerGenerated,
-    spoils, deliberate, sampleId, audibleToHush, audibleToMonitor,
+    spoils, deliberate, sampleId, audibleToHush, audibleToMonitor, acousticGain, radioDeployment,
   });
 }
 
@@ -457,6 +463,7 @@ export function emitRoomSourceNoise(level, x, y, reason = 'something in the room
     playerGenerated: false,
     deliberate: false,
     kind: options.kind || 'instrument_note',
+    interruption: options.interruption || null,
     audibleToHush: false,
   });
 }
@@ -518,10 +525,11 @@ export function stopListening() {
 
 // ROLL. The room drops out, the hiss comes up, and the forty-five seconds
 // begin. Only reachable from LISTEN.
-let protectedTakeSource = null;
-export function startRecording({ slate = false, keepLight = false, protectedSourceId = null } = {}) {
+let protectedTakeSource = null, authoredNoiseInterruption = false;
+export function startRecording({ slate = false, keepLight = false, protectedSourceId = null, authoredNoise = false } = {}) {
   if (state.phase !== 'listening') return false;
   protectedTakeSource = protectedSourceId ? String(protectedSourceId) : null;
+  authoredNoiseInterruption = authoredNoise === true;
   state.takeDurationSeconds = configuredTakeDuration();
   state.phase = 'recording';
   if (!keepLight) state.light = false;
@@ -559,7 +567,7 @@ export function stopRecording() {
   const durationSeconds = takeDuration();
   const completed = usableTake();
   state.phase = 'idle';
-  protectedTakeSource = null;
+  protectedTakeSource = null;authoredNoiseInterruption = false;
   // The light does NOT come back by itself. Reaching for it is a decision you
   // make in the dark, every time, knowing what it costs.
   const result = { completed, elapsed: state.takeElapsed, tapeElapsed:state.takeTapeElapsed||0, durationSeconds, spoiled: state.spoiled, reason: state.spoilReason, spoilMeta:state.spoilMeta?{...state.spoilMeta}:null };
@@ -571,12 +579,21 @@ export function stopRecording() {
   return result;
 }
 
+// Quality failure does not release the transport. Only a tagged authored beat
+// or physical contact interrupts an attempt before its normal finish.
+export function takeInterrupted() {
+  return state.phase === 'recording' && state.spoiled
+    && ['authored', 'contact'].includes(state.spoilMeta?.interruption);
+}
 function spoil(reason, meta = {}) {
-  if (protectedTakeSource && meta.sourceId !== protectedTakeSource) return;
-  if (state.spoiled) return;
+  let interruption = meta.interruption === 'contact' ? 'contact'
+    : meta.interruption === 'authored' || authoredNoiseInterruption ? 'authored' : null;
+  if (protectedTakeSource && meta.sourceId !== protectedTakeSource && interruption !== 'contact') return;
+  if (state.spoiled && (!interruption || state.spoilMeta?.interruption === 'contact')) return;
+  if (!interruption && state.phase === 'recording' && takeSpoilSink?.(reason, meta) === true) interruption = 'authored';
   state.spoiled = true;
   state.spoilReason = reason;
-  state.spoilMeta = meta && typeof meta === 'object' ? {...meta} : null;
+  state.spoilMeta = { ...meta, atSec: Math.max(0, state.takeElapsed), ...(interruption ? { interruption } : {}) };
 }
 export { spoil as spoilTake };
 
@@ -586,7 +603,7 @@ export function tickRecording(dt) {
   dt=Math.max(0,Number(dt)||0);
   state.takeTapeElapsed=(state.takeTapeElapsed||0)+dt;
   if(state.slating)return 'slating';
-  if (state.spoiled) return 'spoiled';
+  if (takeInterrupted()) return 'spoiled';
   if (state.assistPause > 0) {
     state.assistPause = Math.max(0, state.assistPause - dt);
     return 'paused';
@@ -594,11 +611,11 @@ export function tickRecording(dt) {
   // While an instrument sounds the take is held: the clock stops and noise does
   // not spoil it. Silence the instrument (resumeTake) to let it run again.
   if (state.stalled) return 'stalled';
-  if (recordingInputLevel(state.noise) > spoilThreshold()) {
+  if (!state.spoiled && recordingInputLevel(state.noise) > spoilThreshold()) {
     handleRecordingNoise(state.noise, 'the room was not empty', {
       sourceKind:'environment',sourceId:'room',playerGenerated:false,deliberate:false,
     });
-    if (state.spoiled) return 'spoiled';
+    if (takeInterrupted()) return 'spoiled';
     if (state.assistPause > 0) return 'paused';
   }
   state.takeElapsed += dt;

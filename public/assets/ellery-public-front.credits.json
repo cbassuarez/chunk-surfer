@@ -184,9 +184,9 @@
   },
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
+    "sha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
     "unchangedDuringBuild": true,
-    "meshCount": 625
+    "meshCount": 626
   },
   "geometry": [
     "src/data/ellery-public-front.js",

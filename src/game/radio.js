@@ -93,7 +93,7 @@ export function radioState() {
     skipped: [...state.skipped],
     guidance: normalizeRadioGuidanceState(state.guidance),
     call: { ...state.call },
-    scheduler: { ...state.scheduler, pulses:[...state.scheduler.pulses] },
+    scheduler: { ...state.scheduler, pulses:state.scheduler.pulses.map(pulse=>pulse.at) },
     lastCarrierPosition: { ...state.lastCarrierPosition },
     onSquelch: undefined,
     onLine: undefined,
@@ -400,16 +400,16 @@ export function resolveManualRadioCall(options = {}) {
   return { ...resolved, state:radioGuidanceState() };
 }
 
-function queueCluster(at) {
-  for (const offset of RADIO.pulseOffsetsMs) state.scheduler.pulses.push(at + offset);
-  state.scheduler.pulses.sort((a, b) => a - b);
+function queueCluster(at, kind = 'fault') {
+  for (const offset of RADIO.pulseOffsetsMs) state.scheduler.pulses.push({at:at+offset,kind});
+  state.scheduler.pulses.sort((a,b)=>a.at-b.at);
 }
 
 export function dropRadio(x, y, { roomId = null, floorId = null, now = nowMs() } = {}) {
   if (state.dropped) return false;
   state.dropped = { x:Math.round(x), y:Math.round(y), roomId:roomId || null, floorId:floorId || null };
   if (now >= state.scheduler.deployCooldownUntil) {
-    queueCluster(now + RADIO.deploymentDelayMs);
+    queueCluster(now + RADIO.deploymentDelayMs, 'deployment');
     state.scheduler.deployCooldownUntil = now + RADIO.deploymentCooldownMs;
   }
   if (state.pendingCue) armDroppedRadioCall(now);
@@ -457,8 +457,9 @@ function emitPulse(now, { kind = 'fault' } = {}) {
     sourceKind: 'equipment',
     sourceId: 'radio',
     playerGenerated: false,
-    deliberate: kind === 'deployment',
+    deliberate: kind === 'deployment' && !!state.dropped,
     audibleToHush: true,
+    radioDeployment: kind === 'deployment' && !!state.dropped,
   });
   state.squelches++;
   const event = { at:now, index:state.squelches, x:at.x, y:at.y, dropped:!!state.dropped, phase:state.phase, kind };
@@ -485,17 +486,17 @@ export function tickRadio(dt, { px = 0, py = 0, now = nowMs(), random = Math.ran
       state.call.pulseRemainingMs = 4200;
     }
   }
-  if (dreadAllowed() && state.scheduler.pulses.length && now >= state.scheduler.pulses[0]) {
-    state.scheduler.pulses.shift();
-    events.push({ type:'pulse', event:emitPulse(now, { kind:'deployment' }) });
+  if (dreadAllowed() && state.scheduler.pulses.length && now >= state.scheduler.pulses[0].at) {
+    const {kind}=state.scheduler.pulses.shift();
+    events.push({ type:'pulse', event:emitPulse(now, {kind}) });
   }
   if (dreadAllowed() && state.phase !== RADIO_PHASE.LIVE && state.scheduler.nextFaultAt && now >= state.scheduler.nextFaultAt) {
     queueCluster(now);
     scheduleNextFault(now, random());
   }
-  if (dreadAllowed() && state.scheduler.pulses.length && now >= state.scheduler.pulses[0]) {
-    state.scheduler.pulses.shift();
-    events.push({ type:'pulse', event:emitPulse(now, { kind:'fault' }) });
+  if (dreadAllowed() && state.scheduler.pulses.length && now >= state.scheduler.pulses[0].at) {
+    const {kind}=state.scheduler.pulses.shift();
+    events.push({ type:'pulse', event:emitPulse(now, {kind}) });
   }
   return events;
 }
@@ -542,7 +543,8 @@ export function saveRadioState(now = nowMs()) {
     scheduler: {
       deployCooldownRemainingMs: remaining(state.scheduler.deployCooldownUntil - now),
       nextFaultRemainingMs: remaining(state.scheduler.nextFaultAt - now),
-      pulseRemainingMs: state.scheduler.pulses.map((at) => remaining(at - now)),
+      pulseRemainingMs: state.scheduler.pulses.map(({at}) => remaining(at - now)),
+      pulseKinds: state.scheduler.pulses.map(({kind}) => kind),
     },
   };
 }
@@ -627,7 +629,9 @@ export function loadRadioState(saved = {}, now = nowMs()) {
   state.scheduler = {
     deployCooldownUntil: now + remaining(scheduler.deployCooldownRemainingMs),
     nextFaultAt: scheduler.nextFaultRemainingMs ? now + remaining(scheduler.nextFaultRemainingMs) : 0,
-    pulses: (scheduler.pulseRemainingMs || []).map((value) => now + remaining(value)).sort((a, b) => a - b),
+    pulses: (scheduler.pulseRemainingMs || []).map((value,index) => ({
+      at:now+remaining(value),kind:scheduler.pulseKinds?.[index]==='deployment'?'deployment':'fault',
+    })).sort((a,b)=>a.at-b.at),
   };
   if (state.phase !== RADIO_PHASE.LIVE && !state.scheduler.nextFaultAt) scheduleNextFault(now, .5);
   return radioState();

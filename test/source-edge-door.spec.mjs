@@ -161,7 +161,8 @@ const field = ({ open = false, legacyOnward = false } = {}) => {
   assert.equal(crossed?.event, 'horizon', 'walking through the doors is not the way out');
   assert.equal(crossed.through, 'edge-door');
   assert.equal(open.runtime.state().phase, 'horizon');
-  assert.equal(open.runtime.horizonFrame().preTapeProgress, 0, 'the doors are not at the very edge of the field');
+  assert.equal(open.runtime.horizonFrame().preTape, true, 'the doors enter the retained street');
+  assert.equal(open.runtime.horizonApproachDue(), false, 'the approach starts at the street far edge');
   assert.equal(open.runtime.state().edgeDoorOpen, true, 'the doors slammed on him in the doorway');
   // Clear of them, they shut behind him.
   const events = [];

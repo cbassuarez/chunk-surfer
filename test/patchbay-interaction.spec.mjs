@@ -1,9 +1,13 @@
-import test from 'node:test';
+import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBagScene } from '../src/game/bag.js';
 import { normalizeCombatBuild, PIN_SOURCES } from '../src/game/combat-progression.js';
 import { TECHNIQUE } from '../src/game/combat-state.js';
 import { sampleControl } from '../src/game/control-mechanics.js';
+import { uiSetLayoutSize } from '../src/render/ui.js';
+
+before(() => uiSetLayoutSize({ cols: 96, rows: 32 }));
+after(() => uiSetLayoutSize(null));
 
 function fixture({build=normalizeCombatBuild(null,PIN_SOURCES.encounters),onApplySkills=()=>{}}={}) {
   const bag=makeBagScene({getBuild:()=>build,hasRig:()=>true,focus:{sectionId:'skills',entryId:`skill:${TECHNIQUE.AFTERIMAGE}`},onApplySkills});
@@ -80,6 +84,15 @@ test('no spare cable creates no drag preview; cancellation and foreign pointer r
   }
   const bag=fixture();pointer(bag,'pointerdown',region(bag,supply('torch')));
   bag.pointer({type:'pointercancel'});assert.equal(state(bag).patchDrag,null);bag.exit();
+});
+
+test('Skills navigation follows the physical rows and columns', () => {
+  const bag = fixture();
+  bag.key({ key: 'ArrowRight' });
+  assert.equal(state(bag).nav.selected.skills, `skill:${TECHNIQUE.WHITEOUT}`);
+  bag.key({ key: 'ArrowDown' });
+  assert.equal(state(bag).nav.selected.skills, `skill:${TECHNIQUE.MASTER_TAKE}`);
+  bag.exit();
 });
 
 test('keyboard/controller patch and pull the same circuit; staged reconfiguration applies only on exit',()=>{

@@ -203,6 +203,8 @@ test('the flash is one term driving both renderer dials, and accessibility scale
   // Thunder plays wherever you are: it is the one part of a storm a building
   // cannot keep out. What being indoors changes is which PART of it reaches
   // you — a tilt, never a fader, and never silence.
-  assert.match(main, /thunderVoice\?\.strike\?\.\(\{\.\.\.event,bands:thunderIndoorBands\(/);
+  assert.match(main, /roofBands:thunderIndoorBands\(\{sky:skyOverhead\(\)/);
+  const owner=readFileSync('src/audio/scene-storm.js','utf8');
+  assert.match(owner,/voice\?\.strike\?\.\(\{\.\.\.thunder,[^\n]*bands:roofBands/,'the one owned event uses the current physical roof bands');
   assert.doesNotMatch(main, /thunderVoice[^\n]*bands:null/, 'indoors is never nothing');
 });

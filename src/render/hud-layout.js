@@ -20,7 +20,7 @@ export function fieldDeckLayout({cols=80,rows=45}={}){
     x:Math.max(2,safeCols-navigatorW-2),
     y:2,
     w:navigatorW,
-    h:Math.min(mapH+4,safeRows-6),
+    h:Math.min(mapH+4+(compact?1.1:0),safeRows-(compact?5.9:6)),
   };
   return Object.freeze({
     compact,

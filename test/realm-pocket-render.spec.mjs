@@ -27,21 +27,25 @@ test('realm eye heights follow the same authored support tops as body collision'
 function renderHarness() {
   const source = readFileSync(new URL('../src/render/props3d.js', import.meta.url), 'utf8');
   const begin = source.indexOf('export function renderSourceCrossing(');
+  const oldv = source.slice(source.indexOf('const homeOldvSteps ='),
+    source.indexOf('\n}', source.indexOf('function bindHomeOldv(')) + 2);
   assert.ok(begin >= 0);
-  const uniforms = new Map(); let draws = 0, blending = false;
+  const uniforms = new Map(), signBindings = []; let draws = 0, blending = false;
   const gl = new Proxy({ isProgram: () => true, drawArrays() { draws++; },
     BLEND:'blend',enable(cap){if(cap==='blend')blending=true;},disable(cap){if(cap==='blend')blending=false;},
     uniform1f: (name, ...value) => uniforms.set(name, value), uniform2f: (name, ...value) => uniforms.set(name, value),
     uniform3f: (name, ...value) => uniforms.set(name, value), uniform4f: (name, ...value) => uniforms.set(name, value),
     uniform3fv: (name, value) => uniforms.set(name, Array.from(value)),
+    uniform4fv: (name, value) => uniforms.set(name, Array.from(value)),
   }, { get: (target, key) => target[key] || (() => {}) });
   const sandbox = { gl, crossingProgram: {}, crossingVao: {}, CU: (name) => name, realmCameraPosition,homeRealmAcquisition,
-    realmEyeInterpolator: createRealmEyeInterpolator() };
+    HOME_OLDV_STEP_LIMIT: 16,
+    realmEyeInterpolator: createRealmEyeInterpolator(), bindValleySignAtlas: (uniform, visible) => signBindings.push(visible) };
   vm.createContext(sandbox);
   const end=source.indexOf('\n}',begin);
   assert.ok(end>begin,'the production crossing function remains bounded');
-  vm.runInContext(source.slice(begin,end+2).replace('export function', 'function') + '\nglobalThis.render=renderSourceCrossing;', sandbox);
-  return { render: sandbox.render, uniforms, get draws() { return draws; },get blending(){return blending;} };
+  vm.runInContext(oldv + '\n' + source.slice(begin,end+2).replace('export function', 'function') + '\nglobalThis.render=renderSourceCrossing;', sandbox);
+  return { render: sandbox.render, uniforms, signBindings, get draws() { return draws; },get blending(){return blending;} };
 }
 
 test('coherent home carries acquisition depth with blending off; entry and departure retain fade opacity', () => {
@@ -100,6 +104,9 @@ test('the production crossing pass uploads actual position, sideways gaze and wi
   assert.deepEqual(h.uniforms.get('uRealmActive'), [0]);
   assert.deepEqual(h.uniforms.get('uRealmDecoherence'), [0]);
   assert.deepEqual(h.uniforms.get('uHomeState'), [0, 0, 0, 0]);
+  assert.deepEqual(h.uniforms.get('uHomeOldv'), [0, 0, 0, 0]);
+  assert.deepEqual(h.uniforms.get('uHomeOldvReturn'), [0]);
+  assert.deepEqual(h.signBindings, [true, true, false], 'the print atlas is only requested for whiteout');
   assert.equal(h.draws, 3);
 });
 

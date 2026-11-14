@@ -11,15 +11,15 @@ const box=value=>value&&({x:value.x,y:value.y,w:value.w,h:value.h});
 const center=rect=>({x:rect.x+rect.w/2,y:rect.y+rect.h/2});
 const valid=rect=>rect&&[rect.x,rect.y,rect.w,rect.h].every(Number.isFinite)&&rect.w>0&&rect.h>0;
 
-export function bagGuideFrame({size={},outer=null,guide=null}={}){
+export function bagGuideFrame({size={},outer=null,guide=null,fullHeight=false}={}){
   if(!guide)return{outer:outer||bagPanelBounds(size),rail:null,side:null};
   // Render-only mechanism tests do not initialize the canvas. Give their
   // ordinary hit registration a real virtual viewport, not zero-size targets.
   const cols=size.cols>0?size.cols:144,rows=size.rows>0?size.rows:40;
   const margin=cols>=60?2:1,gap=cols>=60?3:1.5;
-  const railW=cols>=105?28:clamp(Math.floor(cols*.28),Math.min(12,cols*.3),24);
-  const w=Math.min(100,Math.max(8,cols-margin*2-gap-railW)),h=Math.min(38,Math.max(5,rows-3));
-  const start=Math.max(margin,(cols-(w+railW+gap))/2),y=Math.max(1,(rows-h)/2);
+  const railW=cols>=105?28:clamp(Math.floor(cols*(fullHeight?.235:.28)),Math.min(12,cols*.3),24);
+  const w=Math.min(100,Math.max(8,cols-margin*2-gap-railW)),h=Math.min(38,Math.max(5,rows-(fullHeight?.6:3)));
+  const start=Math.max(margin,(cols-(w+railW+gap))/2),y=Math.max(fullHeight?.3:1,(rows-h)/2);
   return{outer:{x:start+railW+gap,y,w,h},rail:{x:start,y:y+.3,w:railW,h:h-.6},side:'left'};
 }
 
@@ -35,7 +35,7 @@ function tourContent(guide,hasOutput,controller){
       body:zero?'No spare leads this shift. Each colored input is a skill. Patching it adds an output; found leads can be reused here.'
         :hasOutput?'This OUT socket can feed the next matching input. Pull a plug back to SPARES to reconfigure. Unused leads can stay spare.'
           :controller?'Choose an available input with the directional controls. Press Confirm to patch it; matching colors show the channel.'
-            :'Drag a lead from SEND into a matching colored IN socket. Start with any available first-row skill.',
+            :'Drag a lead from SEND into a matching colored IN socket. Start with an input marked ready.',
       key:controller?inputPromptLabel('confirm'):'ENTER',verb:controller?'PATCH / PULL':'PATCH · SPACE PULL',color:'#e5bc68'};
   }
   if(kind==='close'&&deferred)return{number:3,title:'Close the case',body:'Your patch leads are checked. Close the case to return to the room and the waiting encounter.',key:inputPromptLabel('bag'),verb:'CLOSE CASE',color:'#acd88c'};
@@ -88,7 +88,7 @@ export function bagGuideCalloutLayout({size={},outer,layout,guide,regions=[],pat
     if(kind==='section')copy.body=(guide.sectionId||guide.section)==='skills'?'Open the green SKILLS selector to check your patch leads.':'Open the blue MAP selector to set your destination.';
     else if(kind==='skills')copy.body=outputs.length?'OUT feeds the next matching IN. Return plugs to SPARES to reconfigure.'
       :guide.continueEnabled!==false?'No leads this shift. Inputs are skills; patched skills gain outputs.'
-        :controller?'Choose an input. Confirm patches it. Match the channel colors.':'Drag SEND to a matching IN. Start with an available first-row skill.';
+        :controller?'Choose an input. Confirm patches it. Match the channel colors.':'Drag SEND to a marked IN.';
     else if(kind==='close')copy.body='Close the case. Inner door, basement stair, then follow the HUD bearing to B3.';
     else if(guide.action==='mark')copy.body='Set Studio B3 as your target. The HUD bearing will guide you downstairs.';
   }

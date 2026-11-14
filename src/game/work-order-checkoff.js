@@ -1,98 +1,228 @@
-// THE CHECK-OFF.
-//
-// docs/plans/work-order.md. After a take he raises sheet 1 of the work order
-// and writes on it: the tick and the strike for a clean minute, the note for
-// anything else, the slash through the cassette. It happens in the live room.
-// The world keeps running (blocksWorld false) while his hands are busy
-// (blocksInput true): he can look up, and anything that comes can reach him.
-// Any step, interact or Escape lowers the sheet; what he had left to write is
-// on it the next time it is looked at.
-//
-// The sheet comes up close, on the left, and the view follows the pen so the
-// line he is writing is large enough to read; the right of the screen stays on
-// the room. Reduced motion: no slide or pan, and the marks appear whole.
-import {workOrderInkLayout} from './work-order-ink.js';
+// The result is already filed. This scene performs the decisive gesture on the
+// same page while the player can still turn, walk away, or be interrupted.
+import { layoutRecordistHand } from '../data/recordist-hand.js';
+import { WORK_ORDER_SHEET } from '../data/work-order-sheet.js';
+import { workOrderInkLayout } from './work-order-ink.js';
 
-export const CHECKOFF_PEN_MM_PER_SECOND=58;
-export const CHECKOFF_TIMING=Object.freeze({wait:.9,raise:.45,lower:.38,gap:.22,linger:2.4});
-// Marks made at the lodge window, before any check-off, are already on the sheet.
-const INSTANT=new Set(['shift','issued','signature']);
-const smooth=t=>{const k=Math.max(0,Math.min(1,t));return k*k*(3-2*k);};
+export const CHECKOFF_TIMING = Object.freeze({ wait: .20, raise: .47, settle: .15, lower: .34,
+  penApproach: .35, penRelease: .31, cleanHold: 1.06, retryHold: 1.31 });
+const ID = 'work-order-checkoff';
+const clamp = value => Math.max(0, Math.min(1, value));
+const smooth = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
+const mix = (a, b, t) => a + (b - a) * t;
+const visibleBiro = stroke => ({ ...stroke, width: Math.max(stroke.width, .53) });
 
-/**
- * The pen's plan: which marks to write, in order, and how long each takes.
- * Pure, so the pacing can be tested without a canvas.
- */
-export function checkoffPlan(marks=[],seenOrder=0){
-  const layout=workOrderInkLayout(marks),fresh=layout.filter(m=>m.order>seenOrder&&!INSTANT.has(m.kind)&&m.length>0);
-  let at=0;const steps=fresh.map(m=>{const seconds=Math.max(.18,m.length/CHECKOFF_PEN_MM_PER_SECOND),step={order:m.order,kind:m.kind,start:at,seconds};at+=seconds+CHECKOFF_TIMING.gap;return step;});
-  return{steps,writing:Math.max(0,at-CHECKOFF_TIMING.gap),lastOrder:layout.length?Math.max(...layout.map(m=>m.order)):seenOrder};
+function strokeLength({ points }) {
+  return points.slice(1).reduce((sum, point, index) => sum + Math.hypot(point[0] - points[index][0], point[1] - points[index][1]), 0);
 }
 
-/** Where the pen is `t` seconds into writing: the mark it is on and how far. */
-export function checkoffPenAt(plan,t){
-  for(const step of plan.steps){
-    if(t<step.start)return{order:step.order,fraction:0};
-    if(t<step.start+step.seconds)return{order:step.order,fraction:(t-step.start)/step.seconds};
+export function checkoffPlan(marks = [], seenOrder = 0, { roomId, outcome = 'clean' } = {}) {
+  const layout = workOrderInkLayout(marks);
+  const rows = new Map(marks.map(mark => [mark.order, mark]));
+  const note = layout.findLast(mark => mark.order > seenOrder && mark.kind === 'note' && (!roomId || rows.get(mark.order)?.roomId === roomId));
+  if (!note) return null;
+  const entry = rows.get(note.order);
+  const room = WORK_ORDER_SHEET.rooms.find(row => row.roomId === entry.roomId);
+  if (!room) return null;
+  const noteText = String(entry.text || '');
+  const cleanMarks = layout.filter(mark => mark.order > note.order && rows.get(mark.order)?.roomId === room.roomId && ['tick', 'strike'].includes(mark.kind));
+  let feature = cleanMarks.flatMap(mark => mark.strokes);
+  if (outcome !== 'clean' || !feature.length) {
+    const word = outcome === 'rejected' ? 'REDO' : outcome === 'clean' ? 'CLEAN' : noteText.match(/\S+$/)?.[0];
+    const count = layoutRecordistHand(word).strokes.length;
+    feature = count > 0 ? note.strokes.slice(-count) : [];
   }
-  return{order:Infinity,fraction:1};
+  if (!feature.length) return null;
+  const animated = new Set(feature);
+  // The existing log and all other marks are already on the sheet. Delay the
+  // clean note until the tick and strike land so they carry the first read.
+  const before = layout.filter(mark => mark !== note || !cleanMarks.length).flatMap(mark => mark.strokes).filter(stroke => !animated.has(stroke));
+  const lengths = feature.map(strokeLength);
+  const length = lengths.reduce((sum, next) => sum + next, 0);
+  const tickAndStrike = outcome === 'clean' && cleanMarks.length && feature.length === 2;
+  const writing = tickAndStrike ? .65 : outcome === 'spoilt' ? .92 : .78;
+  const gap = tickAndStrike ? .08 : Math.min(.03, writing * .35 / Math.max(1, feature.length - 1));
+  const down = writing - (feature.length - 1) * gap;
+  const minimumContact = Math.min(.043, down / (feature.length * 2));
+  const variableContact = down - minimumContact * feature.length;
+  const initial = feature[0].points[0];
+  const final = feature.at(-1).points.at(-1);
+  let start = 0;
+  const steps = feature.map((stroke, index) => {
+    // The tick needs time to read as a separate decision from the long strike.
+    const seconds = tickAndStrike ? index === 0 ? .19 : down - .19 : minimumContact + variableContact * lengths[index] / length;
+    const step = { stroke, length: lengths[index], start, end: start + seconds };
+    start += seconds + gap;
+    return step;
+  });
+  return { before, after: layout.flatMap(mark => mark.strokes), steps, initial, final, writing, outcome,
+    focus: { x: 105, y: room.top + 13 }, lastOrder: layout.at(-1).order };
 }
 
-/**
- * The scene. `marks` and `seenOrder` come from the cassette ledger; `drawSheet`
- * draws the page with the given ink (document.js drawPhysicalPage through the
- * paper shader); `onSeen(order)` records how far the sheet has been read so the
- * same marks are never written twice.
- */
-/** The centre of each mark, in page millimetres: where the pen is looking. */
-export function checkoffFocusPoints(marks=[]){
-  return new Map(workOrderInkLayout(marks).map(m=>{const pts=m.strokes.flatMap(s=>s.points);if(!pts.length)return[m.order,null];
-    const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return[m.order,{x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2}];}));
+function strokeAt({ stroke, length: total }, fraction) {
+  let remaining = total * fraction;
+  const points = [stroke.points[0]];
+  for (let i = 1; i < stroke.points.length; i++) {
+    const a = stroke.points[i - 1], b = stroke.points[i];
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (remaining < length) {
+      points.push([mix(a[0], b[0], remaining / length), mix(a[1], b[1], remaining / length)]);
+      break;
+    }
+    points.push(b);
+    remaining -= length;
+  }
+  return { ...stroke, points };
 }
 
-export function makeWorkOrderCheckoffScene({marks=[],seenOrder=0,reducedMotion=false,ink,drawSheet,onSeen=()=>{},onClose=()=>{},
-  frame=()=>null}={}){
-  const plan=checkoffPlan(marks,seenOrder),points=checkoffFocusPoints(marks);
-  const target=order=>points.get(order)||points.get(plan.steps.at(-1)?.order)||{x:105,y:150};
-  let focus={...target(plan.steps[0]?.order)};
-  // He lets the transport click off and says his line before he reaches for it.
-  let t=0,phase='waiting',phaseAt=0,closed=false,seenReported=false;
-  const reportSeen=()=>{if(seenReported)return;seenReported=true;onSeen(plan.lastOrder);};
-  function lower(){if(phase==='lowering'||closed)return;reportSeen();phase='lowering';phaseAt=t;if(reducedMotion)finish();}
-  function finish(){if(closed)return;closed=true;reportSeen();onClose();}
-  const writingT=()=>phase==='writing'?t-phaseAt:phase==='raising'?0:plan.writing;
-  return{
-    id:'work-order-checkoff',blocksWorld:false,allowsLook:true,
-    // His hands are only busy once the sheet is up.
-    get blocksInput(){return !closed&&phase!=='waiting';},
-    get handlesEscape(){return !closed&&phase!=='waiting';},
-    update(dt){
-      if(closed)return;const step=Math.max(0,Math.min(.25,Number(dt)||0));t+=step;
-      // The eye follows the pen, a little behind it.
-      if(!reducedMotion&&phase==='writing'){const pen=checkoffPenAt(plan,t-phaseAt),want=target(Number.isFinite(pen.order)?pen.order:plan.steps.at(-1)?.order),k=1-Math.exp(-step*4);
-        focus={x:focus.x+(want.x-focus.x)*k,y:focus.y+(want.y-focus.y)*k};}
-      if(phase==='waiting'&&t>=CHECKOFF_TIMING.wait){phase=reducedMotion?'written':'raising';phaseAt=t;if(reducedMotion)reportSeen();}
-      if(phase==='raising'&&t-phaseAt>=CHECKOFF_TIMING.raise){phase='writing';phaseAt=t;}
-      if(phase==='writing'&&t-phaseAt>=plan.writing){phase='written';phaseAt=t;reportSeen();}
-      if(phase==='written'&&t-phaseAt>=CHECKOFF_TIMING.linger)lower();
-      if(phase==='lowering'&&t-phaseAt>=CHECKOFF_TIMING.lower)finish();
+const nibAt = ([x, y], height = 0) => ({ x, y, height });
+function approachNib(point, amount) {
+  const travel = 1 - smooth(amount);
+  const clearance = 1 - smooth((amount - .20) / .80);
+  return nibAt([point[0] + 34 * travel, point[1] + 108 * travel], 24 * clearance);
+}
+function withdrawNib(nib, amount) {
+  if (!nib || amount >= 1) return null;
+  // Break paper contact first, then let the hand fall below the finished row.
+  const away = smooth((amount - .06) / .94);
+  const lift = smooth(amount / .30);
+  return nibAt([nib.x + 47 * away, nib.y + 114 * away], nib.height + 22 * lift);
+}
+
+export function checkoffPenAt(plan, time) {
+  const { penApproach, penRelease } = CHECKOFF_TIMING;
+  if (time < 0) return { strokes: [], nib: time < -penApproach ? null : approachNib(plan.initial, 1 + time / penApproach), step: -1 };
+  const strokes = [];
+  for (const [index, step] of plan.steps.entries()) {
+    if (time < step.start) {
+      const previous = plan.steps[index - 1];
+      const a = previous.stroke.points.at(-1), b = step.stroke.points[0];
+      const t = clamp((time - previous.end) / (step.start - previous.end));
+      return { strokes, step: -1, nib: nibAt([mix(a[0], b[0], smooth(t)), mix(a[1], b[1], smooth(t))], 4 * Math.sin(Math.PI * t)) };
+    }
+    if (time < step.end) {
+      const t = clamp((time - step.start) / (step.end - step.start));
+      const part = strokeAt(step, t * .55 + smooth(t) * .45);
+      strokes.push(part);
+      return { strokes, nib: nibAt(part.points.at(-1)), step: index };
+    }
+    strokes.push(step.stroke);
+  }
+  return { strokes, nib: withdrawNib(nibAt(plan.final), (time - plan.writing) / penRelease), step: -1 };
+}
+
+export function makeWorkOrderCheckoffScene({ plan, reducedMotion = false, drawSheet, foley, onSeen = () => {},
+  onClose = () => {}, ready = () => true, active = () => true, interrupted = () => false, moving = () => false } = {}) {
+  if (!plan) return null;
+  const { wait, raise, settle, lower, cleanHold, retryHold } = CHECKOFF_TIMING;
+  const writeAt = wait + (reducedMotion ? 0 : raise + settle);
+  const resultAt = writeAt + (reducedMotion ? 0 : plan.writing);
+  const readHold = plan.outcome === 'clean' ? cleanHold : retryHold;
+  // The verdict gets a little more weight in this brief view. Earlier marks
+  // and the saved paper keep their original stroke widths.
+  const featured = new Set(plan.steps.map(step => step.stroke));
+  const completedInk = plan.after.map(stroke => featured.has(stroke) ? visibleBiro(stroke) : stroke);
+  let elapsed = 0, phase = 'waiting', closed = false, seen = false, lifted = false, playingStep = -1;
+  let loweredAt = null, loweredFrame = null;
+
+  function reportSeen() {
+    if (!seen) { seen = true; onSeen(plan.lastOrder); }
+  }
+  function stopAudio() {
+    if (playingStep >= 0) playingStep = -1;
+    foley?.stop();
+  }
+  function finish({ report = true } = {}) {
+    if (closed) return;
+    closed = true;
+    phase = 'closed';
+    if (report) reportSeen();
+    onClose();
+  }
+  function frame() {
+    if (loweredFrame) {
+      const amount = clamp((elapsed - loweredAt) / lower);
+      return { ...loweredFrame, lower: amount, nib: withdrawNib(loweredFrame.nib, amount), clock: elapsed };
+    }
+    const written = elapsed >= resultAt;
+    const pen = reducedMotion ? null : checkoffPenAt(plan, elapsed - writeAt);
+    const lift = reducedMotion ? 1 : clamp((elapsed - wait) / raise);
+    return { phase, lift, lower: 0, settled: reducedMotion ? 1 : clamp((elapsed - wait - raise) / settle),
+      focus: plan.focus, reducedMotion, clock: elapsed, outcome: plan.outcome, nib: pen?.nib ?? null,
+      strokes: written ? completedInk : [...plan.before, ...pen.strokes.map(visibleBiro)],
+      inkKey: written ? 'complete' : pen.step < 0 && elapsed < writeAt ? 'before' : elapsed };
+  }
+  const visible = () => phase !== 'waiting' && !closed && ready() && !interrupted();
+  function dismiss({ immediate = false } = {}) {
+    if (closed) return false;
+    if (immediate || reducedMotion || phase === 'waiting') { stopAudio(); finish(); return true; }
+    if (loweredAt !== null) return false;
+    loweredFrame = frame();
+    loweredAt = elapsed;
+    phase = 'lowering';
+    reportSeen();
+    playingStep = -1;
+    foley?.lower();
+    return true;
+  }
+  return {
+    id: ID, overlay: true, blocksWorld: false, blocksInput: false, allowsLook: true,
+    get handlesEscape() { return !closed && phase !== 'lowering' && ready(); },
+    advance(dt) {
+      if (closed) return;
+      if (!active()) { stopAudio(); return; }
+      if (interrupted()) { finish({ report: false }); return; }
+      if (!ready()) {
+        if (phase !== 'waiting') finish();
+        return;
+      }
+      if (moving() && loweredAt === null) { dismiss(); return; }
+      elapsed += Math.max(0, Math.min(.25, Number(dt) || 0));
+      if (loweredAt !== null) { if (elapsed - loweredAt >= lower) finish(); return; }
+      if (elapsed < wait) return;
+      if (!lifted) {
+        lifted = true;
+        foley?.lift();
+      }
+      phase = elapsed >= resultAt ? 'written' : elapsed >= writeAt ? 'writing' : 'raising';
+      if (phase === 'written') reportSeen();
+      if (elapsed >= resultAt + readHold) { dismiss(); return; }
+      if (reducedMotion || phase !== 'writing') {
+        if (playingStep >= 0) { foley?.stopStroke(); playingStep = -1; }
+        return;
+      }
+      const time = elapsed - writeAt;
+      const step = plan.steps.findIndex(event => time >= event.start && time < event.end);
+      if (step === playingStep) return;
+      if (step < 0) foley?.stopStroke();
+      else {
+        const event = plan.steps[step];
+        foley?.stroke({ duration: event.end - time, strength: clamp(event.stroke.width / .49) });
+      }
+      playingStep = step;
     },
-    view(){const pen=phase==='writing'?checkoffPenAt(plan,writingT()):{order:Infinity,fraction:1};
-      return{id:'work-order-checkoff',phase,pen,focus:{...focus},steps:plan.steps.length,writingSeconds:plan.writing,closed};},
-    render(){
-      if(closed||phase==='waiting')return;
-      const lift=reducedMotion?1:phase==='raising'?smooth((t-phaseAt)/CHECKOFF_TIMING.raise):phase==='lowering'?1-smooth((t-phaseAt)/CHECKOFF_TIMING.lower):1;
-      const pen=phase==='writing'?checkoffPenAt(plan,writingT()):phase==='raising'?{order:plan.steps[0]?.order??Infinity,fraction:0}:{order:Infinity,fraction:1};
-      drawSheet?.({lift,focus:{...focus},ink:ink?.draw(marks,pen)||null,frame:frame()});
+    view() {
+      const drawn = visible() ? frame() : null;
+      return { id: ID, phase, elapsed, outcome: plan.outcome, focus: plan.focus,
+        nib: drawn?.nib ?? null, closed };
     },
-    key(e){
-      if(phase==='waiting')return false;
-      const k=String(e?.key||'').toLowerCase(),code=e?.code||'';
-      // Stepping away, reaching for something or Escape: the sheet goes down.
-      if(['escape','e','w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)||/^Key[WASDE]$/.test(code)
-        ||['back','interact','confirm'].includes(e?.controllerAction)){lower();return true;}
+    get presentationLift() {
+      if (!visible()) return 0;
+      if (loweredFrame) return smooth(loweredFrame.lift) * (1 - smooth((elapsed - loweredAt) / lower));
+      return reducedMotion ? 1 : smooth((elapsed - wait) / raise);
+    },
+    render() { if (!closed && phase !== 'waiting' && !interrupted()) drawSheet?.(frame()); },
+    exit() { closed = true; stopAudio(); },
+    suspend: stopAudio,
+    dismiss,
+    key(e) {
+      if (!this.handlesEscape) return false;
+      const key = String(e?.key || '').toLowerCase();
+      const code = e?.code || '';
+      if (key === 'escape' || code === 'Escape' || e?.controllerAction === 'back') { dismiss(); return true; }
+      if (['interact', 'confirm'].includes(e?.controllerAction) || ['e', 'enter', ' ', 'r', 'b', 'c', 'm', 'q'].includes(key)
+        || /^Key[ERBCMQWASD]$/.test(code) || /^[wasd]$|^arrow/.test(key)) dismiss();
       return false;
     },
-    lower,
   };
 }

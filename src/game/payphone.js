@@ -118,6 +118,15 @@ export const UK_TONES = freeze({
   engaged: freeze({ hz: freeze([400]), cadence: freeze([0.375, 0.375]) }),
   unobtainable: freeze({ hz: freeze([400]), cadence: null }),
 });
+
+// One warmer swell on each mechanical strike, with a steady alternative for
+// reduced effects. The road practical and the sound follow the same cadence.
+export function payphoneBellLight(elapsed, animated = true) {
+  if (!animated || !Number.isFinite(elapsed)) return .58;
+  const [strike, gap] = UK_TONES.ringing.cadence;
+  const swell = (t) => t >= 0 && t < strike ? Math.sin(Math.PI * t / strike) ** 2 : 0;
+  return .20 + .80 * (swell(elapsed) + swell(elapsed - strike - gap));
+}
 // Keypad tone pairs. The box has a dial; these are kept for the line's own
 // tests and anything else on the network that still presses keys.
 export const DTMF = freeze({

@@ -9,6 +9,35 @@ let latestDiagnostics = { ready: false, error: null };
 const clamp = (n, a = 0, b = 1) => Math.max(a, Math.min(b, Number(n) || 0));
 let displaySource = null;
 
+export function recordistHandLighting(frame = {}) {
+  const field = frame.fieldCarry && frame.fieldLight;
+  if (!field) return {
+    owner: 'instrument', environment: .16, hemisphere: .32, key: 2.7, rim: .85, fill: .15,
+    skyColor: '#d5ddcf', groundColor: '#2c2220', keyColor: '#fff0dc', rimColor: '#a7c6cd', fillColor: '#c2d3bd',
+  };
+  const color = (value, fallback) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite)
+    ? value.map(component => clamp(component, 0, 4)) : fallback;
+  const ambient = clamp(field.ambientIntensity, 0, 2), torch = clamp(field.torchPower);
+  const sky = color(field.ambientColor, [.66, .51, .35]), lamp = color(field.torchColor, [1, .94, .82]);
+  return { owner: 'field', environment: ambient * .25, hemisphere: ambient,
+    key: torch * 1.35, rim: ambient * .15, fill: torch * .10 + ambient * .20,
+    skyColor: sky, groundColor: sky.map(component => component * .25),
+    keyColor: lamp, rimColor: sky, fillColor: lamp };
+}
+
+// Reconcile both directions on each draw. The cached view is also used by the
+// paused inventory and combat, whose existing instrument lighting must return
+// after a dark ordinary room. No world light, exposure or opacity is changed.
+export function applyRecordistHandLighting(scene, lights, frame = {}) {
+  const look = recordistHandLighting(frame);
+  const set = (target, value) => Array.isArray(value) ? target.setRGB(...value) : target.set(value);
+  scene.environmentIntensity = look.environment;
+  for (const name of ['hemisphere', 'key', 'rim', 'fill']) lights[name].intensity = look[name];
+  set(lights.hemisphere.color, look.skyColor); set(lights.hemisphere.groundColor, look.groundColor);
+  set(lights.key.color, look.keyColor); set(lights.rim.color, look.rimColor); set(lights.fill.color, look.fillColor);
+  return look;
+}
+
 // The main scene supplies its live look without coupling this reusable
 // view-model to the world renderer or its gameplay state.
 export function setBattleHandsDisplaySource(source) {
@@ -35,7 +64,7 @@ function makeSkin(THREE, { anatomy = true, uniforms = { handInjury: { value: 0 }
     sheen: .08, sheenColor: '#d4a997', side: THREE.FrontSide,
   });
   material.userData.handUniforms = uniforms;
-  material.customProgramCacheKey = () => `exposed-recordist-skin-v2-${anatomy}`;
+  material.customProgramCacheKey = () => `exposed-recordist-skin-v3-${anatomy}`;
   material.onBeforeCompile = shader => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -66,7 +95,7 @@ function makeSkin(THREE, { anatomy = true, uniforms = { handInjury: { value: 0 }
         diffuseColor.rgb*=mix(vec3(1.),vec3(1.035,.94,.90),(smoothstep(.095,.17,handPalm.y)*.28+handFingerFold*.14)*${anatomy ? '1.' : '0.'});
         diffuseColor.rgb*=1.-handWet*.055;
         diffuseColor.rgb*=1.-handCrease*.12;
-        float handHeight=(handFine-.5)*.000035-handCrease*.00014;
+        float handHeight=(handFine-.5)*.000035-handCrease*.00026;
       `)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=clamp(roughnessFactor+handMottle*.08-handWet*.24,.34,.82);')
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
@@ -79,8 +108,9 @@ function makeSkin(THREE, { anatomy = true, uniforms = { handInjury: { value: 0 }
   return material;
 }
 
-function addForearm(THREE, rig, material) {
+function addForearm(THREE, rig, material, { wristExposure = .1325, cuffOverlap = 0 } = {}) {
   const root = new THREE.Group(); root.name = 'forearm from wrist'; rig.root.add(root);
+  const cuffShift = .1325 - wristExposure + cuffOverlap;
   const skin = new THREE.Mesh(new THREE.CylinderGeometry(.0225, .028, .135, 32, 10, true), material);
   const armRings = [];
   const armPositions = skin.geometry.attributes.position;
@@ -89,28 +119,45 @@ function addForearm(THREE, rig, material) {
       angle: Math.atan2(armPositions.getX(i), armPositions.getZ(i)) });
   }
   root.add(skin);
-  const cloth = new THREE.MeshStandardMaterial({ color: '#333b34', roughness: .97, metalness: 0 });
-  cloth.customProgramCacheKey = () => 'recordist-cotton-weave-v1';
+  const cloth = new THREE.MeshStandardMaterial({ color: '#494c3d', roughness: .96, metalness: 0 });
+  cloth.customProgramCacheKey = () => 'recordist-cotton-weave-v2';
   cloth.onBeforeCompile = shader => {
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 clothRest;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nclothRest=position;');
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 clothRest;')
       .replace('#include <color_fragment>', `#include <color_fragment>
         float cottonWeave=sin(clothRest.y*3600.)*sin(atan(clothRest.z,clothRest.x)*96.);
-        diffuseColor.rgb*=.95+.05*cottonWeave;
+        float faded=sin(clothRest.y*57.+sin(clothRest.z*97.)*.6)*.5+.5;
+        diffuseColor.rgb*=.84+.16*faded+.035*cottonWeave;
       `).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=clamp(roughnessFactor+cottonWeave*.025,.88,1.);');
   };
-  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(.028, .031, .042, 32, 4), cloth);
-  cuff.position.set(0, -.150, -.001); cuff.scale.z = .83; root.add(cuff);
-  for (let i = 0; i < 5; i++) {
-    const seam = new THREE.Mesh(new THREE.TorusGeometry(.028, .00055, 4, 32), cloth);
-    seam.rotation.x = Math.PI / 2; seam.position.y = -.132 - i * .006;
+  const cuff = new THREE.Mesh(new THREE.LatheGeometry([
+    new THREE.Vector2(.029, -.022), new THREE.Vector2(.031, -.019),
+    new THREE.Vector2(.031, -.013), new THREE.Vector2(.0298, -.009),
+    new THREE.Vector2(.0302, .008), new THREE.Vector2(.0317, .013),
+    new THREE.Vector2(.0314, .019), new THREE.Vector2(.028, .022),
+  ], 36), cloth);
+  cuff.position.set(0, -.150 + cuffShift, -.001); cuff.scale.z = .83; root.add(cuff);
+  for (let i = 0; i < 2; i++) {
+    const seam = new THREE.Mesh(new THREE.TorusGeometry(.0311, .0007, 5, 36), cloth);
+    seam.rotation.x = Math.PI / 2; seam.position.y = -.136 - i * .004 + cuffShift;
     seam.scale.y = .83; root.add(seam);
   }
-  const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(.030, .053, .45, 40, 8), cloth);
-  sleeve.position.set(0, -.396, -.001); sleeve.scale.z = .83; root.add(sleeve);
+  const sleeveGeometry = new THREE.CylinderGeometry(.030, .053, .45, 40, 14);
+  const sleevePosition = sleeveGeometry.attributes.position;
+  for (let i = 0; i < sleevePosition.count; i++) {
+    const x = sleevePosition.getX(i), y = sleevePosition.getY(i), z = sleevePosition.getZ(i);
+    if (Math.hypot(x,z) < .001) continue;
+    const t = Math.max(0, Math.min(1, (.225-y)/.45)), a = Math.atan2(z,x);
+    const crease = Math.sin(t * 52 + Math.sin(a * 2) * 1.4) * Math.sin(Math.PI * t) * .064;
+    const seam = Math.max(0, Math.cos(a + 1.4)) ** 34 * .038;
+    sleevePosition.setXYZ(i, x*(1+crease+seam), y, z*(1+crease+seam));
+  }
+  sleeveGeometry.computeVertexNormals();
+  const sleeve = new THREE.Mesh(sleeveGeometry, cloth);
+  sleeve.position.set(0, -.396 + cuffShift, -.001); sleeve.scale.z = .83; root.add(sleeve);
   root.traverse(object => { if (object.isMesh) { object.castShadow = true; object.receiveShadow = true; } });
-  return { cloth, root, skin, armRings, side: rig.root.name.includes('-left-') ? -1 : 1 };
+  return { cloth, root, skin, armRings, wristExposure, side: rig.root.name.includes('-left-') ? -1 : 1 };
 }
 
 function shapeForearm(THREE, arm) {
@@ -119,11 +166,13 @@ function shapeForearm(THREE, arm) {
   if (arm.lastShape && Math.abs(arm.lastShape.dot(arm.root.quaternion)) > .99999999) return;
   arm.lastShape = arm.root.quaternion.clone();
   const inverse = arm.root.quaternion.clone().invert();
+  const length = arm.wristExposure;
+  const wristTangentLength = length / .1325;
   const a = new THREE.Vector3(-arm.side * .0011275, .008, .0011345).applyQuaternion(inverse);
-  const b = new THREE.Vector3(-arm.side * .0011275, -.027, .0011345).applyQuaternion(inverse);
-  const c = new THREE.Vector3(-arm.side * .0011275, -.060, .0011345).applyQuaternion(inverse);
+  const b = new THREE.Vector3(-arm.side * .0011275, -.027 * wristTangentLength, .0011345).applyQuaternion(inverse);
+  const c = new THREE.Vector3(-arm.side * .0011275, -.060 * wristTangentLength, .0011345).applyQuaternion(inverse);
   const curve = new THREE.CubicBezierCurve3(b, c,
-    new THREE.Vector3(0, -.090, -.001), new THREE.Vector3(0, -.1325, -.001));
+    new THREE.Vector3(0, -.090 * wristTangentLength, -.001), new THREE.Vector3(0, -length, -.001));
   const position = arm.skin.geometry.attributes.position;
   const firstTangent = new THREE.Vector3(0, -1, 0).applyQuaternion(inverse);
   const firstSide = new THREE.Vector3(1, 0, 0).applyQuaternion(inverse);
@@ -162,7 +211,7 @@ export function warmBattleHands() {
       import('./pixel-mesh/transparent.js'),
     ]);
     await tools.warmBattleHandToolLettering({ assetUrl });
-    const template = await rigs.loadBattleHandTemplate(assetUrl('assets/battle-hands/right.glb'));
+    const template = await rigs.loadRecordistHandTemplate();
     if (version !== generation) return null;
     const canvas = document.createElement('canvas');
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true,
@@ -184,7 +233,7 @@ export function warmBattleHands() {
     scene.environment = environment.texture; scene.environmentIntensity = .16;
     const camera = new THREE.OrthographicCamera(-.5, .5, .17, -.17, .01, 5);
     camera.position.set(0, 0, 1.8); camera.lookAt(0, 0, 0);
-    scene.add(new THREE.HemisphereLight('#d5ddcf', '#2c2220', .32));
+    const hemisphere = new THREE.HemisphereLight('#d5ddcf', '#2c2220', .32); scene.add(hemisphere);
     const key = new THREE.DirectionalLight('#fff0dc', 2.7); key.position.set(-.45, .8, 1); scene.add(key);
     key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
     Object.assign(key.shadow.camera, { left: -.8, right: .8, top: .5, bottom: -.5, near: .1, far: 3 });
@@ -200,7 +249,8 @@ export function warmBattleHands() {
     const cloth = [leftArm.cloth, rightArm.cloth];
     const dither = createTransparentPixelMesh(THREE, renderer, { assetUrl, profile: 'battle' });
     const instance = { THREE, renderer, canvas, scene, camera, skin, left, right, tools,
-      leftArm, rightArm, cloth, environment, dither, toolCache: new Map(), held: null, cosmetics: '', contextLost: false };
+      leftArm, rightArm, cloth, environment, dither, lights: { hemisphere, key, rim, fill },
+      toolCache: new Map(), held: null, cosmetics: '', contextLost: false };
     // Do not expose an undithered loading frame while the acquisition mask is
     // still decoding. The existing embodied fallback remains available.
     try { await dither.ready; }
@@ -289,17 +339,45 @@ function applyTool(s, id, cosmetics) {
   return tool;
 }
 
+// Inspection changes the observer around the supported assembly. Turning only
+// the object would drag the real fingers through its case or paper. Every other
+// owner restores the original camera exactly on its next draw.
+export function applyRecordistInspectionCamera(THREE, camera, tool, view, aspect = 1) {
+  camera.position.set(0, 0, 1.8); camera.up.set(0, 1, 0); camera.lookAt(0, 0, 0);
+  if (!view || !tool?.inspectionBounds || tool.inspectionBounds.isEmpty()) return null;
+  const bounds = tool.inspectionBounds.clone().applyMatrix4(tool.group.matrixWorld);
+  const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+  const yaw = Number.isFinite(Number(view.yaw)) ? Number(view.yaw) : 0;
+  const pitch = Math.max(-1.15, Math.min(1.15, Number(view.pitch) || 0));
+  const ratio = Math.max(.05, Number(aspect) || 1);
+  const extent = Math.max(.035, sphere.radius * 2.36) * Math.max(1, 1 / ratio);
+  camera.left = -extent * ratio / 2; camera.right = extent * ratio / 2;
+  camera.top = extent / 2; camera.bottom = -extent / 2;
+  const direction = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+  camera.position.copy(sphere.center).addScaledVector(direction, 1.8); camera.lookAt(sphere.center);
+  camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
+  return { yaw, pitch, extent, center: sphere.center.toArray(), radius: sphere.radius };
+}
+
 function paint(s, { width, height, left, right, display, screenOffset, pixelRatio, ...frame }) {
   const { THREE } = s;
-  const framing = battleHandFraming({ width, height, left, right });
+  const framing = frame.fieldCarry && frame.fieldFraming
+    ? frame.fieldFraming : battleHandFraming({ width, height, left, right });
   const performance = battleHandPerformance(frame);
   const tool = applyTool(s, frame.tool || 'self', frame.cosmetics);
+  const lighting = applyRecordistHandLighting(s.scene, s.lights, frame);
+  // Ordinary carrying borrows the exact supported right-hand assembly. The
+  // spare combat palm is not an inventory object and must not hover beside it.
+  // Reconcile every draw so returning to combat restores both hands.
+  s.left.root.visible = !frame.fieldCarry;
+  s.right.root.visible = true;
   s.camera.left = -framing.halfWidth; s.camera.right = framing.halfWidth;
   s.camera.top = framing.extent / 2; s.camera.bottom = -framing.extent / 2; s.camera.updateProjectionMatrix();
   const toolPosition = framing.tool.map((v, i) => v + performance.toolOffset[i]);
   tool.group.position.set(...toolPosition);
   tool.group.rotation.set(-.045 + performance.operation * .025 + performance.toolRotation[0],
     -.08 + performance.toolRotation[1], -.025 + performance.toolRotation[2]);
+  if (frame.fieldCarry) tool.group.rotation.x += tool.carryIncline || 0;
   const restingToolRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-.045, -.08, -.025));
   if (performance.handling === 'strike') {
     tool.group.rotation.z += (performance.prepare * .32 - performance.operation * .95) * performance.travel;
@@ -389,9 +467,10 @@ function paint(s, { width, height, left, right, display, screenOffset, pixelRati
   }
   s.skin.userData.handUniforms.handInjury.value = performance.injury / 3;
   s.skin.userData.handUniforms.handWet.value = clamp(frame.wet);
-  for (const cloth of s.cloth) cloth.color.set(frame.wet > .3 ? '#252e29' : '#333b34');
+  for (const cloth of s.cloth) cloth.color.set(frame.wet > .3 ? '#33382d' : '#494c3d');
   shapeForearm(THREE, s.leftArm); shapeForearm(THREE, s.rightArm);
   s.scene.updateMatrixWorld(true);
+  const inspection = applyRecordistInspectionCamera(THREE, s.camera, tool, frame.fieldCarry ? frame.inspectionView : null, width / height);
   const displaySettings = display?.settings || {};
   s.dither.render(s.scene, s.camera, {
     width, height, dpr: 1,
@@ -411,6 +490,7 @@ function paint(s, { width, height, left, right, display, screenOffset, pixelRati
     .map(([name, target]) => [name, targetWorld(THREE, tool.group, target)]));
   latestDiagnostics = { ready: true, error: null, tool: frame.tool || 'self', move: frame.move || null,
     rawProgress: performance.rawProgress, injury: frame.injury, reducedMotion: !!frame.reducedMotion,
+    fieldCarry: !!frame.fieldCarry, freeHandVisible: s.left.root.visible, lighting, inspection,
     viewport: { width, height }, display: s.dither.debug(),
     grip: s.right.measureGrip(contacts), control: controlDiagnostic };
 }

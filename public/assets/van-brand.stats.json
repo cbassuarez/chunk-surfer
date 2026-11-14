@@ -1,9 +1,9 @@
 {
-  "version": 1,
-  "copy": "FIELD RECORDING SERVICES",
+  "version": 2,
+  "copy": "ALBION LOCATION SOUND",
   "asset": "assets/van-brand.glb",
-  "sha256": "e711e9fa2396e6e4c7a7dff84cf76c277d197dedb80a6890911f4a0511b6a561",
-  "bytes": 2378792,
+  "sha256": "70121ae12be3d7d10dc20612d4fd5ccbf84d00c5ce6e5be29aa0807aa30b6a78",
+  "bytes": 1435844,
   "sourceViewBox": [
     0,
     0,
@@ -11,65 +11,171 @@
     540
   ],
   "inputs": {
-    "src/data/van-brand-art.js": "6baecb7b79ac9543f29c16388d349e9c8e5f5e934f7d2f76d8bb1c8522ae9d98",
-    "src/data/van-brand.js": "0be18aabce3a9113903f360d5fd6a5bd5771b640ec86d439595f85e63b956c46",
-    "tools/chunk_surfer/build-van-brand.mjs": "72c0f56e7b286531f0269d9644a8dda8c59a0422fe4e8ce8f648dc995911f92b"
+    "src/data/van-brand-art.js": "80404525e09b2ecda7454e3af1372813ba2f1d52965467a9f6cb992a72a718e9",
+    "src/data/van-brand.js": "fe4a1ec9eaa31d4896aef15081de39d8f538f713ed3b9af3bf5d000b7b0ee0b6",
+    "tools/chunk_surfer/build-van-brand.mjs": "0d6a819a2dfdf93e1c56a45143b13c4bea1305d493b711edb83b79b7d1593f70"
   },
   "meshes": [
     {
       "fit": "yard",
       "mesh": "van_brand_yard",
-      "vertices": 37248,
-      "triangles": 24416,
+      "vertices": 13224,
+      "triangles": 7456,
       "bounds": {
         "min": [
-          -1.04772,
-          1.3450227283447742,
-          -0.8865821763399289
+          -1.04808,
+          1.4368402777777778,
+          -0.8492777777777778
         ],
         "max": [
-          1.04772,
-          1.9887199556742179,
-          1.3865821763399289
+          1.04808,
+          1.9254444444444443,
+          1.3492777777777778
         ]
       },
-      "sourcePolygons": 56,
+      "sourcePolygons": 174,
+      "surfaces": [
+        {
+          "kind": "side",
+          "surfaceX": 1.045,
+          "centerY": 1.68,
+          "centerZ": 0.25,
+          "widthM": 2.35,
+          "heightM": 0.705,
+          "copies": 2
+        }
+      ],
       "pigments": [
-        "oxide",
-        "ink"
+        "navy",
+        "white",
+        "red"
       ]
     },
     {
       "fit": "drive",
       "mesh": "van_brand_drive",
-      "vertices": 37248,
-      "triangles": 24416,
+      "vertices": 19836,
+      "triangles": 11184,
       "bounds": {
         "min": [
-          -0.9677199999999999,
-          1.3776760162494113,
-          0.6027916171157962
+          -0.9680799999999999,
+          0.9623749999999999,
+          0.6297777777777778
         ],
         "max": [
-          0.9677199999999999,
-          1.8433293296366684,
-          2.247208382884204
+          0.9680799999999999,
+          1.7975555555555556,
+          2.45908
         ]
       },
-      "sourcePolygons": 56,
+      "sourcePolygons": 174,
+      "surfaces": [
+        {
+          "kind": "side",
+          "surfaceX": 0.965,
+          "centerY": 1.62,
+          "centerZ": 1.425,
+          "widthM": 1.7,
+          "heightM": 0.51,
+          "copies": 2
+        },
+        {
+          "kind": "rear",
+          "surfaceZ": 2.456,
+          "centerX": 0,
+          "centerY": 1.13,
+          "widthM": 1.62,
+          "heightM": 0.486,
+          "normal": 1,
+          "copies": 1
+        }
+      ],
       "pigments": [
-        "oxide",
-        "ink"
+        "navy",
+        "white",
+        "red"
+      ]
+    },
+    {
+      "fit": "yardRearLeft",
+      "mesh": "van_brand_yard_rear_l",
+      "vertices": 6612,
+      "triangles": 3728,
+      "bounds": {
+        "min": [
+          0.14997777777777777,
+          1.3658472222222222,
+          0.045899999999999996
+        ],
+        "max": [
+          0.7176394444444445,
+          1.4947555555555554,
+          0.046579999999999996
+        ]
+      },
+      "sourcePolygons": 174,
+      "surfaces": [
+        {
+          "kind": "rear",
+          "surfaceZ": 0.0435,
+          "centerX": 0.44,
+          "centerY": 1.43,
+          "widthM": 0.62,
+          "heightM": 0.186,
+          "normal": 1,
+          "copies": 1
+        }
+      ],
+      "pigments": [
+        "navy",
+        "white",
+        "red"
+      ]
+    },
+    {
+      "fit": "yardRearRight",
+      "mesh": "van_brand_yard_rear_r",
+      "vertices": 6612,
+      "triangles": 3728,
+      "bounds": {
+        "min": [
+          0.16236055555555556,
+          1.3658472222222222,
+          -0.046579999999999996
+        ],
+        "max": [
+          0.7300222222222222,
+          1.4947555555555554,
+          -0.045899999999999996
+        ]
+      },
+      "sourcePolygons": 174,
+      "surfaces": [
+        {
+          "kind": "rear",
+          "surfaceZ": -0.0435,
+          "centerX": 0.44,
+          "centerY": 1.43,
+          "widthM": 0.62,
+          "heightM": 0.186,
+          "normal": -1,
+          "copies": 1
+        }
+      ],
+      "pigments": [
+        "navy",
+        "white",
+        "red"
       ]
     }
   ],
   "materials": [
     {
-      "id": "oxide",
+      "id": "navy",
       "linearRGB": [
-        0.41254261348390375,
-        0.04091519690685319,
-        0.0202885630566524
+        0.0003035269835488375,
+        0.01520851442291271,
+        0.14126329114027164
       ],
       "frontOffsetM": 0.0026,
       "thicknessM": 0.0002,
@@ -89,11 +195,35 @@
       }
     },
     {
-      "id": "ink",
+      "id": "white",
       "linearRGB": [
-        0.008568125618069307,
-        0.016807375752887384,
-        0.012983032342173012
+        0.9130986517934192,
+        0.8796223968878317,
+        0.7912979403326302
+      ],
+      "frontOffsetM": 0.0026,
+      "thicknessM": 0.0002,
+      "pigmentLayerStepM": 0.00012,
+      "roughness": 0.79,
+      "metallic": 0,
+      "printedSurface": {
+        "version": 1,
+        "coverage": "solid",
+        "polarity": "dark-on-light",
+        "process": "owner-applied spray and brush paint"
+      },
+      "letteringFinish": {
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "localSpecular": true
+      }
+    },
+    {
+      "id": "red",
+      "linearRGB": [
+        0.5775804404296506,
+        0.005181516702338386,
+        0.027320891639074897
       ],
       "frontOffsetM": 0.0026,
       "thicknessM": 0.0002,
@@ -126,7 +256,7 @@
     "public/assets/source-drive/drive.glb"
   ],
   "validation": {
-    "method": "Actual host flank planes verified by 70 ray/triangle samples per vehicle",
+    "method": "Host side and rear skin coordinates read from production source geometry; focused tests cover normals, pigment area, attachment and flag construction",
     "pending": [
       "Final-shader ordinary-distance and moving native inspection"
     ]

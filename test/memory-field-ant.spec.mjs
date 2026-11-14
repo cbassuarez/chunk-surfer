@@ -5,6 +5,8 @@ import {antPoseAt,antGoneAt,antPathLength,antMovingAt} from '../src/game/memory-
 import {freshMemoryField,stepMemoryField,tryMemoryField,memoryFieldAntActive} from '../src/game/memory-field-scene.js';
 import {memoryFieldRenderFrame} from '../src/render/memory-field-frame.js';
 import {memoryFieldGeometry} from '../src/render/memory-field-models.js';
+import {memoryFieldAntRig} from '../src/render/memory-field-ant-rig.js';
+import {memoryFieldSlabSupport} from '../src/data/memory-field-slab.js';
 
 const visit=MEMORY_FIELD_VISIT.second;
 const run=(state,seconds,input={})=>{const events=[];for(let t=0;t<seconds;t+=.1){const r=stepMemoryField(state,visit,{dt:.1,...input});state=r.state;events.push(...r.events);}return{state,events};};
@@ -46,7 +48,7 @@ test('left to watch, it ends when the ant goes into the grass, and the wander ca
   const later=run(r.state,visit.lines[0].at+.5,{}).events;assert.ok(later.some(e=>e.text==='Warm.'),'its own lines start once he is up');
 });
 
-test('his eyes follow the ant, and the close grass and the ant are drawn only while he is down',()=>{
+test('his eyes follow the ant while he is down and the close meadow persists when he stands',()=>{
   let state=freshMemoryField(visit);({state}=run(state,20));
   const frame=memoryFieldRenderFrame(state,visit),ant=frame.props.find(p=>p.mesh.startsWith('mf_ant_')&&/^mf_ant_[01]$/.test(p.mesh));
   assert.ok(ant,'the ant is drawn');assert.ok(Math.abs(frame.eye[1]-ANT.eye)<.01);
@@ -55,5 +57,29 @@ test('his eyes follow the ant, and the close grass and the ant are drawn only wh
   const names=new Set(memoryFieldGeometry().map(r=>r.name));for(const mesh of frame.props.map(p=>p.mesh).filter(m=>m.startsWith('mf_')))assert.ok(names.has(mesh),mesh);
   const up=run(state,ANT.maxSeconds,{}).state,after=memoryFieldRenderFrame(up,visit);
   assert.ok(after.props.some(p=>p.mesh==='mf_ant_slab_top'),'the slab is still there');
-  assert.ok(!after.props.some(p=>/^mf_ant_(0|1|patch)/.test(p.mesh)),'the ant and the close grass are not');
+  assert.ok(after.props.some(p=>p.mesh==='mf_slab_grass_dark'),'standing preserves the same meadow at the slab edge');
+  assert.ok(!after.props.some(p=>p.mesh==='mf_ant_0'),'the ant has gone');
+});
+
+test('six linked legs plant on the rendered slab and retain their bone lengths across a crack',()=>{
+  const tip = matrix => [matrix[12] + matrix[8], matrix[13] + matrix[9], matrix[14] + matrix[10]];
+  const parts = time => memoryFieldAntRig(ANT,time,{groundHeight:memoryFieldSlabSupport});
+  const footfalls = time => parts(time).filter(part=>part.id.endsWith('-foot')).map(part=>tip(part.matrix));
+  const before=footfalls(12),after=footfalls(12.018);
+  assert.equal(before.length,6);
+  assert.ok(before.filter((foot,i)=>Math.hypot(...foot.map((v,axis)=>v-after[i][axis]))<1e-7).length>=3);
+
+  for(let time=23;time<24;time+=.015){
+    for(const part of parts(time)){
+      assert.ok(part.matrix.every(Number.isFinite));
+      if(part.id.endsWith('-lower')){
+        const length=Math.hypot(...part.matrix.slice(8,11));
+        assert.ok(length>.0039&&length<.0046,'guiding the feet does not stretch a jointed tibia');
+      }
+      if(part.id.endsWith('-foot')){
+        const[x,y,z]=tip(part.matrix);
+        assert.ok(y>=memoryFieldSlabSupport(x,z)-.00001,'a foot never plants below its support');
+      }
+    }
+  }
 });

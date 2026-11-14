@@ -21,12 +21,14 @@ function open(){
 function fixture({cells=4,needs=8}={}){
  open();const events=[],speech=[],calls={mic:0,stops:0,contacts:0};
  const pressure=createRecordingPressurePerformance({emit:e=>{events.push(e);return true;}}),
-  h=vm.createContext({HUNTER,REC,storyMode:true,paused:false,focused:true,hud:true,
+  h=vm.createContext({HUNTER,REC,storyMode:true,paused:false,focused:true,hud:true,takeRoom:'the_tub',
+   CUES:{playCue(){},CUE:{squelch:'squelch'}},
    gameplayInputLifecycleActive:()=>h.focused,scenes:{suppressesHud:()=>!h.hud},
    takeHunter:{...HUNTER.armTakeHunter(null,{roll:needs===6?0:needs===7?.5:1}),seconds:9,cells,warningSeconds:2.4},takeHunterClosing:true,
    MIC:{micActive:()=>true,micMaySpoil:()=>true,micEffectiveMeasurement:()=>{calls.mic++;return{effective:{rms:0}};}},
-   recordingPressurePerformance:pressure,recordingPressureFrame:()=>({takeId:'run:take:1',roomId:'main_b3',recording:REC.isRecording(),stalled:REC.isStalled(),hunter:h.takeHunter,atSec:22}),
+   recordingPressurePerformance:pressure,recordingPressureFrame:()=>({takeId:'run:take:1',roomId:'the_tub',recording:REC.isRecording(),stalled:REC.isStalled(),hunter:h.takeHunter,atSec:22}),
    SPEECH:{say:line=>speech.push(line)},CR:{fx:{flash:()=>calls.contacts++,shake(){}}},ROOM_TONE:{catchNoise:.4},px:0,py:0,
+   recordingStopConfirmation:{request:()=>false,refuse(){}},
    chapelTapeCaseAvailable:()=>true,cancelApparitionApplause(){},micCheckActive:()=>false,pressControl(){},pressPromptControl(){},
    finishRecordingSlate:()=>REC.finishSlate(),resumeInstrumentTake:()=>REC.resumeTake(),
    stopTake:()=>{calls.stops++;REC.stopRecording();},openRecorder(){}});
@@ -52,7 +54,7 @@ test('instrument HOLD freezes hunter distance, warning, quiet, forcing progress 
 test('HOLD rejects both immediate microphone arming and queued sounds crossing into the hold, then ordinary sound works after resume',()=>{
  const f=fixture(),queued=[];let now=1000;
  Object.assign(f.h,{TUT:{tutorialActive:()=>false},nightWorkBegun:()=>true,takeHunterArmedAt:0,
-  performance:{now:()=>now},queueMicrotask:fn=>queued.push(fn),takeRoom:'main_b3',currentWorld:()=> 'main_b3'});
+  performance:{now:()=>now},queueMicrotask:fn=>queued.push(fn),takeRoom:'the_tub',currentWorld:()=> 'the_tub'});
  vm.runInContext(armSource,f.h);
  REC.stallTake();const warned=structuredClone(f.h.takeHunter);f.h.armTakeHunter('held voice');
  assert.deepEqual(f.h.takeHunter,warned);assert.equal(queued.length,0);assert.equal(f.h.takeHunterArmedAt,0);assert.equal(f.speech.length,0);

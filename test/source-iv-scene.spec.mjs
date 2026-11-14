@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createSourceIVScene } from '../src/game/source-iv-scene.js';
 import {createSceneRunKey} from '../src/game/locomotion.js';
-import {createFootContactClock} from '../src/audio/foot-contact.js';
+import {createFootContactClock,footContactGait} from '../src/audio/foot-contact.js';
 import { freshSourceIV, normalizeSourceIV, stepSourceIV, sourceIVFrame, sourceIVFocus } from '../src/game/source-iv.js';
 import { SOURCE_IV as C } from '../src/data/source-iv.js';
 
@@ -199,8 +199,9 @@ test('shared IV gait matches real speed, survives look updates and cannot emit a
   const contacts=[],h=harness({onFootContact:e=>contacts.push(e)});await h.scene.initialize();
   h.scene.key({key:'w'});h.scene.update(1/60);assert.equal(contacts.length,1,'first real move plants immediately');
   for(let i=1;i<300;i++){h.scene.setLook({yaw:0,pitch:Math.sin(i/40)*.1});h.scene.update(1/60);}
-  assert.ok(contacts.length>=9&&contacts.length<=13,`the current walk yielded ${contacts.length} contacts in 5 seconds`);
-  assert.ok(contacts.every(e=>Math.abs(e.speed-C.walkSpeed)<.001&&e.strideM>.5&&e.strideM<.8));
+  const gait=footContactGait(C.walkSpeed),expected=1+Math.floor(5/gait.interval);
+  assert.ok(Math.abs(contacts.length-expected)<=1,`the current walk yielded ${contacts.length} contacts in 5 seconds; expected about ${expected}`);
+  assert.ok(contacts.every(e=>Math.abs(e.speed-C.walkSpeed)<.001&&Math.abs(e.strideM/gait.stride-1)<.05));
   assert.ok(contacts.every((e,i)=>i===0||e.footSide!==contacts[i-1].footSide));
   h.scene.keyup({key:'w'});const count=contacts.length;updateFor(h.scene,1);assert.equal(contacts.length,count);
   assert.equal(h.sounds.filter(e=>e.type==='footstep').length,0);h.scene.exit();

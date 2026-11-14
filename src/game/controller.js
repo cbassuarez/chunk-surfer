@@ -13,6 +13,8 @@ import {
 } from './bindings.js';
 import { deviceLayoutFor } from './controller-device.js';
 
+export { controllerSettings };
+
 const MOVE = Object.freeze({ up: 'move_up', down: 'move_down', left: 'move_left', right: 'move_right' });
 const REPEATABLE = new Set([...Object.values(MOVE), 'tabPrev', 'tabNext']);
 // LB has no world verb of its own since quiet became run (L3); it steps a

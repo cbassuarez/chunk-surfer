@@ -1,13 +1,17 @@
-import test from 'node:test';
+import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { makeBagScene } from '../src/game/bag.js';
 import { makeCombatScene } from '../src/game/combat.js';
 import { trainingCombatBattle } from '../src/data/combat-definitions.js';
-import { normalizeCombatBuild, PIN_SOURCES, TECHNIQUE_DEFS } from '../src/game/combat-progression.js';
+import { normalizeCombatBuild, PIN_SOURCES } from '../src/game/combat-progression.js';
 import { TECHNIQUE } from '../src/game/combat-state.js';
 import { sampleControl, controlMechanicsSnapshot, cancelControlScope } from '../src/game/control-mechanics.js';
-import { skillCapPrintLayout } from '../src/render/bag-skills.js';
+import { uiSetLayoutSize } from '../src/render/ui.js';
+import { combatActionButtonState } from '../src/render/combat-view.js';
+
+before(() => uiSetLayoutSize({ cols: 96, rows: 32 }));
+after(() => uiSetLayoutSize(null));
 
 function clock(t) {
   let now = 0;
@@ -159,46 +163,18 @@ test('combat legends follow their caps while skill labels remain fixed patch-rac
   assert.match(tool, /drawPrintedText\(face\.x/);
   assert.match(tool, /ink: cap\.ink/);
   assert.match(tool, /selected: focused/);
-  assert.match(tool, /const lit = enabled && \(counters \|\| executing\)/,
-    'the action circuit does not follow menu navigation');
+  assert.match(tool, /combatActionButtonState\(move/);
+  assert.equal(combatActionButtonState({enabled:true},{focused:false}).lit,true,
+    'the action circuit reports availability independently of the cursor');
+  assert.equal(combatActionButtonState({enabled:false},{focused:true}).lit,false,
+    'indexing an unavailable action cannot power its lamp');
   assert.match(tool, /uiText\(x \+ \.55, y \+ h - \.92/,
     'dynamic state is drawn beneath the physical cap');
-  const bag = readFileSync('src/render/bag-skills.js', 'utf8');
-  const tile = bag.slice(bag.indexOf('function drawTile'), bag.indexOf('export function drawSkillsSection'));
-  assert.match(tile, /drawPatchLabel\(/);
-  assert.doesNotMatch(tile, /drawLampButton\(|sampleControl\(|cap\.content/,
-    'a skill module is not a mechanical push button');
-  assert.doesNotMatch(tile, /uiText\(/, 'permanent rack printing never silently falls back to phosphor glyphs');
+  const strip = readFileSync('src/render/patch-channel-strip.js', 'utf8');
+  const plate = strip.slice(strip.indexOf('function paintRack'), strip.indexOf('function wrapLines'));
+  assert.match(plate, /etched\(ctx,entry\.label/);
+  assert.doesNotMatch(plate, /drawLampButton\(|sampleControl\(|cap\.content|uiText\(/,
+    'fixed rack legends do not travel with a button or use the phosphor readout');
   cancelControlScope('combat:');
   cancelControlScope('bag:');
-});
-
-test('rack print layout separates service codes and wraps long names at one readable line height', () => {
-  const face = { x: 4, y: 6, w: 10, h: 1.6 };
-  const long = skillCapPrintLayout('RUNAWAY FEEDBACK', face);
-  assert.deepEqual(long.lines.map((line) => line.text), ['RUNAWAY', 'FEEDBACK']);
-  assert.equal(long.compact, false);
-  const lineHeight = long.lines[0].h;
-  assert.ok(lineHeight * 20 * .91 >= 10, 'normal-size names retain at least ten logical pixels of nominal type');
-  for (const technique of TECHNIQUE_DEFS) {
-    const layout = skillCapPrintLayout(technique.label, face);
-    assert.equal(layout.lines.map((line) => line.text).join(' '), technique.label,
-      `${technique.label}: wrapping preserves every word`);
-    assert.ok(layout.lines.length >= 1 && layout.lines.length <= 2);
-    assert.equal(layout.lines[0].h, lineHeight, 'short and long names share the same print size');
-    for (const line of layout.lines) {
-      assert.ok(line.y >= layout.service.y + layout.service.h, 'the service code has a separate row');
-      assert.ok(line.x >= face.x && line.x + line.w <= face.x + face.w);
-      assert.ok(line.y + line.h <= face.y + face.h + 1e-9);
-    }
-  }
-  const moved = skillCapPrintLayout('RUNAWAY FEEDBACK', { ...face, y: face.y + .18 });
-  assert.ok(Math.abs(moved.lines[0].y - long.lines[0].y - .18) < 1e-9,
-    'the complete stamp preserves its relative placement when the rack layout moves');
-  assert.equal(skillCapPrintLayout('RUNAWAY FEEDBACK', { ...face, h: .7 }).compact, true,
-    'tiny surfaces use a status index and detail readout instead of microscopic lettering');
-  const source = readFileSync('src/render/bag-skills.js', 'utf8');
-  const tile = source.slice(source.indexOf('function drawTile'), source.indexOf('export function drawSkillsSection'));
-  assert.doesNotMatch(tile, /STATE_LABEL|PATCHED · NEW|NO REACH/,
-    'electrical state never rewrites the permanent rack label');
 });

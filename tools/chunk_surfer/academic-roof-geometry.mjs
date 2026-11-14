@@ -438,10 +438,15 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
     addBox(m,[-8,-5,1.97],[20,.0+10,.16],facadeBrick); // below sill, grade to gallery
     addBox(m,[-9.55,1.15,1.97],[16.9,2.30,.16],facadeBrick);
     addBox(m,[1.55,1.15,1.97],[.9,2.30,.16],facadeBrick);
-    addBox(m,[-8,4.65,1.97],[20,4.70,.16],facadeBrick);
-    // Three storey lines, thick enough for the game's dither and spaced at
-    // believable school heights. The lintels lead the eye down to the street.
-    for(const y of[-9.78,-6.64,-3.36,-.12,2.42,6.75])
+    // The public elevation ends at the fourth storey's cornice. Recess the
+    // wall behind it so the blind upper band belongs to the roof silhouette.
+    const corniceY=4.15;
+    addBox(m,[-8,(2.30+corniceY)/2,1.97],[20,corniceY-2.30,.16],facadeBrick);
+    addBox(m,[-8,(corniceY+7)/2,2.78],[20,7-corniceY,.16],roofBrick);
+    addBox(m,[-8,corniceY-.06,2.30],[20,.16,1.10],facadeBrick);
+    // Three stringcourses divide the four occupied levels. The lintels lead
+    // the eye down through the quiet stair grating to the street.
+    for(const y of[-9.78,-6.64,-3.36,-.12])
       addBox(m,[-8,y,1.84],[20,.18,.31],MAT.stone);
     for(const x of[-17.7,-12.5,-7.3,-2.1,.8])
       addBox(m,[x,-5,1.77],[.32,10,.32],facadeBrick);
@@ -450,7 +455,7 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
     // at storey lines and a deep, layered cornice below the roof. These are
     // attached reliefs against the masonry, never new bars across the drop.
     for(const x of[-17.7,-12.5,-7.3,-2.1,.8]){
-      for(const y of[-6.64,-3.36,-.12,2.42]){
+      for(const y of[-6.64,-3.36,-.12]){
         addBox(m,[x,y-.16,1.65],[.62,.16,.29],facadeStone);
         addBox(m,[x,y-.045,1.60],[.84,.09,.39],facadeStone);
         addBox(m,[x,y+.045,1.57],[.92,.075,.43],facadeStone);
@@ -458,9 +463,9 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
       addBox(m,[x,-9.54,1.65],[.65,.48,.36],facadeStone);
       addBox(m,[x,-9.24,1.61],[.75,.12,.42],facadeStone);
     }
-    for(const[y,h,depth]of[[6.40,.13,.34],[6.55,.13,.45],[6.70,.16,.58],[6.84,.10,.68]])
+    for(const[y,h,depth]of[[3.80,.13,.34],[3.95,.13,.45],[4.10,.16,.58],[4.24,.10,.68]])
       addBox(m,[-8,y,1.80],[20,h,depth],facadeStone);
-    for(let x=-17.3;x<1.3;x+=.82)addBox(m,[x,6.34,1.54],[.25,.17,.30],facadeStone);
+    for(let x=-17.3;x<1.3;x+=.82)addBox(m,[x,3.74,1.54],[.25,.17,.30],facadeStone);
     const window=(x,y,warm=false)=>{
       // The surrounding matte stone and large glass field retain a silhouette
       // from an oblique downward look, even through the open metalwork.
@@ -480,12 +485,12 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
       }
       if(warm)addBox(m,[x,y+.42,1.61],[1.76,.19,.045],gatePlate);
     };
-    for(const [row,y] of [[0,-8.25],[1,-5.08],[2,-1.88],[3,1.35],[4,4.70]])
+    for(const [row,y] of [[0,-8.25],[1,-5.08],[2,-1.88],[3,1.65]])
       for(const [col,x] of [[0,-14.8],[1,-9.65],[2,-4.5]])
         window(x,y,row===1&&col===1||row===3&&col===2);
     // Downpipe spans every storey; the lower bulkhead is the one motivated
     // light pool on this elevation (its local light is in conservatory-lights).
-    addBeam(m,[-17.2,6.2,1.56],[-17.2,-9.80,1.56],.065,zinc);
+    addBeam(m,[-17.2,3.60,1.56],[-17.2,-9.80,1.56],.065,zinc);
     addBox(m,[-9.65,-6.40,1.48],[.58,.18,.20],cageIron);
     addBox(m,[-9.65,-6.50,1.32],[.46,.12,.075],lowerSecurityLens);
     // Grade is actual north street. Broad pavement/kerb and a parked school

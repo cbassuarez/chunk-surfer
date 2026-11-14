@@ -182,6 +182,7 @@ test('live main renderer guards keep obsolete Source overlays out of the first v
     geometry: { renderPlanFor() { throw sentinel; } } };
   const context = vm.createContext({ usingSourceSpace: () => true, chunkSurfRuntime: runtime,
     px: 4, py: -100, sourceShoreOutside, sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    stationFieldScene:null,sourceObjectGlitchStatus:null,
     syncSourceDockDoorAudio() {}, syncSourceShoreAudio() {}, applySourceLighting() {},
     // The demolition medium is not active in the tested pre-void shore state.
     sourceDemolitionMediumFrame:()=>null,sourcePubEntranceFrame:()=>null,
@@ -191,9 +192,9 @@ test('live main renderer guards keep obsolete Source overlays out of the first v
       r3dSetSourceShore(value) { calls.push(['shore', value]); },
       r3dSetSourceWhiteout(value) { calls.push(['white', value]); },
       r3dSetSourceEmergency(value) { calls.push(['red', value]); },
-      r3dSetSourceFault(value) { calls.push(['fault', value]); }, r3dSetLocalLights() {}, r3dSetEmergencyShadows() {},
-    }, windowChoreography: { sourceFrame() {} } });
-  vm.runInContext(mainFunction('syncSourceRender'), context);
+      r3dSetLocalLights() {}, r3dSetEmergencyShadows() {},
+    }, windowChoreography: { sourceFault(value) { calls.push(['fault', value]); } } });
+  vm.runInContext(mainFunction('syncSourceRender').replaceAll('import.meta.env.DEV', 'false'), context);
   assert.throws(() => context.syncSourceRender(), error => error === sentinel);
   const submittedShore=calls.find(([kind]) => kind === 'shore')?.[1];
   assert.ok(submittedShore,'the real shore reaches the compositor');
@@ -275,7 +276,7 @@ test('a real mid-rise save restores exact yaw and pitch without replacing the or
         r3dFacing: () => Math.round(look.yaw / (Math.PI / 2)), r3dSetSourceSurface() {},
         r3dSetLookAngles(value) { look.yaw = value.yaw; look.pitch = value.pitch; } },
       sourceFearFloor: 0, sourcePresenceWasActive: false, sourceFinalCombatOpen: false, chunkSurfRuntime: null,
-      prewarmSourceContinuationAssets:()=>Promise.resolve(),coastalMemoryScene:null,
+      prewarmSourceContinuationAssets:()=>Promise.resolve(),warmHorizonApproach:()=>Promise.resolve(),coastalMemoryScene:null,
       px: 0, py: 0, renderMove: null, motionRig: null, trail: [],
       applyLensPreset() {}, syncSourceRender() {}, restoreFromSourceSpace() {}, windowChoreography: { sourceFrame() {} },
       CR: { fx: { hold() {} } }, saveCommit() {}, SOURCE_ENTRY: { facing: 0 },
@@ -306,7 +307,7 @@ test('away from the shore a Source save resumes facing the way it was taken, and
           r3dFacing: () => Math.round(look.yaw / (Math.PI / 2)), r3dSetSourceSurface() {},
           r3dSetLookAngles(value) { look.yaw = value.yaw; look.pitch = value.pitch; } },
         sourceFearFloor: 0, sourcePresenceWasActive: false, sourceFinalCombatOpen: false, chunkSurfRuntime: null,
-      prewarmSourceContinuationAssets:()=>Promise.resolve(),coastalMemoryScene:null,
+      prewarmSourceContinuationAssets:()=>Promise.resolve(),warmHorizonApproach:()=>Promise.resolve(),coastalMemoryScene:null,
         px: 0, py: 0, renderMove: null, motionRig: null, trail: [],
         applyLensPreset() {}, syncSourceRender() {}, restoreFromSourceSpace() {}, windowChoreography: { sourceFrame() {} },
         CR: { fx: { hold() {} } }, saveCommit() {}, SOURCE_ENTRY: { facing: 0 },

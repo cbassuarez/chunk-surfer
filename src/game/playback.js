@@ -507,6 +507,18 @@ export function forgetTake(roomId) {
   return state.takes.delete(roomId);
 }
 
+// A paid phone call writes on the existing reel. Its catch rewind must be
+// able to recover that exact material without reconstructing all tape IDs.
+export function forgetTakeForPayphone(roomId) {
+  const current = state.takes.get(roomId);
+  const overwritten = state.history.filter(take => take.roomId === roomId && !take.voided);
+  forgetTake(roomId);
+  return () => {
+    for (const take of overwritten) take.voided = false;
+    if (current && !state.takes.has(roomId)) state.takes.set(roomId, current);
+  };
+}
+
 // A spill invalidates one physical interval. Its original voices, slate and
 // place on the reel remain available for inspection; this is not the phone's
 // whole-room overwrite and does not erase earlier usable backups.

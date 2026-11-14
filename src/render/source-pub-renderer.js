@@ -147,7 +147,7 @@ export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,r
   const requiredStatics=[...Object.values(MESH),requiredDoor.frameMesh,requiredDoor.leafMesh,requiredDoor.freeStandingHeadMesh,'pub_service_tray_loaded',...PUB_HELD_PROP_MESHES].filter(Boolean);
   const sceneryResident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return [...requiredStatics,...requiredCharacters].every(mesh=>catalog.has(mesh));};
   function clearSource(){
-    renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);
+    renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);
     renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);
     renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);props.setPressureInstances?.([]);
     renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);

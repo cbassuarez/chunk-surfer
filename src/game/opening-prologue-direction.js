@@ -58,7 +58,10 @@ export function createOpeningPrologueDirection({reducedMotion=false,memoryInstan
     if(kind==='avert')return{eye:[-12,42,-97],target:[-32,38,-73],hole:[0,44,-115],shift:0,radius:1.15,departure:1};
     if(kind==='near')return{eye:[-4.8,45,-105],target:[0,44,-115],hole:[0,44,-115],shift:0,radius:1.8,departure:1};
     if(kind==='fates')return{eye:[-14,54,-97],target:[0,58,-115],hole:[0,58,-115],shift:0,radius:2.1,departure:1};
-    return{eye:[-12,42,-97],target:[0,44,-115],hole:[0,44,-115],shift:0,radius:1.15,departure:1};
+    // The complete wheels occupy the upper picture. Keep their material,
+    // scale and eye behaviour; a modest pullback and lower aim leave the
+    // five-reply exchange beneath them instead of printing through the eyes.
+    return{eye:[-16.2,42,-90.7],target:[0,34,-115],hole:[0,44,-115],shift:0,radius:1.15,departure:1};
   }
   function compose(frame,{dt=0,stage={},stageId='dark',nodeId='start',semanticPhase='road',snap=false,override=null}={}){
     const scene=frame?.scene;if(!scene?.eye)return null;

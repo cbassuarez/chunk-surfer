@@ -337,10 +337,12 @@ export function createOutskirtsExperience(initialState) {
     if(t.interior)t.interior.active=false;
     events.push({id:'outskirts-bus:rear-step',cue:'bus-body-expel',...position,strength:.55});return true;
   }
-  function action(id, cue, position, { strength, variant } = {}) {
-    if (state.actions.includes(id)) return false;
-    state.actions.push(id);
-    events.push({ id, cue, ...position, strength: strength ?? (cue === 'hatch-impact' ? .8 : .5),
+  function action(id, cue, position, { strength, variant, transient = false } = {}) {
+    if (!transient) {
+      if (state.actions.includes(id)) return false;
+      state.actions.push(id);
+    }
+    if (cue) events.push({ id, cue, ...position, strength: strength ?? (cue === 'hatch-impact' ? .8 : .5),
       ...(variant != null ? { variant } : {}) });
     return true;
   }

@@ -209,8 +209,8 @@ assert.match(mainSource,/function beginSourceTowerTransition\(\)\{[\s\S]*?GOD_LO
 
   assert.match(
     drawTextSpaceSource,
-    /const\s+recorded\s*=\s*acquired\?finishPressure\(sceneTex,\{acquired\}\):sceneTex;\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runSourceFaultPass\(recorded,\s*now\);\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runDatamoshPass\(\1,\s*now\);[\s\S]*?presentTexture\(\2\);/,
-    'the Text Space target is faulted, datamoshed, and presented in order',
+    /const\s+recorded\s*=\s*acquired\?finishPressure\(sceneTex,\{acquired\}\):sceneTex;\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runDatamoshPass\(recorded,\s*now\);[\s\S]*?presentTexture\(\1\);/,
+    'Text Space presents the recording through the authored transition pass',
   );
 }
 assert.match(rendererSource,/const TEXT_SPACE_FRAG = [\s\S]*?uniform float uRain;[\s\S]*?float moon=/,'Text Space owns its weather composition');

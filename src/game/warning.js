@@ -48,7 +48,7 @@ const PROFILE = [
 const MICROPHONE = [
   'Allow microphone use for this session?',
   '',
-  'The game measures room noise during play. You can also record a short',
+  'Room noise can expose you to HUSH. You can also record a short',
   'spoken slate with a take; that audio stays on this device.',
   'No speech recognition is used and audio is not uploaded.',
   '',

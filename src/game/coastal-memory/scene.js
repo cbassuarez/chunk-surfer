@@ -4,6 +4,7 @@ import{COASTAL_MUSIC_BOX_MECHANISM,coastalMusicBoxMechanism}from'./mechanism.js'
 import{coastalHandsMechanism}from'./winding.js';
 import{MUSIC_BOX_CONSTRUCTION}from'../../data/music-box-construction.js';
 import{VAN_WRECK,vanWreckHeadlamp,vanWreckTwistMatrix,vanWreckFoldMatrix,vanWreckHingedMatrix}from'../../data/van-wreck.js';
+import{vanBrandInstances}from'../../render/van-brand.js';
 export const COASTAL_MEMORY_ASSETS=Object.freeze({geometry:'/assets/source-drive/coastal-memory/coastal-memory.glb',metrics:'/assets/source-drive/coastal-memory/metrics.json'});
 const transform=(x=0,y=0,z=0,yaw=0,scale=[1,1,1])=>{const c=Math.cos(yaw),s=Math.sin(yaw);return[c*scale[0],0,-s*scale[0],0,0,scale[1],0,0,s*scale[2],0,c*scale[2],0,x,y,z,1];};
 const rotX=a=>[1,0,0,0,0,Math.cos(a),Math.sin(a),0,0,-Math.sin(a),Math.cos(a),0,0,0,0,1];
@@ -71,7 +72,7 @@ export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=
  // Sparse fallen bedding blocks, detached from the face and resting on the toe.
  for(let i=0;i<42;i++){const z=-130+i*8.5,x=coastalRimX(z)+4.6+(i%4)*1.3;if(z>COASTAL_BEACH.zSouth-1&&z<COASTAL_BEACH.zNorth+1)continue;add('cm_limestone_block',transform(x,-2.7+(i%3)*.45,z,i*.83,[1.2+(i%4)*.3,1.1+(i%3)*.35,1.7+(i%5)*.18]),'coastal-toe-block-'+i,8);}
  const box=L.musicBox,held=hands?.handling===true&&hands?.heldLocal?.length===16&&hands.heldLocal.every(Number.isFinite)?hands.heldLocal:null;const boxMatrix=held??transform(box.x,box.y,box.z,box.yaw??(-Math.PI/2-.16)),mechanism=held?coastalHandsMechanism(hands.winding):coastalMusicBoxMechanism(musicBoxTime);
- if(!held)add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);
+ add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);
  // Bringing it closer changes framing, never physical scale. Only the real
  // external winding key is exposed; the movement stays inside the closed case.
  add('cm_broken_music_box',boxMatrix,box.id,3);
@@ -90,5 +91,6 @@ export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=
  for(let i=0,z=COASTAL_BEACH.zSouth+3;z<COASTAL_BEACH.zNorth-2;i++,z+=2.35){if(Math.hypot(z-van[2],coastalWaterlineX(z)-van[0])<4.6)continue;const reach=.55*Math.sin(timeSec*.52+i*1.37),x=coastalWaterlineX(z)-reach,y=Math.max(.03,coastalBeachHeight(x,z)+.02);add('cm_foam_lace',transform(x,y+.035*Math.sin(timeSec*.71+i),z,.1*Math.sin(i*2.1),[.8+(i%3)*.2,1,.9]),'coastal-swash-'+i,12);}
  let wreck=null;if(includeWreck){wreck=wreckProps(worldFromLocal,vehicleMetrics);props.push(...wreck.props);{const anchor=vanWreckHeadlamp(vehicleMetrics.body.headlamps),i=VAN_WRECK.survivingHeadlamp,p=coastalWorldPoint(anchor,wreck.body);lamps.push({id:'coastal-sunken-headlamp-'+i,x:p[0],y:p[1],z:p[2],color:[1,.89,.72],intensity:5,radius:28,penetration:1,castsShadow:true,shadowYaw:Math.atan2(-wreck.body[8],wreck.body[10]),shadowPitch:Math.atan2(-wreck.body[9],Math.hypot(wreck.body[8],wreck.body[10])),direction:[-wreck.body[8],-wreck.body[9],-wreck.body[10]],coneOuterCos:.72,coneInnerCos:.94,fixture:'same van headlamp',vehicleBody:wreck.body});}}
  const anchor=p=>coastalWorldPoint(p,worldFromLocal),worldAnchors={waterOrigin:anchor([0,0,0]),roadLip:anchor([0,28,0]),headland:anchor(L.headland.spur),musicBox:anchor([box.x,box.y,box.z]),note:anchor(L.note.position),pier:anchor(pier.position),wreck:anchor(L.settledPose.position),wreckBody:coastalMultiply(worldFromLocal,COASTAL_SETTLED_BODY_LOCAL)};
+ props.push(...vanBrandInstances(props));
  return{props,lamps,worldAnchors,wreckRearFrame:wreck?.rear||null,musicBoxMechanism:mechanism,water:{kind:'coastal-memory-sea',seaY:worldAnchors.waterOrigin[1],localSeaY:0,worldFromLocal,extentLocal:{min:[-10,-210],max:[360,370]},tint:[.025,.055,.05],absorption:[.085,.042,.026],waves:[{amplitude:.16,wavelength:9.4,speed:1.15,direction:[-.91,.41]},{amplitude:.07,wavelength:3.8,speed:.69,direction:[-.7,-.71]}],timeSec,opaqueMesh:false,realHeadlamps:includeWreck?lamps.filter(l=>l.fixture==='same van headlamp'):[],qualification:'Water compositor must resolve real geometry depth and lamp scattering; foam meshes do not replace the sea.'},physical:{layout:L,surface:L.supportAt,canOccupy:L.canOccupy,barriers:L.barriers,mode},samePlace:true};
 }

@@ -66,7 +66,6 @@ import {
   SOURCE_BRACKET,
   SOURCE_HALL_END_METRES,
   SOURCE_HAYSTACK,
-  SOURCE_SEARCH_START_METRES,
   haystackFearFrame,
   haystackMovementMultiplier,
   haystackMoshFrame,
@@ -74,6 +73,8 @@ import {
   haystackRainFrame,
   sourceBracketFrame as buildSourceBracketFrame,
   sourceStandingPressure,
+  sourceSearchSpanActive,
+  haystackPaperOpportunityEligible,
 } from './source-haystack.js';
 import { LIGHT_KIND, resolveLightingContext } from '../data/conservatory-lights.js';
 import {
@@ -423,7 +424,7 @@ const SOURCE_OUTSKIRT_MESHES = Object.freeze([
 const ROUTE_DOOR_FIELD_COUNT = 16;
 // How many seeded doors in the tower's field must be walked through first.
 const TOWER_KEY_DOORS = 2;
-const TOWER_DOOR_LOCKED_LINE = 'Locked.';
+const TOWER_DOOR_LOCKED_LINE = 'Two bolts. One notch beside the first, two beside the second. Matching plates mark two return connections in the field. Both need a return.';
 // THE DOOR FIELDS ARE CORRIDORS, hedged both sides the way the yard is, street
 // trees behind the hedges, a hedge across the end behind the road's door.
 const DOOR_CORRIDOR_HALF_WIDTH = 12;
@@ -891,13 +892,16 @@ import { DOOR_ARCHETYPE } from '../data/conservatory-doors.js';
 import {
   OUTSKIRT_BEATS, OUTSKIRT_LAMP_OFF_BEHIND, OUTSKIRT_ROAD_END, OUTSKIRT_WALKABLE_MESHES,
   OUTSKIRT_STRETCH_COUNT, OUTSKIRT_STRETCH_METRES, OUTSKIRT_STRETCH_START,
-  OUTSKIRT_LAST_LIGHT, OUTSKIRT_LAST_MARK, OUTSKIRT_PASSES,
+  OUTSKIRT_LAST_LIGHT, OUTSKIRT_LAST_MARK, OUTSKIRT_LAST_THRESHOLD, OUTSKIRT_PASSES,
   OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_DOG_ENCOUNTER, OUTSKIRT_CORRIDOR,
   outskirtBeatAlong, outskirtsArrivalLayout, SOURCE_OUTSKIRTS_TOWN, outskirtsTownSet,
 } from '../data/source-outskirts-arrival.js';
 import { outskirtsFoldVisibility } from '../data/source-outskirts-folds.js';
+import { OUTSKIRTS_VAN_CRASH, outskirtsVanCrashPose } from '../data/outskirts-van-crash.js';
+import { outskirtsVanSpillInstances, outskirtsVanSpillPuddle } from './outskirts-van-spill.js';
 import { sourceOutskirtsGraffitiInstances } from './source-outskirts-graffiti.js';
 import { vanBrandInstances } from '../render/van-brand.js';
+import { VAN_WRECK, vanWreckHingedMatrix, vanWreckPoint } from '../data/van-wreck.js';
 import { OUTSKIRTS_BUS_PASSAGE as BUS_PASSAGE, busPassageFloorAt } from '../data/outskirts-bus-passage.js';
 import { sweptBusPassageRefuses, busPassageLocation, busPassageLampPower,busPassageOpening,busPassageExitAngle,busPassageBodyCrossing,busPassageTorchDirected } from './outskirts-bus-passage.js';
 import {BUS_BODY_CORRIDOR,busBodyCorridorContains,busBodyCorridorCanStep,busBodyCorridorFloorAt,busBodyCorridorProps,busBodyCorridorLights} from './bus-body-corridor.js';
@@ -908,6 +912,9 @@ import { outskirtsCollisionBoxes } from './outskirts-geometry.js';
 import { createStationRealm, normalizeStationRealmHomeState,
   stationRealmSeed, stationRealmFrame as realmFrame, moveStationRealm as moveRealm,
   beginStationRealmReturn, stationRealmAtWindow } from './station-realms.js';
+import { stationDoorDestination, normalizeStationFieldSession, normalizeStationFieldReturns, stationFieldCheckpoint,
+  stationFieldReceipt, STATION_TOWER_CONNECTIONS } from '../data/station-field-destinations.js';
+import { stationFieldVisit } from '../data/station-field-visits.js';
 import {
   normalizeSourceUnravelling, sourceUnravellingFrame, SOURCE_UNRAVELLING_HALF_WIDTH_CELLS,
 } from './source-unravelling.js';
@@ -920,11 +927,14 @@ export function createSourceSpaceRuntime({
   onScare = () => {},
 } = {}) {
   let state = normalizeChunkSurfState(initialState);
+  const legacyStationJournalMissing = !Array.isArray(initialState?.station?.entries);
   let stationClockSeconds = state.station.time;
   let stationEntries = state.station.entries;
+  let stationFieldReturns = normalizeStationFieldReturns(state.station.fieldReturns, stationEntries);
   let stationWalk = state.station.walk;
   let doorCrossing = state.station.crossing;
   let stationRealm = state.phase === CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS ? state.station.realm : null;
+  let stationField = [CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS, CHUNK_SURF_PHASE.BELLS].includes(state.phase) ? state.station.field : null;
   let stationHomeDiscovered = state.station.homeDiscovered;
   let stationHomeResolved = state.station.homeResolved;
   let stationLastReturn = state.station.lastReturn;
@@ -964,6 +974,7 @@ export function createSourceSpaceRuntime({
     }
   }
   if (coastalMemory.active && coastalMemory.returnPose) player = { ...player, ...coastalMemory.returnPose };
+  else if (stationField?.returnPose) player = { ...player, ...stationField.returnPose };
   else if (towerPersonal.active) player = { ...player, ...towerLandWorld(towerPersonal.pose) };
   // The three dials on the machine at the edge of the field. Runtime-local
   // rather than reducer state: it is set and spent inside one visit to the pad,
@@ -1008,6 +1019,8 @@ export function createSourceSpaceRuntime({
   }));
   // A resumed haystack is already past the point at which weather has arrived.
   let rainLatched = !!state.hallExperience?.rainLatched || state.phase === CHUNK_SURF_PHASE.HAYSTACK;
+  let paperWindowDelivered = state.hallExperience?.paperWindowDelivered === true;
+  let paperWindowClaim = 0, paperWindowClaimSerial = 0, paperWindowRetryAt = 0;
   let hallSnapshotElapsed = 0;
   let haystackWrongReads = 0;
   let haystackReadImpulse = 0;
@@ -1028,9 +1041,26 @@ export function createSourceSpaceRuntime({
   }));
   let sourceCorpusCache = null;
 
-  const searchSpanActiveFor = (snapshot = state) => snapshot.phase === CHUNK_SURF_PHASE.HAYSTACK
-    || (snapshot.phase === CHUNK_SURF_PHASE.HALL
-      && (Number(snapshot.hallMaxDistance) || 0) >= SOURCE_SEARCH_START_METRES);
+  const searchSpanActiveFor = (snapshot = state) => sourceSearchSpanActive(snapshot);
+
+  function claimHaystackPaperOpportunity({blocked=false}={}) {
+    if(blocked||!state.active||searchElapsed<paperWindowRetryAt||!haystackPaperOpportunityEligible({...state,delivered:paperWindowDelivered,claimed:!!paperWindowClaim}))return null;
+    paperWindowClaim=++paperWindowClaimSerial;
+    return Object.freeze({id:'source-haystack-paper',mediaId:'paper-close',token:paperWindowClaim});
+  }
+  function haystackPaperOpportunityActive(token) {
+    return !!state.active&&!!paperWindowClaim&&token===paperWindowClaim&&searchSpanActiveFor();
+  }
+  function resolveHaystackPaperOpportunity({token,shown=false,done=false}={}) {
+    if(token!==paperWindowClaim||!paperWindowClaim)return false;
+    const delivered=!!shown&&!!state.active&&searchSpanActiveFor();
+    if(delivered&&!paperWindowDelivered){
+      paperWindowDelivered=true;
+      setState({...state},{immediate:true,recordCausal:false});
+    }
+    if(done||!shown){paperWindowClaim=0;if(!shown)paperWindowRetryAt=searchElapsed+3;}
+    return delivered;
+  }
 
   function setState(next, { immediate = false, recordCausal = true } = {}) {
     const previousPhase = state.phase;
@@ -1044,10 +1074,11 @@ export function createSourceSpaceRuntime({
       markers: [...persistedUnravelling.markers, ...horizonUnravelling.markers],
     });
     state = normalizeChunkSurfState({ ...next, sourceDivide:divide, lastReception:serializeLastReceptionState(lastReception), sourceDemolition:demolition, horizon: { ...next.horizon, unravelling: horizonUnravelling }, outskirtsExperience: outskirtsExperienceSnapshot(), hallExperience: {
-      searchElapsed, pressure: standingPressure, rainLatched,
+      searchElapsed, pressure: standingPressure, rainLatched, paperWindowDelivered,
     } });
     if (state.landingWeatherSpent) landingRainRemaining = 0;
     const nextSearchSpan = searchSpanActiveFor(state);
+    if(!nextSearchSpan)paperWindowClaim=0;
     if (state.phase !== previousPhase) {
       phaseElapsed = 0;
       // HALL -> HAYSTACK is deliberately not a pressure boundary.
@@ -1729,6 +1760,7 @@ export function createSourceSpaceRuntime({
       if (phoneBoxRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'phone box' };
       // Only the active recording holds locomotion; completion releases it.
       if (lastLightHold && !lastLightOut) return { ok: false, why: 'last-light recording' };
+      if (lastLightThresholdRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'last-light threshold' };
       if (outskirtPieceRefuses(toX, toY,fromX,fromY) || towerLandRefuses(toX, toY)) return { ok: false, why: 'in the way' };
       if (doorCorridorRefuses(toX, toY)) return { ok: false, why: 'hedge' };
       if (to.ceil != null && to.ceil - to.floor < EYE + 0.2) return { ok: false, why: 'headroom' };
@@ -2130,7 +2162,7 @@ export function createSourceSpaceRuntime({
         distance: Math.hypot(chapelDoor.x - player.x, chapelDoor.y - player.y),
       };
     } else if (state.phase === CHUNK_SURF_PHASE.HALL) {
-      objective = state.hallMaxDistance >= SOURCE_SEARCH_START_METRES
+      objective = searchSpanActiveFor()
         ? { id: 'still-page', label: 'FIND THE STILL PAGE', target: haystackPagePoint(), bearingEligible: true }
         : { id: 'long-hall', label: 'FOLLOW THE PAPER FIELD', target: { x: 0, y: -(SOURCE_HALL_END_METRES / CELL) }, bearingEligible: false };
     } else if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
@@ -2253,10 +2285,9 @@ export function createSourceSpaceRuntime({
   }
 
   function hushMode() {
-    const hallSearch = state.phase === CHUNK_SURF_PHASE.HALL
-      && state.hallMaxDistance >= SOURCE_SEARCH_START_METRES;
+    const hallSearch = state.phase === CHUNK_SURF_PHASE.HALL && searchSpanActiveFor();
     const haystackHunt = state.phase === CHUNK_SURF_PHASE.HAYSTACK;
-    const searchActive = hallSearch || haystackHunt;
+    const searchActive = searchSpanActiveFor();
     const bracket = sourceBracketFrame();
     const landing = sourceLandingHushFrame();
     const protectedMoment = protectionRemaining > 0 || restartGraceRemaining > 0 || nearProtectedMoment();
@@ -2406,14 +2437,14 @@ export function createSourceSpaceRuntime({
   // corridor is the local expression of the same nervous system, so its
   // 0.64..0.985 pressure must reach the interruption director directly.
   function haystackLocalDeinhibition() {
-    if (state.phase !== CHUNK_SURF_PHASE.HAYSTACK) return 0;
+    if (!searchSpanActiveFor()) return 0;
     return clamp01(refreshStandingPressure());
   }
 
   // The corridor's own fear spike, so the Last Minutes can hold its recovery
   // while the mosh is happening instead of firing both at once.
   function haystackMoshAmount() {
-    if (state.phase !== CHUNK_SURF_PHASE.HAYSTACK) return 0;
+    if (!searchSpanActiveFor()) return 0;
     const pressure = clamp01(refreshStandingPressure());
     return haystackMoshFrame({ elapsed: searchElapsed, seed: state.seed, pressure }).amount;
   }
@@ -3383,7 +3414,16 @@ export function createSourceSpaceRuntime({
         captureMovementAnchor=null;
       }
     }
-    if(state.phase===CHUNK_SURF_PHASE.HORIZON)return;
+    if(state.phase===CHUNK_SURF_PHASE.HORIZON){
+      const gate = OUTSKIRT_LAST_THRESHOLD.gateAlong;
+      if (outskirtsAlong(from.y) < gate && outskirtsAlong(to.y) >= gate) {
+        lastBackstopAt = edgeDoorClock();
+        const x = (landscapeOrigin().x + .5) * CELL;
+        const z = (to.y + .5) * CELL + outskirtsAlong(to.y) - gate;
+        outskirtsQueue.push({ id: 'last-light-backstop', cue: 'goods-door-shut', position: { x, z } });
+      }
+      return;
+    }
     if (state.phase === CHUNK_SURF_PHASE.BELLS) {
       eraseCrossedDoors(from, to);
       if (coastalMemory.active) return { handled: true, event: 'coastal-entry', checkpoint: coastalMemoryState(), position: { ...coastalMemory.returnPose } };
@@ -3517,9 +3557,17 @@ export function createSourceSpaceRuntime({
       }
       if (piece && (!piece.door.route || piece.door.route === 'chapel') && !doorsLooked.has(focus.id)) {
         doorsLooked.add(focus.id);
+        const destination = piece.door.destination;
         return {
           handled: true, event: 'door-field-look', id: focus.id, archetype: piece.assembly.archetype,
-          world: ELSEWHERE_WORLDS[piece.door.variant]?.id || null, opened: doorOpened(piece), shut: !!piece.door.shut, text: '',
+          world: destination?.kind === 'field' ? `field:${destination.fieldId}` : ELSEWHERE_WORLDS[piece.door.variant]?.id || null,
+          destination: destination ? { ...destination } : null, fieldId: destination?.fieldId || null,
+          connectionId: destination?.connectionId || null, opened: doorOpened(piece), shut: !!piece.door.shut,
+          line: destination?.connectionNumber ? `The plate bears ${destination.connectionNumber === 1 ? 'one notch' : 'two notches'}, matching a bolt on the tower door. Beyond it is the field. A connection that returns here.`
+            : destination?.kind === 'field' ? 'Grass. The same field, at a different hour. An open way back stands just beyond the threshold.'
+              : destination?.kind === 'coastal' ? 'A bank above the sea. Something small keeps turning there.'
+                : destination?.kind === 'home' ? 'A house in snow. The handle is cold. It does not turn yet.' : undefined,
+          text: '',
         };
       }
       return { ...openDoorFieldDoor(focus.id), text: '' };
@@ -4448,6 +4496,7 @@ export function createSourceSpaceRuntime({
           zone: ZONE.sourceSpace,
           structural: true,
           sourceStructure: placement.id,
+          sourceGlitchEligible: placement.kind==='braided-model',
         }, { structureKind: placement.kind }));
       });
     }
@@ -4924,10 +4973,23 @@ export function createSourceSpaceRuntime({
   const inStreetRemnantView = () => state.phase === CHUNK_SURF_PHASE.HORIZON
     && player.y - landscapeOrigin().y <= SOURCE_PRE_TAPE.from
     && player.y - landscapeOrigin().y >= SOURCE_HORIZON.to;
-  function streetPieceVisible(){return true;}
+  const crashImpactReceipt = 'van-crash:impact';
+  const crashStartAlong = OUTSKIRT_STRETCH_START + OUTSKIRTS_VAN_CRASH.pass * OUTSKIRT_STRETCH_METRES;
+  let outskirtsVanCrashElapsed = null;
+  function streetPieceVisible(piece) {
+    if (!piece.vanCrash) return true;
+    if (outskirtsVanCrashElapsed != null) return outskirtsVanCrashElapsed >= OUTSKIRTS_VAN_CRASH.wreckAt;
+    return streetExperience.hasAction(crashImpactReceipt)
+      || (!payphoneRoadLoopHolding && outskirtsAlong() > crashStartAlong + OUTSKIRTS_VAN_CRASH.recoverPast);
+  }
   function streetRenderPieces() {
     const pieces = outskirtPieces();
     return [...pieces, ...outskirtCache.remnants];
+  }
+  function outskirtsRoadPieceForPass(piece, pass) {
+    return pass === OUTSKIRTS_VAN_CRASH.pass
+      ? !!(piece.m62Scenery || piece.vanCrash)
+      : !piece.m62Extension;
   }
   // Metres along the road from its first metre: negative on the still stretch.
   const outskirtsAlong = (py = player.y) => (landscapeOrigin().y + edgeDoorPlaneY()) * CELL - roadStartMetres()
@@ -4985,6 +5047,18 @@ export function createSourceSpaceRuntime({
   }
   function outskirtMatrix(piece, { px, py, viewYaw = null, reducedMotion = false }) {
     const eye = outskirtsEye(px, py);
+    if (piece.vanCrash && outskirtsVanCrashElapsed != null && outskirtsVanCrashElapsed < OUTSKIRTS_VAN_CRASH.duration) {
+      const frame = outskirtsVanCrashFrame(reducedMotion);
+      if (frame?.wreck) {
+        const pose = { ...frame, y: frame.y + outskirtsHeight() };
+        if (piece.key === 'van') return sourceMatrix(pose);
+        const { rest } = OUTSKIRTS_VAN_CRASH;
+        const dx = piece.across - rest.across, dz = frame.restZ - piece.z;
+        const c = Math.cos(rest.yaw), s = Math.sin(rest.yaw);
+        return mul(sourceMatrix({ ...pose, scaleY: 1, scaleZ: 1 }), sourceMatrix({
+          x: dx * c + dz * s, y: piece.y - rest.y, z: dx * s - dz * c, yaw: piece.yaw - rest.yaw }));
+      }
+    }
     let x = piece.x, z = piece.z, yaw = piece.yaw;
     const dogHandler = piece.key === OUTSKIRT_DOG_ENCOUNTER.handlerKey;
     // `visible` starts unknown, not true: a watcher that is out of view on the
@@ -5026,7 +5100,9 @@ export function createSourceSpaceRuntime({
     }
     const shape = { yaw, pitch: piece.pitch || 0, roll: piece.roll || 0,
       scaleX:(piece.scaleX??1)*(piece.scale??1),scaleY:(piece.scaleY??1)*(piece.scale??1),scaleZ:(piece.scaleZ??1)*(piece.scale??1) };
-    const height = outskirtsHeight() + (Number(piece.y) || 0);
+    const backstopRise = piece.lastBackstop && !reducedMotion && lastBackstopAt != null
+      ? smoothstep(0, .42, edgeDoorClock() - lastBackstopAt) : 1;
+    const height = outskirtsHeight() + (Number(piece.y) || 0) - (1 - backstopRise) * 1.42;
     // One gravity for the complete return, applied after each actual model's
     // local yaw. Rotating local roll alone breaks the van/gate/lamp contacts.
     return piece.folded ? mul(translate(x, height, z), mul(rotZ(piece.foldRoll), sourceMatrix(shape)))
@@ -5042,12 +5118,15 @@ export function createSourceSpaceRuntime({
   function preTapeInstances(px, py, options = {}) {
     if (!inStreetRemnantView() && !recordedOutskirtsPresentation()) return [];
     const eye = outskirtsEye(px, py);
+    const pass = outskirtsPassAt(py);
+    const motorway = pass === OUTSKIRTS_VAN_CRASH.pass;
     const foldVisibility = outskirtsFoldVisibility(outskirtsPerceptualAlong(py));
     // The unanswered call needs one readable place. Prefetched lateral returns
     // may remain in the scenery cache, but never intrude on this quiet loop.
-    const quietPhoneReturn = outskirtsPassAt(py) === PAYPHONE_LOOP_ROUTE.pass;
+    const quietPhoneReturn = pass === PAYPHONE_LOOP_ROUTE.pass;
     const out = streetRenderPieces()
-      .filter((piece) => (!piece.folded || (!quietPhoneReturn && foldVisibility > 0)) && streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
+      .filter((piece) => outskirtsRoadPieceForPass(piece, pass) && (!piece.folded || (!quietPhoneReturn && foldVisibility > 0)) && streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
+        && (!piece.lastBackstop || outskirtsAlong() >= OUTSKIRT_LAST_THRESHOLD.gateAlong)
         && !(piece.encounter==='bus-close'&&/^bus-woman/.test(piece.key)&&streetExperience.busTransitState().openAt!=null&&streetExperience.busTransitState().clock-streetExperience.busTransitState().openAt>=.32)
         && !(piece.encounter === 'wrong-fold' && streetExperience.characterFrame().fold.phase === 'spent'))
       .flatMap((piece) => {
@@ -5077,7 +5156,8 @@ export function createSourceSpaceRuntime({
           id: piece.id, mesh: piece.key === 'booth-ledger' && (streetWorld.ledgerSigned || piece.stretch >= 15) ? 'outskirts_ledger_signed' : piece.mesh, matrix,
           ...(piece.fallbackMesh?{fallbackMesh:piece.fallbackMesh}:{}),
           ...(piece.folded ? { outskirtsFoldVisibility: foldVisibility, noShadow: foldVisibility < 1 } : {}),
-          ...(piece.glow ? { emissive: [...piece.glow] } : lamp ? { emissive: [1, 0.72, 0.42,
+          ...(piece.vanCrash && piece.key === 'van' ? { emissive: [.78, .81, .77, .073] }
+            : piece.glow ? { emissive: [...piece.glow] } : lamp ? { emissive: [1, 0.72, 0.42,
             piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 0.2 * level : 0.06] } : {}),
           zone: ZONE.sourceSpace, structural: !piece.character && piece.encounter !== 'wrong-fold', sourceStructure: piece.remnant ? 'street-remnant' : 'outskirts',
           ...(piece.encounter === 'wrong-fold' ? { character: foldCharacterFrame(options.reducedMotion) } : character ? { character } : {}),
@@ -5090,9 +5170,12 @@ export function createSourceSpaceRuntime({
           reducedMotion: !!options.reducedMotion,
         })) : [instance];
       });
+    out.push(...outskirtsVanCrashInstances(eye, options.reducedMotion));
     // The current Ellery frontage and roofline are fixed canonical context in
     // the initial group above. No building follows the observer down the road.
-    return [...out, ...sourceOutskirtsGraffitiInstances(out), ...vanBrandInstances(out), ...streetDetailInstances(px, py, options, out), ...doubleInstances(px, py, options), ...(inOutskirtsView()
+    const detail = [...vanBrandInstances(out), ...streetDetailInstances(px, py, options, out)];
+    if (motorway) return [...out, ...detail];
+    return [...out, ...sourceOutskirtsGraffitiInstances(out), ...detail, ...doubleInstances(px, py, options), ...(inOutskirtsView()
       ? [...edgeDoorInstances(px, py, options), ...phoneBoxInstances(px, py, options), ...flurryInstances(px, py, options), ...phantomInstances()] : [])];
   }
 
@@ -5135,6 +5218,7 @@ export function createSourceSpaceRuntime({
   // lastLightOut: the light has failed (the recording is over). lastLightHold:
   // the recording is playing, and he stays in the light.
   let lastLightOut = streetExperience.playback().done, lastLightHold = false;
+  let lastBackstopAt = null;
   // A faulty sodium lamp: on, mostly, then catching, then gone for a moment.
   function faultyLightLevel(now = (globalThis.performance?.now?.() ?? Date.now()) / 1000) {
     if (lastLightOut) return 0;
@@ -5152,6 +5236,23 @@ export function createSourceSpaceRuntime({
   function setLastLightPlayback(value) { streetExperience.setPlayback(value); }
   function setLastLightOut(out = true) { lastLightOut = !!out; return lastLightOut; }
   function setLastLightHold(hold = true) { lastLightHold = !!hold; return lastLightHold; }
+  function lastLightThresholdRefuses(fromX, fromY, toX, toY) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
+    const { fromAlong, gateAlong, throatAlong, outerAcross, railAcross, railsEndAlong } = OUTSKIRT_LAST_THRESHOLD;
+    const from = outskirtsAlong(fromY), to = outskirtsAlong(toY);
+    if (from < fromAlong && to < fromAlong) return false;
+    const axis = landscapeOrigin().x;
+    const before = Math.abs(fromX - axis) * CELL, after = Math.abs(toX - axis) * CELL;
+    if (from >= gateAlong && to < gateAlong && before <= railAcross) return true;
+    if (to < fromAlong || to >= railsEndAlong) return false;
+    const width = along => outerAcross + (railAcross - outerAcross)
+      * clamp01((along - fromAlong) / (throatAlong - fromAlong));
+    if (after <= width(to)) return false;
+    // Older saves outside the new guide can step back to its mouth or move
+    // inward to rejoin the route.
+    const outside = from >= fromAlong && from < railsEndAlong && before > width(from);
+    return !outside || to > from || (to === from && after >= before);
+  }
   // Where he stands once the light has gone: just onto the head of the tape.
   function outskirtsTapeHead() {
     const o = landscapeOrigin();
@@ -5219,6 +5320,105 @@ export function createSourceSpaceRuntime({
     const c = Math.cos(piece.yaw), s = Math.sin(piece.yaw);
     return { x: piece.x + lx * c + lz * s, z: piece.z - lx * s + lz * c };
   }
+  function outskirtsVanCrashFrame(reducedMotion = false) {
+    const { pass, duration, rest, recoverPast, impact, bumper, spillAt } = OUTSKIRTS_VAN_CRASH;
+    if (!inOutskirtsView() || payphoneRoadLoopHolding || Math.abs(outskirtsAlong() - crashStartAlong) > 80) return null;
+    const piece = outskirtPieces().find(piece => piece.key === 'van' && piece.vanCrash);
+    if (!piece) return null;
+    const spent = streetExperience.hasAction(crashImpactReceipt);
+    const fired = outskirtsVanCrashElapsed != null || spent;
+    const elapsed = outskirtsVanCrashElapsed ?? (spent || outskirtsAlong() > crashStartAlong + recoverPast ? duration : null);
+    if (elapsed == null) return { pass, phase: 'waiting', elapsed, fired };
+    const pose = outskirtsVanCrashPose(elapsed, reducedMotion);
+    const ground = outskirtsHeight(), x = piece.x + pose.across - rest.across, z = piece.z - (pose.along - rest.along);
+    const body = sourceMatrix({ ...pose, x, y: ground + pose.y, z });
+    const impactBody = sourceMatrix({ ...impact, x: piece.x + impact.across - rest.across,
+      y: ground + impact.y, z: piece.z - (impact.along - rest.along) });
+    const point = (matrix, [x, y, z]) => ({ x: matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12],
+      y: matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13],
+      z: matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14] });
+    const contact = point(impactBody, bumper);
+    const outlet = { ...point(body, [.06, .46, 2.59]), yaw: pose.yaw + .52 };
+    const restBody = sourceMatrix({ ...rest, x: piece.x, y: ground + rest.y, z: piece.z });
+    const restOutlet = { ...point(restBody, [.06, .46, 2.59]), yaw: rest.yaw + .52 };
+    return { ...pose, pass, elapsed, fired, restZ: piece.z, x, z, worldY: ground + pose.y,
+      contact, outlet, restOutlet, spillElapsed: elapsed - spillAt };
+  }
+  function tickOutskirtsVanCrash(dt, along, viewYaw) {
+    const { firstTrigger, lastTrigger, recoverPast, impactAt, doorAt, spillAt, duration } = OUTSKIRTS_VAN_CRASH;
+    const local = along - crashStartAlong;
+    if (outskirtsVanCrashElapsed == null) {
+      if (streetExperience.hasAction(crashImpactReceipt) || payphoneRoadLoopHolding || local < firstTrigger) return false;
+      if (local > recoverPast) return local < OUTSKIRT_STRETCH_METRES
+        && streetExperience.action(crashImpactReceipt);
+      if (local < lastTrigger && Math.cos(viewYaw) < .64) return false;
+      // A save made in flight may resume down the road from its trigger.
+      // Pick up at a later point in the fall so the impact stays ahead.
+      outskirtsVanCrashElapsed = Math.min(impactAt - .38, Math.max(0, (local - lastTrigger) / 6.5));
+      const frame = outskirtsVanCrashFrame();
+      streetExperience.action('van-crash:approach', 'van-crash-approach',
+        { x: frame.x, y: frame.worldY, z: frame.z }, { strength: .98, transient: true });
+      return false;
+    }
+    if (outskirtsVanCrashElapsed >= duration) return false;
+    const before = outskirtsVanCrashElapsed;
+    outskirtsVanCrashElapsed = Math.min(duration, before + dt);
+    const frame = outskirtsVanCrashFrame();
+    let changed = false;
+    if (before < impactAt && outskirtsVanCrashElapsed >= impactAt && frame) {
+      changed = streetExperience.action(crashImpactReceipt, 'van-crash-impact', frame.contact, { strength: 1 });
+    }
+    if (before < doorAt && outskirtsVanCrashElapsed >= doorAt && frame) {
+      changed = streetExperience.action('van-crash:settle', 'van-crash-settle', frame.outlet, { strength: .76 }) || changed;
+    }
+    if (before < spillAt && outskirtsVanCrashElapsed >= spillAt && frame) {
+      changed = streetExperience.action('van-crash:spill', 'van-crash-spill', frame.outlet, { strength: .92 }) || changed;
+    }
+    return changed;
+  }
+  function outskirtsVanCrashInstances(eye, reducedMotion) {
+    const frame = outskirtsVanCrashFrame(reducedMotion);
+    if (frame?.elapsed == null || Math.hypot(frame.x - eye.x, frame.z - eye.z) > 70) return [];
+    const height = outskirtsHeight(), out = [];
+    const part = (id, mesh, matrix, emissive, fallback) => out.push({ id: `outskirts-van-crash:${id}`, mesh, matrix,
+      zone: ZONE.sourceSpace, sourceStructure: 'outskirts', structural: mesh !== 'set_beam',
+      ...(emissive ? { emissive } : {}), ...(mesh === 'set_beam' ? { noShadow: true } : {}), ...fallback });
+    if (!frame.wreck) {
+      const body = sourceMatrix({ ...frame, y: height + frame.y });
+      const fill = [.80, .84, .79, .11];
+      part('body', 'drive_vehicle_body', body, fill, { fallbackMesh: 'yard_van',
+        fallbackTransform: { matrix: mul(body, sourceMatrix({ z: .38, scaleX: .91, scaleY: .80, scaleZ: .78 })) } });
+      part('cab', 'drive_cabin', mul(body, sourceMatrix({ z: VAN_WRECK.cabinMount[2] })), fill);
+      for (const [side, sign] of [['l', -1], ['r', 1]]) {
+        for (const [axle, z] of [['front', -1.30], ['rear', 1.535]]) {
+          part(`wheel-${side}-${axle}`, 'drive_tyre', mul(body, sourceMatrix({ x: sign * .83, y: .33, z })));
+        }
+        part(`headlamp-${side}`, 'set_beam', mul(body, sourceMatrix({
+          x: sign * .63, y: .84, z: -2.25, scaleX: .25, scaleY: .14, scaleZ: .060,
+        })), [1, .83, .55, frame.phase === 'impact' ? 1.3 : 3.2]);
+      }
+    }
+    if (frame.spillElapsed >= 0) out.push(...outskirtsVanSpillInstances({ elapsed: frame.spillElapsed,
+      outlet: frame.outlet, restOutlet: frame.restOutlet, floor: height + .039,
+      reducedMotion, matrix: sourceMatrix, zone: ZONE.sourceSpace }));
+    const { impactAt } = OUTSKIRTS_VAN_CRASH;
+    const age = frame.elapsed - impactAt;
+    if (age < 0 || age > .52) return out;
+    // Ejected where the bumper strikes the tarmac. Travel stays near the road.
+    const contact = frame.contact;
+    for (let i = 0; i < (reducedMotion ? 6 : 17); i++) {
+      const duration = .24 + rand(state.seed, i, 941) * .28;
+      if (age >= duration) continue;
+      const dx = 1.3 + rand(state.seed, i, 942) * 8.5, dz = 1 + (rand(state.seed, i, 943) - .5) * 9.2;
+      const lift = 1.6 + rand(state.seed, i, 944) * 2.1;
+      const y = height + .08 + lift * age - 4.9 * age * age;
+      if (y <= height) continue;
+      part(`spark-${i}`, 'set_beam', sourceMatrix({ x: contact.x + dx * age,
+        y, z: contact.z + dz * age, yaw: Math.atan2(dx, dz), pitch: -.28,
+        scaleX: .064, scaleY: .064, scaleZ: .34 + .24 * (1 - age / duration) }), [1, .62, .25, 4 * (1 - age / duration)]);
+    }
+    return out;
+  }
   function foldCharacterFrame(reducedMotion = false) {
     const fold = streetExperience.characterFrame().fold;
     // Reduced motion retains the impossible endpoint without sustained writhing.
@@ -5238,7 +5438,7 @@ export function createSourceSpaceRuntime({
     if (applied) recordedCharacterPresentation = streetExperience.characterFrame();
     return applied;
   }
-  function tickOutskirtsCharacters(dt, { viewYaw = 0, pitch = 0, reducedMotion = false, suspended = false, moving, speed } = {}) {
+  function tickOutskirtsCharacters(dt, { viewYaw = 0, pitch = 0, reducedMotion = false, suspended = false, moving, speed, crashDt = dt } = {}) {
     // A resumed live simulation takes its own position back. Suspended replay
     // ticks never replace the recorded operator with the observer's position.
     const replayed = !!recordedCharacterPresentation;
@@ -5285,9 +5485,10 @@ export function createSourceSpaceRuntime({
       || (result.frame.busTransit.noticeAt!=null&&!result.frame.busTransit.exited);
     const checkpoint = !suspended && dt > 0 && (womanActive || (foldActive && lodge && Math.hypot(eye.x - lodge.x, eye.z - lodge.z) < 18))
       && result.frame.clock - characterCheckpointClock >= 2;
-    if (result.transition || checkpoint || passCheckpoint || womanCue) {
+    const crashChanged = !suspended && crashDt > 0 && tickOutskirtsVanCrash(crashDt, along, viewYaw);
+    if (result.transition || checkpoint || passCheckpoint || womanCue || crashChanged) {
       characterCheckpointClock = result.frame.clock;
-      setState(state, { immediate: true, recordCausal: passCheckpoint || structuralChange || womanCue });
+      setState(state, { immediate: true, recordCausal: passCheckpoint || structuralChange || womanCue || crashChanged });
     }
     streetReducedMotion = reducedMotion;
     return result.frame;
@@ -5365,12 +5566,12 @@ export function createSourceSpaceRuntime({
     const losing = outskirtsLosing(), nearest = new Map();
     for (const p of outskirtPieces()) {
       const kind = p.key === 'bus' ? 'bus' : p.key === 'booth' ? 'lodge' : p.key === 'car' ? 'car' : null;
-      if (!kind || p.unfinished) continue;
+      if (!kind || p.unfinished || !outskirtsRoadPieceForPass(p, pass)) continue;
       const distance = Math.hypot(p.x - eye.x, p.z - eye.z);
       if (distance > 28 || nearest.get(kind)?.distance <= distance) continue;
       nearest.set(kind, { id: p.id, kind, x: p.x, z: p.z, distance, gain: Math.max(0, 1 - losing * 1.2) * (kind === 'lodge' ? .65 : .45), pass: p.stretch });
     }
-    return { beds: [...nearest.values()], events: streetExperience.events(),
+    return { beds: [...nearest.values()], events: streetExperience.events(), vanCrash: outskirtsVanCrashFrame(reducedMotion),
       encounter: { id: 'bus', stage: streetExperience.busStage(), pass: OUTSKIRT_BUS_ENCOUNTER.pass }, along, pass };
   }
   function streetBusLocal(bus,eye){
@@ -5530,6 +5731,7 @@ export function createSourceSpaceRuntime({
   }
   function streetDetailInstances(px, py, { time = edgeDoorClock(), reducedMotion = false } = {}, renderedParents = []) {
     const eye = outskirtsEye(px, py), height = outskirtsHeight(), out = [];
+    const pass = outskirtsPassAt(py);
     const parentMatrices = new Map(renderedParents.map((instance) => [instance.id, instance.matrix]));
     const part = (piece, id, mesh, lx, ly, lz, { yaw = 0, scaleY = 1, emissive, parentMatrix } = {}) => {
       const at = streetAnchor(piece, lx, lz);
@@ -5540,7 +5742,7 @@ export function createSourceSpaceRuntime({
         zone: ZONE.sourceSpace, structural: true, sourceStructure: 'outskirts', ...(emissive ? { emissive } : {}) });
     };
     for (const p of outskirtPieces()) {
-      if (!streetPieceVisible(p) || p.unfinished || Math.hypot(p.x - eye.x, p.z - eye.z) > 65) continue;
+      if (!outskirtsRoadPieceForPass(p, pass) || !streetPieceVisible(p) || p.unfinished || Math.hypot(p.x - eye.x, p.z - eye.z) > 65) continue;
       if (p.key === 'bus' && p.mesh === 'outskirts_bus') {
         part(p, 'door', 'outskirts_bus_door', -1.245, .5, -3.7, { yaw: -busDoorAngle(p, time) });
       }
@@ -5562,17 +5764,36 @@ export function createSourceSpaceRuntime({
         }
       }
       if (p.key === 'van') {
-        part(p, 'step', 'outskirts_van_step', 0, 0, 0);
-        // Both real leaves belong to every van, not only the opening scene.
-        part(p, 'door-l', 'yard_van_door_l', -1.1, .64, 2.34, { yaw: -1.72 });
-        part(p, 'door-r', 'yard_van_door_r', 1.1, .64, 2.34, { yaw: Math.PI + 1.72 });
-        if (!streetWorld.letterFound && p.stretch >= 6) part(p, 'letter', 'outskirts_letter', .25, 1.12, 1.5);
-        if (streetWorld.letterPosted && p.stretch > Number(streetWorld.letterPostedAt || 0) + 1) part(p, 'returned-letter', 'outskirts_letter', .1, 1.13, .8, { yaw: .2 });
-        if (streetWorld.ticketAsked && !streetWorld.ticketFound && p.stretch >= 8) part(p, 'ticket', 'outskirts_ticket', -.5, 1.33, 1.5);
+        if (p.vanCrash) {
+          const body = parentMatrices.get(p.id);
+          const door = outskirtsVanCrashFrame(reducedMotion)?.door ?? 1;
+          if (body) {
+            const mounted = (key, local) => out.push({ id: `${p.id}:${key}`, mesh: VAN_WRECK.meshes[key],
+              matrix: mul(body, local), emissive: [.78, .81, .77, .063], zone: ZONE.sourceSpace,
+              structural: true, sourceStructure: 'outskirts' });
+            mounted('cabDoorNear', vanWreckHingedMatrix('cabDoorNear'));
+            const rotateRear = (hinge, at, angle) => mul(translate(...at), mul(rotY(angle), translate(...hinge.map(v => -v))));
+            const right = VAN_WRECK.pieces.rearDoorFar.pivot;
+            mounted('rearDoorFar', rotateRear(right, vanWreckPoint(right), VAN_WRECK.hinges.rearDoorFar.angle * door));
+            // The other leaf is already bent in the pack. Its pivot is in
+            // those deformed coordinates, so the dent follows the opening.
+            const left = vanWreckPoint([-.95, 1.10, 2.50]);
+            mounted('rearDoor', rotateRear(left, left, 1.47 * door));
+          }
+        } else {
+          part(p, 'step', 'outskirts_van_step', 0, 0, 0);
+          // Both real leaves belong to every van, not only the opening scene.
+          part(p, 'door-l', 'yard_van_door_l', -1.1, .64, 2.34, { yaw: -1.72 });
+          part(p, 'door-r', 'yard_van_door_r', 1.1, .64, 2.34, { yaw: Math.PI + 1.72 });
+        }
+        const parentMatrix = p.vanCrash ? parentMatrices.get(p.id) : undefined;
+        if (!streetWorld.letterFound && p.stretch >= 6) part(p, 'letter', 'outskirts_letter', .25, 1.12, 1.5, { parentMatrix });
+        if (streetWorld.letterPosted && p.stretch > Number(streetWorld.letterPostedAt || 0) + 1) part(p, 'returned-letter', 'outskirts_letter', .1, 1.13, .8, { yaw: .2, parentMatrix });
+        if (streetWorld.ticketAsked && !streetWorld.ticketFound && p.stretch >= 8) part(p, 'ticket', 'outskirts_ticket', -.5, 1.33, 1.5, { parentMatrix });
       }
       if (p.key === 'bin' && Math.floor(p.stretch / 5) === 1 && streetWorld.ticketAsked && !streetWorld.ticketFound) part(p, 'return-half', 'outskirts_ticket', 0, .95, 0);
     }
-    return out;
+    return [...out,...vanBrandInstances(out)];
   }
 
   // THE WET ROAD: what the renderer needs to mirror the scene in the puddles. The
@@ -5583,10 +5804,13 @@ export function createSourceSpaceRuntime({
     const along = presentation?.along ?? outskirtsAlong();
     const light = outskirtPieces().find((piece) => piece.faulty);
     const wear = Math.max(0, Math.min(1, ((presentation?.along ?? outskirtsPerceptualAlong()) - OUTSKIRT_STRETCH_START) / (OUTSKIRT_ROAD_END - OUTSKIRT_STRETCH_START)));
+    const motorway = (presentation?.pass ?? outskirtsPassAt()) === OUTSKIRTS_VAN_CRASH.pass;
+    const crash = motorway ? outskirtsVanCrashFrame() : null;
+    const spill = crash?.restOutlet ? outskirtsVanSpillPuddle(crash.spillElapsed, crash.restOutlet) : null;
+    const puddle = spill ?? (light ? [light.x + Math.cos(light.yaw) * 1.6, light.z - Math.sin(light.yaw) * 1.6, 3.4] : [0, 0, 0]);
     return {
-      active: true, groundY: outskirtsHeight() + 0.02,
-      puddle: light ? [light.x + Math.cos(light.yaw) * 1.6, light.z - Math.sin(light.yaw) * 1.6, 3.4] : [0, 0, 0],
-      wet: 0.35 + wear * 0.55,
+      active: true, groundY: outskirtsHeight() + (motorway ? .025 : .02),
+      puddle, wet: 0.35 + wear * 0.55,
     };
   }
   // THE DOUBLE. Him, a pass ahead, on his line and looking where he looks, seen
@@ -5670,6 +5894,7 @@ export function createSourceSpaceRuntime({
   function outskirtInspectFocus() {
     if (!inOutskirtsView()) return [];
     const eye = outskirtsEye();
+    const pass = outskirtsPassAt();
     // A bus is nine metres long and the lodges stand eight metres off the road:
     // measured from its middle, a fixed radius meant standing on the road was
     // too far to look at either. Each piece reaches as far as its own footprint
@@ -5683,7 +5908,7 @@ export function createSourceSpaceRuntime({
       return { x: piece.x + lx * c + lz * s, z: piece.z - lx * s + lz * c };
     };
     return outskirtPieces()
-      .filter((piece) => piece.inspect && streetPieceVisible(piece) && !outskirtUnseen.get(piece.id)?.gone
+      .filter((piece) => piece.inspect && outskirtsRoadPieceForPass(piece, pass) && streetPieceVisible(piece) && !outskirtUnseen.get(piece.id)?.gone
         // A small thing inside a bigger one (the bag in the van) has to be leant in to.
         && Math.hypot(anchor(piece).x - eye.x, anchor(piece).z - eye.z) <= (Number.isFinite(piece.closeReach) ? piece.closeReach : Math.min(3, reachM(piece) + 1))
         && outskirtsSightClear(eye, { ...anchor(piece), id: piece.id, stretch: piece.stretch, key: piece.key }))
@@ -5732,7 +5957,7 @@ export function createSourceSpaceRuntime({
   function flurryFocus() {
     // A page out of the air is what there is to look at only when nothing else
     // on the road is in reach: it never takes the van, the bin or the box from him.
-    if (outskirtsFlurry <= 0.2 || !inOutskirtsView() || outskirtInspectFocus().length) return [];
+    if (outskirtsFlurry <= 0.2 || !inOutskirtsView() || outskirtsPassAt() === OUTSKIRTS_VAN_CRASH.pass || outskirtInspectFocus().length) return [];
     const eye = outskirtsEye();
     return [{ kind: 'outskirt-piece', id: 'outskirts-flurry', inspect: 'page-flurry', stretch: outskirtsPassAt(), x: eye.x / CELL - 0.5, y: eye.z / CELL - 1.5, focusPriority: 6, focusRadius: 4 }];
   }
@@ -5771,7 +5996,7 @@ export function createSourceSpaceRuntime({
   // standing in one, that one, however the road around it is measured.
   let phoneBoxHeld = null;
   function phoneBoxPiece() {
-    if (!inOutskirtsView()) return null;
+    if (!inOutskirtsView() || outskirtsPassAt() === OUTSKIRTS_VAN_CRASH.pass) return null;
     const boxes = outskirtPieces().filter((entry) => entry.payphone);
     if (phoneBoxInside && phoneBoxHeld) return boxes.find((entry) => entry.id === phoneBoxHeld) || null;
     const eye = outskirtsEye();
@@ -5915,7 +6140,7 @@ export function createSourceSpaceRuntime({
       }
     };
     for (const piece of outskirtCache.pieces) {
-      if (walkable.has(piece.mesh) || piece.payphone) continue;
+      if (walkable.has(piece.mesh) || piece.payphone || piece.m62Extension) continue;
       const b = PROP_BOUNDS[piece.mesh];
       if (!b && !Array.isArray(piece.collision)) continue;
       const c = Math.cos(piece.yaw), s = Math.sin(piece.yaw);
@@ -5947,10 +6172,12 @@ export function createSourceSpaceRuntime({
     if (local > SOURCE_PRE_TAPE.from || local <= SOURCE_PRE_TAPE.to) return false;
     const wx = (toX + 0.5) * CELL, wz = (toY + 0.5) * CELL, m = OUTSKIRT_BODY_MARGIN_M;
     const along = outskirtsAlong(toY), axis = (landscapeOrigin().x + .5) * CELL;
+    const pass = outskirtsPassAt(toY);
     // These are the rendered street's boundary walls, not the old void's edge.
     if (along >= 0 && along < OUTSKIRT_STRETCH_START + (OUTSKIRT_CORRIDOR.boundaryThroughPass + 1) * OUTSKIRT_STRETCH_METRES
       && Math.abs(wx - axis) > OUTSKIRT_CORRIDOR.halfWidth - m) return true;
     for (const piece of outskirtPieces()) {
+      if (!outskirtsRoadPieceForPass(piece, pass)) continue;
       if(piece.busPassage&&streetPieceVisible(piece)){
         const from=streetBusLocal(piece,outskirtsEye(fromX,fromY)),to=streetBusLocal(piece,{x:wx,z:wz});
         const t=streetExperience.busTransitState();
@@ -5963,7 +6190,7 @@ export function createSourceSpaceRuntime({
       if (Math.abs(lx) < .04 + m && lz > -m && lz < 1.1 + m) return true;
     }
     for (const solid of outskirtSolids().get(Math.floor(wz / OUTSKIRT_BUCKET_M)) || []) {
-      if (!streetPieceVisible(solid.piece) || outskirtUnseen.get(solid.piece.id)?.gone) continue;
+      if (!outskirtsRoadPieceForPass(solid.piece, pass) || !streetPieceVisible(solid.piece) || outskirtUnseen.get(solid.piece.id)?.gone) continue;
       if(solid.piece.busPassage)continue;
       if (solid.post) {
         if (Math.hypot(wx - solid.post.x, wz - solid.post.z) < solid.radius + m) return true;
@@ -5971,7 +6198,17 @@ export function createSourceSpaceRuntime({
       }
       const dx = wx - solid.piece.x, dz = wz - solid.piece.z;
       const lx = dx * solid.cos - dz * solid.sin, lz = dx * solid.sin + dz * solid.cos;
-      if (lx >= solid.minX - m && lx <= solid.maxX + m && lz >= solid.minZ - m && lz <= solid.maxZ + m) return true;
+      if (lx < solid.minX - m || lx > solid.maxX + m || lz < solid.minZ - m || lz > solid.maxZ + m) continue;
+      if (solid.piece.vanCrash && toX > fromX) {
+        const from = outskirtsEye(fromX, fromY);
+        const fromDx = from.x - solid.piece.x, fromDz = from.z - solid.piece.z;
+        const fromLocalX = fromDx * solid.cos - fromDz * solid.sin;
+        const fromLocalZ = fromDx * solid.sin + fromDz * solid.cos;
+        // A body caught by the landing or a restored pose can get back to the lanes.
+        if (fromLocalX >= solid.minX - m && fromLocalX <= solid.maxX + m
+          && fromLocalZ >= solid.minZ - m && fromLocalZ <= solid.maxZ + m) continue;
+      }
+      return true;
     }
     return false;
   }
@@ -5979,9 +6216,10 @@ export function createSourceSpaceRuntime({
   function outskirtsFloorOffset(x, y) {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return 0;
     const wx = (x + .5) * CELL, wz = (y + .5) * CELL;
+    const pass = outskirtsPassAt(y);
     outskirtPieces();
     for (const p of outskirtCache.vehicles.get(Math.floor(wz / OUTSKIRT_BUCKET_M)) || []) {
-      if (!streetPieceVisible(p)) continue;
+      if (!outskirtsRoadPieceForPass(p, pass) || !streetPieceVisible(p)) continue;
       const dx = wx - p.x, dz = wz - p.z;
       const lx = dx * p.cos - dz * p.sin, lz = dx * p.sin + dz * p.cos;
       if(p.busPassage){const floor=busPassageFloorAt(lx,lz);if(floor>0)return floor;continue;}
@@ -5995,13 +6233,14 @@ export function createSourceSpaceRuntime({
 
   function outskirtsSightClear(eye, target) {
     const solids = outskirtSolids(), used = new Set();
+    const pass = outskirtsPassAt(eye.z / CELL - .5);
     const related = p => (p.physicalRow ?? p.repeat ?? p.stretch) === (target.physicalRow ?? target.repeat ?? target.stretch) && (
       p.id === target.id || (/^booth/.test(p.key) && /^booth|ledger|page-ledger/.test(target.key))
       || (p.key === 'bus' && /^bus-woman/.test(target.key))
       || (p.key === 'van' && /^van|bag|page-dash/.test(target.key)));
     for (let k = Math.floor(Math.min(eye.z, target.z) / OUTSKIRT_BUCKET_M); k <= Math.floor(Math.max(eye.z, target.z) / OUTSKIRT_BUCKET_M); k++) {
       for (const s of solids.get(k) || []) {
-        if (used.has(s) || s.post || related(s.piece) || outskirtUnseen.get(s.piece.id)?.gone) continue;
+        if (used.has(s) || s.post || !outskirtsRoadPieceForPass(s.piece, pass) || !streetPieceVisible(s.piece) || related(s.piece) || outskirtUnseen.get(s.piece.id)?.gone) continue;
         used.add(s);
         if (!/boundary|funnel|booth|shelter|bus$|van$|car$/.test(s.piece.key)) continue;
         const point = p => { const dx = p.x - s.piece.x, dz = p.z - s.piece.z; return [dx * s.cos - dz * s.sin, dx * s.sin + dz * s.cos]; };
@@ -6022,38 +6261,56 @@ export function createSourceSpaceRuntime({
   function outskirtLampPools(px = player.x, py = player.y) {
     if (!inStreetRemnantView()) return [];
     const eye = outskirtsEye(px, py), height = outskirtsHeight();
+    const pass = outskirtsPassAt(py);
+    const motorway = pass === OUTSKIRTS_VAN_CRASH.pass;
     const lamps = streetRenderPieces()
-      .filter((piece) => streetPieceVisible(piece) && piece.lamp && !piece.dark && !outskirtLampsOff.has(piece.id)
+      .filter((piece) => outskirtsRoadPieceForPass(piece, pass) && streetPieceVisible(piece) && piece.lamp && !piece.dark && !outskirtLampsOff.has(piece.id)
         && (piece.key !== 'remnant-lamp' || lastLightOut))
       .map((piece) => {
         // The column's arm reaches out over the road.
         const x = piece.x + Math.cos(piece.yaw) * 1.6, z = piece.z - Math.sin(piece.yaw) * 1.6;
         return {
           id: piece.id, x, y: height, z, forward: [0, 1],
-          width: piece.key === 'remnant-lamp' ? 8 : piece.faulty ? 4.5 : 6.5,
-          colour: [1, 0.68, 0.36],
-          strength: piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 1.1 * faultyLightLevel() : 0.9,
+          width: piece.m62Scenery ? 8.5 : piece.key === 'remnant-lamp' ? 8 : piece.faulty ? 4.5 : 6.5,
+          colour: piece.m62Scenery ? [1, .74, .42] : [1, .68, .36],
+          strength: piece.m62Scenery ? .56 : piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 1.1 * faultyLightLevel() : .9,
+          ...(piece.m62Scenery ? { motorway: true, meshStrength: 1.10 } : {}),
           open: true, pool: true, variant: -1, key: false, lightAt: [x, height + 6.9, z],
           distanceM: Math.hypot(x - eye.x, z - eye.z),
         };
       })
       .filter((pool) => pool.strength > 0.02);
     // The phone boxes' own lamps: a small warm pool on the kerb round each.
-    const boxes = outskirtPieces().filter((piece) => streetPieceVisible(piece) && piece.payphone).map((box) => ({
+    const boxes = motorway ? [] : outskirtPieces().filter((piece) => streetPieceVisible(piece) && piece.payphone).map((box) => ({
       id: `${box.id}:lamp`, x: box.x, y: height, z: box.z, forward: [0, 1], width: 3, colour: [1, 0.8, 0.56],
       strength: Math.min(1, phoneBoxLampStrength(box) * 1.1), open: true, pool: true, variant: -1, key: false,
       lightAt: [box.x, height + 2.1, box.z], distanceM: Math.hypot(box.x - eye.x, box.z - eye.z),
     }));
-    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));
+    const bus=!motorway&&outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));
     const cabin=bus?streetBusLocal(bus,eye):null,occupied=cabin&&busPassageLocation(cabin).inside;
     const rear=bus?streetAnchor(bus,-.72,2.6):null;
     const busPools=rear?[{id:`${bus.id}:saloon-light`,x:rear.x,y:height,z:rear.z,forward:[0,1],width:2.1,
       colour:[1,.80,.58],strength:.72,open:true,pool:true,variant:-1,key:false,
       lightAt:[rear.x,height+2.78,rear.z],distanceM:Math.hypot(rear.x-eye.x,rear.z-eye.z),interior:!!occupied}]:[];
-    return [...lamps, ...boxes, ...busPools]
+    const crash = motorway ? outskirtsVanCrashFrame(streetReducedMotion) : null;
+    const crashPools = [];
+    if (crash?.elapsed != null) {
+      const impactAge = crash.elapsed - OUTSKIRTS_VAN_CRASH.impactAt;
+      const hot = impactAge >= 0 && impactAge < .22 ? (1 - impactAge / .22) ** 2 : 0;
+      const at = crash.wreck ? crash.outlet : crash.contact;
+      const spill = crash.spillElapsed > 0;
+      const heightAt = crash.wreck ? Math.max(height + 1.35, at.y + .65) : height + Math.max(2.1, crash.y + 1.2);
+      const strength = (spill ? .34 : .16) + hot * (streetReducedMotion ? .32 : .72);
+      crashPools.push({ id: hot ? 'van-crash:impact' : spill ? 'van-crash:water' : 'van-crash:fall',
+        x: at.x, y: height, z: at.z, forward: [0, 1], width: spill ? 5 : 3.6,
+        colour: hot ? [1,.57,.32] : spill ? [.62,.81,.90] : [.91,.89,.73],
+        strength, meshStrength: spill ? .69 : .62 + hot * 1.45, motorway: true, open: true, pool: true, variant: -1, key: false,
+        lightAt: [crash.wreck ? at.x + 1.1 : crash.x + 2.5, heightAt, crash.wreck ? at.z + 1.6 : crash.z + 2.4],
+        distanceM: Math.hypot(at.x - eye.x, at.z - eye.z) });
+    }
+    return [...crashPools.filter(pool => pool.distanceM <= 50), ...[...lamps, ...boxes, ...busPools]
       .filter((pool) => pool.distanceM <= 45)
-      .sort((p, q) => (p.interior?-100:p.distanceM) - (q.interior?-100:q.distanceM))
-      .slice(0, 3);
+      .sort((p, q) => (p.interior?-100:p.distanceM) - (q.interior?-100:q.distanceM))].slice(0, 3);
   }
 
   // ── DOOR FIELDS ───────────────────────────────────────────────────────────
@@ -6068,7 +6325,8 @@ export function createSourceSpaceRuntime({
   // and Source space is over.
   //
   // THE TOWER DOOR IS LOCKED until two particular doors in its field have been
-  // opened and walked through. Which two is seeded, and nothing marks them.
+  // returned through two physically marked connections. Their notched plates
+  // match the two bolts on the tower door; entering alone releases neither.
   var doorPlantingCache, doorOpenedAt, pendingDoorOpen, doorAttempts;
   var crossingArms = 0;
 
@@ -6130,6 +6388,51 @@ export function createSourceSpaceRuntime({
     return { id, i, assembly, mesh: assembly.frameMesh, localX, localY, matrix, door, opening: doorOpening(matrix, assembly.opening) };
   }
 
+  // Read-only decoder for pre-field saves. New doors never use this random
+  // assignment, but an old receipt must retain the world it actually bought.
+  var legacyStationRoleCache;
+  function legacyStationDoorRoles(route) {
+    const cacheKey = `${route}:${state.seed}`;
+    legacyStationRoleCache ||= new Map();
+    if (legacyStationRoleCache.has(cacheKey)) return legacyStationRoleCache.get(cacheKey);
+    const salt = route === 'tower' ? 811 : 853;
+    const worlds = route === 'tower' ? TOWER_WORLD_SET : CHAPEL_WORLD_SET;
+    const roles = Array.from({ length: ROUTE_DOOR_FIELD_COUNT }, (_, i) => ({ i,
+      id: `source-${route}-door-${i}`, shut: rand(state.seed, i, salt + 10) < OUTSKIRT_SHUT_SHARE,
+      variant: worlds[Math.floor(rand(state.seed, i, salt + 12) * worlds.length)], key: false,
+      wrong: route === 'tower' && rand(state.seed, i, salt + 16) < .3, lockIn: false }));
+    const chance = (list) => [...list].sort((a, b) => rand(state.seed, a.i, 877) - rand(state.seed, b.i, 877));
+    if (route === 'tower') {
+      const open = chance(roles.filter((role) => !role.shut));
+      for (const role of chance(roles.filter((entry) => entry.shut))) {
+        if (open.length >= TOWER_KEY_DOORS) break;
+        role.shut = false; open.push(role);
+      }
+      open.slice(0, TOWER_KEY_DOORS).forEach((role) => { role.key = true; });
+      const personal = open.find((role) => !role.key && !role.wrong) || open.find((role) => !role.key) || roles.find((role) => !role.key);
+      if (personal) personal.lockIn = true;
+    }
+    const opens = (variant) => roles.filter((role) => role.variant === variant && !role.shut);
+    for (const variant of worlds) {
+      if (opens(variant).length) continue;
+      const own = chance(roles.filter((role) => role.variant === variant && role.shut && !role.key));
+      const barred = chance(roles.filter((role) => role.shut && !role.key && opens(role.variant).length > 0));
+      const spare = chance(roles.filter((role) => !role.shut && !role.key && opens(role.variant).length > 1));
+      const role = own[0] || barred[0] || spare[0];
+      if (role) { role.variant = variant; role.shut = false; }
+    }
+    if (!roles.some((role) => role.shut)) {
+      const spare = chance(roles.filter((role) => !role.key && !role.lockIn && opens(role.variant).length > 1));
+      if (spare[0]) spare[0].shut = true;
+    }
+    if (route === 'tower') {
+      const personal = roles.find((role) => role.lockIn) || chance(roles.filter((role) => !role.key && !role.shut))[0] || roles.find((role) => !role.key);
+      if (personal) { personal.variant = 6; personal.shut = false; }
+    }
+    legacyStationRoleCache.set(cacheKey, roles);
+    return roles;
+  }
+
   function doorFieldPieces(route = doorFieldRoute()) {
     if (!route) return [];
     const o = landscapeOrigin();
@@ -6163,78 +6466,14 @@ export function createSourceSpaceRuntime({
         },
       }));
     }
-    const byChance = (list) => list
-      .map((piece) => ({ piece, order: rand(state.seed, piece.i, 877) }))
-      .sort((a, b) => a.order - b.order)
-      .map((entry) => entry.piece);
-    if (route === 'tower') {
-      const openable = byChance(pieces.filter((piece) => !piece.door.shut));
-      // A key has to be a door that opens. If the seed locked too many, unlock some.
-      for (const piece of byChance(pieces.filter((piece) => piece.door.shut))) {
-        if (openable.length >= TOWER_KEY_DOORS) break;
-        piece.door.shut = false;
-        openable.push(piece);
-      }
-      openable.slice(0, TOWER_KEY_DOORS).forEach((piece) => { piece.door.key = true; });
-      // And one of the rest shuts behind him once he is through it: the way out
-      // is a second door standing in that world (docs/plans/door-field-station.md).
-      // Prefer one that returns him properly; if the seed left none, any will do.
-      const shutsBehind = openable.find((piece) => !piece.door.key && !piece.door.wrong)
-        || openable.find((piece) => !piece.door.key)
-        || pieces.find((piece) => !piece.door.key && !piece.door.route);
-      if (shutsBehind) shutsBehind.door.lockIn = true;
-    }
-    // EVERY WORLD ON THIS ROAD HAS A DOOR THAT OPENS.
-    //
-    // The world and the bar are dealt per door, so a seed could leave a world
-    // with nothing but barred doors, or with no door at all — and a barred door
-    // never opens in play. On the chapel road that quietly broke the station's
-    // errand: it wants one thing out of each of the five worlds beside the
-    // whiteout, and the way home only opens while he is carrying all five
-    // (setStationHomeOpen). Measured over forty seeds, all six worlds opened in
-    // five of them, so the way home was unreachable in seven runs out of eight
-    // and nothing anywhere said why.
-    //
-    // So after the deal, every world on the road is given a door that opens:
-    // one of its own barred doors unbarred, or — if it drew no door at all — a
-    // barred door's world changed to it, never one whose own world would be
-    // left with nothing. Seeded, so a night is still the same night.
-    const worldSet = route === 'tower' ? TOWER_WORLD_SET : CHAPEL_WORLD_SET;
-    const opensOnto = (variant) => pieces.filter((piece) => piece.door.variant === variant && !piece.door.shut);
-    for (const variant of worldSet) {
-      if (opensOnto(variant).length) continue;
-      // Its own barred doors first: unbar one and nothing else moves.
-      const own = byChance(pieces.filter((piece) => piece.door.variant === variant && piece.door.shut && !piece.door.key));
-      // Then a barred door from a world that still opens without it.
-      const barred = byChance(pieces.filter((piece) => piece.door.shut && !piece.door.key
-        && opensOnto(piece.door.variant).length > 0));
-      // And last, when nothing is barred any more, a spare open door from a
-      // world that has more than one. Sixteen doors over six worlds always
-      // leave somebody with a spare, so no world is ever left sealed.
-      const spare = byChance(pieces.filter((piece) => !piece.door.shut && !piece.door.key
-        && opensOnto(piece.door.variant).length > 1));
-      const piece = own[0] || barred[0] || spare[0];
-      if (!piece) continue;
-      piece.door.variant = variant;
-      piece.door.shut = false;
-    }
-    // And something is still barred, or the corridor is only a corridor. Never
-    // the tower's invitation: it is dealt open below and would unbar it again.
-    if (!pieces.some((piece) => piece.door.shut)) {
-      const spare = byChance(pieces.filter((piece) => !piece.door.key && !piece.door.lockIn && opensOnto(piece.door.variant).length > 1));
-      if (spare[0]) spare[0].door.shut = true;
-    }
-    if (route === 'tower') {
-      // Deal the invitation last, after coverage and the final barred door.
-      // Earlier seeds could select a barred door, then consume the only way in.
-      const invitation = pieces.find((piece) => piece.door.lockIn)
-        || byChance(pieces.filter((piece) => !piece.door.key && !piece.door.shut))[0]
-        || pieces.find((piece) => !piece.door.key);
-      for (const piece of pieces) piece.door.lockIn = false;
-      if (invitation) {
-        invitation.door = { ...invitation.door, personal: true, shut: false,
-          wrong: false, fails: false, lockIn: false, variant: 6 };
-      }
+    // The route and its two return connections are authored physical choices,
+    // never hidden keys dealt by chance. Seed changes placement, not their job.
+    for (const piece of pieces) {
+      const destination = stationDoorDestination(route, piece.i);
+      piece.door = { ...piece.door, destination, variant: destination.variant,
+        key: false, wrong: false, fails: false, lockIn: false,
+        personal: destination.kind === 'coastal',
+        shut: piece.i < 6 ? false : piece.door.shut };
     }
     const own = ROUTE_DOOR_ASSEMBLIES[route];
     pieces.push(makeDoorPiece({
@@ -6294,24 +6533,32 @@ export function createSourceSpaceRuntime({
   }
 
   const doorWasErased = (piece) => !piece.door.route && (state.routeDoorsErased || []).includes(piece.id);
-  const homeDoorEligible = (piece) => !piece.door.route && !piece.door.shut && piece.door.variant === 5
+  const homeDoorEligible = (piece) => !piece.door.route && !piece.door.shut && piece.door.destination?.kind === 'home'
     && stationHomeReady() && !stationHomeResolved;
   const whiteoutReawakened = (piece) => doorWasErased(piece) && homeDoorEligible(piece)
     && stationRealm?.entryDoorId !== piece.id
     && (!doorTakenAt.has(piece.id) || crossingClock() >= doorTakenAt.get(piece.id) + TAKE_BACK_SECONDS + OUTLINE_SECONDS);
-  const doorErased = (piece) => doorWasErased(piece) && !whiteoutReawakened(piece)
-    && !(piece.door.personal && !towerPersonal.completed);
+  const fieldDoorReawakened = (piece) => piece.door.destination?.kind === 'field' && doorWasErased(piece)
+    && stationField?.entryDoorId !== piece.id
+    && !stationFieldReturns.doorIds.includes(piece.id)
+    && (!doorTakenAt.has(piece.id) || crossingClock() >= doorTakenAt.get(piece.id) + TAKE_BACK_SECONDS + OUTLINE_SECONDS);
+  const personalVisitCompleted = () => towerPersonal.completed || coastalMemory.completed;
+  const doorErased = (piece) => piece.door.personal && personalVisitCompleted()
+    || doorWasErased(piece) && !whiteoutReawakened(piece) && !fieldDoorReawakened(piece)
+      && !(piece.door.personal && !personalVisitCompleted());
   const doorOpened = (piece) => !piece.door.route && (state.routeDoorsOpened || []).includes(piece.id);
 
   function towerDoorUnlocked() {
-    const keys = doorFieldPieces('tower').filter((piece) => piece.door.key);
-    return keys.length > 0 && keys.every((piece) => doorErased(piece));
+    return STATION_TOWER_CONNECTIONS.every(stationConnectionReturned);
   }
 
   // Try a door. Locked ones refuse; the rest swing open and stay open.
   function openDoorFieldDoor(id) {
     const piece = doorFieldPieces().find((entry) => entry.id === id);
-    if (!piece) return { handled: false, opened: false };
+    if (!piece || doorErased(piece)) return { handled: false, opened: false };
+    if (piece.door.destination?.kind === 'home' && !homeDoorEligible(piece)) {
+      return { handled: true, opened: false, event: 'outskirt-door-shut', line: stationHomeResolved ? 'The house has gone.' : 'Snow beyond the glass. The handle will not turn yet.' };
+    }
     if (piece.door.route === 'tower' && !towerDoorUnlocked()) {
       return { handled: true, opened: false, event: 'outskirt-door-shut', line: TOWER_DOOR_LOCKED_LINE };
     }
@@ -6410,20 +6657,30 @@ export function createSourceSpaceRuntime({
       for (const side of [-1, 1]) dress(`lantern-${side}`, 'chapel_door_lantern', { x: side * 1.65, y: 2.35, z: 0.12 }, { emissive: [1, 0.72, 0.38, 2.2 * flicker] });
     }
     if (piece.door.route === 'tower') {
-      const keys = doorFieldPieces('tower').filter((entry) => entry.door.key);
       for (let k = 0; k < 2; k += 1) dress(`lock-bolt-${k}`, 'tower_personal_lock_bolt',
-        { x: keys[k] && doorErased(keys[k]) ? -.3 : 0, y: .92 + k * .34, z: .13 });
+        { x: stationConnectionReturned(STATION_TOWER_CONNECTIONS[k]) ? -.3 : 0, y: .92 + k * .34, z: .13 });
+      for (let k = 0; k < 2; k += 1) for (let notch = 0; notch <= k; notch += 1) {
+        dress(`bolt-mark-${k}-${notch}`, 'door_hinge_knuckle',
+          { x: .40 + notch * .09, y: .92 + k * .34, z: .14, scaleX: 1.5, scaleY: 1.3, scaleZ: 1.5 });
+      }
     }
     if (piece.door.route) return out;
     // Hinges on the frame's hinge side.
     const hingeSide = piece.assembly.hinge === 'left' ? -1 : 1;
     for (const y of [0.35, 1.2, 2.05]) dress(`hinge-${y}`, 'door_hinge_knuckle', { x: hingeSide * (w / 2 + 0.01), y, z: 0.07 });
-    const world = ELSEWHERE_WORLDS[piece.door.variant]?.id;
-    if (piece.door.personal) {
-      dress('personal-snow', 'seep_drift', { y: .11, z: .4, scaleX: w });
-      dress('personal-snow-trail', 'school_snow_drift', { y: .1, z: .9, scaleX: .38, scaleY: .32, scaleZ: .3 });
+    const destination = piece.door.destination;
+    const world = destination?.kind === 'field' ? 'field' : destination?.kind === 'coastal' ? 'coast' : ELSEWHERE_WORLDS[piece.door.variant]?.id;
+    if (destination?.connectionNumber) {
+      const side = w / 2 + .28;
+      dress('connection-plate', 'door_tag', { x: side, y: 1.65, z: .12, scaleX: 4, scaleY: 2.2, scaleZ: 2 });
+      for (let notch = 0; notch < destination.connectionNumber; notch += 1) dress(`connection-notch-${notch}`, 'door_hinge_knuckle',
+        { x: side - .045 * (destination.connectionNumber - 1) + notch * .09, y: 1.45, z: .145,
+          scaleX: 1.5, scaleY: 1.3, scaleZ: 1.5 });
     }
-    const wear = DOOR_WEAR[world];
+    if (piece.door.personal) {
+      dress('personal-tide', 'seep_water', { y: .1, z: .4, scaleX: w, scaleZ: .55 });
+    }
+    const wear = world === 'field' || world === 'coast' ? 'door_wear_damp' : DOOR_WEAR[world];
     if (wear === 'door_wear_sand') dress('wear', wear, { y: 0.1, z: 0.12, scaleX: w });
     else if (wear) {
       const reach = world === 'whiteout' ? h * 0.8 : world === 'flood' ? h * 0.45 : h * 0.6;
@@ -6859,7 +7116,7 @@ export function createSourceSpaceRuntime({
     coastalMemory = next; saveStation(); return coastalMemoryState();
   }
   function beginCoastalMemory(options = {}) {
-    if (state.phase !== CHUNK_SURF_PHASE.BELLS || towerPersonal.active || towerPersonal.completed || coastalMemory.completed) return null;
+    if (![CHUNK_SURF_PHASE.BELLS, CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS].includes(state.phase) || towerPersonal.active || towerPersonal.completed || coastalMemory.completed || stationField || stationRealm) return null;
     if (coastalMemory.active) return coastalMemoryState();
     const returnPose = options.returnPose || coastalMemory.returnPose || { ...player };
     const next = beginCoastalMemoryVisit(coastalMemory, { layout: COASTAL_MEMORY_LAYOUT,
@@ -7022,26 +7279,35 @@ export function createSourceSpaceRuntime({
         && Math.hypot((o.x + piece.localX - px) * CELL, (o.y + piece.localY - py) * CELL) <= 190)
       .map((piece) => ({
         id: piece.id, corners: piece.opening.corners, normal: piece.opening.normal,
-        variant: piece.door.variant, seed: route === 'chapel' ? stationRealmSeed(state.seed, piece.door.variant) : piece.door.seed,
+        variant: piece.door.destination?.kind === 'field' ? 10 + piece.door.variant : piece.door.personal ? 14 : piece.door.variant,
+        destination: piece.door.destination ? { ...piece.door.destination } : null,
+        fieldId: piece.door.destination?.fieldId || null, day: piece.door.destination?.day ?? null,
+        deformation: piece.door.destination?.deformation ?? null, connectionId: piece.door.destination?.connectionId || null,
+        seed: piece.door.destination?.kind === 'field' ? state.seed : route === 'chapel' ? stationRealmSeed(state.seed, piece.door.variant) : piece.door.seed,
         // Its world is anchored at the threshold; a tower key's has the tower in it.
         origin: doorOrigin(piece), key: !!piece.door.key,
       }));
   }
 
-  // THE TOWER, THROUGH ITS DOOR. Once it is open, where the opening stands, for
-  // main.js to hang St Brendan's belfry in it (r3dSetSourceTowerView). Walking
-  // through it is walking into the belfry: see enterBellsRoom.
-  function towerDoorView(px = player.x, py = player.y) {
-    if (doorFieldRoute() !== 'tower' || !towerDoorUnlocked()) return null;
-    const piece = doorFieldPieces('tower').find((entry) => entry.door.route);
+  // The existing real destination is rendered through the road's own opening.
+  // The tower retains its two-return gate; chapel needs no additional receipt.
+  function routeDoorView(px = player.x, py = player.y) {
+    const route = doorFieldRoute();
+    if (!route || route === 'tower' && !towerDoorUnlocked()) return null;
+    const piece = doorFieldPieces(route).find((entry) => entry.door.route);
     if (!piece) return null;
     const origin = doorOrigin(piece), n = piece.opening.normal;
     const distanceM = Math.hypot(origin[0] - (px + 0.5) * CELL, origin[2] - (py + 0.5) * CELL);
     if (distanceM > 90) return null;
     return {
-      id: piece.id, corners: piece.opening.corners.map((corner) => [...corner]), normal: [...n], origin,
+      id: piece.id, route, corners: piece.opening.corners.map((corner) => [...corner]), normal: [...n], origin,
       forward: [-n[0] || 0, -n[2] || 0], width: piece.assembly.opening.width, height: piece.assembly.opening.height, distanceM,
     };
+  }
+  // Kept tower-only for existing callers and their belfry capture contract.
+  function towerDoorView(px = player.x, py = player.y) {
+    const view = routeDoorView(px, py);
+    return view?.route === 'tower' ? view : null;
   }
 
   // Where a door's threshold is, in world metres.
@@ -7065,11 +7331,15 @@ export function createSourceSpaceRuntime({
         const n = piece.opening.normal;
         const taking = doorErased(piece) ? doorTakeBack(piece) : null;
         const open = !!piece.door.route || doorOpened(piece);
-        const world = piece.door.route ? null : ELSEWHERE_WORLDS[piece.door.variant];
+        const destination = piece.door.destination;
+        const field = destination?.kind === 'field';
+        const world = piece.door.route ? null : ELSEWHERE_WORLDS[field ? 2 : destination?.kind === 'coastal' ? 1 : piece.door.variant];
         return {
           id: piece.id, x, y, z, forward: [n[0], n[2]], width: Math.hypot(b[0] - a[0], b[2] - a[2]),
-          colour: [...(world ? world.leak : ROUTE_DOOR_LEAK)], strength: taking ? 1.4 * (1 - taking.progress * taking.progress) : open ? 1 : 0.35, open,
-          variant: world ? piece.door.variant : -1, key: !!piece.door.key,
+          colour: field ? [1 - destination.day * .12, .88 - destination.day * .16, .67 - destination.day * .12] : [...(world ? world.leak : ROUTE_DOOR_LEAK)],
+          strength: taking ? 1.4 * (1 - taking.progress * taking.progress) : open ? 1 : 0.35, open,
+          variant: world ? field ? 2 : destination?.kind === 'coastal' ? 1 : piece.door.variant : -1, key: false,
+          destination: destination ? { ...destination } : null, ...(field ? { fieldId: destination.fieldId, bed: 'field' } : {}),
           ...(piece.door.route === 'chapel' ? { route: 'chapel', bed: 'building' } : {}),
           distanceM: Math.hypot(x - eyeX, z - eyeZ),
         };
@@ -7086,7 +7356,8 @@ export function createSourceSpaceRuntime({
     return normalizeSourceStation({ time: stationClockSeconds, entries: stationEntries,
       crossing: doorCrossing, walk: stationWalk,
       personal: towerPersonal, coastalMemory,
-      realm: stationRealm, homeDiscovered: stationHomeDiscovered, homeResolved: stationHomeResolved,
+      field: stationField, fieldReturns: stationFieldReturns, realm: stationRealm,
+      homeDiscovered: stationHomeDiscovered, homeResolved: stationHomeResolved,
       lastReturn: stationLastReturn,
       takeBacks: [...doorTakenAt].map(([id, at]) => ({ id, at })) });
   }
@@ -7121,6 +7392,46 @@ export function createSourceSpaceRuntime({
   function stationRelicWorlds() {
     return STATION_RELIC_WORLDS.filter((world) => stationEntries.some((entry) => !entry.home && entry.world === world && entry.returnedAt != null));
   }
+  function stationConnectionReturned(connectionId) {
+    if (stationFieldReturns.connectionIds.includes(connectionId)) return true;
+    const index = STATION_TOWER_CONNECTIONS.indexOf(connectionId);
+    if (index < 0) return false;
+    const legacy = legacyStationDoorRoles('tower').filter((role) => role.key)[index];
+    return !!legacy && stationEntries.some((entry) => entry.doorId === legacy.id
+      && !entry.fieldId && !entry.world.startsWith('field:') && entry.returnedAt != null)
+      && (state.routeDoorsErased || []).includes(legacy.id);
+  }
+  function stationFieldFrame() {
+    const field = normalizeStationFieldSession(stationField);
+    if (!field) return null;
+    return { ...field, time: crossingClock(), visit: stationFieldVisit(field.fieldId, { connectionId: field.connectionId }) };
+  }
+  function setStationFieldState(checkpoint) {
+    if (!stationField) return null;
+    if (checkpoint?.fieldId !== stationField.fieldId || checkpoint?.connectionId !== stationField.connectionId
+      || checkpoint.version !== 1) return null;
+    stationField.checkpoint = stationFieldCheckpoint(checkpoint);
+    saveStation();
+    return stationFieldFrame();
+  }
+  function finishStationFieldReturn(value = {}) {
+    const field = normalizeStationFieldSession(stationField);
+    const receipt = stationFieldReceipt(field, value);
+    if (!field || !receipt) return null;
+    const now = crossingClock();
+    stationEntries = stationEntries.map((entry) => entry.doorId === field.entryDoorId
+      && entry.enteredAt === field.enteredAt && entry.returnedAt == null
+      ? { ...entry, ...receipt, returnedAt: now } : entry);
+    stationFieldReturns = normalizeStationFieldReturns(stationFieldReturns, stationEntries);
+    stationLastReturn = { id: field.entryDoorId, world: `field:${field.fieldId}`, home: false,
+      reason: 'field', windowReached: false, at: now, returnPose: { ...field.returnPose } };
+    player = { ...player, ...field.returnPose };
+    doorTakenAt.set(field.entryDoorId, now);
+    stationField = null; stationRealm = null; doorCrossing = null; stationWalk = null;
+    lastPlan = null; saveStation();
+    return { handled: true, position: { ...field.returnPose }, meaningful: receipt.meaningful,
+      connectionId: field.connectionId, checkpoint: null };
+  }
   function stationRealmFrame() { return realmFrame(stationRealm, crossingClock()); }
   function stationRealmHomeState() { return normalizeStationRealmHomeState(stationRealm?.homeState); }
   function setStationRealmHomeState(homeState) {
@@ -7129,8 +7440,9 @@ export function createSourceSpaceRuntime({
     stationRealm.homeState = normalizeStationRealmHomeState(homeState);
     // Continuous attention is covered by the one-second active checkpoint;
     // decisions and recognition are saved immediately, rather than every frame.
-    if (!before || Object.keys(stationRealm.homeState || {}).some((key) =>
-      typeof stationRealm.homeState[key] !== 'number' && before[key] !== stationRealm.homeState[key])) saveStation();
+    if (!before || Object.entries(stationRealm.homeState || {}).some(([key, value]) =>
+      typeof value !== 'number' && (value && typeof value === 'object'
+        ? JSON.stringify(value) !== JSON.stringify(before[key]) : before[key] !== value))) saveStation();
     return stationRealmHomeState();
   }
   function setStationRealmLook({ yaw, pitch } = {}) {
@@ -7148,9 +7460,11 @@ export function createSourceSpaceRuntime({
   }
   function moveStationRealm(delta = {}) {
     const previousStage = stationRealm?.stage;
+    const wasCommonsReturn = stationRealm?.homeState?.oldv?.returned === true;
     const result = moveRealm(stationRealm, delta, crossingClock());
     if (result.atWindow) markHomeWindowReached();
-    if (stationRealm && previousStage !== stationRealm.stage) saveStation();
+    if (stationRealm && (previousStage !== stationRealm.stage
+      || (!wasCommonsReturn && stationRealm.homeState?.oldv?.returned))) saveStation();
     return { ...result, frame: stationRealmFrame() };
   }
   function finishStationRealmReturn() {
@@ -7174,7 +7488,8 @@ export function createSourceSpaceRuntime({
   // go (releaseHomeCrossing). Only then does it fold, and the door is taken back.
   var stationHomeOpen = null;
   function stationHomeReady() {
-    return stationHomeOpen == null ? stationRelicWorlds().length === STATION_RELIC_WORLDS.length : stationHomeOpen;
+    return stationHomeOpen === true || stationFieldReturns.legacyHome || stationRelicWorlds().length === STATION_RELIC_WORLDS.length
+      || stationFieldReturns.fieldIds.length > 0;
   }
   function setStationHomeOpen(open = false) { stationHomeOpen = !!open; return stationHomeOpen; }
   function releaseHomeCrossing(now = crossingClock()) {
@@ -7218,6 +7533,8 @@ export function createSourceSpaceRuntime({
   }
   function doorCrossingFrame(now = crossingClock()) {
     if (!doorCrossing) return null;
+    if (stationField) return { ...doorCrossing, phase: 'field', progress: 1, reveal: 1,
+      elapsed: Math.max(0, now - stationField.enteredAt), field: stationFieldFrame() };
     if (stationRealm) {
       const realm = realmFrame(stationRealm, now), elapsed = Math.max(0, now - stationRealm.startedAt);
       return { ...doorCrossing, phase: realm.stage, progress: realm.decoherence, reveal: 1,
@@ -7239,9 +7556,10 @@ export function createSourceSpaceRuntime({
   function eraseCrossedDoors(from, to) {
     const erased = [];
     const route = doorFieldRoute();
-    if (coastalMemory.active || towerPersonal.active || doorCrossingFrame()) return erased;
+    if (coastalMemory.active || towerPersonal.active || stationField || doorCrossingFrame()) return erased;
     for (const piece of doorFieldPieces()) {
-      if (piece.door.route || piece.door.shut || !doorOpened(piece) || doorErased(piece)) continue;
+      if (piece.door.route || piece.door.shut || !doorOpened(piece) || doorErased(piece)
+        || (piece.door.destination?.kind === 'home' && !homeDoorEligible(piece))) continue;
       const [a, b] = piece.opening.threshold;
       if (!segmentsCross(from, to, a, b)) continue;
       if (piece.door.personal) {
@@ -7253,6 +7571,29 @@ export function createSourceSpaceRuntime({
           returnPose.x = midpoint.x + n[0] * 2; returnPose.y = midpoint.y + n[2] * 2;
         }
         beginCoastalMemory({ entryDoorId: piece.id, returnPose });
+        erased.push(piece.id); break;
+      }
+      if (piece.door.destination?.kind === 'field') {
+        const destination = piece.door.destination, n = piece.opening.normal;
+        const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        const returnPose = { ...from, facing: player.facing || 0,
+          yaw: player.yaw ?? Math.atan2(-n[0], n[2]), pitch: player.pitch || 0 };
+        if (!physicalCellAt(returnPose.x, returnPose.y)) {
+          returnPose.x = midpoint.x + n[0] * 2; returnPose.y = midpoint.y + n[2] * 2;
+        }
+        stationField = normalizeStationFieldSession({ version: 1, active: true,
+          fieldId: destination.fieldId, connectionId: destination.connectionId,
+          entryDoorId: piece.id, seed: state.seed, enteredAt: crossingClock(), returnPose, checkpoint: null });
+        doorCrossing = { id: piece.id, variant: destination.variant, seed: state.seed,
+          world: `field:${destination.fieldId}`, home: false, key: false, released: false,
+          wrong: false, fails: false, lockIn: false, forward: [-n[0], -n[2]], startedAt: crossingClock() };
+        stationEntries = [...stationEntries, { doorId: piece.id, world: doorCrossing.world,
+          variant: destination.variant, home: false, fieldId: destination.fieldId,
+          connectionId: destination.connectionId, meaningful: false, landmarkWitnessed: false,
+          enteredAt: crossingClock(), returnedAt: null }].slice(-64);
+        stationRealm = null; stationWalk = null; stationLastReturn = null;
+        doorTakenAt.delete(piece.id); crossingArms += 1;
+        dispatch({ type: 'STATION_DOOR_CROSSED', id: piece.id, station: stationSnapshot() }, { immediate: true });
         erased.push(piece.id); break;
       }
       const world = ELSEWHERE_WORLDS[piece.door.variant]?.id || null;
@@ -7297,7 +7638,7 @@ export function createSourceSpaceRuntime({
   // Main asks before the step is taken, so the body can finish walking through
   // the door in Source before the building takes over (sourceDoorArrival).
   function crossesRouteDoor(from, to) {
-    if (stationRealm) return false;
+    if (stationRealm || stationField) return false;
     const route = doorFieldRoute();
     if (!route || (route === 'tower' && !towerDoorUnlocked())) return false;
     return crossedRouteDoor(from, to);
@@ -7384,9 +7725,12 @@ export function createSourceSpaceRuntime({
       id: piece.id, mesh: piece.assembly.frameMesh, archetype: piece.assembly.archetype, route: piece.door.route || null,
       shut: !!piece.door.shut, key: !!piece.door.key, opened: doorOpened(piece), erased: doorErased(piece),
       variant: piece.door.variant ?? null, seed: piece.door.seed ?? null,
+      destination: piece.door.destination ? { ...piece.door.destination } : null,
+      fieldId: piece.door.destination?.fieldId || null, connectionId: piece.door.destination?.connectionId || null,
+      connectionReturned: piece.door.destination?.connectionId ? stationConnectionReturned(piece.door.destination.connectionId) : false,
       wrong: !!piece.door.wrong, fails: !!piece.door.fails, lockIn: !!piece.door.lockIn,
       personal: !!piece.door.personal,
-      home: homeDoorEligible(piece), reawakened: whiteoutReawakened(piece),
+      home: homeDoorEligible(piece), reawakened: whiteoutReawakened(piece) || fieldDoorReawakened(piece),
       threshold: piece.opening.threshold.map((point) => ({ ...point })), normal: [...piece.opening.normal],
       ...(piece.door.route === 'tower' ? { unlocked: towerDoorUnlocked() } : {}),
     }));
@@ -7518,6 +7862,7 @@ export function createSourceSpaceRuntime({
   }
   function propInstances(px = player.x, py = player.y, options = {}) {
     const base=basePropInstances(px,py,options),shore=sourceShoreFrame();
+    if(state.phase===CHUNK_SURF_PHASE.HORIZON&&outskirtsPassAt(py)===OUTSKIRTS_VAN_CRASH.pass)return base;
     const faultOrigin=landscapeOrigin();
     // The road's coordinate rebase moves its scenery, lights and player
     // together. Later-added fault geometry must share that same translation.
@@ -7847,9 +8192,8 @@ export function createSourceSpaceRuntime({
   // cells that are not faulted. r3dSetSourceSurface lays 11 rows per band, so
   // the ratio here is what the floor reads.
   //
-  // Nothing animates this: the surface canvas is uploaded once on entering
-  // Source, and SOURCE_FAULT_FRAG — which is already a bad-sector simulation,
-  // holds and dropouts and all — runs afterwards and does the tearing.
+  // The surface canvas is uploaded once on entering Source. The timed faults
+  // are applied separately to individual prop instances.
   function sourceSurfaceLines(limit = 96) {
     const out = [];
     const sectors=Object.entries(SOURCE_ATLAS.sectors||{});
@@ -7875,7 +8219,7 @@ export function createSourceSpaceRuntime({
   }
 
   function paperTonePoint(){
-    return state.phase===CHUNK_SURF_PHASE.HAYSTACK?haystackPagePoint():null;
+    return searchSpanActiveFor()?haystackPagePoint():null;
   }
 
   function exitSnapshot() {
@@ -8160,9 +8504,20 @@ export function createSourceSpaceRuntime({
   // Recover their relic receipts from this seed's actual door deal once, so an
   // older crossing save does not remain permanently short of its fifth world.
   for (const piece of doorFieldPieces()) {
+    if (!legacyStationJournalMissing) break;
     if (!doorWasErased(piece) || stationEntries.some((entry) => entry.doorId === piece.id)) continue;
-    stationEntries.push({ doorId: piece.id, world: ELSEWHERE_WORLDS[piece.door.variant]?.id || '',
-      variant: piece.door.variant, home: false, enteredAt: stationClockSeconds, returnedAt: stationClockSeconds });
+    const legacy = legacyStationDoorRoles(doorFieldRoute()).find((role) => role.id === piece.id);
+    const variant = legacy?.variant ?? piece.door.variant;
+    stationEntries.push({ doorId: piece.id, world: ELSEWHERE_WORLDS[variant]?.id || '',
+      variant, home: false, enteredAt: stationClockSeconds, returnedAt: stationClockSeconds });
+  }
+  // Promote old earned authority once. Subsequent safe retreats may trim the
+  // history, but cannot erase a released bolt or make an earned home unearned.
+  stationFieldReturns = normalizeStationFieldReturns(stationFieldReturns, stationEntries);
+  for (const connectionId of STATION_TOWER_CONNECTIONS) {
+    if (stationConnectionReturned(connectionId) && !stationFieldReturns.connectionIds.includes(connectionId)) {
+      stationFieldReturns.connectionIds.push(connectionId);
+    }
   }
   // Earlier saves can be sitting in a timed glimpse or the virtual home walk.
   // Recover the old forced tower walk onto the saved, walkable hall. There is
@@ -8181,11 +8536,11 @@ export function createSourceSpaceRuntime({
   }
   // Earlier saves can be sitting in a timed glimpse or the virtual home walk.
   // Move that visit onto the real pocket while retaining its earned receipt.
-  if (state.phase === CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS && doorCrossing && !doorCrossing.released && !stationRealm) {
+  if (state.phase === CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS && doorCrossing && !doorCrossing.released && !stationRealm && !stationField && !String(doorCrossing.world).startsWith('field:')) {
     const piece = doorFieldPieces().find((entry) => entry.id === doorCrossing.id && !entry.door.route);
     if (piece) {
       const [a, b] = piece.opening.threshold, n = piece.opening.normal;
-      stationRealm = createStationRealm({ variant: piece.door.variant, seed: stationRealmSeed(state.seed, piece.door.variant),
+      stationRealm = createStationRealm({ variant: doorCrossing.variant, seed: stationRealmSeed(state.seed, doorCrossing.variant),
         entryDoorId: piece.id, home: doorCrossing.home, now: stationClockSeconds,
         returnPose: { x: (a.x + b.x) / 2 + n[0] * 2, y: (a.y + b.y) / 2 + n[2] * 2,
           facing: 0, yaw: Math.atan2(-n[0], n[2]), pitch: 0 } });
@@ -8228,6 +8583,10 @@ export function createSourceSpaceRuntime({
     sourceSensoryFrame,
     settleSourceSensory,
     commitStillPageReveal,
+    searchSpanActive:()=>searchSpanActiveFor(),
+    claimHaystackPaperOpportunity,
+    haystackPaperOpportunityActive,
+    resolveHaystackPaperOpportunity,
     traversalFrame,
     beginTraversal,
     tickTraversal,
@@ -8289,6 +8648,7 @@ export function createSourceSpaceRuntime({
     enterChapelDoor,
     openDoorFieldDoor,
     doorFieldWeather,
+    routeDoorView,
     towerDoorView,
     edgeDoorFrame,
     edgeDoorField,
@@ -8299,7 +8659,7 @@ export function createSourceSpaceRuntime({
     beginEdgeDoorApproach,
     outskirtsBeatFrame,
     outskirtsStreetFrame, outskirtsBusPassageFrame,busInteriorFrame,busTakeRecoil,outskirtsBusPassageTransition,consumeBusPassageCrossing, outskirtsPerformAction, setOutskirtsWorldState,
-    tickOutskirtsCharacters, outskirtsCharacterFrame, applyOutskirtsCharacterFrame,
+    tickOutskirtsCharacters, outskirtsCharacterFrame, applyOutskirtsCharacterFrame, outskirtsVanCrashFrame,
     outskirtsWeather,
     outskirtPieceRefuses,
     outskirtLampPools,
@@ -8314,6 +8674,7 @@ export function createSourceSpaceRuntime({
     doorCrossingFrame, doorFieldExtras, doorTakeBackFrame: (id, now) => { const piece = doorFieldPieces().find((entry) => entry.id === id); return piece && doorErased(piece) ? doorTakeBack(piece, now) : null; },
     TAKE_BACK_SECONDS, setStationHomeOpen, releaseHomeCrossing, stationEdgeFrame, wrongReturnSpot,
     advanceStationTime, stationTime: crossingClock, stationWalkState, setStationWalkState, stationRelicWorlds,
+    stationFieldFrame, setStationFieldState, finishStationFieldReturn, stationConnectionReturned,
     stationRealmFrame, moveStationRealm, setStationRealmLook,
     stationRealmHomeState, setStationRealmHomeState, markHomeWindowReached, stationLastRealmReturn,
     coastalMemoryState, setCoastalMemoryState, beginCoastalMemory, finishCoastalMemory,

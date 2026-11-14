@@ -10,10 +10,12 @@ import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
 import { SOURCE_BLUEPRINT_RECORDING_GLSL } from '../source-blueprint-contract.js';
 import { SOURCE_MATERIAL_FINISH_GLSL } from '../source-material-finish.js';
+import { SOURCE_OBJECT_NEGATIVE_COLOR_GLSL } from '../source-object-glitch.js';
 import { SOURCE_WALKWAY_FINISH_GLSL } from '../source-walkway-finish.js';
 import { RECORDING_VIEW_PULL_GLSL } from '../recording-view-pull.js';
 import { SOURCE_REST_FACULTIES_GLSL } from '../source-rest-faculties.js';
 import { FINAL_LOOK_GLSL } from './final-look.js';
+import { DRIVE_MEMORY_BREAK_GLSL } from '../radio-dial-static.js';
 
 // CPU reference for the Source-only ink hook below. Water has already changed
 // illumination before recording. Keep that bit decision and the ink's measured
@@ -111,6 +113,8 @@ uniform float uRoofSkyRecovery;
 uniform float uRoofSkyPackedFar;
 uniform float uRecordingExposure;
 uniform float uRecordingSensitivity;
+// The occupied childhood valley uses a quieter screen on snow and haze.
+uniform float uHomeEngraving;
 // Source blueprint only: enabled, and 1/(1+actual prop far metres*.14).
 // This selects recording inks after the existing bit decision; no post grade.
 uniform vec2 uSourceBlueprint;
@@ -189,6 +193,7 @@ out vec4 o;
 ${PRESSURE_INK_GLSL}
 ${FINAL_LOOK_GLSL}
 ${SOURCE_MATERIAL_FINISH_GLSL}
+${SOURCE_OBJECT_NEGATIVE_COLOR_GLSL}
 
 float hash21(vec2 p){
   p = fract(p * vec2(123.34, 345.45));
@@ -633,8 +638,12 @@ float apparitionSoftZone(vec2 uv,vec2 texel,float centre){
 
 ${RECORDING_VIEW_PULL_GLSL}
 ${SOURCE_REST_FACULTIES_GLSL}
+${DRIVE_MEMORY_BREAK_GLSL}
 
 void main(){
+  // A replaced road must never be recoverable through old excitation, debug
+  // views, a material's light ink or the transparent desktop variant.
+  if(uDriveMemoryBreak.x>=.99999){o=vec4(0.0);return;}
   vec2 frag = gl_FragCoord.xy;
   vec3 pulledImage=recordingPulledImage(frag/uRes);
   if(uRecordingViewPull>0.0)frag=pulledImage.xy*uRes;
@@ -790,6 +799,12 @@ void main(){
     float yi = mix(y, 1.0 - y, uGrade.x);
     y = pow(max(yi, 0.0), uGrade.y) * uGrade.z;
   }
+  // The receiver break changes the acquired light before tone and screening.
+  // Optical blur and grading above cannot borrow unmodified taps back into it.
+  c=driveMemoryBreakAcquire(c,gl_FragCoord.xy);
+  srcFull.rgb=driveMemoryBreakAcquire(srcFull.rgb,gl_FragCoord.xy);
+  srcCell.rgb=driveMemoryBreakAcquire(srcCell.rgb,gl_FragCoord.xy);
+  y=uGrade.w>0.0?luma(c):luma(srcCell.rgb);
   // TONE FIRST, and it has to be first: the picture is the leveled luminance and
   // everything downstream — material excitation, the halftone, the ink pair — is
   // a modulation of it rather than a replacement for it.
@@ -1097,6 +1112,8 @@ void main(){
   // remains black, and the room still has only its existing two ink values.
   float captureExposure = clamp(uRecordingExposure, 1.0, 12.0);
   float materialRelief = clamp((sourceLuma - neighbourLuma) * 1.35 * captureExposure, -0.10, 0.10);
+  float homeDistance = smoothstep(12.0,105.0,facultyDepth) * uHomeEngraving;
+  materialRelief *= 1.0-.40*homeDistance;
   materialRelief*=1.0-max(printedSampling*pigmentEdge,solidPigment*step(.001,printed.y));
   // Low-light acquisition measures the sensor floor in the same input units
   // as exposure. Exact zero remains unrecorded; faint real material can pass.
@@ -1150,7 +1167,8 @@ void main(){
   // than modulating it, because a stroke crossed with a dot field reads as
   // neither. Density still shifts the threshold either way, so a louder bank
   // still earns its extra marks.
-  float stippleThreshold = formStipple(pinMetres, uRecordingIrregularity, markDensity, markGrain);
+  float stockThreshold = formStipple(pinMetres, uRecordingIrregularity, markDensity, markGrain);
+  float stippleThreshold = stockThreshold;
   if(gScreenKind != 0 || uClusteredDotMix > 0.0){
     float hatched = screenThreshold(plateFrag, screenDir, halfTone,
       recordingScreenPhase(pinMetres), stippleThreshold);
@@ -1165,6 +1183,11 @@ void main(){
     float fineDetail=smoothstep(.035,.16,lumaEdge)*(1.0-smoothstep(.003,.03,depthEdge))
       *(1.0-printedSampling)*(1.0-inCab)*(1.0-quietMetalEdge)*(1.0-apparitionZone);
     stippleThreshold=mix(screened,stippleThreshold,.78*clamp(fineDetail,0.0,1.0));
+    // Open snow and distant air retain the same bit decision with less
+    // directional screening. Keep the stronger marks around close forms.
+    float homeQuiet = uHomeEngraving * (.51+.36*homeDistance)
+      * (1.0-.66*smoothstep(.010,.065,depthEdge));
+    stippleThreshold=mix(stippleThreshold,stockThreshold,homeQuiet);
   }
   // A very slow interference between the recording plate and the surface.
   // Apply it to the acquisition threshold, so it changes the distribution of
@@ -1177,7 +1200,7 @@ void main(){
     *(1.0-step(.5,uGrade.x))*captureBlackProtect;
   float interferenceAccessibility=(1.0-.65*clamp(uReduceMotion,0.0,1.0))
     *(1.0-.65*clamp(uReduceFlash,0.0,1.0));
-  stippleThreshold=clamp(stippleThreshold+.09*interferenceWindow*interferenceSafe
+  stippleThreshold=clamp(stippleThreshold+.09*(1.0-.66*uHomeEngraving)*interferenceWindow*interferenceSafe
     *interferenceAccessibility*finalScreenInterference(plateFrag,screenDir,pinMetres,
       gScreenKind==0?6.5:uScreenPeriodPx),0.0,1.0);
   float captureBit = step(stippleThreshold, halfTone) * hasCapturedLight;
@@ -1221,7 +1244,7 @@ void main(){
   // light contours in darkness; recesses and material creases cut back into
   // already-lit masses. This restores volume without inventing surface print.
   float silhouette = smoothstep(0.020, 0.105, depthEdge * uEdgeGain);
-  float crease = smoothstep(0.035, 0.155, lumaEdge * uEdgeGain);
+  float crease = smoothstep(0.035, 0.155, lumaEdge * uEdgeGain * (1.0-.52*homeDistance));
   float darkSide = 1.0 - smoothstep(0.30, 0.52, neighbourLuma);
   float lightSide = smoothstep(0.34, 0.64, neighbourLuma);
   float brightContour = step(0.42, silhouette * darkSide) * hasCapturedLight * (1.0-apparitionZone)
@@ -1255,6 +1278,11 @@ void main(){
     *captureBlackProtect;
   vec3 captureDark = sourceBlueprintRecordedInk(FINAL_CARBON_INK,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);
   vec3 captureLight = finalMaterialLightInk(broadColor,captureBlackProtect);
+  // Winter stock carries a little pigment in wood and fir. Its snow and
+  // haze stay close to neutral without changing which bits were exposed.
+  float homeCool=smoothstep(.005,.075,broadColor.b-broadColor.r);
+  float homeNeutral=uHomeEngraving*max(homeCool*.76,.27);
+  captureLight=mix(captureLight,vec3(luma(captureLight)),homeNeutral);
   captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);
   // World-anchored thin film and stepped terraces belong to Source stock.
   // The exact pigment coverage keeps code silver; hardware and black cores
@@ -1415,15 +1443,17 @@ void main(){
     float hi=max(raw.r,max(raw.g,raw.b)),lo=min(raw.r,min(raw.g,raw.b));
     float neutral=1.0-step(.0001,hi-lo);
     finalColor=pressureRecordedInk(finalColor,vec2(neutral*(1.0-step(.000001,hi)),neutral));
-    // The external Hush material uses the same fixed world field. Neutral
-    // human reference/hulls retain the existing endpoint treatment.
-    float cosmic=step(raw.g*1.25,min(raw.r,raw.b))*step(.006,min(raw.r,raw.b));
-    float heat=smoothstep(.28,.85,hi);
-    finalColor=pressureRecordedCosmosInk(finalColor,vec4(cosmic,0.0,heat,cosmic));
+    // Recover the same signed material payload decoded before acquisition.
+    // This preserves the recorder's decision and the black endpoint; it does
+    // not infer identity from a visible hue or evaluate a new sky after dither.
+    vec2 cosmic=hushCosmosDecodeTransport(raw);
+    finalColor=pressureRecordedCosmosInk(finalColor,vec4(cosmic.x,0.0,cosmic.y,cosmic.x));
   }
 #else
   if(uRecordedPressureInkReady>.5)finalColor=pressureRecordedCosmosInk(finalColor,texture(uRecordedPressureInk,fullUv));
 #endif
+
+  finalColor=sourceObjectNegativeColor(finalColor,sourceObjectNegativeAmount(faultMaterialTag));
 
   if(uDebugSource == 1.0) finalColor = c;
   if(uDebugSource == 2.0) finalColor = vec3(signalLevel);

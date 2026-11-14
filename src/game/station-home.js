@@ -2,7 +2,6 @@
 // settling supply its pull; turning back to the snow restores the outside.
 const finite = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const unit = (value) => Math.max(0, Math.min(1, finite(value)));
-export const STATION_HOME_LEAVE_METRES = .35;
 
 export function createStationHomeState(saved = {}) {
   const source = saved && typeof saved === 'object' ? saved : {};
@@ -11,11 +10,9 @@ export function createStationHomeState(saved = {}) {
   return {
     recognized,
     departed,
+    viewedRoom: recognized && source.viewedRoom === true,
     settled: recognized && !departed && source.settled === true,
     attention: recognized && !departed ? unit(source.attention) : 0,
-    awayArmed: recognized && !departed && source.awayArmed === true,
-    outwardDistance: recognized && !departed
-      ? Math.max(0, Math.min(STATION_HOME_LEAVE_METRES, finite(source.outwardDistance))) : 0,
     interactionDown: source.interactionDown === true,
   };
 }
@@ -37,9 +34,8 @@ export function stationHomePresentation(attention = 0) {
   };
 }
 
-// `outwardDistance` is the signed change in actual distance from the window,
-// in metres. A held key, a blocked step, or a glance is not a departure.
-// Call with the current interactionDown each frame, including release frames.
+// Walking out uses the realm's physical return door. The window offers a
+// separate deliberate exit. Call on both press and release.
 export function updateStationHome(previous, input = {}) {
   const state = createStationHomeState(previous);
   const effects = { recognize: false, look: false, stay: false, depart: false };
@@ -56,34 +52,26 @@ export function updateStationHome(previous, input = {}) {
     state.recognized = true;
     effects.recognize = true;
   }
+  if (atWindow && input.viewingRoom === true) state.viewedRoom = true;
   // An interaction held on arrival is not a fresh decision to leave the house.
   if (wasRecognized && fresh) {
-    if (input.action === 'look' && atWindow) effects.look = true;
+    if (input.action === 'look' && atWindow) {
+      effects.look = true;
+      state.viewedRoom = true;
+    }
     else if ((input.action === 'stay' || input.action === 'settle') && atWindow && input.lookingAtWindow === true) {
       state.settled = true;
       effects.stay = true;
     } else if (input.action === 'turn-away') effects.depart = true;
   }
 
-  if (state.recognized && input.lookingTowardSnow === true) {
-    state.awayArmed = true;
-    state.settled = false;
-    const travelled = finite(input.outwardDistance);
-    if (wasRecognized && travelled > 0) state.outwardDistance = Math.min(STATION_HOME_LEAVE_METRES, state.outwardDistance + travelled);
-    else if (travelled < 0) state.outwardDistance = 0;
-  } else {
-    state.awayArmed = false;
-    state.outwardDistance = 0;
-  }
-  if (wasRecognized && state.awayArmed && state.outwardDistance >= STATION_HOME_LEAVE_METRES) effects.depart = true;
+  if (input.lookingTowardSnow === true) state.settled = false;
 
   state.attention = atWindow && input.lookingAtWindow === true && input.lookingTowardSnow !== true
     ? (state.settled ? 1 : 0.2 + 0.55 * unit(input.approach)) : 0;
   if (effects.depart) {
     state.departed = true;
     state.settled = false;
-    state.awayArmed = false;
-    state.outwardDistance = 0;
     state.attention = 0;
   }
   return result();

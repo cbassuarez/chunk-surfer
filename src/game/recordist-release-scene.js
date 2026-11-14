@@ -152,7 +152,7 @@ export function makeRecordistReleaseScene({
         const button = inputPrompt('interact');
         if (saveError) prompt = 'SAVING THE RELEASE…';
         else if (!usable) prompt = loadError ? `${button} RETRY THE RECORDIST MODEL` : 'PREPARING THE RECORDIST…';
-        else if (!owns) prompt = base.tool === 'rig' ? 'THE BENT RIG IS NEEDED' : 'THE TUNING FORK IS NEEDED';
+        else if (!owns) prompt = base.tool === 'rig' ? 'THE SERVICE INTERFACE IS NEEDED' : 'THE TUNING FORK IS NEEDED';
         else if (base.stage !== 'settling') prompt = base.requiresRelease && held ? `RELEASE ${button}`
           : `${button} HOLD · ${base.actionLabel}${base.progress > 0 ? ` · ${Math.round(base.progress * 100)}%` : ''}`;
       }

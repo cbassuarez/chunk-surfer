@@ -5,6 +5,21 @@ import {
   cancelControlScope, sampleControl, controlMechanicsSnapshot,
 } from '../src/game/control-mechanics.js';
 
+test('opted-in lamp changes use a reversible 160ms curve independently of physical travel',()=>{
+  cancelControlScope('test:powered');
+  const sample=(lit,now)=>sampleControl('test:powered',{lit,now,lampMs:160});
+  sample(true,0);const halfway=sample(true,80);
+  assert.equal(halfway.travel,0);assert.equal(halfway.lampHeat,.5);
+  assert.equal(sample(false,80).lampHeat,.5,'a reversal starts from the current light');
+  assert.equal(sample(false,160).lampHeat,.25);
+  assert.equal(sample(true,160).lampHeat,.25,'rapid switching cannot restart from zero');
+  assert.equal(sample(true,320).lampHeat,1);
+  pressControl('test:powered',{now:320});
+  assert.equal(sample(true,390).travel,1);releaseControl('test:powered',{now:410});
+  assert.equal(sample(true,530).travel,0);assert.equal(sample(true,530).lampHeat,1);
+  cancelControlScope('test:powered');
+});
+
 test('lamp heat is independent from mechanical hold and latch', () => {
   cancelControlScope('');
   sampleControl('test:up-lit', { lit: true, now: 0 });

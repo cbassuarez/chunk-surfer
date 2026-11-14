@@ -5,19 +5,19 @@ import {pressureInstances,pressureSurfaceInstances,HUSH_DENSITY_RENDER} from '..
 import {setPressureInstances,setPressureSurfaceInstances} from '../src/render/props3d.js';
 import {freshHushDensityPose} from '../src/game/hush-density-performance.js';
 
-const actor=(extra={})=>({id:'density:1',x:8,y:12,floorH:2.4,heightM:2.05,strength:.9,
+const actor=(extra={})=>({id:'density:1',x:8,y:12,floorH:2.4,heightM:HUSH_DENSITY_RENDER.heightM,strength:.9,
   performance:{version:1,role:'live-pressure',heading:.7,clip:'pressure_advance',time:.5,loop:false,seed:19,
     manifestation:.8,motion:'hunt',density:{...freshHushDensityPose(19),phase:.37,traction:.9,compression:.7}},...extra});
 
-test('every HUSH role uses the same folded body while the human practice tenant stays human',()=>{
+test('every HUSH role uses the same terminal adult body while the human practice tenant stays human',()=>{
   for(const role of ['live-pressure','source-rear','source-front','court-trace','dock-tableau','plant-tableau','plant-hallucination','recording-hallucination','legacy-pressure']){
     const a=actor();a.performance.role=role;
     const [instance]=pressureInstances(a);
     assert.equal(instance.mesh,HUSH_DENSITY_RENDER.core,role);
-    assert.equal(instance.character.support,undefined);
+    assert.ok(instance.character.support.contacts.length===2);
     assert.equal(instance.character.morphs,undefined);
-    assert.equal(instance.character.joints.head,undefined);
-    assert.equal(Object.keys(instance.character.joints).length,15);
+    assert.ok(instance.character.joints.head&&instance.character.joints.chest);
+    assert.ok(Object.keys(instance.character.joints).every(name=>!name.startsWith('fold_')));
     assert.equal(setPressureInstances([instance]),1);
     assert.equal(setPressureSurfaceInstances(pressureSurfaceInstances([instance])),1);
   }
@@ -70,9 +70,9 @@ test('only an explicit court reference projects the retained human recording',()
   a.performance.role='live-pressure';assert.equal(pressureInstances({...a,referenceTrace:true}).length,1);
 });
 
-test('captured clearance compresses width only, leaves the authoritative root and height alone',()=>{
+test('captured clearance never squeezes anatomy and leaves the authoritative root and height alone',()=>{
   const full=pressureInstances(actor())[0],narrow=pressureInstances(actor({clearanceM:.36}))[0];
-  assert.ok(Math.abs(narrow.scaleX-.4)<1e-8);
+  assert.equal(narrow.scaleX,1);
   for(const key of ['x','y','z','yaw','scale'])assert.equal(narrow[key],full[key]);
   assert.deepEqual(narrow.character,full.character);assert.equal(pressureSurfaceInstances([narrow])[0].scaleX,narrow.scaleX);
 });

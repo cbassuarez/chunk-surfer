@@ -44,8 +44,10 @@ test('the half-metre split is an authorized jump shortcut with no knowledge lock
 
 test('unmarked Catch edges can skip a receiving stage and use the actual lower landing',()=>{
   let state=at(C.catch.center.x+4.23,C.catch.center.z,2.4,'catch',1),events=[];
-  const vx=-sourceContinuationGait(state,{}).speed*.2;
-  for(let k=0;k<100&&!state.fall;k++)state=tick(state,{side:-.2},events);
+  // Preserve this controlled half-metre/second edge trajectory. Full keyboard
+  // flight now carries much farther; the analog input still permits this read.
+  const vx=-.52,side=vx/sourceContinuationGait(state,{}).speed;
+  for(let k=0;k<100&&!state.fall;k++)state=tick(state,{side},events);
   assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx-vx)<1e-12);
   state=until(state,s=>!s.fall,events);
   assert.equal(state.recovery,null);assert.equal(state.phase,'catch');assert.equal(state.level,3);assert.equal(state.feet,-12.6);
@@ -96,7 +98,10 @@ test('swept bodies hit real ceilings, solids and closed leaves without tunneling
 
 test('Source-II void motion uses its fixed spatial loop and a real same-floor landing without blackout',()=>{
   let state=at(0,-22.95,8.4),events=[];
-  for(let k=0;k<70&&!state.fall;k++)state=tick(state,{forward:1,run:true},events);
+  // An analog2.6m/s departure misses the intervening middle deck. Full flight
+  // reaches that real floor instead, which is a different valid decision.
+  const forward=2.6/sourceContinuationGait(state,{run:true}).speed;
+  for(let k=0;k<70&&!state.fall;k++)state=tick(state,{forward,run:true},events);
   state=until(state,s=>!!s.lastSpaceWrap,events);
   assert.ok(state.fall);assert.equal(state.recovery,null);assert.ok(state.fall.vy<0);
   assert.equal(sourceContinuationFrame(state).blackoutAlpha,0);
@@ -121,10 +126,10 @@ test('free jump latches, arbitrary fall metadata and motion survive pause and re
 test('Hush repeats arbitrary jump momentum and obeys the same Source-II spatial loop',()=>{
   let state=at(0,-22.95,8.4),events=[];
   state.hush={...state.hush,active:true,x:0,z:-21,feet:8.4,phase:'wrong-return',mode:'follow',elapsed:10,armed:true,trail:[{kind:'walk',x:0,z:-22.95,feet:8.4,phase:'wrong-return',level:0}],lastRecorded:{x:0,z:-22.95,feet:8.4,phase:'wrong-return',level:0}};
-  // At the new sprint speed this same edge reaches the middle floor. The
-  // walking trajectory deliberately misses it to isolate the void gluing.
-  const departureSpeed=sourceContinuationGait(state,{run:false}).speed;
-  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward:1,run:false},events);
+  // Full Source flight reaches the middle floor. This controlled analog
+  // trajectory deliberately misses it to isolate the void gluing.
+  const departureSpeed=2.6,forward=departureSpeed/sourceContinuationGait(state,{run:false}).speed;
+  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward,run:false},events);
   const edge=state.hush.trail.find(p=>p.kind==='drop');assert.ok(edge);assert.equal(edge.trigger,'step-off');assert.equal(edge.vz,-departureSpeed);
   for(let k=0;k<2200&&!events.some(e=>e.type==='hush-space-wrap');k++)state=tick(state,{},events);
   assert.ok(events.some(e=>e.type==='hush-space-wrap'));

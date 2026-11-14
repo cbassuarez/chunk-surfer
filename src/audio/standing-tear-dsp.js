@@ -5,7 +5,7 @@ const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
 // of bit-exact reproduction of Ableton's proprietary device.
 /** Signed PCM amplitude quantisation. Sample holding is a separate operation;
  * a low sample rate alone is never reported as bitcrushing. */
-export function quantizeStandingTearPCM(input,{bitDepth=10,effectiveSampleRate=28000,sampleRate=48000}={}){
+export function quantizeStandingTearPCM(input,{bitDepth=10,effectiveSampleRate=28000,sampleRate=48000,ditherSeed=null}={}){
   if(!(input instanceof Float32Array))throw new TypeError('Standing Tear PCM must be a Float32Array.');
   if(!Number.isInteger(bitDepth)||bitDepth<8||bitDepth>12)throw new RangeError('Standing Tear bit depth must be an integer from 8 to 12.');
   if(!Number.isFinite(sampleRate)||sampleRate<=0)throw new RangeError('Standing Tear PCM needs its actual sample rate.');
@@ -13,6 +13,11 @@ export function quantizeStandingTearPCM(input,{bitDepth=10,effectiveSampleRate=2
   const rate=Math.min(sampleRate,effectiveSampleRate),ratio=rate/sampleRate,negative=2**(bitDepth-1),positive=negative-1;
   const samples=new Float32Array(input.length),levels=new Set();
   let phase=1,held=0,updates=0,invalidSamples=0,clippedSamples=0,inputPeak=0,outputPeak=0;
+  let ditherState=(ditherSeed>>>0)||1;
+  const random=()=>{
+    ditherState^=ditherState<<13;ditherState^=ditherState>>>17;ditherState^=ditherState<<5;
+    return (ditherState>>>0)/4294967296;
+  };
   for(let index=0;index<input.length;index++){
     const original=input[index];
     if(!Number.isFinite(original))invalidSamples++;
@@ -20,13 +25,15 @@ export function quantizeStandingTearPCM(input,{bitDepth=10,effectiveSampleRate=2
     if(phase>=1){
       phase-=Math.floor(phase);
       const value=Math.max(-1,Math.min(1,finite(original,0))),scale=value<0?negative:positive;
-      const code=Math.round(value*scale);
+      // Optional TPDF at the quantizer input, one LSB peak either side.
+      const dither=ditherSeed===null?0:random()-random();
+      const code=Math.max(-negative,Math.min(positive,Math.round(value*scale+dither)));
       held=code===0?0:code/scale;levels.add(code);updates++;
     }
     samples[index]=held;outputPeak=Math.max(outputPeak,Math.abs(held));phase+=ratio;
   }
   return{samples,diagnostics:{kind:'signed-pcm-amplitude-quantisation',bitDepth,possibleAmplitudeLevels:2**bitDepth,
-    quantizerShape:'linear',dcShift:0,downsampleJitter:0,
+    quantizerShape:'linear',dcShift:0,downsampleJitter:0,dither:ditherSeed===null?null:'TPDF',
     observedAmplitudeLevels:levels.size,negativeStep:1/negative,positiveStep:1/positive,
     requestedEffectiveSampleRate:effectiveSampleRate,effectiveSampleRate:rate,sampleRate,
     sampleHold:rate<sampleRate,sampleUpdates:updates,inputSamples:input.length,invalidSamples,clippedSamples,inputPeak,outputPeak}};
@@ -38,7 +45,8 @@ export function createStandingTearProcessedBuffer(context,input,profile={}){
   if(!context?.createBuffer||!input?.getChannelData)throw new TypeError('Standing Tear processing needs an AudioBuffer and audio context.');
   const output=context.createBuffer(input.numberOfChannels,input.length,input.sampleRate),channels=[];
   for(let channel=0;channel<input.numberOfChannels;channel++){
-    const result=quantizeStandingTearPCM(input.getChannelData(channel),{...profile,sampleRate:input.sampleRate});
+    const ditherSeed=profile.ditherSeed==null?null:(profile.ditherSeed+channel)>>>0;
+    const result=quantizeStandingTearPCM(input.getChannelData(channel),{...profile,ditherSeed,sampleRate:input.sampleRate});
     output.getChannelData(channel).set(result.samples);channels.push(result.diagnostics);
   }
   return{buffer:output,diagnostics:{...channels[0],channels:input.numberOfChannels,durationSeconds:input.length/input.sampleRate,

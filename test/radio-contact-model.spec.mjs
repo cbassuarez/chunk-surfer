@@ -75,6 +75,20 @@ test('physical LCD RX/TX marks follow actual carrier and go dark after contact l
   model.update({carrier:'tx',dead:true});assert.equal(model.parts.transmitMark.visible,false);assert.equal(model.parts.display.visible,false);model.dispose();
 });
 
+test('radio LCD electrodes sit between the substrate and cover and emit only while powered',()=>{
+  const model=buildRadioContactModel(),{screen,lens,display}=model.parts;
+  const electrodes=display.children.filter(part=>part.name.startsWith('LCD digit segment'));
+  assert.ok(electrodes.length>0);
+  assert.ok(electrodes.every(part=>part.position.z>screen.position.z&&part.position.z<lens.position.z));
+  assert.ok(electrodes.some(part=>part.visible&&part.material.emissiveIntensity>0));
+  assert.equal(lens.material.depthWrite,false);
+  assert.ok(lens.material.transparent&&lens.material.opacity<.2);
+  model.update({dead:true});
+  assert.equal(screen.material.emissiveIntensity,0);
+  assert.ok(electrodes.every(part=>!part.visible&&part.material.emissiveIntensity===0));
+  model.dispose();
+});
+
 test('radio model disposes its owned shared geometry and materials exactly once',()=>{
   const model=buildRadioContactModel(),geometries=new Set(),materials=new Set();
   model.group.traverse(mesh=>{if(mesh.geometry)geometries.add(mesh.geometry);if(mesh.material)materials.add(mesh.material);});

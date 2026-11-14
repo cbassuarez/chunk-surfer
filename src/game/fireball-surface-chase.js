@@ -1,4 +1,4 @@
-import { fireballSurfaceContains,fireballSurfacePose } from './fireball-surface-pose.js';
+import { FIREBALL_SURFACE_FORGIVENESS,fireballSurfaceContains,fireballSurfacePose } from './fireball-surface-pose.js';
 
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 const identity=cast=>`${cast?.castId}:${cast?.surfaceIndex}`;
@@ -24,7 +24,11 @@ function sweptContact(pose,from,to){
 export function createFireballSurfaceChase({width=240,height=240}={}){
   let state=null;
   const pointers=new Map();
-  const bounds=pose=>({left:8,right:width-pose.size-8,top:8,bottom:height-pose.size-8});
+  const bounds=pose=>{
+    const x=Math.min(FIREBALL_SURFACE_FORGIVENESS,Math.max(0,(pose.width-pose.size)/2));
+    const y=Math.min(FIREBALL_SURFACE_FORGIVENESS,Math.max(0,(pose.height-pose.size)/2));
+    return {left:x,right:Math.max(x,pose.width-pose.size-x),top:y,bottom:Math.max(y,pose.height-pose.size-y)};
+  };
   function snapshot(){
     if(!state)return{cast:null,pose:null,acquired:false,progress:0,key:null,offer:0};
     return{cast:{...state.cast,catchReady:state.acquired,motion:{...state.cast.motion,formationProgress:state.progress}},
@@ -33,9 +37,22 @@ export function createFireballSurfaceChase({width=240,height=240}={}){
   }
   function latch(pose){state.pose={...pose};state.acquired=true;state.vx=0;state.vy=0;}
   function resize(next){
-    width=Math.max(116,Number(next?.width)||width);height=Math.max(116,Number(next?.height)||height);
-    if(state){const b=bounds(state.pose);const x=clamp(state.pose.x,b.left,b.right),y=clamp(state.pose.y,b.top,b.bottom);
-      state.pose={...state.pose,x,y,centerX:x+state.pose.size/2,centerY:y+state.pose.size/2,width,height};}
+    const nextWidth=Math.max(1,Number(next?.width)||width),nextHeight=Math.max(1,Number(next?.height)||height);
+    if(nextWidth===width&&nextHeight===height)return snapshot();
+    width=nextWidth;height=nextHeight;
+    pointers.clear();
+    if(state){
+      const old=state.pose;
+      const nextPose=fireballSurfacePose(state.cast,{width,height});
+      const from=bounds(old),to=bounds(nextPose);
+      const relative=(value,start,end)=>end>start?clamp((value-start)/(end-start),0,1):.5;
+      const x=to.left+(to.right-to.left)*relative(old.x,from.left,from.right);
+      const y=to.top+(to.bottom-to.top)*relative(old.y,from.top,from.bottom);
+      const centerX=x+nextPose.size/2,centerY=y+nextPose.size/2;
+      state.pose={...nextPose,x,y,centerX,centerY,offsetX:centerX-width/2,offsetY:centerY-height/2};
+      state.previous=null;state.lastNow=null;state.vx=0;state.vy=0;state.accumulator=0;
+      state.simTime=null;state.intentUntil=0;state.blockXUntil=0;state.blockYUntil=0;
+    }
     return snapshot();
   }
   function pointer(sample,{paintedPose=null,now=null}={}){
@@ -69,8 +86,10 @@ export function createFireballSurfaceChase({width=240,height=240}={}){
       const speed=Math.hypot(state.vx,state.vy),ceiling=620+Math.max(0,Math.min(1,Number(state.cast.motion?.pressure)||0))*180;
       if(speed>ceiling){state.vx*=ceiling/speed;state.vy*=ceiling/speed;}
       let x=pose.x+state.vx*h,y=pose.y+state.vy*h;
-      if(x<b.left||x>b.right){const sign=x<b.left?-1:1;const wall=sign<0?b.left:b.right;x=2*wall-x;state.vx=-sign*Math.abs(state.vx)*.94;state.blockXUntil=tickAt+220;state.blockXSign=sign;state.bounces++;}
-      if(y<b.top||y>b.bottom){const sign=y<b.top?-1:1;const wall=sign<0?b.top:b.bottom;y=2*wall-y;state.vy=-sign*Math.abs(state.vy)*.94;state.blockYUntil=tickAt+220;state.blockYSign=sign;state.bounces++;}
+      if(b.left===b.right){x=b.left;state.vx=0;}
+      else if(x<b.left||x>b.right){const sign=x<b.left?-1:1;const wall=sign<0?b.left:b.right;x=2*wall-x;state.vx=-sign*Math.abs(state.vx)*.94;state.blockXUntil=tickAt+220;state.blockXSign=sign;state.bounces++;}
+      if(b.top===b.bottom){y=b.top;state.vy=0;}
+      else if(y<b.top||y>b.bottom){const sign=y<b.top?-1:1;const wall=sign<0?b.top:b.bottom;y=2*wall-y;state.vy=-sign*Math.abs(state.vy)*.94;state.blockYUntil=tickAt+220;state.blockYSign=sign;state.bounces++;}
       x=clamp(x,b.left,b.right);y=clamp(y,b.top,b.bottom);
       state.travel+=Math.hypot(x-pose.x,y-pose.y);
       pose={...pose,x,y,centerX:x+pose.size/2,centerY:y+pose.size/2,offsetX:x+pose.size/2-width/2,offsetY:y+pose.size/2-height/2,width,height};

@@ -20,10 +20,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+    "sha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 891133,
-    "bytes": 64509688
+    "triangles": 890557,
+    "bytes": 64730312
   },
   "meshes": [
     {
@@ -2643,10 +2643,10 @@
         "max": [
           3.06,
           8.023,
-          2.14
+          2.86
         ]
       },
-      "triangles": 8100,
+      "triangles": 7524,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

@@ -1,8 +1,9 @@
 import { CELL } from '../data/floorplan/legend.js';
-import { normalizePressurePresentation } from '../game/pressure-performance.js';
+import { normalizePressurePresentation, pressureBodyPosition } from '../game/pressure-performance.js';
 import { hushPoseAt } from './hush-pose.js';
 import { PRESSURE_GAIT } from '../game/pressure-gait.js';
 import { hushDensityCharacter } from '../game/hush-density-performance.js';
+import { HUSH_POSTURE_NATIVE_HEIGHT_M, HUSH_POSTURE_REVISION } from '../data/generated/hush-last-posture-support.js';
 
 const HEIGHT = 2.18;
 const MODES = ['live', 'core', 'glow', 'off'];
@@ -11,7 +12,7 @@ const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(
 const angle = value => Math.atan2(Math.sin(value), Math.cos(value));
 const smooth = value => { const u = clamp(value, 0, 1); return u * u * (3 - 2 * u); };
 export const HUSH_DENSITY_RENDER = Object.freeze({
-  asset: 'assets/hush-density.glb', heightM: 2.05, widthM: .90,
+  asset: 'assets/hush-density.glb', revision: HUSH_POSTURE_REVISION, heightM: HUSH_POSTURE_NATIVE_HEIGHT_M,
   core: 'hush_density_core', surface: 'hush_density_return', volume: 'hush_density_volume',
 });
 function freeze(value) {
@@ -23,10 +24,15 @@ function freeze(value) {
   return value;
 }
 
-// One simulation-owned pressure mass. It can borrow a human reference at the
-// service court, but ordinary HUSH never inherits the human foot solver, face,
-// joint offsets or a camera-facing root. Old recordings use a bounded captured
-// fallback supplied by hushDensityCharacter, never a new renderer clock.
+// The practice tenant is a drawing, not Pressure. Keep its visible body and
+// captured pose intact, but never lend it the hunter's whole-room absorption.
+export function pressureRoomAbsorptionStrength(actor) {
+  return actor?.performance?.role === 'tenant' ? 0 : actor?.strength ?? 0;
+}
+
+// One simulation-owned Last Posture. Its anatomical rig is separate from the
+// retained human reference. Foot support and the edge-leading passage turn are
+// captured presentation, never a second root, target belief or render clock.
 export function pressureInstances(primary, secondary, { mode = 'live', reducedMotion = false, reduceFlash = false } = {}) {
   if (mode === 'off') return freeze([]);
   const result = [];
@@ -37,19 +43,22 @@ export function pressureInstances(primary, secondary, { mode = 'live', reducedMo
       result.push(...legacyPressureInstances(a, null, { mode, reducedMotion, reduceFlash }));
       continue;
     }
-    const p = a.performance, resolvedMode = MODES.includes(a.mode) ? a.mode : MODES.includes(mode) ? mode : 'live';
+    const p = Number.isFinite(raw.performance?.grab) ? { ...a.performance, grab: raw.performance.grab } : a.performance;
+    const resolvedMode = MODES.includes(a.mode) ? a.mode : MODES.includes(mode) ? mode : 'live';
     if (resolvedMode === 'off') continue;
     const pose = hushPoseAt(p.cue?.name, 0, p.cue?.elapsed ?? -1, { reducedMotion: reducedMotion || p.reducedMotion });
     const flicker = !reduceFlash && pose.flicker > 0 && Math.floor((p.cue?.elapsed || 0) * 9) % 2 ? 1 - pose.flicker * .72 : 1;
     const strength = a.strength * p.manifestation * (1 - pose.dim) * flicker;
     if (strength <= .018) continue;
     const scale = a.heightM / HUSH_DENSITY_RENDER.heightM;
-    const scaleX = a.clearanceM == null ? 1 : clamp(a.clearanceM / (HUSH_DENSITY_RENDER.widthM * scale), .22, 1);
+    const presentationHeadingDelta = p.density?.clearanceTurn || 0;
     const surface = resolvedMode === 'live';
+    const position = pressureBodyPosition(a, CELL);
     result.push({
       id: `pressure:${a.id}:${index}`, mesh: surface ? HUSH_DENSITY_RENDER.core : HUSH_DENSITY_RENDER.volume,
-      x: (a.x + .5) * CELL, y: a.floorH, z: (a.y + .5) * CELL, yaw: p.heading, scale, scaleX,
-      character: hushDensityCharacter(p, { reducedMotion: reducedMotion || p.reducedMotion }),
+      x: position.x * CELL, y: a.floorH, z: position.z * CELL,
+      yaw: angle(p.heading + presentationHeadingDelta), scale, scaleX: 1,
+      character: hushDensityCharacter(p, { reducedMotion: reducedMotion || p.reducedMotion, presentationHeadingDelta, scale }),
       densitySurface: surface,
       pressure: { strength, mode: resolvedMode === 'glow' ? 'glow' : 'core', glow: resolvedMode === 'glow' ? 1 : 0, seed: p.seed },
     });

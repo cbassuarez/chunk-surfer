@@ -13,12 +13,12 @@ const standard=BUILDING_AMENITY_PROPS.find(p=>p.id==='amenity-standard-wc');
 const standardApproach=bodyPoint({x:standard.x-Math.sin(standard.yaw),y:standard.y+Math.cos(standard.yaw)});
 
 export const ATRIUM_ROUTE_TARGETS=Object.freeze([
-  {id:'scene-dock',at:{x:147,y:27},door:'dock-foyer-service'},
+  {id:'scene-dock',at:{x:139,y:27},door:'dock-garden-service'},
   {id:'large-wc',at:survey('public-wc-large-interior'),door:'public-wc-large'},
   {id:'standard-wc',at:standardApproach,door:'public-wc-standard'},
   {id:'washroom',at:survey('public-wc-main-wash')},
   {id:'box-office',at:{x:188,y:21},door:'foh-office'},
-  {id:'hall-stage-service',at:{x:208,y:21},door:'hall-stage-service'},
+  {id:'hall-stage-service',at:{x:205,y:22},door:'hall-stage-service'},
   {id:'hall-public',at:{x:199,y:49},door:'hall-vestibule'},
   {id:'greenhouse',at:{x:168,y:34},door:'pool-lobby'},
   {id:'sealed-public-front-approach',at:{x:158,y:9}},
@@ -27,7 +27,7 @@ const key=({x,y})=>`${x},${y}`;
 export function compileAtriumAccess(){
   FP.compile(conservatory.levels,{...conservatory});PROPS.propsInit(FP);
   PROPS.setColliderGroupEnabled('glass-court',true);
-  for(const id of ['dock-foyer-service','public-wc-large','public-wc-standard','foh-office','hall-stage-service','hall-vestibule','pool-lobby'])FP.setDoorOpen(id,true);
+  for(const id of ['dock-garden-service','dock-foyer-service','public-wc-large','public-wc-standard','foh-office','hall-stage-service','hall-vestibule','pool-lobby'])FP.setDoorOpen(id,true);
 }
 export function atriumBodyRoute(start,finish){
   if(FP.isSolid(start.x,start.y)||!PROPS.propCanOccupy(start.x,start.y))return null;
@@ -38,8 +38,7 @@ export function atriumBodyRoute(start,finish){
       const wanted={x:from.x+dx,y:from.y+dy};
       const step=FP.canStep(from.x,from.y,wanted.x,wanted.y,{keys:new Set(['master'])});
       if(!step.ok)continue;const to=step.redirect||wanted,k=key(to);
-      if(to.x<145||to.x>213||to.y<4||to.y>65||visited.has(k)
-        ||FP.zoneAt(to.x,to.y)===ZONE.civicCourt
+      if(to.x<132||to.x>219||to.y<4||to.y>65||visited.has(k)
         ||!PROPS.propCanOccupy(to.x,to.y,{from}))continue;
       visited.set(k,{from,dx,dy,to});queue.push(to);
     }

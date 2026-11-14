@@ -48,6 +48,17 @@ function refine(pos,uv,tris,{zBelow,maxEdge}){
   return{pos:P,uv:U,tris:T};
 }
 
+// Rear pigment is divided at the actual door seam before detaching the
+// leaves. Otherwise a letter triangle can bridge from shingle to a sprung door.
+function splitBrandRearSeam(fine){
+ const pos=[],tris=[],point=i=>fine.pos.slice(i*3,i*3+3);
+ const push=poly=>{for(let i=1;i<poly.length-1;i++){const tri=[poly[0],poly[i],poly[i+1]],n=cross(tri[1].map((v,k)=>v-tri[0][k]),tri[2].map((v,k)=>v-tri[0][k]));if(Math.hypot(...n)<1e-12)continue;const start=pos.length/3;tri.forEach(p=>pos.push(...p));tris.push([start,start+1,start+2]);}};
+ const clip=(poly,side)=>{const out=[];for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],ia=side*a[0]>=0,ib=side*b[0]>=0;if(ia)out.push(a);if(ia!==ib){const t=-a[0]/(b[0]-a[0]);out.push(a.map((v,k)=>v+(b[k]-v)*t));}}return out;};
+ for(const indices of fine.tris){const tri=indices.map(point);if(tri.every(p=>p[2]>2.4)){push(clip(tri,-1));push(clip(tri,1));}else push(tri);}
+ return{pos,uv:null,tris};
+}
+const attachmentOf=key=>key==='brandRearDoor'?'rearDoor':key==='brandRearDoorFar'?'rearDoorFar':key;
+
 export async function buildVanWreck(){
   const io=new NodeIO().registerExtensions(ALL_EXTENSIONS);
   const doc=await io.read(SOURCE),root=doc.getRoot(),buffer=root.listBuffers()[0];
@@ -64,7 +75,8 @@ export async function buildVanWreck(){
       const I0=prim.getIndices()?.getArray()||Uint32Array.from({length:P0.length/3},(_,i)=>i);
       const moved=Array.from(P0,(v,i)=>v+offset[i%3]),tri0=[];for(let t=0;t<I0.length;t+=3)tri0.push([I0[t],I0[t+1],I0[t+2]]);
       const D=VAN_WRECK.subdivide,panel=matName===D.material?refine(moved,UV0?Array.from(UV0):null,tri0,{zBelow:Infinity,maxEdge:D.panelEdge}):null;
-      const fine=panel?refine(panel.pos,panel.uv,panel.tris,D):{pos:moved,uv:UV0?Array.from(UV0):null,tris:tri0};
+      let fine=panel?refine(panel.pos,panel.uv,panel.tris,D):{pos:moved,uv:UV0?Array.from(UV0):null,tris:tri0};
+      if(sourceName===VAN_WRECK.brandSource)fine=splitBrandRearSeam(fine);
       const P=fine.pos,UV=fine.uv,I=fine.tris.flat();stats.refined+=fine.tris.length-tri0.length;
       const original=i=>[P[i*3],P[i*3+1],P[i*3+2]];
       const bent=new Map(),bend=i=>{if(!bent.has(i))bent.set(i,vanWreckPoint(original(i)));return bent.get(i);};
@@ -72,16 +84,17 @@ export async function buildVanWreck(){
       for(let t=0;t<I.length;t+=3){
         const tri=[I[t],I[t+1],I[t+2]],c=[0,1,2].map(k=>tri.reduce((n,i)=>n+original(i)[k],0)/3);
         if(matName===VAN_WRECK.smashedLampMaterial&&Math.sign(c[0])===VAN_WRECK.smashedLampSide){stats.smashed++;continue;}
-        const key=sourceName===VAN_WRECK.brandSource?'brand':vanWreckPieceOf(sourceName,c);
+        const parentPiece=vanWreckPieceOf(sourceName===VAN_WRECK.brandSource?'drive_vehicle_body':sourceName,c);
+        const key=sourceName===VAN_WRECK.brandSource?(parentPiece==='rearDoor'?'brandRearDoor':parentPiece==='rearDoorFar'?'brandRearDoorFar':'brand'):parentPiece;
         if(key==='gone'){stats.gone++;continue;}
         // Torn: a panel the bend stretched past fracture elongation. A hinged
         // door is a rigid panel and is not bent at all.
-        if(key!=='brand'&&!VAN_WRECK.pieces[key]?.rigid){const stretch=Math.max(...[[0,1],[1,2],[2,0]].map(([i,j])=>dist(bend(tri[i]),bend(tri[j]))/Math.max(1e-6,dist(original(tri[i]),original(tri[j])))));
+        if(!key.startsWith('brand')&&!VAN_WRECK.pieces[key]?.rigid){const stretch=Math.max(...[[0,1],[1,2],[2,0]].map(([i,j])=>dist(bend(tri[i]),bend(tri[j]))/Math.max(1e-6,dist(original(tri[i]),original(tri[j])))));
         if(stretch>VAN_WRECK_CRASH.tearStretch){stats.torn++;continue;}}
         if(!groups.has(key))groups.set(key,[]);groups.get(key).push(tri);
       }
       for(const[key,tris]of groups){
-        const remap=new Map(),pos=[],uv=[],idx=[],rigid=!!VAN_WRECK.pieces[key]?.rigid;
+        const remap=new Map(),pos=[],uv=[],idx=[],rigid=!!VAN_WRECK.pieces[attachmentOf(key)]?.rigid;
         for(const tri of tris)for(const i of tri){
           if(!remap.has(i)){remap.set(i,pos.length/3);pos.push(...(rigid?original(i):bend(i)));if(UV)uv.push(UV[i*2],UV[i*2+1]);}
           idx.push(remap.get(i));
@@ -103,7 +116,7 @@ export async function buildVanWreck(){
   const scene=root.listScenes()[0]||doc.createScene('van wreck');
   for(const node of root.listNodes())node.dispose();
   for(const m of root.listMeshes())if(!Object.values(out).includes(m))m.dispose();
-  for(const[key,m]of Object.entries(out)){m.setExtras({vanWreck:VAN_WRECK.revision,piece:key,pivot:VAN_WRECK.pieces[key]?.pivot||null,frame:'drive.glb body frame; cab moved by cabinBodyMount before bending'});scene.addChild(doc.createNode(m.getName()).setMesh(m));}
+  for(const[key,m]of Object.entries(out)){m.setExtras({vanWreck:VAN_WRECK.revision,piece:key,pivot:VAN_WRECK.pieces[attachmentOf(key)]?.pivot||null,frame:'drive.glb body frame; cab moved by cabinBodyMount before bending'});scene.addChild(doc.createNode(m.getName()).setMesh(m));}
   await doc.transform(prune());
   for(const extra of root.listBuffers().slice(1)){for(const a of root.listAccessors())if(a.getBuffer()===extra)a.setBuffer(buffer);extra.dispose();}
   const bytes=Buffer.from(await io.writeBinary(doc));
@@ -114,7 +127,7 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   const{bytes,stats}=await buildVanWreck();
   if(bytes.length>12*1024*1024)throw Error('van wreck budget exceeded '+bytes.length);
   fs.writeFileSync(OUT,bytes);
-  const meta={schema:1,revision:VAN_WRECK.revision,bytes:bytes.length,sha256:sha(bytes),source:{path:'public/assets/source-drive/drive.glb',sha256:sha(fs.readFileSync(SOURCE))},crash:VAN_WRECK_CRASH,...stats};
+  const meta={schema:1,revision:VAN_WRECK.revision,bytes:bytes.length,sha256:sha(bytes),source:{path:'public/assets/source-drive/drive.glb',sha256:sha(fs.readFileSync(SOURCE))},brand:{path:'public/assets/van-brand.glb',sha256:sha(fs.readFileSync(BRAND))},crash:VAN_WRECK_CRASH,...stats};
   fs.writeFileSync(OUT.replace(/\.glb$/,'.json'),JSON.stringify(meta,null,2)+'\n');
   console.log(JSON.stringify(meta));
 }

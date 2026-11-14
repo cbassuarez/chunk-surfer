@@ -10,6 +10,7 @@ import { sampleNavigatorLcdMotion } from '../src/render/navigator-lcd-motion.js'
 import { navigatorLcdMeterGeometry, navigatorLcdScaleMarks } from '../src/render/navigator-lcd.js';
 import {resetDualTraceMeters} from '../src/audio/dual-trace.js';
 import {dualTracePeakIndex,dualTraceUnit,drawSevenSegmentNumber,drawTraceCell} from '../src/render/dual-trace-display.js';
+import {lcdGeometry,deviceBox,paintedWord,within,matrixInk} from './helpers/lcd-geometry.mjs';
 
 test.beforeEach(()=>resetDualTraceMeters());
 let fixtureSerial=0;
@@ -39,7 +40,7 @@ test('the navigator LCD is a sibling below VFD glass at every supported field-de
     assert.ok(view.lcd.y-view.aperture.y-view.aperture.h>=.69,'a metal band separates the cutouts');
     assert.ok(contained(view.viewport,view.aperture));
     assert.ok(contained(view.footer,view.aperture));
-    assert.ok(view.viewport.h>=5.5,'compact map height returns from the old telemetry reserve');
+    assert.ok(view.viewport.h>=5.5,'compact map height remains readable beside the condition rail');
     assert.ok(view.lcd.y+view.lcd.h<=housing.y+housing.h-1);
     for(const name of['takeLabel','takeCount','slots','injuries','monitorLabel','meter','status']){
       assert.ok(contained(layout[name],view.lcd),`${name} stays inside ${cols}x${rows} LCD`);
@@ -97,32 +98,23 @@ test('the actual monitor danger thresholds, clipping and held peak survive the L
   assert.equal(submittedFloor.segments,0);assert.equal(submittedFloor.db,-96);assert.equal(submittedFloor.status,'CAUTION');
 });
 
-function recordingContext(){
-  const draws=[],stack=[];
-  const state={globalAlpha:1,shadowBlur:0,shadowOffsetX:0,shadowOffsetY:0};
-  const ctx=new Proxy(state,{get(target,key){
-    if(key in target)return target[key];
-    if(key==='save')return()=>stack.push({...state});
-    if(key==='restore')return()=>{const saved=stack.pop();assert.ok(saved);for(const k of Object.keys(state))delete state[k];Object.assign(state,saved);};
-    if(key==='createLinearGradient')return()=>({stops:[],addColorStop(offset,color){this.stops.push([offset,color]);}});
-    return(...args)=>draws.push({kind:key,args,alpha:state.globalAlpha,shadowBlur:state.shadowBlur,fillStyle:state.fillStyle,font:state.font});
-  },set(target,key,value){target[key]=value;return true;}});
-  return{ctx,draws,stack,state};
+const front={x:0,y:0};
+function paint(telemetry,lcd,metrics,options={}){
+  const h=lcdGeometry();
+  const layout=paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState(telemetry),{...metrics,view:front,...options});
+  return{...h,layout};
 }
-
-function inkPaths(draws){
-  const filled=[];let path=[];
-  for(const draw of draws){
-    if(draw.kind==='beginPath')path=[];
-    else if(['moveTo','lineTo','closePath'].includes(draw.kind))path.push({kind:draw.kind,args:draw.args});
-    else if(draw.kind==='fill')filled.push({path:[...path],alpha:draw.alpha,fillStyle:draw.fillStyle});
-  }
-  return filled;
+function expectWord(frame,text,box,metrics){
+  const word=paintedWord(frame.fills,text,deviceBox(box,metrics),{padding:2*metrics.dpr});
+  assert.equal(word.length,[...text.replaceAll(' ','')].length,`${text} must use its display electrodes`);
+  return word;
 }
 function containsInk(actual,expected,message){
-  const paths=inkPaths(actual),required=inkPaths(expected);assert.ok(required.length>0,'the production reference painter emitted real electrodes');
-  for(const path of required)assert.ok(paths.some(candidate=>JSON.stringify(candidate.path)===JSON.stringify(path.path)
-    &&Math.abs(candidate.alpha-path.alpha)<1e-9&&candidate.fillStyle===path.fillStyle),message);
+  const formed=expected.filter(draw=>draw.kind==='path');
+  assert.ok(formed.length>0,'the reference painter emitted real electrodes');
+  for(const draw of formed)assert.ok(actual.some(candidate=>candidate.kind==='path'
+    &&Math.abs(candidate.alpha-draw.alpha)<1e-9
+    &&JSON.stringify(candidate.cells)===JSON.stringify(draw.cells)),message);
 }
 
 test('one real source integrates RMS separately from its immediate warning and releases to genuine silence',()=>{
@@ -140,50 +132,58 @@ test('one real source integrates RMS separately from its immediate warning and r
   shown=navigatorTelemetryState({monitor:{sourceId,available:false}},{nowMs:10001});
   assert.equal(shown.monitor.available,false);assert.equal(shown.monitor.segments,0);assert.equal(shown.monitor.peakSegments,0);
 });
-function expectDbInk(draws,lcd,metrics,text){
-  const ref=recordingContext(),bank=navigatorTelemetryLayout(lcd).db;
-  drawSevenSegmentNumber(ref.ctx,text,bank.x*metrics.cellW*metrics.dpr,bank.y*metrics.cellH*metrics.dpr,
-    bank.h*metrics.cellH*metrics.dpr,{color:'#1c3424',dormant:'#1c3424',lcd:true});
-  containsInk(draws,ref.draws,`actual formed dB electrodes display ${text}`);
+function expectDbInk(fills,lcd,metrics,text){
+  const ref=lcdGeometry(),bank=deviceBox(navigatorTelemetryLayout(lcd).db,metrics);
+  drawSevenSegmentNumber(ref.ctx,text,bank.x,bank.y,bank.h,{lcd:true});
+  containsInk(fills,ref.fills,`actual formed dB electrodes display ${text}`);
 }
 
-test('the real LCD paint has no phosphor bloom and changes only with supplied telemetry',()=>{
-  const lcd={x:2,y:15,w:23,h:3.15};
-  const render=telemetry=>{
-    const h=recordingContext();
-    paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState(telemetry),{cellW:8.45,cellH:20,dpr:1});
-    assert.equal(h.stack.length,0);assert.equal(h.state.globalAlpha,1);
-    assert.ok(h.draws.every(draw=>draw.shadowBlur===0),'LCD ink must never inherit a VFD halo');
-    assert.ok(h.draws.filter(draw=>draw.kind==='fillRect').every(draw=>draw.args.slice(0,4).every(Number.isFinite)));
-    return h.draws.map(draw=>({...draw,fillStyle:typeof draw.fillStyle==='object'?{stops:draw.fillStyle.stops}:draw.fillStyle}));
-  };
+test('the LCD renders formed ink and its own bounded glow without manufacturing input',()=>{
+  const lcd={x:2,y:15,w:23,h:3.15},metrics={cellW:8.45,cellH:20,dpr:1};
   const quiet={takes:2,total:5,monitor:monitorSnapshotForRms(0)};
-  assert.deepEqual(render(quiet),render(quiet),'there is no timer-driven fake signal or flicker');
-  assert.notDeepEqual(render(quiet),render({...quiet,monitor:monitorSnapshotForRms(.2)}));
+  const normal=paint(quiet,lcd,metrics);
+  assert.equal(normal.stack.length,0);
+  assert.equal(normal.state.globalAlpha,1);
+  assert.deepEqual(normal.nativeText,[],'no browser font participates');
+  assert.ok(normal.fills.some(draw=>draw.blur>0&&draw.clip),'active electrodes glow inside the cutout');
+  const reduced=paint(quiet,lcd,metrics,{reducedEffects:true});
+  assert.ok(reduced.fills.every(draw=>draw.blur===0),'reduced effects preserves the text without glow');
+  assert.deepEqual(normal.fills,paint(quiet,lcd,metrics).fills,'steady data never fabricates a display pulse');
+  assert.notDeepEqual(normal.fills,paint({...quiet,monitor:monitorSnapshotForRms(.2)},lcd,metrics).fills);
+});
+
+test('the LCD electrodes shift together behind a fixed aperture with the viewing angle',()=>{
+  const lcd={x:2,y:15,w:23,h:3.15},metrics={cellW:8.45,cellH:20,dpr:2};
+  const telemetry={takes:2,total:5,monitor:monitorSnapshotForRms(0)};
+  const near=paint(telemetry,lcd,metrics,{view:{x:-.8,y:.5}}),far=paint(telemetry,lcd,metrics,{view:{x:.8,y:-.5}});
+  const first=matrixInk(near.fills),second=matrixInk(far.fills);
+  assert.ok(first.length>0);
+  assert.equal(first.length,second.length);
+  const dx=second[0].ink.x-first[0].ink.x,dy=second[0].ink.y-first[0].ink.y;
+  assert.ok(dx<0&&dy>0,'viewing from opposite sides moves recessed ink in the opposite direction');
+  for(let i=0;i<first.length;i++){
+    assert.ok(Math.abs(second[i].ink.x-first[i].ink.x-dx)<1e-8);
+    assert.ok(Math.abs(second[i].ink.y-first[i].ink.y-dy)<1e-8);
+    assert.deepEqual(first[i].clip,second[i].clip);
+  }
+  assert.deepEqual(near.fills.slice(0,3),far.fills.slice(0,3),'the housing stays fixed');
 });
 
 test('takes use digits only, while the monitor keeps its own meter',()=>{
   const metrics={cellW:8.45,cellH:20,dpr:1};
   for(const height of [3.15,4.15])for(const takes of [0,2,5]){
     const lcd={x:2,y:15,w:23,h:height},monitor=monitorSnapshotForRms(.2);
-    const render=takesVisible=>{
-      const h=recordingContext();
-      paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState({takesVisible,takes,total:5,monitor}),metrics);
-      return h.draws;
-    };
-    const shown=render(true),hidden=render(false);
-    assert.ok(shown.some(d=>d.kind==='fillText'&&d.args[0]===String(takes).padStart(2,'0')));
-    assert.ok(shown.some(d=>d.kind==='fillText'&&d.args[0]==='/ 05'));
-    const rectangles=draws=>draws.filter(d=>d.kind==='fillRect').map(d=>({args:d.args,alpha:d.alpha,
-      fillStyle:typeof d.fillStyle==='object'?d.fillStyle.stops:d.fillStyle}));
-    assert.deepEqual(rectangles(shown),rectangles(hidden),
-      'showing the takes count adds no row of bars or rectangles');
-    const meter=navigatorTelemetryLayout(lcd).meter;
-    const cells=navigatorLcdMeterGeometry(meter,metrics);
-    const reference=recordingContext(),state=settledTelemetryState({takes,total:5,monitor});
-    for(const cell of cells)drawTraceCell(reference.ctx,cell.x,meter.y*metrics.cellH,cell.w,meter.h*metrics.cellH,'#1c3424',
-      {alpha:cell.index<state.monitor.segments?.96:.13,chamfer:.8});
-    containsInk(shown,reference.draws,'the live monitor retains every formed electrode at its actual geometry and measured activity');
+    const shown=paint({takesVisible:true,takes,total:5,monitor},lcd,metrics);
+    const hidden=paint({takesVisible:false,takes,total:5,monitor},lcd,metrics);
+    expectWord(shown,String(takes).padStart(2,'0'),shown.layout.takeCount,metrics);
+    expectWord(shown,'/ 05',shown.layout.capacity,metrics);
+    const rectangles=frame=>frame.fills.filter(draw=>draw.kind==='rect');
+    assert.deepEqual(rectangles(shown),rectangles(hidden),'powering takes adds no separate bars');
+    const meter=shown.layout.meter,cells=navigatorLcdMeterGeometry(meter,metrics);
+    const reference=lcdGeometry(),state=settledTelemetryState({takes,total:5,monitor});
+    for(const cell of cells)drawTraceCell(reference.ctx,cell.x,meter.y*metrics.cellH,cell.w,meter.h*metrics.cellH,'#ffffff',
+      {alpha:cell.index<state.monitor.segments?.90:.13,chamfer:.8});
+    containsInk(shown.fills,reference.fills,'monitor retains every electrode at its measured activity');
   }
 });
 
@@ -193,23 +193,23 @@ test('drawMinimap paints the LCD after the VFD scope and supplies its smaller ph
   const end=source.indexOf('export function drawRecorderReturn',start);
   const body=source.slice(start,end);
   assert.match(body,/apertureBounds:layout\.aperture/);
-  assert.match(body,/\}\);\s*\/\/[^]*?if\(opts\.telemetry\)drawNavigatorTelemetry\(layout\.lcd,opts\.telemetry,\{nowMs:now\}\)/,
+  assert.match(body,/\}\);\s*\/\/[^]*?if\(opts\.telemetry\)drawNavigatorTelemetry\(layout\.lcd,opts\.telemetry,\{nowMs:now(?:,view:opts\.view)?\}\)/,
     'LCD rendering follows the completed main-cover scope rather than its clipped content');
   assert.doesNotMatch(body,/drawTakeRail|drawVfdMeter|drawVfdWarningTriangle/,'telemetry cannot fall back into the map VFD');
 });
 
-test('roomy LCD gets larger value banks without stealing compact map area or crossing its glass',()=>{
+test('roomy LCD value banks and the condition rail fit the same bounded hardware',()=>{
   for(const cols of[40,64,80,128])for(const rows of[24,36,45,70]){
     const housing=fieldDeckLayout({cols,rows}).navigator;
     const aperture=machinePanelAperture(housing.x,housing.y,housing.w,housing.h);
     const view=navigatorDisplayLayout(aperture,{telemetry:true}),layout=navigatorTelemetryLayout(view.lcd);
-    assert.equal(view.lcd.h,aperture.h>=14?4.15:3.15);
+    assert.equal(view.lcd.h,aperture.h>=14?5.25:4.25);
     for(const name of['takeCount','capacity','injuries','db','dbUnit','meter','status','scale','divider'])
       assert.ok(contained(layout[name],view.lcd),`${name} in ${cols}x${rows}`);
     for(const[a,b]of[['takeCount','capacity'],['monitorLabel','status'],['db','dbUnit'],['takeCount','db'],['slots','meter']])
       assert.equal(intersects(layout[a],layout[b]),false,`${a}/${b} in ${cols}x${rows}`);
     assert.ok(layout.takeCount.h>=1,'take count has its own readable bank');
-    assert.ok(view.viewport.h>=5.5,'small map sight area is retained');
+    assert.ok(view.viewport.h>=5.5,'compact maps retain their existing readable viewport');
   }
 });
 
@@ -257,22 +257,25 @@ test('paused, repeated, backward and reduced-motion frames cannot spend animatio
 });
 
 test('LCD labels keep injury conditional and actual seven-segment dB ink never manufactures a signal',()=>{
-  const lcd={x:2,y:15,w:23,h:3.15},metrics={cellW:8.45,cellH:20,dpr:2};
-  const paints=telemetry=>{
-    const h=recordingContext();
-    paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState(telemetry),metrics);
-    return{draws:h.draws,labels:h.draws.filter(draw=>draw.kind==='fillText').map(draw=>draw.args[0])};
-  };
-  const quiet=paints({takes:2,monitor:monitorSnapshotForRms(0)});
-  assert.ok(quiet.labels.includes('02'));assert.ok(quiet.labels.includes('/ 05'));expectDbInk(quiet.draws,lcd,metrics,'-96');
-  assert.ok(!quiet.labels.some(text=>text.startsWith('HURT')));
-  const beforeTask=paints({takesVisible:false,takes:4,total:5,monitor:monitorSnapshotForRms(0)});
-  assert.ok(!beforeTask.labels.includes('04'));assert.ok(!beforeTask.labels.includes('/ 05'));
-  assert.ok(beforeTask.labels.includes('TAKES')&&beforeTask.labels.includes('88'),'the dark take bank retains only dormant electrodes');
-  assert.ok(beforeTask.draws.filter(draw=>draw.kind==='fillText'&&['TAKES','88','/ 88'].includes(draw.args[0])).every(draw=>draw.alpha<=.13));
-  assert.ok(beforeTask.labels.includes('MONITOR'));expectDbInk(beforeTask.draws,lcd,metrics,'-96');
-  const hurt=paints({takes:3,injuries:2,monitor:{...monitorSnapshotForRms(0),segments:4,band:'mid-hot'}});
-  assert.ok(hurt.labels.includes('HURT 2'));assert.ok(hurt.labels.includes('CAUTION'));expectDbInk(hurt.draws,lcd,metrics,'-96');
+  const lcd={x:2,y:15,w:23,h:3.15},metrics={cellW:8.45,cellH:20,dpr:2},monitor=monitorSnapshotForRms(0);
+  const quiet=paint({takes:2,monitor},lcd,metrics);
+  expectWord(quiet,'02',quiet.layout.takeCount,metrics);
+  expectWord(quiet,'/ 05',quiet.layout.capacity,metrics);
+  expectDbInk(quiet.fills,lcd,metrics,'-96');
+  assert.equal(matrixInk(quiet.fills,deviceBox(quiet.layout.injuries,metrics)).length,0);
+  const beforeTask=paint({takesVisible:false,takes:4,total:5,monitor},lcd,metrics);
+  const dormant=[
+    ...expectWord(beforeTask,'TAKES',beforeTask.layout.takeLabel,metrics),
+    ...expectWord(beforeTask,'88',beforeTask.layout.takeCount,metrics),
+    ...expectWord(beforeTask,'/ 88',beforeTask.layout.capacity,metrics),
+  ];
+  assert.ok(dormant.every(draw=>draw.alpha<=.13));
+  expectWord(beforeTask,'MONITOR',beforeTask.layout.monitorLabel,metrics);
+  expectDbInk(beforeTask.fills,lcd,metrics,'-96');
+  const hurt=paint({takes:3,injuries:2,monitor:{...monitor,segments:4,band:'mid-hot'}},lcd,metrics);
+  expectWord(hurt,'HURT 2',hurt.layout.injuries,metrics);
+  expectWord(hurt,'CAUTION',hurt.layout.status,metrics);
+  expectDbInk(hurt.fills,lcd,metrics,'-96');
 });
 
 test('losing takes or starting a new run clears earned-take response and stale ink immediately',()=>{
@@ -288,24 +291,6 @@ test('losing takes or starting a new run clears earned-take response and stale i
   assert.deepEqual(reset.slots,new Array(5).fill(false));
 });
 
-test('LCD requests its own bundled ink fonts and keeps readable matrix fallback until they are ready',()=>{
-  let ready=false;
-  const requested=[],fonts={check:()=>ready,load:spec=>{requested.push(spec);return Promise.resolve([]);}};
-  const lcd={x:2,y:15,w:23,h:3.15},state=navigatorTelemetryState({takes:2,monitor:monitorSnapshotForRms(0)});
-  const draw=()=>{
-    const h=recordingContext();h.ctx.canvas={ownerDocument:{fonts}};
-    paintNavigatorTelemetry(h.ctx,lcd,state,{cellW:8.45,cellH:20,dpr:1});return h.draws;
-  };
-  const loading=draw();
-  assert.equal(requested.length,2,'the actual first draw starts both bundled face weights');
-  assert.ok(loading.some(command=>command.kind==='fillRect'));
-  assert.ok(!loading.some(command=>command.kind==='fillText'),'ROM ink remains while native ink is unavailable');
-  ready=true;
-  const decoded=draw();
-  assert.ok(decoded.some(command=>command.kind==='fillText'&&command.args[0]==='02'));
-  assert.equal(requested.length,2,'font loads are not restarted on every frame');
-});
-
 test('LCD marks follow the actual shared linear dB scale while HOT retains its immediate gameplay threshold',()=>{
   for(const width of[22.9,26.9,30.9])for(const height of[3.15,4.15])for(const dpr of[1,2]){
     const lcd={x:2,y:15,w:width,h:height},metrics={cellW:8.45,cellH:20,dpr};
@@ -315,14 +300,15 @@ test('LCD marks follow the actual shared linear dB scale while HOT retains its i
       assert.equal(mark.index,dualTracePeakIndex(mark.thresholdDb,cells.length));
       assert.equal(mark.centerPx,(layout.meter.x+dualTraceUnit(mark.thresholdDb)*layout.meter.w)*metrics.cellW*dpr);
     }
-    const h=recordingContext();
+    const h=lcdGeometry();
     const shown=settledTelemetryState({monitor:monitorSnapshotForRms(10**(-18/20))});
     assert.equal(shown.monitor.status,'HOT');assert.equal(shown.monitor.band,'hot');
-    paintNavigatorTelemetry(h.ctx,lcd,shown,metrics);
+    paintNavigatorTelemetry(h.ctx,lcd,shown,{...metrics,view:front});
     for(const mark of marks){
-      const printed=h.draws.filter(draw=>draw.kind==='fillText'&&draw.args[0]===mark.label).at(-1),
-        anchor=mark.box.x+(mark.align==='right'?mark.box.w:mark.align==='center'?mark.box.w/2:0);
-      assert.equal(printed.args[1],Math.round(anchor*metrics.cellW*dpr),'painted caption shares its calibrated scale anchor');
+      const marker=h.fills.find(draw=>draw.kind==='rect'&&Math.abs(draw.ink.x+draw.ink.w/2-mark.centerPx)<1e-7
+        &&draw.ink.y<layout.scale.y*metrics.cellH*dpr&&Math.abs(draw.ink.h-1.4*dpr)<1e-7);
+      assert.ok(marker,'the calibrated scale tick keeps its exact anchor');
+      expectWord(h,mark.label,mark.box,metrics);
     }
     for(const mark of marks)assert.ok(contained(mark.box,layout.scale));
     assert.equal(marks[0].box.x,layout.scale.x);
@@ -330,41 +316,17 @@ test('LCD marks follow the actual shared linear dB scale while HOT retains its i
   }
 });
 
-// Read the actual bundled font's OpenType advance tables. These are external
-// production artifacts, not a guessed character width from the LCD renderer.
-function bundledInkWidth(filename){
-  const bytes=readFileSync(new URL(`../public/assets/fonts/${filename}`,import.meta.url));
-  const u16=at=>bytes.readUInt16BE(at),u32=at=>bytes.readUInt32BE(at),tables={};
-  for(let i=0;i<u16(4);i++)tables[bytes.toString('ascii',12+i*16,16+i*16)]=u32(20+i*16);
-  const cmap=tables.cmap;let offset=null;
-  for(let i=0;i<u16(cmap+2);i++){const candidate=cmap+u32(cmap+8+i*8);if(u16(candidate)===4){offset=candidate;break;}}
-  assert.ok(offset,'bundled font has its real Unicode format4 map');
-  const segments=u16(offset+6)/2,end=offset+14,start=end+segments*2+2,delta=start+segments*2,range=delta+segments*2;
-  const glyph=char=>{
-    const code=char.codePointAt(0);
-    for(let i=0;i<segments;i++)if(u16(start+i*2)<=code&&code<=u16(end+i*2)){
-      const d=u16(delta+i*2),r=u16(range+i*2);
-      if(!r)return(code+d)&65535;
-      const index=u16(range+i*2+r+(code-u16(start+i*2))*2);return index?(index+d)&65535:0;
-    }
-    return 0;
-  };
-  const units=u16(tables.head+18),metrics=u16(tables.hhea+34);
-  return(text,size)=>[...text].reduce((sum,char)=>sum+u16(tables.hmtx+Math.min(glyph(char),metrics-1)*4),0)*size/units;
-}
-
-test('all maximum-count LCD labels fit their real bundled font widths without condensed CAUTION lettering',()=>{
-  const widths={400:bundledInkWidth('NimbusSans-Regular.otf'),600:bundledInkWidth('NimbusSans-Bold.otf')};
-  for(const scale of[.8,1,1.5])for(const dpr of[1,2])for(const width of[22.9,30.9]){
-    const lcd={x:2,y:15,w:width,h:3.15},h=recordingContext();
-    paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState({takes:12,total:12,injuries:99,
-      monitor:monitorSnapshotForRms(10**(-30/20))}),{cellW:8.45*scale,cellH:20*scale,dpr});
-    const ink=h.draws.filter(draw=>draw.kind==='fillText');
-    assert.ok(ink.some(draw=>draw.args[0]==='CAUTION'));
-    for(const draw of ink){
-      const[,weight,size]=/^(400|600) ([\d.]+)px/.exec(draw.font);
-      const natural=widths[weight](draw.args[0],Number(size));
-      assert.ok(natural<=draw.args[3]+1e-7,`${draw.args[0]} needs ${natural}px but has ${draw.args[3]}px`);
-    }
+test('maximum count and condition labels stay legible inside the LCD clip at supported scales',()=>{
+  for(const scale of[.8,1,1.6])for(const dpr of[1,2])for(const width of[22.9,30.9])for(const event of[
+    {kind:'recovery',recovery:15},{kind:'damage',damage:3},{kind:'injury',injuriesAdded:1}]){
+    const lcd={x:2,y:15,w:width,h:4.25,conditionRail:true},metrics={cellW:8.45*scale,cellH:20*scale,dpr};
+    const frame=paint({takes:12,total:12,condition:{value:25,ceiling:35,baseline:40,injuries:12,
+      strainStatus:'strained',strainRatio:.6},conditionEvent:event,conditionEventAge:.5,
+      monitor:monitorSnapshotForRms(10**(-30/20))},lcd,metrics);
+    expectWord(frame,'12',frame.layout.takeCount,metrics);
+    expectWord(frame,'CAUTION',frame.layout.status,metrics);
+    expectWord(frame,'25 / 35',frame.layout.conditionValue,metrics);
+    expectWord(frame,'INJURIES',frame.layout.injuryMarks,metrics);
+    for(const draw of matrixInk(frame.fills))assert.ok(within(draw.ink,draw.clip),JSON.stringify(draw.ink));
   }
 });

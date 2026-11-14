@@ -1,81 +1,67 @@
-// Original owner-painted mark. Geometry, SVG review and the production pigment
-// share these filled outlines; there is no raster font, alpha card or emissive
-// sign behind the paint. Coordinates are in the 1800 × 540 design plane.
+// Original company lettering and a geometrically constructed Union Flag.
+// Filled, opaque paint geometry: no borrowed company mark, raster font or sign card.
 export const VAN_BRAND_VIEWBOX=Object.freeze([0,0,1800,540]);
-export const VAN_BRAND_COPY='FIELD RECORDING SERVICES';
-export const VAN_BRAND_PIGMENTS=Object.freeze({ink:'#17231e',oxide:'#ac3927'});
+export const VAN_BRAND_COPY='ALBION LOCATION SOUND';
+export const VAN_BRAND_PIGMENTS=Object.freeze({navy:'#012169',white:'#f5f1e6',red:'#c8102e'});
+export const VAN_BRAND_FLAG=Object.freeze({x:58,y:112,width:480,height:288,
+  construction:'50 × 30; white saltire 6; red saltire 2, offset 1; white cross 10; red cross 6',
+  reference:'https://www.flaginstitute.org/wp/uk-flags/union-flag-specification/'});
 const art=[];
-const cubic=(a,b,c,d,t)=>{const u=1-t;return[u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t*t*t*d[0],u*u*u*a[1]+3*u*u*t*b[1]+3*u*t*t*c[1]+t*t*t*d[1]];};
-const line=(a,b,n=12)=>Array.from({length:n+1},(_,k)=>[a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n]);
-const curve=(a,b,c,d,n=32)=>Array.from({length:n+1},(_,k)=>cubic(a,b,c,d,k/n));
-const chain=(...pieces)=>pieces.flatMap((p,i)=>i?p.slice(1):p);
-function paint(id,points,width,pigment='ink',seed=0){
- const left=[],right=[];
- for(let i=0;i<points.length;i++){
-  const p=points[i],a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy)||1,t=i/(points.length-1);
-  const pressure=.83+.10*Math.sin(t*5.4+seed)+.045*Math.sin(i*1.87+seed),tip=Math.min(1,.60+t*5,.62+(1-t)*8),r=width*.5*pressure*tip;
-  left.push([p[0]-dy/length*r,p[1]+dx/length*r]);right.push([p[0]+dy/length*r,p[1]-dx/length*r]);
- }
- art.push({id,pigment,outer:[...left,...right.reverse()]});
+const fill=(id,outer,holes=[],pigment='navy',layer=0)=>art.push({id,pigment,layer,outer,...(holes.length?{holes}:{})});
+const rect=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+// Convex clipping keeps the diagonal pigment within the exact 3:5 flag field.
+function clip(poly,axis,edge,keepAbove){
+ const out=[];for(let i=0;i<poly.length;i++){
+  const a=poly[i],b=poly[(i+1)%poly.length],inside=p=>keepAbove?p[axis]>=edge:p[axis]<=edge,ia=inside(a),ib=inside(b);
+  if(ia)out.push(a);if(ia!==ib){const t=(edge-a[axis])/(b[axis]-a[axis]);out.push(a.map((v,k)=>v+(b[k]-v)*t));}
+ }return out;
 }
-function oval(cx,cy,rx,ry,seed=0,n=44){return Array.from({length:n},(_,i)=>{const t=i/n*Math.PI*2,w=1+.018*Math.sin(5*t+seed)+.011*Math.sin(9*t-seed);return[cx+Math.cos(t)*rx*w,cy+Math.sin(t)*ry*w];});}
-function fill(id,outer,holes=[],pigment='ink'){art.push({id,pigment,outer,...(holes.length?{holes}:{})});}
-
-// A hand-pulled microphone lead. The narrow swell is a single painter's
-// gesture, not an ECG stock graphic or a decorative outline around the name.
-paint('lead',chain(curve([152,316],[100,326],[69,383],[118,401]),curve([118,401],[214,456],[289,379],[350,412]),
- curve([350,412],[780,425],[1230,416],[1725,400])),14,'oxide',1.7);
-paint('lead-end',curve([1710,400],[1737,397],[1751,390],[1770,394]),11,'oxide',2);
-
-// FIELD: five deliberately different, pressure-shaped broad brush letters.
-paint('F-stem',curve([373,392],[401,287],[411,166],[438,74]),88,'ink',.3);
-paint('F-cap',curve([435,82],[495,71],[563,68],[620,65]),80,'ink',.6);
-paint('F-cross',curve([410,218],[462,204],[514,206],[569,198]),67,'ink',1.4);
-paint('I-stem',curve([679,385],[687,287],[710,161],[729,78]),95,'ink',2.8);
-paint('I-cap',curve([681,85],[716,77],[751,76],[777,75]),51,'ink',.9);
-paint('I-foot',curve([634,385],[673,392],[726,385],[756,379]),49,'ink',3.2);
-paint('E-stem',curve([827,386],[839,286],[856,177],[872,83]),85,'ink',.4);
-paint('E-cap',curve([869,85],[925,76],[993,74],[1056,69]),79,'ink',1.3);
-paint('E-cross',curve([848,224],[900,219],[956,219],[1007,208]),67,'ink',.1);
-paint('E-foot',curve([818,384],[873,395],[955,386],[1028,372]),82,'ink',2.4);
-paint('L-stem',curve([1101,389],[1118,297],[1126,174],[1151,74]),89,'ink',1.7);
-paint('L-foot',curve([1093,384],[1179,399],[1253,384],[1321,369]),89,'ink',.7);
-paint('D-stem',curve([1380,388],[1393,278],[1407,164],[1424,78]),87,'ink',2.1);
-paint('D-bowl',chain(curve([1422,80],[1589,37],[1748,104],[1690,251]),curve([1690,251],[1657,347],[1532,396],[1379,386])),87,'ink',3.7);
-
-// A battered moving-coil capsule, drawn as filled pigment with actual open
-// grille slots. Its tilted crown and socket differ from a corporate mic icon.
-const capsule=chain(curve([103,115],[106,69],[177,59],[207,98]),curve([207,98],[222,141],[210,225],[196,257]),
- curve([196,257],[182,292],[116,285],[103,253]),curve([103,253],[91,216],[93,155],[103,115]));
-fill('capsule',capsule,[
- [[120,121],[194,109],[193,130],[118,142]],[[115,164],[193,151],[191,172],[113,185]],[[113,205],[187,194],[184,214],[114,225]],
-]);
-paint('capsule-socket',curve([146,271],[146,288],[153,301],[152,317]),35,'ink',1.1);
-paint('capsule-highlight',curve([101,130],[91,160],[92,209],[100,232]),10,'oxide',.4);
-
-// Small owner-lettered description. Only this inscription's required glyphs
-// exist here: these are original compact marker skeletons, not a font system.
-const glyphs={
- R:[[[4,100],[7,3]],[[7,5],[52,4],[64,15],[59,40],[9,48]],[[32,48],[61,100]]],
- E:[[[8,99],[9,4]],[[9,5],[62,3]],[[9,49],[50,46]],[[7,98],[61,94]]],
- C:[[[63,13],[43,2],[16,8],[4,35],[3,69],[18,96],[44,100],[62,86]]],
- D:[[[7,99],[8,4]],[[8,5],[38,2],[59,19],[66,48],[60,79],[40,96],[7,98]]],
- I:[[[28,3],[24,99]],[[5,4],[49,3]],[[2,99],[48,97]]],
- N:[[[4,100],[8,3],[60,99],[63,3]]],
- G:[[[62,14],[44,2],[16,8],[4,36],[4,73],[20,98],[48,97],[63,76],[62,57],[36,59]]],
- S:[[[64,13],[46,3],[18,7],[5,25],[12,44],[48,54],[62,72],[55,92],[30,100],[4,88]]],
- V:[[[3,4],[29,99],[65,4]]],
- O:[],
+function band(a,b,width,offset=0){
+ const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy),nx=-dy/l,ny=dx/l;
+ let p=[a,b,b,a].map((q,i)=>[q[0]+nx*(offset+(i<2?-width/2:width/2)),q[1]+ny*(offset+(i<2?-width/2:width/2))]);
+ for(const [axis,edge,above]of [[0,0,true],[0,50,false],[1,0,true],[1,30,false]])p=clip(p,axis,edge,above);return p;
+}
+const flagMap=p=>[VAN_BRAND_FLAG.x+p[0]*9.6,VAN_BRAND_FLAG.y+p[1]*9.6];
+const flag=(id,points,pigment,layer)=>fill('flag-'+id,points.map(flagMap),[],pigment,layer);
+flag('field',rect(0,0,50,30),'navy',0);
+flag('andrew-descending',band([-30,-18],[80,48],6),'white',1);
+flag('andrew-ascending',band([-30,48],[80,-18],6),'white',1);
+// The red saltire is counterchanged. The broad white edge is uppermost at
+// the hoist, narrow uppermost at the fly, rather than four centred red arms.
+for(const [id,a,b,offset]of [['nw',[-30,-18],[25,15],1],['se',[25,15],[80,48],-1],
+ ['sw',[-30,48],[25,15],1],['ne',[25,15],[80,-18],-1]])flag('patrick-'+id,band(a,b,2,offset),'red',2);
+flag('cross-white-vertical',rect(20,0,10,30),'white',3);
+flag('cross-white-horizontal',rect(0,10,50,10),'white',3);
+flag('george-vertical',rect(22,0,6,30),'red',4);
+flag('george-horizontal',rect(0,12,50,6),'red',4);
+// Six purpose-drawn heavy letters, with open counters cut out of the pigment.
+const glyph={
+ A:{o:[[0,100],[31,0],[69,0],[100,100],[74,100],[67,74],[33,74],[26,100]],h:[[[40,49],[60,49],[50,17]]]},
+ L:{o:[[0,0],[27,0],[27,76],[100,76],[100,100],[0,100]]},
+ B:{o:[[0,0],[70,0],[91,10],[100,26],[95,43],[84,49],[97,61],[100,80],[89,95],[69,100],[0,100]],h:[[[27,19],[64,19],[73,25],[73,32],[64,39],[27,39]],[[27,60],[66,60],[74,67],[74,76],[65,82],[27,82]]]},
+ I:{o:[[12,0],[88,0],[88,21],[63,21],[63,79],[88,79],[88,100],[12,100],[12,79],[37,79],[37,21],[12,21]]},
+ O:{o:[[20,0],[80,0],[100,20],[100,80],[80,100],[20,100],[0,80],[0,20]],h:[[[32,23],[68,23],[75,30],[75,70],[68,77],[32,77],[25,70],[25,30]]]},
+ N:{o:[[0,100],[0,0],[27,0],[74,62],[74,0],[100,0],[100,100],[73,100],[26,38],[26,100]]},
 };
-const caption='RECORDING SERVICES',pitch=77,start=385,top=447,scale=.72;
-for(let i=0;i<caption.length;i++){
- const letter=caption[i];if(letter===' ')continue;
- const ox=start+i*pitch,oy=top+Math.sin(i*1.9)*2.2,tilt=Math.sin(i*1.37)*.025;
- const map=([x,y])=>[ox+(x+tilt*(100-y))*scale,oy+y*scale];
- if(letter==='O')fill('caption-O-'+i,oval(ox+34*scale,oy+50*scale,32*scale,50*scale,i),[oval(ox+34*scale,oy+50*scale,18*scale,34*scale,i+.3)]);
- else for(const [k,path]of(glyphs[letter]||[]).entries()){
-  const points=chain(...path.slice(1).map((p,j)=>line(map(path[j]),map(p),8)));
-  paint(`caption-${letter}-${i}-${k}`,points,12.7,'ink',i*.51+k);
+for(const[i,letter]of [...'ALBION'].entries()){
+ const g=glyph[letter],map=([x,y])=>[620+i*183+x*1.53,82+y*2.34];
+ fill('name-'+letter,g.o.map(map),(g.h||[]).map(h=>h.map(map)),'navy',0);
+}
+const caption={
+ L:[[[5,0],[5,100],[65,100]]],O:[[[18,0],[52,0],[66,18],[66,82],[52,100],[18,100],[4,82],[4,18],[18,0]]],
+ C:[[[66,12],[52,0],[18,0],[4,18],[4,82],[18,100],[52,100],[66,88]]],
+ A:[[[2,100],[30,0],[40,0],[68,100]],[[13,64],[57,64]]],T:[[[0,0],[70,0]],[[35,0],[35,100]]],
+ I:[[[10,0],[60,0]],[[35,0],[35,100]],[[10,100],[60,100]]],
+ N:[[[5,100],[5,0],[65,100],[65,0]]],S:[[[66,10],[52,0],[18,0],[4,14],[4,38],[18,50],[52,50],[66,64],[66,86],[52,100],[18,100],[4,90]]],
+ U:[[[5,0],[5,82],[18,100],[52,100],[65,82],[65,0]]],D:[[[5,100],[5,0],[47,0],[66,20],[66,80],[47,100],[5,100]]],
+};
+const stroke=(id,a,b,width)=>{const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy),nx=-dy/d*width/2,ny=dx/d*width/2;
+ fill(id,[[a[0]+nx,a[1]+ny],[b[0]+nx,b[1]+ny],[b[0]-nx,b[1]-ny],[a[0]-nx,a[1]-ny]]);};
+for(const[i,letter]of [...'LOCATION SOUND'].entries())if(letter!==' '){
+ const map=([x,y])=>[621+i*79+x*.80,371+y*.80];
+ for(const[j,path]of caption[letter].entries()){
+  for(let k=1;k<path.length;k++)stroke(`caption-${i}-${j}-${k}`,map(path[k-1]),map(path[k]),10.5);
+  for(const[k,p]of path.entries()){const [x,y]=map(p);fill(`caption-join-${i}-${j}-${k}`,Array.from({length:8},(_,n)=>[x+5.25*Math.cos(n*Math.PI/4),y+5.25*Math.sin(n*Math.PI/4)]));}
  }
 }
 export const VAN_BRAND_ART=Object.freeze(art.map(s=>Object.freeze({...s,outer:Object.freeze(s.outer.map(Object.freeze)),...(s.holes?{holes:Object.freeze(s.holes.map(h=>Object.freeze(h.map(Object.freeze))))}:{})})));

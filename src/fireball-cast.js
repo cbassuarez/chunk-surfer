@@ -12,6 +12,7 @@ let cast=null,pane=null,startedAt=performance.now(),raf=0;
 let locallyStruckIdentity='';
 let lastPainted=null;
 const chase=createFireballSurfaceChase();
+let chaseWidth=0,chaseHeight=0;
 const acquiredKeys=new Set();
 let acquisitionIdentity='';
 
@@ -31,6 +32,7 @@ function adoptChase(frame){
 
 function trackPointer(event){
   if(pane)return;
+  syncChaseSize();
   const bounds=canvas.getBoundingClientRect();
   adoptChase(chase.pointer({x:event.clientX-bounds.left,y:event.clientY-bounds.top,active:true},{paintedPose:lastPainted?.pose,now:performance.now()}));
   paint(performance.now());
@@ -59,10 +61,21 @@ function enterPane(){
   return true;
 }
 
+function syncChaseSize(){
+  const width=Math.max(1,innerWidth),height=Math.max(1,innerHeight);
+  if(chaseWidth!==width||chaseHeight!==height){
+    chaseWidth=width;chaseHeight=height;
+    lastPainted=null;
+    adoptChase(chase.resize({width,height}));
+  }
+  return {width,height};
+}
+
 function size(){
-  const dpr=Math.max(1,devicePixelRatio||1),w=Math.max(1,Math.round(innerWidth*dpr)),h=Math.max(1,Math.round(innerHeight*dpr));
+  const {width,height}=syncChaseSize();
+  const dpr=Math.max(1,devicePixelRatio||1),w=Math.max(1,Math.round(width*dpr)),h=Math.max(1,Math.round(height*dpr));
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;}
-  return{w,h,dpr};
+  return{w,h,dpr,width,height};
 }
 
 // IT IS COMING AT YOU, NOT PAST YOU — AND IT IS BUILT THE SAME WAY THE ONE
@@ -133,20 +146,20 @@ function drawPane(w,h,at){
 }
 
 function paint(at){
-  const {w,h,dpr}=size();ctx.clearRect(0,0,w,h);
+  const {w,h,dpr,width,height}=size();ctx.clearRect(0,0,w,h);
   lastPainted=null;
   if(pane){drawPane(w,h,at);return;}
   if(cast){
     const paintedCast=cast;
     const interaction=chase.snapshot();
-    const pose=interaction.pose||fireballSurfacePose(cast,{width:w/dpr,height:h/dpr});
+    const pose=interaction.pose||fireballSurfacePose(cast,{width,height});
     const tileW=pose.size*dpr;
     ctx.save();ctx.translate(pose.x*dpr,pose.y*dpr);
     ctx.beginPath();ctx.rect(0,0,tileW,tileW);ctx.clip();
     ctx.fillStyle='#000';ctx.fillRect(0,0,tileW,tileW);
     drawFireballTile(tileW,tileW,dpr,at);
     ctx.restore();
-    lastPainted={cast:paintedCast,pose,interaction:{acquired:interaction.acquired,progress:interaction.progress,key:interaction.key,velocity:interaction.velocity,bounces:interaction.bounces},at:performance.timeOrigin+at,width:w/dpr,height:h/dpr};
+    lastPainted={cast:paintedCast,pose,interaction:{acquired:interaction.acquired,progress:interaction.progress,key:interaction.key,velocity:interaction.velocity,bounces:interaction.bounces},at:performance.timeOrigin+at,width,height};
   }
 }
 
@@ -278,15 +291,18 @@ function drawFireballTile(w,h,dpr,at){
 }
 
 async function boot(){
+  syncChaseSize();
   addEventListener('pointerdown',(event)=>{event.preventDefault();event.stopPropagation();if(!enterPane())strike(event);},{capture:true});
   addEventListener('pointermove',trackPointer,{capture:true});
   addEventListener('pointerenter',trackPointer,{capture:true});
+  addEventListener('resize',()=>paint(performance.now()));
   // Native surfaces accept the first mouse press. Activation alone is not a
   // catch: showing a window or switching applications can also focus it.
   // Global Tauri listeners receive targeted events too. Each physical surface
   // must keep its own cast identity and feedback when siblings are updated.
   const surfaceWindow=getCurrentWindow();
   await surfaceWindow.listen('fireball-cast',({payload})=>{
+    syncChaseSize();
     const identity=`${payload?.castId}:${payload?.surfaceIndex}`;
     // An already accepted physical press cannot be reopened by a late in-flight
     // pose update. The authoritative deflect/RETURN response may still replace it.
@@ -303,7 +319,8 @@ async function boot(){
     chase.setCast(null);cast=null;pane=payload||null;startedAt=performance.now();paint(startedAt);
   });
   await surfaceWindow.listen('fireball-cast-pointer',({payload})=>{
-    if(payload?.width&&payload?.height)chase.resize(payload);
+    const {width,height}=syncChaseSize();
+    if((payload?.width&&Math.abs(payload.width-width)>1)||(payload?.height&&Math.abs(payload.height-height)>1))return;
     const frame=chase.nativePointer(payload,{paintedPose:lastPainted?.pose,now:performance.now()});
     if(pane)return;
     adoptChase(frame);paint(performance.now());

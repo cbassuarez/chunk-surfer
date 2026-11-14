@@ -12,6 +12,7 @@ import { normalizeSourceContinuation } from './source-continuation.js';
 import { normalizeSourceEarthfall } from './source-earthfall.js';
 import { normalizeSourceFalseReturn } from './source-false-return.js';
 import { normalizeStationRealm } from './station-realms.js';
+import { normalizeStationFieldSession, normalizeStationFieldReturns, STATION_FIELD_IDS } from '../data/station-field-destinations.js';
 import { normalizeTowerPersonalJourney } from './tower-personal-journey.js';
 import { normalizeCoastalMemory } from './coastal-memory.js';
 import { COASTAL_MEMORY_LAYOUT } from '../data/coastal-memory.js';
@@ -179,12 +180,14 @@ export function normalizeSourceStation(value = null) {
   } : null;
   return {
     time: seconds(source.time), crossing, walk, realm: normalizeStationRealm(source.realm),
+    field: normalizeStationFieldSession(source.field),
+    fieldReturns: normalizeStationFieldReturns(source.fieldReturns, source.entries),
     personal: normalizeTowerPersonalJourney(source.personal),
     coastalMemory: normalizeCoastalMemory(source.coastalMemory, { layout: COASTAL_MEMORY_LAYOUT }),
     homeDiscovered: !!source.homeDiscovered, homeResolved: !!source.homeResolved,
     lastReturn: source.lastReturn && typeof source.lastReturn.id === 'string' ? {
       id: source.lastReturn.id, world: String(source.lastReturn.world || ''), home: !!source.lastReturn.home,
-      reason: ['budget', 'retreat', 'home'].includes(source.lastReturn.reason) ? source.lastReturn.reason : 'budget',
+      reason: ['budget', 'retreat', 'home', 'field'].includes(source.lastReturn.reason) ? source.lastReturn.reason : 'budget',
       windowReached: !!source.lastReturn.windowReached, at: seconds(source.lastReturn.at),
       returnPose: source.lastReturn.returnPose ? { ...finitePoint(source.lastReturn.returnPose),
         yaw: finite(source.lastReturn.returnPose.yaw), pitch: finite(source.lastReturn.returnPose.pitch) } : null,
@@ -195,7 +198,11 @@ export function normalizeSourceStation(value = null) {
         variant: Math.max(0, Math.floor(finite(entry.variant))), home: !!entry.home, enteredAt: seconds(entry.enteredAt),
         // Earlier journals granted their residue on entry. Preserve that earned
         // state; new visits explicitly wait until reassembly to expose it.
-        returnedAt: entry.returnedAt === null ? null : seconds(entry.returnedAt ?? entry.enteredAt) })),
+        returnedAt: entry.returnedAt === null ? null : seconds(entry.returnedAt ?? entry.enteredAt),
+        ...(STATION_FIELD_IDS.includes(entry.fieldId) ? { fieldId: entry.fieldId,
+          connectionId: ['field-return', 'field-return-a', 'field-return-b'].includes(entry.connectionId) ? entry.connectionId : 'field-return',
+          meaningful: entry.meaningful === true && entry.failed !== true,
+          landmarkWitnessed: entry.landmarkWitnessed === true, failed: entry.failed === true } : {}) })),
     takeBacks: (Array.isArray(source.takeBacks) ? source.takeBacks : [])
       .filter((entry) => entry && typeof entry.id === 'string' && entry.id)
       .slice(-64).map((entry) => ({ id: entry.id, at: seconds(entry.at) })),
@@ -243,7 +250,7 @@ export function freshChunkSurfState({
     },
     returnPoint: finitePoint(returnPoint),
     hallMaxDistance: 0,
-    hallExperience: { searchElapsed: 0, pressure: 0, rainLatched: false },
+    hallExperience: { searchElapsed: 0, pressure: 0, rainLatched: false, paperWindowDelivered: false },
     pageStage: 0,
     haystackOrigin: null,
     landscapeOrigin: null,
@@ -525,6 +532,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
         : (phase === CHUNK_SURF_PHASE.HAYSTACK ? 12 : 0),
       pressure: Math.max(0, Math.min(.985, Number(value.hallExperience?.pressure) || 0)),
       rainLatched: !!value.hallExperience?.rainLatched || phase === CHUNK_SURF_PHASE.HAYSTACK,
+      // An exposure receipt only. The private address is never saved here.
+      paperWindowDelivered: value.hallExperience?.paperWindowDelivered === true,
     },
     pageStage: Math.max(pageStageForDistance(hallMaxDistance), Math.min(4, Math.floor(Number(value.pageStage) || 0))),
     haystackOrigin: finitePoint(value.haystackOrigin),

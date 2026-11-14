@@ -14,7 +14,7 @@ import { uiDraw, uiDrawHardware, uiWithClip, uiWithHardwareLayer, uiFill, uiText
 import { THEMES, UI_COLOR, activeTheme, activeSurface, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
 import { drawVfdDots, drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
 import { drawCapLegend, drawPrintedText } from './keycap.js';
-import { drawHardwareCap, hardwareCapGeometry, hardwareMotionReduced } from './hardware-material.js';
+import { drawHardwareCap, hardwareCapGeometry, hardwareMotionReduced, ANNUNCIATOR_LIGHTING } from './hardware-material.js';
 import { drawInstrumentPlate, drawInstrumentWell, drawInstrumentGlass, drawVfdGrid } from './instrument-material.js';
 import { sampleControl } from '../game/control-mechanics.js';
 import { drawPromptParts } from './prompt-glyphs.js';
@@ -718,9 +718,10 @@ export const LAMP = Object.freeze({
 export function drawLampButton(x, y, w, h, {
   legend = '', code = '', lit = false, color = 'amber', enabled = true,
   selected = false, focused = selected, alpha = 1, controlId = null,
-  latched = false, finish = 'lens', travel = null, lampHeat = null,
+  latched = false, finish = 'lens', travel = null, lampHeat = null, illumination = 'standard', active = false,
 } = {}) {
-  const state = controlId ? sampleControl(controlId, {lit,latched,enabled,reducedMotion:hardwareMotionReduced()}) : { travel: latched ? .8 : 0, lampHeat: lit && enabled ? 1 : 0 };
+  const state = controlId ? sampleControl(controlId, {lit,latched,enabled,reducedMotion:hardwareMotionReduced(),
+    ...(illumination==='powered'?{lampMs:ANNUNCIATOR_LIGHTING.transitionMs}:{})}) : { travel: latched ? .8 : 0, lampHeat: lit && enabled ? 1 : 0 };
   const depth = clamp01(travel ?? state.travel), heat = clamp01(lampHeat ?? state.lampHeat);
   const ink = '#12150d';
   const metrics = uiCellMetrics();
@@ -730,7 +731,7 @@ export function drawLampButton(x, y, w, h, {
   uiDrawHardware(({ ctx, dpr, cellW, cellH }) => {
     const px = x * cellW * dpr, py = y * cellH * dpr;
     const pw = w * cellW * dpr, ph = h * cellH * dpr;
-    drawHardwareCap(ctx,px,py,pw,ph,{color,finish,travel:depth,lampHeat:heat,enabled,focused,alpha,dpr});
+    drawHardwareCap(ctx,px,py,pw,ph,{color,finish,travel:depth,lampHeat:heat,enabled,focused,active,alpha,dpr,illumination});
     if (code) {
       drawCapLegend(ctx,code,content.x,content.y,content.w,content.h*.34,ink,dpr,cellW,cellH,alpha*.82);
     }

@@ -104,6 +104,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     intensity: 'standard',
   },
   psychProfile: DEFAULT_PSYCH_PROFILE_SETTINGS,
+  desktopFightEffects: false,
   controller: DEFAULT_CONTROLLER_SETTINGS,
   customShiftRules: null,
 });
@@ -340,6 +341,7 @@ export function normalizeSettings(value) {
       intensity,
     },
     psychProfile: normalizePsychProfileSettings(source.psychProfile, source),
+    desktopFightEffects: source.desktopFightEffects === true,
     controller,
     micInput: normalizeMicInputSettings(source.micInput),
   };

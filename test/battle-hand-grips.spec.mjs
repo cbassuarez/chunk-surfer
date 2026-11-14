@@ -5,7 +5,7 @@ import { Box3, DoubleSide, Mesh, MeshBasicMaterial, Quaternion, Raycaster, Trian
 import { createBattleHandRig, parseBattleHandTemplate } from '../src/render/battle-hand-rig.js';
 import { buildBattleHandTool } from '../src/render/battle-hand-tools.js';
 
-const bytes = await readFile(new URL('../public/assets/battle-hands/right.glb', import.meta.url));
+const bytes = await readFile(new URL('../public/assets/battle-hands/recordist.glb', import.meta.url));
 const template = await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 const handles = ['torch', 'fork', 'spanner', 'coffee'];
 const digits = ['index', 'middle', 'ring', 'pinky'];

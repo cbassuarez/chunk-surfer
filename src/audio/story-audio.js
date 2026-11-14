@@ -763,6 +763,7 @@ let booth = null;   // { nodes:[], gain }
 let rainBed = null; // { nodes:[], gain, surfaceGains } — its own bed, see startRain
 let rainSurfaceMix = { slate:0, glass:0, foliage:0, steel:0 };
 let tape = null;
+let pendingTapeHiss = null;
 
 // One looping file, one gain, faded in. Returns null (and retries) if the
 // buffer has not landed yet.
@@ -940,7 +941,16 @@ function seamlessLoop(buf) {
 export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
   if (!ctx || !bus || tape) return;
   const raw = buffers.get(STORY_AUDIO.tape);
-  if (!raw) { preload(STORY_AUDIO.tape).then(() => { if (!tape) startTapeHiss({ gain, fade }); }); return; }
+  if (!raw) {
+    if (pendingTapeHiss) return;
+    const request = pendingTapeHiss = preload(STORY_AUDIO.tape);
+    request.then(buffer => {
+      if (pendingTapeHiss !== request) return;
+      pendingTapeHiss = null;
+      if (buffer) startTapeHiss({ gain, fade });
+    });
+    return;
+  }
   const buf = seamlessLoop(raw);
   const now = ctx.currentTime;
   const src = ctx.createBufferSource();
@@ -982,11 +992,12 @@ function tapeDriveCurve(intensity = 0) {
 export function setTapeHiss(gain, ramp = 0.25) {
   if (tape) setGain(tape.gain, Math.max(0, gain), ramp);
 }
-export function setTapeHissPressure(intensity, { min = 0.10, max = 0.60, ramp = 0.25 } = {}) {
+export function setTapeHissPressure(intensity, { min = 0.10, max = 0.60, ramp = 0.25, roomMix = null } = {}) {
   if (!tape || !ctx) return;
   const p = Math.max(0, Math.min(1, Number(intensity) || 0));
   const eased = p * p * (3 - 2 * p);
-  setGain(tape.gain, min + (max - min) * eased, ramp);
+  const perspective = roomMix === null ? 1 : roomMix;
+  setGain(tape.gain, (min + (max - min) * eased) * perspective, ramp);
   const now = ctx.currentTime;
   tape.hp.frequency.cancelScheduledValues(now);
   tape.lp.frequency.cancelScheduledValues(now);
@@ -994,10 +1005,12 @@ export function setTapeHissPressure(intensity, { min = 0.10, max = 0.60, ramp = 
   tape.hp.frequency.setValueAtTime(tape.hp.frequency.value, now);
   tape.lp.frequency.setValueAtTime(tape.lp.frequency.value, now);
   tape.lp.Q.setValueAtTime(tape.lp.Q.value, now);
-  tape.hp.frequency.linearRampToValueAtTime(90 + eased * 1320, now + Math.max(0.02, ramp));
-  tape.lp.frequency.linearRampToValueAtTime(9200 - eased * 5200, now + Math.max(0.02, ramp));
-  tape.lp.Q.linearRampToValueAtTime(0.52 + eased * 2.4, now + Math.max(0.02, ramp));
-  const bucket = Math.round(eased * 16);
+  tape.hp.frequency.linearRampToValueAtTime(roomMix === null ? 90 + eased * 1320
+    : 190 + eased * 440, now + Math.max(0.02, ramp));
+  tape.lp.frequency.linearRampToValueAtTime(roomMix === null ? 9200 - eased * 5200
+    : 8100 - eased * 2900 - (1 - perspective) * 3300, now + Math.max(0.02, ramp));
+  tape.lp.Q.linearRampToValueAtTime(0.52 + eased * (roomMix === null ? 2.4 : .42), now + Math.max(0.02, ramp));
+  const bucket = Math.round(eased * (roomMix === null ? 16 : 7));
   if (bucket !== tape.driveBucket) {
     tape.driveBucket = bucket;
     tape.shaper.curve = tapeDriveCurve(bucket / 16);
@@ -1006,6 +1019,7 @@ export function setTapeHissPressure(intensity, { min = 0.10, max = 0.60, ramp = 
 export function tapeHissGain() { return tape ? tape.gain.gain.value : 0; }
 
 export function stopTapeHiss({ fade = 0.6 } = {}) {
+  pendingTapeHiss = null;
   if (!tape) return;
   const t = tape; tape = null;
   setGain(t.gain, 0, fade);

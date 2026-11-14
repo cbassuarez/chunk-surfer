@@ -36,7 +36,7 @@ test('ordinary weather remains physical and disabling Cut suppresses only its ma
  const source={id:'rib',position:[3,1,-4],motion:{kind:'anatomy',distance:850,load:evolution().load}};assert(Object.values(driveLoadedFoleySources({...state,cutEnabled:false},[source],evolution())[0].motion.foley).every(v=>v===0));
 });
 test('the persistent acoustic graph keeps physical evolution outside OFF and freezes on pause without allocating per-frame nodes',async()=>{
- const f=fakeContext(),destination=f.context.createGain(),a=await new SourceDriveAcoustics({context:f.context,destination,fetcher:async()=>({ok:false,status:404})}).initialize();a.setPaused(false);
+ const f=fakeContext(),destination=f.context.createGain(),a=await new SourceDriveAcoustics({context:f.context,destination,stormEnabled:false,fetcher:async()=>({ok:false,status:404})}).initialize();a.setPaused(false);
  const source=t=>({id:'rib-850',position:[4,2,-5],motion:{kind:'anatomy',distance:850,load:evolution(t).load}});
  a.sync(state,[source(13)],weather,evolution());const allocated=f.count();
  for(let i=1;i<600;i++){const t=13+i/60;f.context.currentTime=i/60;a.sync({...state,programTime:t},[source(t)],weather,evolution(t));}
@@ -56,18 +56,9 @@ test('the goods-threshold impact starts an audible cabin transient into the exis
  assert.ok(a.cabin.connections.includes(a.output));assert.ok(a.output.connections.includes(destination),'the impact reaches the host-supplied master, not a private or disconnected bus');
  assert.ok(a.cabin.gain.value>0);a.setPaused(true);const held=f.count();a.joint({strength:1.2});assert.equal(f.count(),held,'a paused window emits no delayed impact');a.dispose();
 });
-test('production and study share the continuous acoustic owner outside host-specific cinematic contact',async()=>{
- // Source return supplies explicit road contact as its road fades to black.
- // Its classifier is covered by source-return-audio.test.mjs; the original
- // study retains opening-phase contact. Every other acoustic byte stays shared.
- const continuousOwner=source=>{
-  const start=source.indexOf('export function driveOpeningAcousticFrame(state){');
-  const end=source.indexOf('\n}\n',start);
-  assert.ok(start>=0&&end>start,'the host cinematic classifier has an explicit boundary');
-  return source.slice(0,start)+source.slice(end+3);
- };
- assert.equal(continuousOwner(await readFile('src/game/source-drive/acoustics.js','utf8')),
-  continuousOwner(await readFile('artifacts/source-drive-study/acoustics.js','utf8')));
+test('production and study use the same continuous acoustic owner and helpers',async()=>{
+ const production=await import('../src/game/source-drive/acoustics.js'),study=await import('../artifacts/source-drive-study/acoustics.js');
+ for(const key of Object.keys(production))assert.equal(study[key],production[key],key+' is shared rather than an obsolete copy');
 });
 
 test('the broad exterior follows real source positions when the van turns rather than staying glued to screen-left',()=>{

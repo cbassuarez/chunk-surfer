@@ -135,6 +135,7 @@ export const TECHNIQUE = Object.freeze({
   OVERDUB: 'rig.overdub',
   FEEDBACK_LOOP: 'rig.feedback-loop',
   TAPE_ECHO: 'rig.tape-echo',
+  RETURN_BRIDGE: 'rig.return-bridge',
   // Nerve (self): composure & the parry. Fork (attunement): reading & stance.
   // Radio (misdirection): decoy & guard. New branches for the deepened tree.
   STEADY_NERVE: 'nerve.steady',
@@ -942,6 +943,7 @@ export function createCombatState(definition, {
     state.coffeeUsed=!!continuation.coffeeUsed;
     state.safetyRelayUsed=!!continuation.safetyRelayUsed;
     state.feedbackLoopUsed=!!continuation.feedbackLoopUsed;
+    if (continuation.returnBridgeLoad > 0) state.returnBridgeLoad=clamp(integer(continuation.returnBridgeLoad,0),0,2);
     state.feedbackMovements=unique(continuation.feedbackMovements);
     state.punchInMovements=unique(continuation.punchInMovements);
     state.overdubMovements=unique(continuation.overdubMovements);
@@ -1003,6 +1005,7 @@ export function sourceDesktopFrame(state) {
 export function combatContinuationSnapshot(state) {
   const fields = ['composure','charge','battery','take','snr','ringing','turns','perfectCounters','missedCounters','damageTaken','torchSpent','toolsUsed','proofs','actionLog','coffeeUsed','safetyRelayUsed','feedbackLoopUsed','feedbackMovements','punchInMovements','overdubMovements','composeMovements','recoveryHolds','recoveryUnlocked','signaturePressure','sentBack','openingReferenceUsed'];
   const snapshot = Object.fromEntries(fields.map((field)=>[field,state[field] ?? null]));
+  if (state.returnBridgeLoad > 0) snapshot.returnBridgeLoad = state.returnBridgeLoad;
   if (state.definition.kind === 'cathedral') snapshot.maxComposure = state.maxComposure;
   if (state.source) snapshot.source = { armed:state.source.armed, channels:{...state.source.channels} };
   if (state.sourceDesktop) {
@@ -1412,7 +1415,7 @@ function earnedFloor(state, actionId, { perfect = false, setup = false } = {}) {
 // Roll a band and put it on the board. The single door every point of outgoing
 // damage goes through, so the quality tier can never be missing from a hit.
 function strike(state, band, actionId, options = {}) {
-  const rolled = outgoingBand(state, band);
+  const rolled = shiftBand(outgoingBand(state, band), options.flatBonus || 0);
   const hit = resolveHit(rolled, {
     earned: earnedFloor(state, actionId, options),
     draw: unitFor(state, `hit:${actionId}`),
@@ -1437,10 +1440,25 @@ function defensivePrevention(state, amount) {
 function composeHeal(state) {
   return 2 * GRID + (hasTechnique(state, TECHNIQUE.STEADY_NERVE) ? GRID : 0);
 }
-// BRACE (flat) puts another point behind the hands. Shared so the tile readout
-// and the reducer cannot drift.
+function braceReadEncounter(state) {
+  return !!state.apparitions || state.definition.kind === 'chapel';
+}
+
+// The Hall and Chapel reserve BRACE for a change of stance on a committed
+// beat. Holding SILENCE or using free TEMPO cannot turn a fresh overload.
+// Legacy encounters keep their guard.
+function braceReady(state) {
+  return hasTechnique(state, TECHNIQUE.BRACE) && braceReadEncounter(state) && !state.tempo
+    && state.snr !== SNR_STATE.SILENCE && state.braceUsedMovement !== state.movementIndex;
+}
+
+function canTurnOverload(state, intent) {
+  return braceReady(state) && intent?.kind === INTENT_KIND.OVERLOAD;
+}
+
 function holdPrevention(state) {
-  return integer(state.difficulty.holdPrevention, 2 * GRID) + (hasTechnique(state, TECHNIQUE.BRACE) ? GRID : 0);
+  return integer(state.difficulty.holdPrevention, 2 * GRID)
+    + (hasTechnique(state, TECHNIQUE.BRACE) && !braceReadEncounter(state) ? GRID : 0);
 }
 
 // ── the parry, graded ───────────────────────────────────────────────────────
@@ -1593,6 +1611,7 @@ const IMMEDIATE_PROGRESS_ACTIONS = Object.freeze([
   COMBAT_ACTION.INVERT,
   COMBAT_ACTION.MASTER_TAKE,
   COMBAT_ACTION.RUNAWAY_FEEDBACK,
+  COMBAT_ACTION.SWING,
 ]);
 
 // This is deliberately stricter than "some button is enabled". HOLD, WAIT,
@@ -1728,6 +1747,9 @@ function applyEnemyIntent(state, intent, prevention, share = 1, first = true) {
 function actionAvailability(state, actionId) {
   const intent = predictedCombatIntent(state);
   if (state.phase !== 'select') return { enabled: false, reason: 'NOT SELECTING' };
+  if ((actionId === COMBAT_ACTION.SWING || actionId === COMBAT_ACTION.SPANNER_GUARD) && !state.tools.spanner) {
+    return { enabled: false, reason: 'NO SPANNER' };
+  }
   if (actionId === COMBAT_ACTION.TUNE) {
     if (!state.tools.fork) return { enabled: false, reason: 'NO FORK' };
     if (state.tuneUsedMovement === state.movementIndex) return { enabled: false, reason: 'USED THIS MOVEMENT' };
@@ -1756,7 +1778,7 @@ function actionAvailability(state, actionId) {
     if (!state.take) return { enabled: false, reason: 'NO TAKE' };
   }
   if (actionId === COMBAT_ACTION.INVERT) {
-    if (!state.tools.rig) return { enabled: false, reason: 'NO BENT RIG' };
+    if (!state.tools.rig) return { enabled: false, reason: 'NO SERVICE INTERFACE' };
     if (!state.take) return { enabled: false, reason: 'NO TAKE' };
     // It used to grey out against anything but a loop, which made the button
     // itself a loop detector: with a rig and a take in hand, whether INVERT was
@@ -1790,7 +1812,7 @@ function actionAvailability(state, actionId) {
     return { enabled: true, charge };
   }
   if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) {
-    if (!state.tools.rig) return { enabled: false, reason: 'NO BENT RIG' };
+    if (!state.tools.rig) return { enabled: false, reason: 'NO SERVICE INTERFACE' };
     if (!hasTechnique(state, TECHNIQUE.RUNAWAY_FEEDBACK)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
     const charge = chargeCost(actionId);
     if (state.charge < charge) return { enabled: false, reason: `NEEDS ${charge} CHARGE`, charge };
@@ -1814,10 +1836,23 @@ function bandFields(state, band, flatBonus = 0) {
   };
 }
 
+// The jumper sends the post-invert return past the pad, next to the
+// recorder's capture gate. The gate can fire when the return runs out of
+// headroom. The battle slot is the only destination this bend can write.
+function returnBridgeReadout(state) {
+  if (!state.tools.rig || !state.tools.recorder || !hasTechnique(state, TECHNIQUE.RETURN_BRIDGE) || !state.take) return null;
+  const residual = clamp(integer(state.returnBridgeLoad, 0), 0, 2);
+  const signal = state.take.damage >= 3 * GRID ? 2 : state.take.damage >= 2 * GRID ? 1 : 0;
+  const load = residual + signal + (state.snr === SNR_STATE.NOISE ? 1 : 0);
+  const chance = load < 2 ? 0 : load === 2 ? 20 : load === 3 ? 45 : 100;
+  return { chance, residual, boost: GRID };
+}
+
 export function availableCombatActions(state) {
   // Everything below is a readout. It describes the fight the recordist thinks
   // they are in — see predictedCombatIntent.
   const intent = predictedCombatIntent(state);
+  const bridge = returnBridgeReadout(state);
   const recovery = combatRecoveryStatus(state);
   const desktop = sourceDesktopFrame(state);
   // The tiles are written VERB FIRST. A player choosing a move is asking "what
@@ -1826,6 +1861,8 @@ export function availableCombatActions(state) {
   const noise = { ...state, snr: SNR_STATE.NOISE };
   const signal = { ...state, snr: SNR_STATE.SIGNAL };
   const silence = { ...state, snr: SNR_STATE.SILENCE };
+  const turnsOverload = state.difficulty.guidance !== 'none' && canTurnOverload(state, intent);
+  const holdGuard = defensivePrevention(silence, holdPrevention(state) + (turnsOverload ? GRID : 0));
   const actions = [
     {
       id: COMBAT_ACTION.SHOUT, tool: COMBAT_TOOL.SELF, label: 'SHOUT',
@@ -1836,14 +1873,19 @@ export function availableCombatActions(state) {
     {
       id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD',
       detail: desktop
-        ? `${desktop.cover.capacity ? `REBUILD COVER · ${desktop.cover.count} / ${desktop.cover.capacity} PLATES` : 'BRACE · NO PLATES REMAIN'} · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · NO ATTACK`
+        ? `${desktop.cover.capacity ? `REBUILD COVER · ${desktop.cover.count} / ${desktop.cover.capacity} PLATES` : 'BRACE · NO PLATES REMAIN'} · PREVENT ${holdGuard} · NO ATTACK`
+        : turnsOverload
+        ? `BRACE · PREVENT ${holdGuard} · TURN OVERLOAD · ONCE PER MOVEMENT`
         : recovery.stranded && !recovery.unlocked
-        ? `BRACE · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · CATCH BREATH ${Math.min(recovery.required, recovery.holds + 1)} / ${recovery.required}`
-        : `BRACE · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · CHIPS ON A READ · ENTER SILENCE`,
-      prevents: defensivePrevention(silence, holdPrevention(state)),
+        ? `BRACE · PREVENT ${holdGuard} · CATCH BREATH ${Math.min(recovery.required, recovery.holds + 1)} / ${recovery.required}`
+        : `BRACE · PREVENT ${holdGuard} · CHIPS ON A READ · ENTER SILENCE`,
+      prevents: holdGuard,
+      ...(state.returnBridgeLoad > 0 ? { dischargesBridge:true } : {}),
+      ...(turnsOverload ? { turnsOverload:true } : {}),
+      ...(state.difficulty.guidance === 'none' && braceReady(state) ? { braceOnRead:true } : {}),
       ...(desktop ? {coverRebuild:desktop.cover.count < desktop.cover.capacity ? 1 : 0,
         coverCount:desktop.cover.count,coverCapacity:desktop.cover.capacity,coverGuard:desktop.cover.guard} : {}),
-      ...bandFields(silence, bandFrom(desktop ? 0 : GRID)),
+      ...bandFields(silence, bandFrom(desktop ? 0 : GRID), turnsOverload ? GRID : 0),
       regular: true,
     },
     {
@@ -1896,14 +1938,17 @@ export function availableCombatActions(state) {
     {
       id: COMBAT_ACTION.INVERT, tool: COMBAT_TOOL.RIG, label: 'INVERT',
       detail: 'TURN A LOOP · SPEND TAKE · RETURN ITS OWN FORCE · ENTER SILENCE',
-      ...(intent?.invertible
-        ? bandFields(silence, bandFrom(integer(intent?.damage, 0)))
+      ...(intent?.invertible && bridge?.chance !== 100
+        ? bandFields(silence, bandFrom(integer(intent?.damage, 0)
+          + (hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) && !state.feedbackLoopUsed
+            ? GRID * (hasTechnique(state, TECHNIQUE.TAPE_ECHO) ? 2 : 1) : 0)), bridge?.boost || 0)
         : { damage: 0, damageBand: makeBand(0, 0) }),
       consumesTake: true,
+      ...(bridge ? { bridge } : {}),
     },
     ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{
       id: COMBAT_ACTION.WHITEOUT, tool: COMBAT_TOOL.TORCH, label: 'WHITEOUT',
-      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.WHITEOUT)} CHARGE · IT LANDS WHATEVER THEY DO · CLEARS A SET GUARD · BURNS BATTERY`,
+      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.WHITEOUT)} CHARGE · CLEARS THE TARGET'S GUARD · BURNS BATTERY`,
       ...bandFields(noise, ACTION_BAND[COMBAT_ACTION.WHITEOUT]),
       special: true, charge: chargeCost(COMBAT_ACTION.WHITEOUT),
     }] : []),
@@ -1915,7 +1960,8 @@ export function availableCombatActions(state) {
     }] : []),
     ...(state.tools.rig && hasTechnique(state, TECHNIQUE.RUNAWAY_FEEDBACK) ? [{
       id: COMBAT_ACTION.RUNAWAY_FEEDBACK, tool: COMBAT_TOOL.RIG, label: 'RUNAWAY FEEDBACK',
-      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.RUNAWAY_FEEDBACK)} CHARGE · REACHES THE WHOLE ROOM · IT LOSES ITS NEXT BEAT`,
+      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.RUNAWAY_FEEDBACK)} CHARGE · EMPTIES TAKE SLOT${state.apparitions
+        ? ` · HITS UP TO ${hallSpecialTargetCap(state, COMBAT_ACTION.RUNAWAY_FEEDBACK)}` : ''} · SKIPS NEXT BEAT`,
       ...bandFields(silence, ACTION_BAND[COMBAT_ACTION.RUNAWAY_FEEDBACK]),
       special: true, charge: chargeCost(COMBAT_ACTION.RUNAWAY_FEEDBACK),
     }] : []),
@@ -2016,13 +2062,13 @@ export function availableCombatActions(state) {
       ...action,
       ...availability,
       countersKinds,
-      stanceShift: ACTION_SNR[action.id] || null,
+      stanceShift: action.bridge?.chance === 100 ? SNR_STATE.SIGNAL : ACTION_SNR[action.id] || null,
       // The green tile and its diamond. This is the last explicit help in the
       // fight — with the prose gone it is still the answer, handed over every
       // beat — so the bottom rung of the guidance ladder takes it away too.
       // `countersKinds` is untouched: the RULE still knows what counters what,
       // and only the telling of it is withheld.
-      perfect: state.difficulty.guidance !== 'none' && countersKinds.includes(intent?.kind),
+      perfect: state.difficulty.guidance !== 'none' && countersKinds.includes(intent?.kind) && !action.bridge?.chance,
     };
   });
 }
@@ -2050,10 +2096,20 @@ export function combatMoveSubtext(state, move) {
     return {short:`${coverShort} · ${damage} DMG · →NOISE`,
       long:`EXPOSE — ${coverLong} · leaves residue for PLAYBACK · enters NOISE`};
   }
+  if (move.bridge) {
+    const { chance, boost } = move.bridge;
+    return {
+      short: chance === 100 ? 'ARC → RECORDER' : `${chance}% → REC · +${boost} RETURN`,
+      long: chance === 100 ? 'WIRE HOT · INVERT RECORDS INSTEAD · HOLD TO COOL'
+        : `BYPASS · ${chance}% RECORDS INSTEAD ON A LOOP · ELSE +${boost} RETURN`,
+    };
+  }
   const bits = [];
+  if (move.dischargesBridge) bits.push('COOL THE WIRE');
   if (move.damage) bits.push(`${move.damageBand ? bandText(move.damageBand) : move.damage} DMG`);
   if (move.prevents) bits.push(`GUARD ${move.prevents}`);
   if (move.reflects) bits.push(`REFLECT ${move.reflects}`);
+  if (move.turnsOverload) bits.push('TURN OVERLOAD');
   if (move.heals) bits.push(`+${move.heals} COMPOSURE`);
   if (move.captures) bits.push('CAPTURE TAKE');
   if (move.consumesTake) bits.push('SPEND TAKE');
@@ -2064,9 +2120,12 @@ export function combatMoveSubtext(state, move) {
   if (move.countersKinds?.length) bits.push(`CTR ${move.countersKinds.map((kind) => kind.toUpperCase()).join('/')}`);
   const short = bits.join(' · ');
   const sentences = [];
+  if (move.dischargesBridge) sentences.push('cools the bypass wire');
   if (move.damage) sentences.push(`${move.damage} coherence damage`);
   if (move.prevents) sentences.push(`guards ${move.prevents} incoming`);
   if (move.reflects) sentences.push(`reflects ${move.reflects} coherence when you read the blow`);
+  if (move.turnsOverload) sentences.push('entering SILENCE against OVERLOAD adds guard and coherence damage, once per movement');
+  if (move.braceOnRead) sentences.push('BRACE adds guard and damage if this is an OVERLOAD');
   if (move.heals) sentences.push(`restores ${move.heals} composure`);
   if (move.captures) sentences.push('captures a recordable broadcast as a take');
   if (move.consumesTake) sentences.push('spends the loaded take');
@@ -2092,7 +2151,7 @@ const TOOL_LABEL = Object.freeze({
   [COMBAT_TOOL.SELF]: 'HANDS',
   [COMBAT_TOOL.TORCH]: 'FIELD TORCH',
   [COMBAT_TOOL.RECORDER]: 'RECORDER',
-  [COMBAT_TOOL.RIG]: 'BENT RIG',
+  [COMBAT_TOOL.RIG]: 'SERVICE INTERFACE',
   [COMBAT_TOOL.SPANNER]: 'ADJUSTABLE SPANNER',
   [COMBAT_TOOL.FORK]: 'TUNING FORK',
   [COMBAT_TOOL.RADIO]: 'RADIO',
@@ -2356,14 +2415,17 @@ export function reduceCombat(input, action = {}) {
   const intent = currentCombatIntent(state);
   const recoveryBefore = combatRecoveryStatus(state);
   const bonusAction = !!state.tempo;
-  const perfect = !bonusAction && combatActionCounterKinds(state, actionId).includes(intent?.kind);
+  const bridge = actionId === COMBAT_ACTION.INVERT && intent?.invertible ? returnBridgeReadout(state) : null;
+  const printed = bridge && unitFor(state, `return-bridge:${state.turns}:${Number(bonusAction)}`) * 100 < bridge.chance;
+  const perfect = !bonusAction && !printed && combatActionCounterKinds(state, actionId).includes(intent?.kind);
+  const turnedOverload = actionId === COMBAT_ACTION.HOLD && perfect && canTurnOverload(state, intent);
   const takeBefore = state.take ? { ...state.take } : null;
   const composureBefore = state.composure;
   const coherenceBefore = state.movementCoherence;
   // The stance you arrived in, kept before shiftSnr overwrites it: earnedFloor
   // rewards planning the sequence, not the stance the move itself puts you in.
   state.snrBefore = state.snr;
-  const snrShift = shiftSnr(state, actionId);
+  const snrShift = shiftSnr(state, printed ? COMBAT_ACTION.MONITOR : actionId);
   let prevention = 0;
   let enemyDamage = 0;
   let dealt = 0;
@@ -2384,6 +2446,12 @@ export function reduceCombat(input, action = {}) {
       // gone. That — not its damage — is what two charge buys: the one answer to
       // an opponent that has read you and is waiting to turn your swing.
       state.enemyGuard = null;
+      if (state.apparitions) {
+        const targets = combatApparitionTargetIds(state, actionId);
+        for (const member of state.apparitions.members) {
+          if (targets.includes(member.id)) member.guard = null;
+        }
+      }
     }
     dealt = strike(state, ACTION_BAND[actionId], actionId, { perfect });
     let coverDamage = 0;
@@ -2471,8 +2539,10 @@ export function reduceCombat(input, action = {}) {
     state.skipEnemyBeat = true;
     notice = `RUNAWAY FEEDBACK · ${dealt} COHERENCE · THE LOOP EATS ITSELF · THE ROOM IS DEAF`;
   } else if (actionId === COMBAT_ACTION.HOLD) {
-    prevention = defensivePrevention(state, holdPrevention(state));
+    prevention = defensivePrevention(state, holdPrevention(state) + (turnedOverload ? GRID : 0));
     state.ringing = false;
+    const drainedBridge = state.returnBridgeLoad > 0;
+    if (drainedBridge) state.returnBridgeLoad = 0;
     // Bracing correctly is a regular attack, not a dead turn. HOLD used to be
     // the one perfect counter that made no progress at all, so an opponent that
     // leaned on overloads could stall the fight indefinitely against a player
@@ -2482,8 +2552,16 @@ export function reduceCombat(input, action = {}) {
       const before = state.sourceDesktop.cover;
       state.sourceDesktop = rebuildSourceCover(state.sourceDesktop);
       state.last.cover = { rebuilt:state.sourceDesktop.cover-before, remaining:state.sourceDesktop.cover };
-    } else if (perfect) dealt = strike(state, bandFrom(GRID), actionId, { perfect });
+    } else if (perfect) {
+      dealt = strike(state, bandFrom(GRID), actionId, { perfect, flatBonus:turnedOverload ? GRID : 0 });
+      if (turnedOverload) {
+        state.braceUsedMovement = state.movementIndex;
+        state.last.turnedOverload = true;
+      }
+    }
     notice = `HOLD · PREVENT ${prevention}${dealt ? ` · ${dealt} COHERENCE` : ''}`;
+    if (turnedOverload) notice += ' · BRACE TURNS OVERLOAD';
+    if (drainedBridge) notice += ' · WIRE COOLED';
     if (state.sourceDesktop) notice += ` · ${sourceDesktopCapacity(state.sourceDesktop) ? `COVER ${state.sourceDesktop.cover} / ${sourceDesktopCapacity(state.sourceDesktop)}` : 'NO PLATES REMAIN'} · NO ATTACK`;
     if (recoveryBefore.stranded && !recoveryBefore.unlocked) {
       state.recoveryHolds = Math.min(recoveryBefore.required, recoveryBefore.holds + 1);
@@ -2527,14 +2605,23 @@ export function reduceCombat(input, action = {}) {
       // the same mercy MONITOR gets when it finds nothing to record. Committing
       // on a bad read should cost you the exchange, not the night.
       notice = 'INVERT · NOTHING TO TURN';
+    } else if (printed) {
+      state.take = { id: `${intent.id}:bridge`, label: 'CROSSED RETURN', damage: GRID, tag: 'bridge-return' };
+      state.returnBridgeLoad = 0;
+      state.last.bridge = { route:'rec', chance:bridge.chance, from:'rig-return', to:'rec-in' };
+      notice = 'BYPASS ARC · RECORDER FIRED · TAKE REPLACED';
     } else {
       const retain = hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) && !state.feedbackLoopUsed;
       // TAPE ECHO adds a further +1 to a retained Invert (feedback-loop chain).
       const echoBonus = retain && hasTechnique(state, TECHNIQUE.TAPE_ECHO) ? GRID : 0;
-      dealt = strike(state, bandFrom(integer(intent?.damage, 0) + (retain ? GRID : 0) + echoBonus), actionId, { perfect });
+      dealt = strike(state, bandFrom(integer(intent?.damage, 0) + (retain ? GRID : 0) + echoBonus), actionId, { perfect, flatBonus:bridge?.boost || 0 });
+      if (bridge) {
+        state.returnBridgeLoad = Math.min(2, bridge.residual + 1);
+        state.last.bridge = { route:'return', chance:bridge.chance, from:'rig-return', to:'invert-out' };
+      }
       if (retain) state.feedbackLoopUsed = true;
       else state.take = null;
-      notice = `INVERT · ${dealt} RETURNED${retain ? ' · TAKE RETAINED' : ''}${echoBonus ? ' · TAPE ECHO' : ''}`;
+      notice = `${bridge ? 'INVERT / BYPASS' : 'INVERT'} · ${dealt} RETURNED${retain ? ' · TAKE RETAINED' : ''}${echoBonus ? ' · TAPE ECHO' : ''}`;
     }
   } else if (actionId === COMBAT_ACTION.RADIO_DECOY) {
     spendCharge(state, actionId);
@@ -2756,6 +2843,7 @@ export function reduceCombat(input, action = {}) {
     received: enemyDamage,
     snrFrom: snrShift.from,
     snrTo: snrShift.to,
+    ...(state.last.bridge ? { bridge:state.last.bridge } : {}),
   });
   Object.assign(state.last, {
     dealt,

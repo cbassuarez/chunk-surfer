@@ -5,7 +5,7 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { OUTDOOR_ZONES, ZONE,CELL } from '../src/data/floorplan/legend.js';
-import {buildingWindowForExteriorObserver} from '../src/world/building-window-views.js';
+import {buildingWindowForExteriorObserver,buildingWindowsForObserver} from '../src/world/building-window-views.js';
 import { squareLogicalAt } from '../src/data/ellery-square.js';
 import { stationersPlace } from '../src/data/exterior-stationers.js';
 import { worldPropVisibilityKey } from '../src/game/prop-visibility.js';
@@ -61,6 +61,7 @@ function makeFrameHost(position) {
     storyGuidanceHighlightRenderKey: 'false:::0.00',
     R3: { r3dSetPlan: (...args) => planUploads.push(args), r3dSetProps: instances => submissions.push(instances) },
   };
+  scope.interiorOutlookKey=(x,y)=>{const at=FP.logicalToPhysical(x,y);return buildingWindowsForObserver({x:at.x*CELL,z:at.z*CELL,y:at.y,spaceId:at.spaceId,renderGroup:at.renderGroup}).map(w=>w.id);};
   scope.currentExteriorWindow=()=>{
     const point=FP.logicalToPhysical(scope.px,scope.py);
     return buildingWindowForExteriorObserver({x:point.x*CELL,z:point.z*CELL,y:point.y,zone:FP.zoneAt(scope.px,scope.py)});
@@ -75,7 +76,7 @@ function makeFrameHost(position) {
   // establish why the stale submission differs after an ordinary crossing.
   scope.worldRenderInstances = group => {
     const zone = FP.zoneAt(scope.px, scope.py), closure = exteriorRooflineInstance({ group, zone });
-    scope.renderedWorldPropVisibilityKey = worldPropVisibilityKey({ group, zone,exteriorWindowId:scope.currentExteriorWindow()?.id });
+    scope.renderedWorldPropVisibilityKey = worldPropVisibilityKey({ group, zone,exteriorWindowId:scope.currentExteriorWindow()?.id,interiorWindowIds:scope.interiorOutlookKey(scope.px,scope.py) });
     return [...exteriorRoofArchitectureInstances(roofHosts, { group, zone }), ...(closure ? [closure] : [])];
   };
   submissions.push(scope.worldRenderInstances(initialSlice.group)); // normal load/resume submission
@@ -120,12 +121,12 @@ test('actual frame cache repairs an indoor resume when ordinary accepted ground 
     host.scope.px = next.x; host.scope.py = next.y;
     const zone = FP.zoneAt(next.x, next.y), slice = FP.physicalRenderPlanFor(next.x, next.y);
     assert.equal(slice.group, 'ground', 'render group never changes, preserving the original stale-cache trigger');
-    const expectedKey = worldPropVisibilityKey({ group: slice.group, zone });
+    const expectedKey = worldPropVisibilityKey({ group: slice.group, zone,interiorWindowIds:host.scope.interiorOutlookKey(next.x,next.y) });
     if (expectedKey !== oldKey) contextChanges++;
     oldKey = expectedKey;
     const before = host.submissions.length;
     host.render();
-    assert.equal(host.submissions.length - before, expectedKey === worldPropVisibilityKey({ group: 'ground', zone: FP.zoneAt(from.x, from.y) }) ? 0 : 1,
+    assert.equal(host.submissions.length - before, expectedKey === worldPropVisibilityKey({ group: 'ground', zone: FP.zoneAt(from.x, from.y),interiorWindowIds:host.scope.interiorOutlookKey(from.x,from.y) }) ? 0 : 1,
       'exactly one static rebuild occurs when visibility dependencies change');
     assert.equal(host.scope.renderedWorldPropVisibilityKey, expectedKey);
     const ids = host.submissions.at(-1).map(instance => instance.id);

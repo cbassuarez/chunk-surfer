@@ -35,6 +35,11 @@ const M = {
   paint: material('motorway line', [.5, .5, .46], .6),
   barrier: material('steel central barrier', [.2, .21, .22], .45, .7),
   post: material('fence post', [.05, .04, .03], .9),
+  verge: material('wet pennine verge', [.031, .038, .027], .96),
+  bank: material('peat above the motorway', [.022, .026, .020], .98),
+  sign: material('motorway blue enamel', [.027, .12, .38], .56, 0, [.009, .025, .06]),
+  signPaint: material('retroreflective route lettering', [.67, .76, .79], .58, 0, [.22, .27, .29]),
+  signPost: material('galvanised marker post', [.12, .135, .14], .55, .55),
   wool: material('wet fleece', [.42, .4, .34], 1),
   lorryBox: material('curtain side trailer', [.14, .15, .16], .7),
   lorryCab: material('lorry cab', [.07, .07, .08], .45, .3),
@@ -207,6 +212,47 @@ for (let i = 0; i < 2; i++) gritFace(i);
   l.box(M.lorryCab, [0, 2, L / 2 - 1.1], [2.45, 2.7, 2.2]);
   for (const z of [-L / 2 + 1.4, -L / 2 + 2.8, L / 2 - 1.5, 1.4]) l.box(M.rubber, [0, .52, z], [2.4, 1.04, 1.04]);
   mesh('m62_lorry', l);
+}
+
+// These two pieces are shared by the walked motorway. Keeping the verge out
+// of the carriageway mesh preserves the drive's existing terrain and traffic.
+{
+  const verge = new Part(), halfLength = 20.5;
+  for (const [edge, direction] of [[-6.1, -1], [8.5, 1]]) {
+    const section = [[edge, -.018], [edge + 2.4 * direction, -.035], [edge + 8 * direction, .13],
+      [edge + 16 * direction, .68], [edge + 29 * direction, 2.55]];
+    for (let i = 1; i < section.length; i += 1) {
+      const [left, right] = [section[i - 1], section[i]].sort((a, b) => a[0] - b[0]);
+      verge.quad(i < 3 ? M.verge : M.bank, [...left, halfLength], [...right, halfLength],
+        [...right, -halfLength], [...left, -halfLength]);
+    }
+  }
+  mesh('m62_verge', verge);
+
+  const marker = new Part(), signWidth = 1.54, signHeight = .86, signY = 2.29;
+  for (const x of [-.51, .51]) marker.box(M.signPost, [x, 1.15, -.045], [.09, 2.30, .09]);
+  marker.box(M.sign, [0, signY, 0], [signWidth, signHeight, .065]);
+  for (const x of [-1, 1]) marker.box(M.signPaint, [x * (signWidth / 2 - .055), signY, .034], [.021, signHeight - .11, .005], 'Z');
+  for (const y of [-1, 1]) marker.box(M.signPaint, [0, signY + y * (signHeight / 2 - .055), .034], [signWidth - .09, .021, .005], 'Z');
+
+  // Solid cut characters survive the same low-resolution acquisition as the
+  // vehicle paint. They label the road in the world and never occupy the HUD.
+  const routeLetters = [
+    ['10001', '11011', '10101', '10001', '10001', '10001', '10001'],
+    ['01110', '10000', '10000', '11110', '10001', '10001', '01110'],
+    ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+  ];
+  const glyphCell = .075;
+  for (const [glyphIndex, rows] of routeLetters.entries()) {
+    for (const [row, pixels] of rows.entries()) {
+      for (const [column, pixel] of [...pixels].entries()) {
+        if (pixel === '0') continue;
+        const x = (glyphIndex * 6 + column - 8) * glyphCell;
+        marker.box(M.signPaint, [x, signY + (3 - row) * glyphCell, .035], [glyphCell + .002, glyphCell + .002, .005], 'Z');
+      }
+    }
+  }
+  mesh('m62_route_marker', marker);
 }
 
 fs.mkdirSync(OUT, { recursive: true });

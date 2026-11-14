@@ -14,7 +14,11 @@ import {OPENING_ROAD,openingRoadAt,openingRoadSurfaceAt,openingDriveColliders,op
 import {resetWheelHands,wheelHandDiagnostics} from './geometry/wheel-hands-pose.js';
 import {DRIVE_TIME_SKIPS,createTimeSkipDirector,hazardSceneRows} from './time-skips.js';
 import {openingWorldAt} from './opening-road.js';
-export const DOOR_DRIVE_TEASER=Object.freeze({duration:96,soundLeadEnd:.65,pictureFadeEnd:1.3,queueStart:16,climbStart:33,loadedStart:49,departureStart:70,fallStart:73,settledStart:88,impactFadeStart:92,impactStart:92.4,returnStart:94.8,startDistance:30,firstVisibleDistance:38,departureDistance:293,releaseDistance:304,releaseLateral:3.35,commitDistance:293,programmeStart:73.8,skipCoverSeconds:.28,skipReturnSeconds:.7});
+import {DRIVE_MEMORY_BREAK,driveMemoryBreakFrame} from './memory-break.js';
+// The complete cab/box envelope must clear the retained road formation, not
+// merely its centre. This seaward release leaves a measured 6.78m projected
+// hull margin while preserving the existing supported lead-in and wreck site.
+export const DOOR_DRIVE_TEASER=Object.freeze({duration:96,soundLeadEnd:.65,pictureFadeEnd:1.3,queueStart:16,climbStart:33,loadedStart:49,departureStart:70,fallStart:73,settledStart:88,impactFadeStart:92,impactStart:92.4,returnStart:94.8,startDistance:30,firstVisibleDistance:38,departureDistance:293,releaseDistance:304,releaseLateral:3.75,commitDistance:293,programmeStart:73.8,skipCoverSeconds:.28,skipReturnSeconds:.7});
 const C=DOOR_DRIVE_TEASER,STEP=1/120,PIVOT=.85,clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),finite=(v,f=0)=>Number.isFinite(v)?v:f,clone=v=>structuredClone(v),mix=(a,b,t)=>a+(b-a)*t;
 const smooth=x=>{const t=clamp(x);return t*t*(3-2*t);},ease=x=>{const t=clamp(x);return t*t*t*(10+t*(-15+6*t));};
 const point=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]],vector=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2],m[1]*p[0]+m[5]*p[1]+m[9]*p[2],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]];
@@ -55,7 +59,7 @@ export function doorDriveCinematicFrame(timeSec){const t=clamp(finite(timeSec),0
 // that drives the player. Entry, free driving and cliff commitment are distinct.
 // The eye, part way to the set. It rides with the cab like the set does.
 function radioLeanEye(scene,amount=0){if(!(amount>0))return scene;const to=scene.cabPoint(CAB_RADIO_LEAN.eye);return{...scene,eye:scene.eye.map((v,i)=>v+(to[i]-v)*amount)};}
-export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},initialDrive=null,timeSkips=DRIVE_TIME_SKIPS}={}){
+export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},initialDrive=null,timeSkips=DRIVE_TIME_SKIPS,requireDestinationReady=false,requireCoveredPresentation=false}={}){
  // Keep Q or LB pressed to look down at the set. The van keeps moving.
  let radioLean=0,radioLeanTarget=0;
  const drive=createDrive(),weather=createDriveWeather({rain:.62,initialWetness:.38,seed:1947}),seed=openingRoadAt(OPENING_ROAD.spawn),keys=new Set();let steerAnalog=null;
@@ -65,17 +69,18 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
  // THE TIME SKIPS (time-skips.js): the free drive comes apart into stretches of the
  // same night, each cut like turning the radio dial. `cut` is the turn in progress.
  const skips=timeSkips?createTimeSkipDirector({skips:timeSkips,worldAt:openingWorldAt,distanceOf:d=>openingRoadSurfaceAt(d.x,d.z).distance}):null;
- let cut=null,cutSerial=0;
+ let cut=null,cutSerial=0;const breakSpec={...DRIVE_MEMORY_BREAK,...timeSkips?.cut};
  function placeStretch(stretch){
   if(!stretch)return;const a=stretch.start,p=openingWorldAt(a.d,a.lateral||0);
   // He arrives going about as fast as he was: the cut moves the night, not his foot.
-  const speed=Math.max(6,Math.min(a.speed+3,Math.abs(drive.speed)||a.speed));
-  Object.assign(drive,{x:p.x,z:p.z,heading:p.heading,roadHeight:p.y||0,speed,lateralSpeed:0,yawRate:0,wheelAngle:0,steeringWheelAngle:0,
-   throttle:.45,engineLoad:.35,brakeAmount:0,bodyRoll:0,bodyPitch:0,bodyHeave:0,rollVelocity:0,pitchVelocity:0,heaveVelocity:0,physicsRemainder:0});
+  const prior=openingRoadSurfaceAt(drive.x,drive.z),relative=Math.atan2(Math.sin(drive.heading-prior.heading),Math.cos(drive.heading-prior.heading));
+  // Carry the occupied instrument across the changed exterior. In particular,
+  // no invisible hand straightens the wheel or lets go of a held pedal here.
+  Object.assign(drive,{x:p.x,z:p.z,heading:p.heading+clamp(relative,-.4,.4),roadHeight:p.y||0,physicsRemainder:0});
   if(stretch.station)tuneDrive(drive,stretch.station);
  }
  drive.programTime=C.programmeStart;weather.timeSec=C.programmeStart;
- const controlsEnabled=()=>started&&!disposed&&!finished&&!paused&&!hostPaused&&!force&&!skip&&!cut&&timeSec>=.8;
+ const controlsEnabled=()=>started&&!disposed&&!finished&&!paused&&!hostPaused&&!force&&!skip&&(!cut||cut.placed&&cut.age>=breakSpec.revealAt)&&timeSec>=.8;
  function storyAt(d){if(d<=30)return .65*clamp((d-OPENING_ROAD.spawn)/(30-OPENING_ROAD.spawn));let a=.65,b=70;for(let i=0;i<30;i++){const m=(a+b)/2;if(distanceAt(m).distance<d)a=m;else b=m;}return Math.min(70,(a+b)/2);}
  function livePose(){
   const r=openingRoadSurfaceAt(drive.x,drive.z),delta=drive.heading-r.heading,n=r.surfaceNormal;
@@ -121,14 +126,14 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
   return{...p,timeSec,cinematicTime:story,phase,coverAlpha:clamp(alpha),worldOwner:age<force.coveredAt?'drive':'return',cliffCommitted:true,commitReason:force.reason,rearFirst:force.rearFirst,controlOwner:'opening-cinematic',controlsEnabled:false,sceneAnchor:{x:anchor.x,y:anchor.y,z:anchor.z,heading:anchor.heading},lookYawOffset:force.look.yaw*(1-lookMix),lookPitchOffset:age<force.lead?mix(force.look.pitch,-.035,lookMix):-.035-.205*ease(clamp((age-force.lead-.35)/1.2,0,1)),waterEntryTime:force.lead+force.contactFlight,breakEdge:{...DRIVE_TEASER_BREAK}};
  }
  // The dial cut's picture: a dark middle while the van is moved, around the static.
- function cutCover(){if(!cut)return 0;const u=cut.age/timeSkips.cut.seconds,mid=timeSkips.cut.placeAt/timeSkips.cut.seconds;return clamp(1-Math.abs(u-mid)/.24)*.5;}
+ function cutCover(){return driveMemoryBreakFrame(cut,breakSpec).cover;}
  function view(){let p=force?forcedPose():{...livePose(),timeSec,cinematicTime:storyAt(Math.max(drive.furthest,-drive.z)),phase:timeSec<.65?'sound-lead':cut?'time-skip':'free-drive',coverAlpha:timeSec<.65?1:Math.max(cutCover(),1-smooth((timeSec-.65)/.65)),
-  tuning:cut?{serial:cut.serial,age:cut.age,seconds:timeSkips.cut.seconds,fraction:clamp(cut.age/timeSkips.cut.seconds),reason:cut.reason,from:cut.from,to:cut.to}:null,
+  tuning:cut?driveMemoryBreakFrame(cut,breakSpec):null,
   stretch:skips?{index:skips.index(),id:skips.stretch()?.id||null,time:skips.time(),cuts:skips.cuts()}:null,worldOwner:'drive',cliffCommitted:false,controlOwner:controlsEnabled()?'player':'opening-entry',controlsEnabled:controlsEnabled(),...radioLeanPose()};if(!started){p.phase='idle';p.coverAlpha=0;p.worldOwner='return';}if(skip){p={...p,phase:skip.age<.28?'skip-cover':'return',coverAlpha:skip.age<.28?mix(skip.alpha,1,smooth(skip.age/.28)):1-smooth((skip.age-.28)/.7),worldOwner:skip.age<.28?skip.owner:'return'};}if(finished){p.phase='complete';p.coverAlpha=0;p.worldOwner='return';}return p;}
  function synchronize(){const p=view();drive.paused=paused||hostPaused||disposed||finished||!started||p.worldOwner!=='drive';if(force){const pull=smooth(force.age/.38),wet=p.waterSeconds||0;Object.assign(drive,{x:anchor.x,z:anchor.z,heading:anchor.heading,roadHeight:anchor.height,speed:p.speed,programTime:force.programmeStart+force.age,furthest:Math.max(drive.furthest,304),throttle:wet>0?0:p.phase==='departure'?.28+.69*pull:.16,engineLoad:wet>0?0:p.phase==='departure'?.20+.75*pull:.33,brakeAmount:0,brakeHold:false,bodyPitch:0,bodyRoll:0,bodyHeave:0,wheelRotation:force.wheelStart+force.age*force.wheelRate});}const cinematic=doorDriveCinematicFrame(p.cinematicTime);cinematic.controlsLocked=!p.controlsEnabled;cinematic.phase=p.phase;cinematic.worldTimeSec=timeSec;cinematic.motionTimeSec=timeSec;cinematic.warningWheelAge=warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt);drive.openingCinematic=cinematic;return p;}
  function complete(){if(finished)return;finished=true;synchronize();if(!notified){notified=true;onComplete({skipped:!!skip,timeSec,duration:timeSec});}}
  function coveredReturn(){if(returned||!started||disposed||view().worldOwner!=='return')return;returned=true;onCoveredReturn({skipped:!!skip,timeSec,phase:'impact-black',coverAlpha:1});}
- function snapshot(){const p=view();return{phase:p.phase,coverAlpha:p.coverAlpha,worldOwner:p.worldOwner,timeSec,duration:96,variableDuration:true,controlsEnabled:p.controlsEnabled,clippedSeconds,started,paused:paused||hostPaused,finished,disposed,skipped:!!skip,coveredReturn:returned,vehiclePose:clone(p),driveState:clone(drive),look:{...look},settings:{...settings},worldMotionClock:{timeSec,warningStartedAt,warningWheelAge:warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt)},weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase,commitment:force?{at:force.programmeStart-C.programmeStart,lead:force.lead,capture:clone(force.capture),reason:force.reason,rearFirst:force.rearFirst,contactFlight:force.contactFlight,release:clone(force.release),support:clone(force.support)}:null};}
+ function snapshot(){const p=view();return{phase:p.phase,coverAlpha:p.coverAlpha,worldOwner:p.worldOwner,timeSec,duration:96,variableDuration:true,controlsEnabled:p.controlsEnabled,clippedSeconds,started,paused:paused||hostPaused,finished,disposed,skipped:!!skip,coveredReturn:returned,vehiclePose:clone(p),driveState:clone(drive),look:{...look},settings:{...settings},roadOutcomes:skips?.outcomes?.()||[],worldMotionClock:{timeSec,warningStartedAt,warningWheelAge:warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt)},weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase,commitment:force?{at:force.programmeStart-C.programmeStart,lead:force.lead,capture:clone(force.capture),reason:force.reason,rearFirst:force.rearFirst,contactFlight:force.contactFlight,release:clone(force.release),support:clone(force.support)}:null};}
  function start(){if(started||disposed||finished)return false;started=true;resetWheelHands();synchronize();return true;}
  function setPaused(value){if(disposed||finished)return false;paused=!!value;if(paused)keys.clear();synchronize();return paused;}
  function step(h){
@@ -138,9 +143,14 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
   else if(cut){
    // The dial turns: out of the picture, the van set down in the dark middle on
    // the next stretch with the radio on its new station, and back in.
-   cut.age+=h;
-   if(!cut.placed&&cut.age>=timeSkips.cut.placeAt){placeStretch(skips.advance());cut.placed=true;}
-   if(cut.age>=timeSkips.cut.seconds)cut=null;
+   const canReplace=cut.destinationReady&&cut.coveredPresented,nextAge=cut.age+h;
+   cut.waiting=!canReplace&&nextAge>=breakSpec.placeAt;
+   cut.age=cut.waiting?Math.min(nextAge,breakSpec.placeAt-1e-5):nextAge;
+   if(cut.age<breakSpec.coverAt||cut.age>breakSpec.revealAt)
+     stepDrive(drive,h,{...Object.fromEntries([...keys].map(k=>[k,true])),...(steerAnalog!=null?{steer:steerAnalog}:{})},openingDriveColliders(drive),{roadSampler:openingRoadSurfaceAt});
+   else drive.programTime+=h;
+   if(!cut.placed&&canReplace&&cut.age>=breakSpec.placeAt){placeStretch(skips.advance({to:cut.to}));cut.placed=true;}
+   if(cut.age>=breakSpec.seconds)cut=null;
   }
   else{
    const before=openingRoadSurfaceAt(drive.x,drive.z);drive.paused=false;
@@ -149,12 +159,16 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
    if(warningStartedAt==null&&r.distance>=288)warningStartedAt=timeSec;
    if(support.departed)commit({edge:true,support});
    else if(before.distance<C.commitDistance&&r.distance>=C.commitDistance&&forwardRoadVelocity>0)commit();
-   else if(skips&&timeSec>=.8){const request=skips.update(drive,h);if(request){cut={age:0,serial:++cutSerial,reason:request.reason,from:request.from,to:request.to,placed:false};keys.clear();}}
+   else if(skips&&timeSec>=.8){const request=skips.update(drive,h);if(request){
+     if(request.kind==='continuous')skips.advance({to:request.to,continuous:true,distance:request.distance});
+     else cut={age:0,serial:++cutSerial,reason:request.reason,from:request.from,to:request.to,destination:timeSkips.stretches[request.to]?.id,
+       placed:false,destinationReady:!requireDestinationReady,coveredPresented:!requireCoveredPresentation,waiting:false};
+   }}
   }
   if(handControl)handControl.elapsed+=h;
   const e=driveEvolutionFrame(drive),later=skips?.stretch()||{};stepDriveWeather(weather,{...e.weather,rain:Math.min(1,.68+.18*smooth(drive.furthest/293)+(later.rain||0)),fog:.05+.10*smooth(drive.furthest/293)+(later.fog||0),snow:0,whiteout:0,dt:h,timeSec:drive.programTime,wipers:settings.wipers,speed:drive.speed});synchronize();coveredReturn();}
- function update(dt,{paused:held=false,input:heldInput=null}={}){hostPaused=!!held;steerAnalog=Number.isFinite(heldInput?.steer)?Math.max(-1,Math.min(1,heldInput.steer)):null;if(heldInput&&controlsEnabled())for(const[k,v]of Object.entries(heldInput))if(['forward','reverse','left','right','brake'].includes(k)){if(v)keys.add(k);else keys.delete(k);}synchronize();if(!started||disposed||finished||paused||hostPaused)return snapshot();const elapsed=Math.max(0,finite(dt));stepRadioLean(elapsed);clippedSeconds+=Math.max(0,elapsed-.25);remainder+=Math.min(.25,elapsed);while(remainder+1e-10>=STEP&&!finished){step(STEP);remainder=Math.max(0,remainder-STEP);}synchronize();return snapshot();}
- function input(action,pressed=true){if(!controlsEnabled())return false;if(!['forward','reverse','left','right','brake'].includes(action))return false;if(pressed)keys.add(action);else keys.delete(action);return true;}
+ function update(dt,{paused:held=false,input:heldInput=null}={}){hostPaused=!!held;steerAnalog=Number.isFinite(heldInput?.steer)?Math.max(-1,Math.min(1,heldInput.steer)):null;if(heldInput&&(controlsEnabled()||cut))for(const[k,v]of Object.entries(heldInput))if(['forward','reverse','left','right','brake'].includes(k)){if(v&&controlsEnabled())keys.add(k);else if(!v)keys.delete(k);}synchronize();if(!started||disposed||finished||paused||hostPaused)return snapshot();const elapsed=Math.max(0,finite(dt));stepRadioLean(elapsed);clippedSeconds+=Math.max(0,elapsed-.25);remainder+=Math.min(.25,elapsed);while(remainder+1e-10>=STEP&&!finished){step(STEP);remainder=Math.max(0,remainder-STEP);}synchronize();return snapshot();}
+ function input(action,pressed=true){if(!['forward','reverse','left','right','brake'].includes(action))return false;if(cut&&!pressed){keys.delete(action);return true;}if(!controlsEnabled())return false;if(pressed)keys.add(action);else keys.delete(action);return true;}
  function radioLeanPose(){const k=radioLean*radioLean*(3-2*radioLean),to=cabRadioLeanAngles();return{radioLean:k,lookYawOffset:look.yaw+(to.yaw-look.yaw)*k,lookPitchOffset:look.pitch+(to.pitch-look.pitch)*k};}
  function stepRadioLean(dt){if(!controlsEnabled()&&!cut)radioLeanTarget=0;const reach=dt/CAB_RADIO_LEAN.seconds;radioLean=radioLean<radioLeanTarget?Math.min(radioLeanTarget,radioLean+reach):Math.max(radioLeanTarget,radioLean-reach);}
  function setRadioLean(on,{immediate=false}={}){if(on&&!controlsEnabled()&&!cut)return false;radioLeanTarget=on?1:0;if(immediate)radioLean=radioLeanTarget;return true;}
@@ -168,8 +182,10 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
  function setRecordingView(value){recordView={...recordView,...clone(value||{})};return true;}
  function frame(metrics){metricsCache=metrics;synchronize();const state=snapshot();if(disposed||!started||finished||state.worldOwner!=='drive')return{...state,renderFrame:null};const p=view(),evolution=driveEvolutionFrame(drive),pane=driveWeatherFrame(weather),cinematic=drive.openingCinematic,base=radioLeanEye(applyOpeningRoadScene(makeDriveScene(drive,metrics,{headlights:settings.headlights,wipers:settings.wipers,showHands:true,weather:pane,handControl}),drive),p.radioLean),coast=makeCoastalMemoryScene({timeSec,worldFromLocal:COASTAL_WORLD_FROM_LOCAL,includeWreck:false,mode:'opening',vehicleMetrics:metrics}),scene=applyDriveTeaserScene(base,{vehicleMatrix:p.bodyMatrix,breakEdge:DRIVE_TEASER_BREAK,look:{yaw:drive.heading+p.lookYawOffset,pitch:base.roadPitch+p.lookPitchOffset},cinematic,coastalScene:coast}),weatherFrame=driveWeatherFrame(weather,{bodyMatrix:scene.body,cabinMount:metrics.cabinBodyMount,headlamps:scene.lamps.filter(l=>/^drive-headlamp-[01]$/.test(l.id))});weatherFrame.groundY=force?anchor.height:drive.roadHeight||0;const reach=wheelHandDiagnostics()?.reach;if(handControl&&reach?.kind===handControl.kind){if(!handControl.done&&reach.atContact){handControl.done=true;try{const result=handControl.callback();result?.catch?.(error=>console.error('[opening-drive-control]',error));}catch(error){console.error('[opening-drive-control]',error);}}if(reach.complete)handControl=null;}const renderState={...clone(drive),heading:scene.vehicleHeading},lights=scene.lamps.filter(l=>/^drive-headlamp-[01]$/.test(l.id)).map(l=>{const direction=vector(scene.body,[0,-.02,-1]),length=Math.hypot(...direction);return{position:[l.x,l.y,l.z],direction:direction.map(v=>v/length),intensity:l.intensity||0};}),coastalMemory={active:true,siteMatrix:Array.from(COASTAL_WORLD_FROM_LOCAL),waterY:0,time:timeSec,lights,flood:force?smooth((force.age-force.lead-force.contactFlight)/4):0}
  // The precarious thing on this stretch, in the lamps.
- if(skips&&!force){const rows=hazardSceneRows(skips.hazard(drive));if(rows.props.length){scene.props=[...scene.props,...rows.props];scene.lamps=[...scene.lamps,...rows.lamps];}};return{...state,renderFrame:{active:true,controlsEnabled:state.controlsEnabled,scene,look:scene.look,driveState:renderState,weather:weatherFrame,evolution,coastalMemory,radio:programmeFrame(renderState,evolution),recording:{active:recordView.mode==='record'||!!recordView.recording,level:recordView.level||0},readout:clone(recordView),cinematicLook:!!force,cameraRoll:0,cameraRig:scene.cameraRig,cinematic:{...cinematic,vehiclePose:clone(p),forced:!!force}}};}
+ if(skips&&!force){const rows=hazardSceneRows(skips.hazard(drive));if(rows.props.length){scene.props=[...scene.props,...rows.props];scene.lamps=[...scene.lamps,...rows.lamps];}};const memoryBreak=driveMemoryBreakFrame(cut,breakSpec);renderState.memoryBreak=memoryBreak;return{...state,renderFrame:{active:true,controlsEnabled:state.controlsEnabled,scene,look:scene.look,driveState:renderState,weather:weatherFrame,evolution,coastalMemory,memoryBreak,radio:programmeFrame(renderState,evolution),recording:{active:recordView.mode==='record'||!!recordView.recording,level:recordView.level||0},readout:clone(recordView),cinematicLook:!!force,cameraRoll:0,cameraRig:scene.cameraRig,cinematic:{...cinematic,vehiclePose:clone(p),forced:!!force}}};}
  function requestSkip(){if(!started||disposed||finished||skip)return false;const p=view();skip={age:0,alpha:p.coverAlpha,owner:p.worldOwner};keys.clear();return true;}
  function dispose(){if(disposed)return false;disposed=true;drive.paused=true;keys.clear();return true;}
- synchronize();return{start,update,setPaused,skip:requestSkip,snapshot,frame,dispose,input,setLook,lookDelta,setRadioLean,operate,selectStation,power,toggleWipers,toggleHeadlights,setRecordingView};
+ synchronize();return{start,update,setPaused,skip:requestSkip,snapshot,frame,dispose,input,setLook,lookDelta,setRadioLean,operate,selectStation,power,toggleWipers,toggleHeadlights,setRecordingView,
+   setDestinationReady(serial,value=true){if(!cut||cut.serial!==serial)return false;cut.destinationReady=!!value;return true;},
+   presented(frame){if(!cut||frame?.serial!==cut.serial||frame.cover<.999)return false;cut.coveredPresented=true;return true;}};
 }

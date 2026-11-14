@@ -1,0 +1,167 @@
+[
+  {
+    "id": "prelude-open",
+    "movement": "Prélude",
+    "startSeconds": 0,
+    "endSeconds": 8.985792,
+    "exitSeconds": [
+      2.928917,
+      5.66825
+    ],
+    "sourceStartSeconds": 1.96,
+    "sourceEndSeconds": 11.44,
+    "sourceVideoId": "CQ-p1S3dC-U",
+    "gainDb": 4.7,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      5.05,
+      7.94
+    ]
+  },
+  {
+    "id": "prelude-answer",
+    "movement": "Prélude",
+    "startSeconds": 9.105792,
+    "endSeconds": 28.252708,
+    "exitSeconds": [
+      13.475458,
+      16.432813,
+      23.210063
+    ],
+    "sourceStartSeconds": 27.69,
+    "sourceEndSeconds": 47.89,
+    "sourceVideoId": "CQ-p1S3dC-U",
+    "gainDb": 3.4,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      32.3,
+      35.42,
+      42.57
+    ]
+  },
+  {
+    "id": "allemande-open",
+    "movement": "Allemande",
+    "startSeconds": 28.372708,
+    "endSeconds": 42.676021,
+    "exitSeconds": [
+      34.657063,
+      38.258958
+    ],
+    "sourceStartSeconds": 1.79,
+    "sourceEndSeconds": 16.88,
+    "sourceVideoId": "cPOqu4kaE-0",
+    "gainDb": 2,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      8.42,
+      12.22
+    ]
+  },
+  {
+    "id": "allemande-turn",
+    "movement": "Allemande",
+    "startSeconds": 42.796021,
+    "endSeconds": 56.957167,
+    "exitSeconds": [
+      46.871854,
+      52.094604
+    ],
+    "sourceStartSeconds": 16.88,
+    "sourceEndSeconds": 31.82,
+    "sourceVideoId": "cPOqu4kaE-0",
+    "gainDb": 1,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      21.18,
+      26.69
+    ]
+  },
+  {
+    "id": "allemande-answer",
+    "movement": "Allemande",
+    "startSeconds": 57.077167,
+    "endSeconds": 73.352042,
+    "exitSeconds": [
+      62.498958,
+      67.380479
+    ],
+    "sourceStartSeconds": 116.78,
+    "sourceEndSeconds": 133.95,
+    "sourceVideoId": "cPOqu4kaE-0",
+    "gainDb": 0.3,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      122.5,
+      127.65
+    ]
+  },
+  {
+    "id": "courante-open",
+    "movement": "Courante",
+    "startSeconds": 73.472042,
+    "endSeconds": 88.429396,
+    "exitSeconds": [
+      79.434125,
+      83.225604
+    ],
+    "sourceStartSeconds": 1.97,
+    "sourceEndSeconds": 17.75,
+    "sourceVideoId": "QiUbIZxIeI0",
+    "gainDb": 0.9,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      8.26,
+      12.26
+    ]
+  },
+  {
+    "id": "courante-answer",
+    "movement": "Courante",
+    "startSeconds": 88.549396,
+    "endSeconds": 111.127604,
+    "exitSeconds": [
+      96.454604,
+      103.72475
+    ],
+    "sourceStartSeconds": 52.44,
+    "sourceEndSeconds": 76.26,
+    "sourceVideoId": "QiUbIZxIeI0",
+    "gainDb": 1.4,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      60.78,
+      68.45
+    ]
+  },
+  {
+    "id": "montfermeil-refrain",
+    "movement": "La Montfermeil",
+    "startSeconds": 111.247604,
+    "endSeconds": 123.62675,
+    "exitSeconds": [
+      117.399271
+    ],
+    "sourceStartSeconds": 1.18,
+    "sourceEndSeconds": 14.24,
+    "sourceVideoId": "NlW5w3RH1pI",
+    "gainDb": 6.2,
+    "mode": "loop",
+    "sourceExitSeconds": [
+      7.67
+    ]
+  },
+  {
+    "id": "montfermeil-release",
+    "movement": "La Montfermeil",
+    "startSeconds": 123.74675,
+    "endSeconds": 132.514521,
+    "exitSeconds": [],
+    "sourceStartSeconds": 86.45,
+    "sourceEndSeconds": 95.7,
+    "sourceVideoId": "NlW5w3RH1pI",
+    "gainDb": 7.2,
+    "mode": "one-shot",
+    "sourceExitSeconds": []
+  }
+]

@@ -124,9 +124,9 @@ test('actual left and right inward hinges follow saved .45 second fractions, ret
   }
 });
 
-test('acquisition clears Source and Horizon residue and uses the ordinary shared plan/dither path without persistent camera targets',async()=>{
+test('acquisition clears Source residue and uses the ordinary shared plan/dither path without persistent camera targets',async()=>{
   const h=fixture();assert.equal(await h.owner.initialize(),true);assert.equal(await h.owner.initialize(),true);assert.equal(h.owner.ready(),true);
-  assert.ok(h.calls.some(c=>c.name==='r3dSetHorizon'&&c.args[0]===null));assert.ok(h.calls.some(c=>c.name==='r3dSetSourceCrossing'&&c.args[0]===null));assert.ok(h.calls.some(c=>c.name==='pressure'&&c.args[0].length===0));
+  assert.ok(h.calls.some(c=>c.name==='r3dSetSourceCrossing'&&c.args[0]===null));assert.ok(h.calls.some(c=>c.name==='pressure'&&c.args[0].length===0));
   h.owner.render(state());const f=h.calls.findLast(c=>c.name==='r3dFrame').args[0];assert.equal(f.textSpace,false);assert.equal(f.sourceVoidPhysical,false);assert.equal(f.plan,true);assert.deepEqual(f.authoredCamera.eye,[2,4.8+EYE,8]);
   assert.equal(h.calls.some(c=>/SetLookAngles|SetCinematicLook|r3dInit/.test(c.name)),false);assert.equal(h.calls.filter(c=>c.name==='base').length,1);
   const p=h.calls.find(c=>c.name==='r3dSetPlan');assert.equal(p.args[4].originX,h.l.plan.originX);assert.equal(p.args[4].heightOffset,0);assert.deepEqual(p.args[4].ambient,h.l.plan.ambient);

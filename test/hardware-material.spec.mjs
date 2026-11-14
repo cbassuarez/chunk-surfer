@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { drawHardwareCap, hardwareCapGeometry, hardwarePigment, clearHardwareMaterialCache, hardwareMaterialCacheStats } from '../src/render/hardware-material.js';
+import { drawHardwareCap, hardwareCapGeometry, hardwarePigment, clearHardwareMaterialCache, hardwareMaterialCacheStats,
+  setHardwareReducedEffects } from '../src/render/hardware-material.js';
 import { hardwarePromptIds } from '../src/game/hardware-prompts.js';
 
 function canvasProbe() {
@@ -9,12 +10,13 @@ function canvasProbe() {
   const make = () => {
     const stack=[];
     const canvas={width:0,height:0,ownerDocument:owner};
-    const ctx={canvas,globalAlpha:1,shadowBlur:0,
-      save(){stack.push(this.globalAlpha);},restore(){this.globalAlpha=stack.pop();},
+    const ctx={canvas,globalAlpha:1,shadowBlur:0,globalCompositeOperation:'source-over',
+      save(){stack.push({alpha:this.globalAlpha,composite:this.globalCompositeOperation});},
+      restore(){const state=stack.pop();this.globalAlpha=state.alpha;this.globalCompositeOperation=state.composite;},
       createLinearGradient(){return {addColorStop(){}};},
       createImageData(w,h){return {width:w,height:h,data:new Uint8ClampedArray(w*h*4)};},
       putImageData(image){canvas.image=image;calls.push(['bake']);},
-      drawImage(image,...args){calls.push(['image',image,...args,this.globalAlpha]);},
+      drawImage(image,...args){calls.push(['image',image,...args,this.globalCompositeOperation,this.globalAlpha]);},
     };
     for(const method of ['translate','beginPath','moveTo','lineTo','quadraticCurveTo','bezierCurveTo','closePath','clip','fill','stroke','fillRect'])ctx[method]=(...args)=>calls.push([method,...args]);
     canvas.getContext=()=>ctx;
@@ -72,6 +74,47 @@ test('material fields are baked once; lamp heat and cap travel never allocate a 
   assert.ok(on.data[at+1]>on.data[5]+40,'thick perimeter remains darker');
 });
 
+test('powered illumination is explicit, brighter internally and composed behind the unchanged cap',()=>{
+  clearHardwareMaterialCache();setHardwareReducedEffects(false);
+  const standard=canvasProbe();
+  const normal=drawHardwareCap(standard.ctx,10,20,130,54,{color:'blue',lampHeat:1});
+  assert.equal(standard.surfaces.length,2,'ordinary controls retain their original two-field material');
+  const powered=canvasProbe();
+  const active=drawHardwareCap(powered.ctx,10,20,130,54,{color:'blue',lampHeat:1,illumination:'powered'});
+  assert.deepEqual(active,normal,'illumination cannot change geometry or hit housing');
+  assert.equal(powered.surfaces.length,4,'the local spill and edge bloom are precomputed once');
+  const plain=standard.surfaces[1].image,lit=powered.surfaces[1].image;
+  const at=(Math.floor(lit.height*.55)*lit.width+Math.floor(lit.width*.48))*4;
+  assert.ok(lit.data[at]>plain.data[at]+20,'diffused internal light raises the cap face visibly');
+  const images=powered.calls.filter(call=>call[0]==='image');
+  assert.deepEqual(images.map(call=>call[1]),[powered.surfaces[2],powered.surfaces[3],powered.surfaces[0],powered.surfaces[1]],
+    'wide spill precedes the socket, tight bloom precedes the physical cap and its ink');
+  assert.deepEqual(images.map(call=>call.at(-2)),['screen','screen','source-over','source-over'],
+    'only light screens onto the housing; cap pigment and sharp print retain their own composition');
+  assert.equal(powered.ctx.globalCompositeOperation,'source-over','the local light cannot change later UI composition');
+  assert.ok(images[0][2]<active.face.x&&images[0][3]<active.face.y,'glow extends beyond the cap bounds');
+  for(let n=0;n<40;n++)drawHardwareCap(powered.ctx,10,20,130,54,{color:'blue',lampHeat:n/39,travel:n/39,illumination:'powered'});
+  assert.equal(powered.surfaces.length,4,'settled and transitioning lamps reuse bounded cached surfaces');
+});
+
+test('an unpowered or disabled powered-style cap cannot acquire decorative illumination from focus',()=>{
+  clearHardwareMaterialCache();setHardwareReducedEffects(false);
+  const unpowered=canvasProbe();
+  drawHardwareCap(unpowered.ctx,0,0,130,54,{color:'red',lampHeat:0,focused:true,illumination:'powered'});
+  assert.equal(unpowered.calls.filter(call=>call[0]==='image').length,1);
+  const disabled=canvasProbe();
+  drawHardwareCap(disabled.ctx,0,0,130,54,{color:'red',lampHeat:1,focused:true,enabled:false,illumination:'powered'});
+  assert.equal(disabled.calls.filter(call=>call[0]==='image').length,1);
+});
+
+test('reduced effects retain the selected internal field while removing external spill',t=>{
+  clearHardwareMaterialCache();setHardwareReducedEffects(true);t.after(()=>setHardwareReducedEffects(false));
+  const p=canvasProbe();drawHardwareCap(p.ctx,0,0,130,54,{color:'green',lampHeat:1,illumination:'powered'});
+  const images=p.calls.filter(call=>call[0]==='image');
+  assert.deepEqual(images.map(call=>call[1]),[p.surfaces[0],p.surfaces[1]]);
+  assert.ok(hardwareMaterialCacheStats().pixels<=hardwareMaterialCacheStats().maxPixels);
+});
+
 test('opaque transport keys never flood and rendering composes the caller alpha',()=>{
   clearHardwareMaterialCache();const p=canvasProbe();p.ctx.globalAlpha=.4;
   drawHardwareCap(p.ctx,0,0,70,34,{color:'white',finish:'opaque',lampHeat:1,alpha:.5});
@@ -96,6 +139,23 @@ test('resizing has a bounded material cache and explicit cleanup',()=>{
   for(let i=0;i<70;i++)drawHardwareCap(p.ctx,0,0,24+i,26,{color:'red'});
   const stats=hardwareMaterialCacheStats();assert.ok(stats.entries<=stats.maxEntries);assert.ok(stats.pixels<=stats.maxPixels);
   clearHardwareMaterialCache();assert.equal(hardwareMaterialCacheStats().pixels,0);
+});
+
+test('powered controls reuse the same bounded fields across settled normal and enlarged redraws',()=>{
+  clearHardwareMaterialCache();setHardwareReducedEffects(false);
+  const p=canvasProbe(),colors=['amber','red','green','blue','white'];
+  const sizes=[{scale:1,dpr:1},{scale:1.5,dpr:1},{scale:1,dpr:2},{scale:1.5,dpr:2}];
+  const draw=(size,color,travel,heat)=>drawHardwareCap(p.ctx,0,0,140*size.scale*size.dpr,50*size.scale*size.dpr,
+    {color,dpr:size.dpr,travel,lampHeat:heat,illumination:'powered'});
+  for(const size of sizes)for(const color of colors)draw(size,color,0,1);
+  const warm=hardwareMaterialCacheStats(),surfaces=p.surfaces.length;
+  assert.equal(warm.entries,20);assert.equal(surfaces,80);
+  for(let frame=0;frame<40;frame++)for(const size of sizes)for(const color of colors)
+    draw(size,color,frame%2?1:0,frame%3?.5:1);
+  const settled=hardwareMaterialCacheStats();
+  assert.equal(settled.entries,warm.entries);assert.equal(settled.pixels,warm.pixels);
+  assert.equal(p.surfaces.length,surfaces,'repeated production drawing cannot bake fresh fields for travel or heat');
+  assert.ok(settled.pixels<=settled.maxPixels);assert.ok(settled.entries<=settled.maxEntries);
 });
 
 test('keyboard cap aliases track physical authored keys and release combined confirm hints',()=>{

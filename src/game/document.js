@@ -1,8 +1,7 @@
 // Physical paper inspection.
 //
-// The text was manufactured offline. This scene only presents that immutable
-// sheet as an object: a very slightly bowed A4 page with a real edge, shadow and
-// restrained inspection light. No meaningful document glyph is shaped here.
+// Filed sheets use manufactured artwork. The roof field note supplies its
+// current text as a page image. The reader gives both a physical surface.
 
 import * as scenes from './scenes.js';
 import { uiScrim, uiDraw, uiSize, uiText } from '../render/ui.js';
@@ -11,6 +10,7 @@ import {
   paperAssetProbe, paperImageState, paperMaterialState, paperPageCount, preloadPaperDocument,
 } from './paper-assets.js';
 import { paper3dRender, paper3dProbe } from '../render/paper3d.js';
+import { ROOF_FIELD_NOTE_ID, roofFieldNotePaper } from '../render/roof-field-note-paper.js';
 
 let onClose=()=>{};
 let onTurn=()=>{};
@@ -124,15 +124,24 @@ export function documentInk(doc,page){
   if(typeof doc?.ink!=='function')return null;
   try{const ink=doc.ink(page);return ink?.image?ink:null;}catch(error){console.warn('[document] ink failed:',error);return null;}
 }
-export function drawPhysicalPage(ctx,doc,page,rect,{flipScale=1,turnDir=0,turnAmount=null}={}){
-  const state=paperImageState(doc,page),material=paperMaterialState(doc,page),pose=poseFor(doc,page),handling=state.asset?.record?.handlingVector||[-1,0,0,0],ink=documentInk(doc,page);
+export function documentPageState(doc,page){
+  const state=paperImageState(doc,page);
+  if(state.asset||doc?.id!==ROOF_FIELD_NOTE_ID||!Array.isArray(doc.body))return state;
+  return roofFieldNotePaper(doc);
+}
+export function drawPhysicalPage(ctx,doc,page,rect,{
+  flipScale=1,turnDir=0,turnAmount=null,pose:previewPose=null,ink=documentInk(doc,page),
+}={}){
+  const state=documentPageState(doc,page),material=paperMaterialState(doc,page);
+  const pose={...poseFor(doc,page),...previewPose};
+  const handling=state.asset?.record?.handlingVector||[-1,0,0,0];
   if(state.ready&&state.image){
     const amount=turnAmount==null?Math.max(0,1-Math.abs(flipScale)):turnAmount;
     const frame=paper3dRender({
       image:state.image,materialImage:material.ready?material.image:null,inkImage:ink?.image||null,inkVersion:ink?.version||0,
       width:rect.w,height:rect.h,handlingVector:handling,seed:pose.seed,
       bow:pose.bow,edgeCurl:pose.edgeCurl,yaw:pose.yaw,pitch:pose.pitch,roll:pose.roll,
-      turn:amount,turnDir:turnDir||1,
+      distance:pose.distance,turn:amount,turnDir:turnDir||1,
     });
     if(frame){
       // Canvas shadows the WebGL alpha silhouette, including a clipped torn
@@ -161,6 +170,7 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
   // The push-in, and how far down the sheet it is. Never persisted: a document
   // always opens as an object first, and the reading is something you ask for.
   let reading=false,scroll=0;const total=paperPageCount(doc),closeCallback=typeof onSceneClose==='function'?onSceneClose:onClose,turnCallback=typeof onSceneTurn==='function'?onSceneTurn:onTurn,resolved=paperAssetProbe(doc);
+  const liveNote=!resolved.resolved&&doc?.id===ROOF_FIELD_NOTE_ID&&Array.isArray(doc.body);
   function close(){if(typeof onRequestClose==='function'){onRequestClose(doc,{page,total});return;}if(!embedded)scenes.pop();closeCallback(doc,{page,total});}
   function turnTo(next){const target=clamp(Math.floor(Number(next)||0),0,total-1);if(target===page||turn)return;const prev=page;void paperImageState(doc,target);turn={from:prev,to:target,t:0};page=target;turnCallback({doc,page:target,prev,total,dir:Math.sign(target-prev)||1});}
   function next(){if(page<total-1)turnTo(page+1);else if(!embedded)close();}
@@ -168,9 +178,9 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
     id,blocksInput:true,blocksWorld:!!embedded,lookProfile,lensPreset:lookProfile,sourcePressureLive:!!sourcePressureLive,
     // Escape must reach the reader before the run-level pause interceptor.
     handlesEscape:true,
-    enter(){void preloadPaperDocument(doc);},
+    enter(){if(liveNote)documentPageState(doc,0);else void preloadPaperDocument(doc);},
     update(dt){if(turn){turn.t+=Math.max(0,Number(dt)||0);if(turn.t>=TURN_SECONDS)turn=null;}},
-    view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn,reading,scroll,reservedTopRows}),
+    view:()=>({id,page,total,documentId:doc?.id||null,paper:liveNote?{...resolved,resolved:documentPageState(doc,page).ready,format:'A4',pages:1}:resolved,paper3d:paper3dProbe(),turning:!!turn,reading,scroll,reservedTopRows}),
     render(){
       uiScrim(reading?.93:.84);
       uiDraw((surface)=>{
@@ -184,7 +194,7 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
           ctx.translate(0,viewport.offsetY);
         }
         if(reading){
-          const state=paperImageState(doc,page);
+          const state=documentPageState(doc,page);
           if(state.ready&&state.image){
             const rect=readRect(paperSurface,state.image);
             // Flat, and no turn animation. The bow and the pose are what make
@@ -224,7 +234,11 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
       // A reserving host owns the breadcrumb as well as its switches. Its
       // document must not print a duplicate title through that header bank.
       if(embedded&&!headerRows)uiText(3,1,`SHEETS / ${String(doc?.title||doc?.id||'DOCUMENT').toUpperCase()}`,'ui-label',.72);
-      uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);if(!resolved.resolved)uiText(3,headerRows+(embedded?2:1),'PAPER ASSET NOT BUILT','t-dim',.55);
+      uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);
+      if(liveNote){
+        const state=documentPageState(doc,page);
+        if(!state.ready)uiText(3,headerRows+(embedded?2:1),state.error?'NOTE UNAVAILABLE':'LOADING SHEET','t-dim',.55);
+      }else if(!resolved.resolved)uiText(3,headerRows+(embedded?2:1),'PAPER ASSET NOT BUILT','t-dim',.55);
     },
     key(e){
       const raw=e.key||'',k=raw.toLowerCase(),code=e.code||'';

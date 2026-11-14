@@ -158,6 +158,32 @@ function drawUnknown(ctx, box) {
   circle(ctx, .50, .74, .025, box, true);
 }
 
+function drawCassette(ctx,box){
+  rect(ctx,.10,.25,.80,.54,box);
+  rect(ctx,.22,.32,.56,.13,box);
+  circle(ctx,.34,.58,.075,box);circle(ctx,.66,.58,.075,box);
+  path(ctx,[[.22,.79],[.29,.68],[.71,.68],[.78,.79]],box);
+}
+function drawBattery(ctx,box){
+  rect(ctx,.28,.17,.44,.70,box);rect(ctx,.40,.10,.20,.07,box);
+  path(ctx,[[.40,.34],[.60,.34]],box);path(ctx,[[.50,.25],[.50,.43]],box);
+  path(ctx,[[.40,.72],[.60,.72]],box);
+}
+function drawLead(ctx,box){
+  path(ctx,[[.25,.19],[.25,.45],[.35,.60],[.61,.60],[.73,.74],[.73,.85]],box);
+  rect(ctx,.20,.12,.10,.17,box);rect(ctx,.68,.73,.10,.17,box);
+  path(ctx,[[.25,.06],[.25,.12]],box);path(ctx,[[.73,.90],[.73,.97]],box);
+}
+function drawMusicBox(ctx,box){
+  path(ctx,[[.18,.34],[.69,.25],[.83,.42],[.83,.73],[.31,.84],[.18,.67],[.18,.34],[.31,.51],[.83,.42]],box);
+  path(ctx,[[.31,.51],[.31,.84]],box);circle(ctx,.69,.60,.045,box);
+  path(ctx,[[.73,.60],[.93,.60],[.93,.52]],box);
+}
+function drawWedge(ctx,box){
+  path(ctx,[[.15,.71],[.76,.30],[.87,.41],[.87,.76],[.15,.79],[.15,.71]],box);
+  path(ctx,[[.15,.71],[.77,.68],[.76,.30]],box);
+}
+
 const DRAW = Object.freeze({
   light: drawLight,
   recorder: drawRecorder,
@@ -170,6 +196,11 @@ const DRAW = Object.freeze({
   coffee: drawCoffee,
   room: drawRoom,
   file: drawFile,
+  cassette:drawCassette,
+  battery:drawBattery,
+  'patch-lead':drawLead,
+  'music-box':drawMusicBox,
+  wedge:drawWedge,
   unknown: drawUnknown,
 });
 

@@ -1,4 +1,4 @@
-import {GAIT_SPEED} from '../game/locomotion.js';
+import {SOURCE_CHASE_GAIT} from '../game/source-chase-gait.js';
 import {SOURCE_EARTHFALL} from './source-earthfall.js';
 import {SOURCE_JOURNEY,JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS,JOURNEY_DOORS,JOURNEY_FOLDS,JOURNEY_PROPS,JOURNEY_ARRIVAL_ANCHORS,JOURNEY_REFUGES} from './source-continuation-journey.js';
 import {SOURCE_REST_ALCOVE_SOLIDS} from './source-rest-alcove.js';
@@ -20,14 +20,14 @@ export const CONTINUATION_CATCH_STAGES = freeze([
   { level: 6, id: 'deep-binding', name: 'The deep binding', y: -30.6, innerRadius: 1.0, outerRadius: 9, startAngle: 1.8, endAngle: Math.PI * 2 - .8, material: 'piano-wood', construction: 'binding', refugeAngle: 4.6 },
 ]);
 export const SOURCE_CONTINUATION = freeze({
-  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: GAIT_SPEED.walk, place: 'interior', bodySpeedLimit: GAIT_SPEED.sprint,
+  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: SOURCE_CHASE_GAIT.baseline, place: 'interior', bodySpeedLimit: SOURCE_CHASE_GAIT.burst,
   eyeHeight: 1.62, bodyRadius: .22, bodyHeight: 1.9, maximumStep: .45, gravity: 9.8,
   fixedStep: 1 / 120, jumpSpeed:4.45,doorSwingSeconds: .65, doorPassFraction: .85, doorApproachDistance: 6.5,
   recoverySeconds: 1.6, recoveryMaximumSeconds: 12, recoverySpeed: 6, recoveryRise: 3,
   revealSeconds: 0, graceSeconds: 3, bounds: {
     minX:Math.min(SOURCE_JOURNEY.bounds.minX,SOURCE_III_ARCHIPELAGO.bounds.minX),maxX:Math.max(SOURCE_JOURNEY.bounds.maxX,SOURCE_III_ARCHIPELAGO.bounds.maxX),
     minZ:Math.min(SOURCE_JOURNEY.bounds.minZ,SOURCE_III_ARCHIPELAGO.bounds.minZ),maxZ:Math.max(SOURCE_JOURNEY.bounds.maxZ,SOURCE_III_ARCHIPELAGO.bounds.maxZ),minY:-44,maxY:SOURCE_JOURNEY.bounds.maxY},
-  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: GAIT_SPEED.walk*.9, speed: GAIT_SPEED.jog, chaseSpeed: 5.6, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
+  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: SOURCE_CHASE_GAIT.teachingPursuer, speed: SOURCE_CHASE_GAIT.pursuer, chaseSpeed: SOURCE_CHASE_GAIT.pursuer, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
     entryDelaySeconds:6,entryOutsideMetres:1.1,thresholdArrivalDelaySeconds:3,thresholdNoticeSeconds:2.5 }),
   spawn: freeze({ x: 0, z: 2, feet: 0, yaw: 0, pitch: 0 }),
   wrongReturn: freeze({ transferX: -18, warningSeconds: 6, closureSpeed: .62,

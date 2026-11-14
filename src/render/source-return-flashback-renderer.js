@@ -58,7 +58,7 @@ export function sourceReturnRenderFrame(frame,metrics,{lookOffset={yaw:0,pitch:0
 export function createSourceReturnFlashbackRenderer({createRenderer=createSourceDriveRenderer,props=P3,resolveAsset=assetUrl}={}){
  const renderer=createRenderer();let last=null,release=null,disposed=false,initialized=false,initializing=null;
  function initialize(){if(disposed)return Promise.resolve(false);if(initializing)return initializing;initializing=(async()=>{const acquired=await renderer.initialize({coastalMemory:true});if(disposed||acquired===false)return false;await props.addPropPack(resolveAsset('assets/source-return/fauna.glb'));if(disposed)return false;release=props.setAuthoredPropRange('source-return',320);initialized=true;return true;})();return initializing;}
- function render(frame,metrics,options){if(disposed||!initialized)return false;last=sourceReturnRenderFrame(frame,metrics,options);return renderer.render(last);}
+ function render(frame,metrics,options={}){if(disposed||!initialized||renderer.ready?.()===false)return false;last=sourceReturnRenderFrame(frame,metrics,options);options.beforePresent?.(last);return renderer.render(last);}
  function dispose(){if(disposed)return;disposed=true;initialized=false;release?.();release=null;renderer.dispose();}
  return{initialize,render,dispose,ready:()=>initialized&&!disposed&&renderer.ready(),last:()=>last,diagnostics:()=>({ready:initialized&&!disposed&&renderer.ready(),phase:last?.driveState?.openingCinematic?.phase,props:last?.scene?.props.length,eye:last?.scene?.eye})};
 }

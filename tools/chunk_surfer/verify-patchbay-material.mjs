@@ -13,15 +13,12 @@ try {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     await page.goto(`${base}/src/render/patchbay-material.js`);
     await page.setContent(`<link rel="stylesheet" href="/styles.css"><div id="plate" style="position:relative;width:${width}px;height:${height}px;background:#080c09"></div>`);
-    const evidence = await page.evaluate(async () => {
+    const evidence = await page.evaluate(async (textScale) => {
       const ui = await import('/src/render/ui.js');
-      const { drawMachinePanel } = await import('/src/render/presentation.js');
-      const { drawBagView } = await import('/src/render/bag-view.js');
-      const { bagLayout, bagPanelBounds } = await import('/src/render/bag-layout.js');
-      const { drawSkillsSection, patchBayLayout } = await import('/src/render/bag-skills.js');
-      const { buildBagModel } = await import('/src/game/bag-model.js');
+      const { makeBagScene } = await import('/src/game/bag.js');
       const { normalizeCombatBuild, learnCombatTechnique, TECHNIQUE_DEFS, PIN_SOURCES } = await import('/src/game/combat-progression.js');
       ui.uiInit(document.getElementById('plate'));
+      ui.uiSetScale(textScale);
       await document.fonts.load('600 14px "Hardware Sans"');
       await document.fonts.load('400 14px "Hardware Sans"');
       let build = normalizeCombatBuild(null, PIN_SOURCES.encounters, { 'pin.academic': true, 'pin.tower': true, 'pin.gallery': true });
@@ -30,31 +27,33 @@ try {
       const recorder = TECHNIQUE_DEFS.find((entry) => entry.branch === 'recorder' && !entry.requires);
       const nerve = TECHNIQUE_DEFS.find((entry) => entry.branch === 'nerve' && entry.tier === 2);
       for (const entry of [torch, torchNext, recorder, nerve]) build = learnCombatTechnique(build, entry.id, { hasRig: true }).build;
-      const model = buildBagModel({ build, hasRig: true });
-      const selectedId = `skill:${torchNext.id}`;
-      const nav = { sectionId: 'skills', selected: { skills: selectedId }, mode: 'browse' };
-      let lastTree;
+      const bag = makeBagScene({
+        getBuild: () => build,
+        hasRig: () => true,
+        focus: { sectionId: 'skills', entryId: `skill:${torchNext.id}` },
+      });
+      bag.enter();
       const draw = () => {
         ui.uiClear();
-        const outer = bagPanelBounds(ui.uiSize());
-        const body = drawMachinePanel(outer.x, outer.y, outer.w, outer.h, { label: 'FIELD CASE / 4417-C', source: 'FIELD LIVE', footer: '', meter: true, theme: 'amber' });
-        const layout = bagLayout({ body });
-        drawBagView({ model, nav, layout, motion: { sectionChangedAt: 0, selectionChangedAt: 0, openedAt: 0 }, now: 2,
-          hint: 'DRAG OUTPUT TO MATCHING INPUT / RETURN PLUG TO SPARES', breadcrumb: 'FIELD CASE / SKILLS',
-          drawContent(region) {
-            drawSkillsSection({ model, layout: region, selectedId, now: 2 });
-            lastTree = patchBayLayout({ region, ...model.sections.find((section) => section.id === 'skills').tree });
-          },
-        });
+        bag.render();
       };
-      const before = performance.now(); draw(); const coldMs = performance.now() - before;
+      const before = performance.now();
+      draw();
+      const coldMs = performance.now() - before;
       const timings = [];
-      for (let i = 0; i < 30; i++) { const start = performance.now(); draw(); timings.push(performance.now() - start); }
+      for (let i = 0; i < 30; i++) {
+        const start = performance.now();
+        draw();
+        timings.push(performance.now() - start);
+      }
       timings.sort((a, b) => a - b);
-      return { coldMs, p95Ms: timings[28], nodes: lastTree.nodes.length, cables: lastTree.cables.length, inputs: lastTree.inputs.length, outputs: lastTree.outputs.length };
-    });
-    assert.equal(evidence.cables, 4);
+      const hits = bag.debugState().hitRegions;
+      const outputs = hits.filter(hit => hit.id.startsWith('bag:patch:output:skill:')).length;
+      const inputs = hits.filter(hit => hit.kind === 'bag-patch-input').length;
+      return { coldMs, p95Ms: timings[28], inputs, outputs };
+    }, name === 'compact' ? 1.5 : 1);
     assert.equal(evidence.outputs, 4);
+    assert.ok(evidence.inputs > evidence.outputs);
     assert.ok(evidence.p95Ms < 16.7);
     await page.screenshot({ path: `artifacts/patchbay-material-${name}.png` });
     console.log(name, evidence);

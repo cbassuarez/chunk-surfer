@@ -5,6 +5,8 @@ import {makeBagScene} from '../src/game/bag.js';
 import * as scenes from '../src/game/scenes.js';
 import {readFileSync} from 'node:fs';
 import {mapAcquired,mapAvailable} from '../src/game/map-ownership.js';
+import {MAP_LAB_CASES,mapLabJob,mapLabModel} from '../src/game/map-fixtures.js';
+import {uiSetLayoutSize} from '../src/render/ui.js';
 
 const model=()=>({context:'exterior',player:{resolved:true,floorId:'district',position:{x:1,y:2},heading:0},
   floors:[{id:'district',label:'DISTRICT',order:0,bounds:{minX:0,minY:0,maxX:60,maxY:80},open:new Set()}],
@@ -76,12 +78,13 @@ test('host map shortcut permits a public survey before optional shift selection 
     storyMode:true,inRogue:true,REC:{isRecording:()=>false},flagTest:key=>!!save.flags[key],mapAcquired,mapAvailable,
     getSave:()=>save,itemLost:()=>missing,makeBagScene:options=>{
       let sectionId=options.focus.sectionId;
-      return{id:options.sceneId,options,selectSection:id=>{sectionId=id;},debugState:()=>({nav:{sectionId}})};
+      return{id:options.sceneId,options,selectSection:id=>{sectionId=id;},
+        openMapSurvey:()=>{sectionId='map';return true;},debugState:()=>({nav:{sectionId}})};
     },getJob:()=>job,bagJob:()=>job,bagJournal:()=>[],
     currentFacilityMapModel:()=>canonical,markRoom:()=>operations.push('mark-room'),markMapSpace:()=>operations.push('mark-space'),
     setMapTarget:()=>operations.push('set-target'),clearMapTarget:()=>operations.push('clear-target'),
     resetMotionInput:()=>operations.push('clear-input'),openMapFromBag:()=>true,
-    openBag:()=>{operations.push('open-bag');stack.push({id:'bag'});},
+    openBag:()=>{operations.push('open-bag');stack.push({id:'bag',openMapSurvey:()=>true});},
   };
   const open=Function(...Object.keys(dependencies),host+'; return openFieldMap;')(...Object.values(dependencies));
   const initial=structuredClone(save);assert.equal(open(),true);
@@ -97,6 +100,28 @@ test('host map shortcut permits a public survey before optional shift selection 
   assert.equal(save.flags['bag.taken'],undefined);assert.equal(save.difficulty,null);assert.deepEqual(operations,[]);
   open();save.flags['bag.taken']=true;missing=false;assert.equal(open(),true);assert.equal(stack.at(-1).id,'bag');
   assert.deepEqual(operations,['open-bag']);
+});
+
+test('reopening MAP clears old room files and the survey shortcut locates the current floor',()=>{
+  const current=MAP_LAB_CASES[3],job=mapLabJob(current),map=mapLabModel(current),saved=[];
+  const memory={sectionId:'map',selected:{map:'room:main_b3'},map:{floorId:'b1',
+    selectedByFloor:{b1:'space:main_b3'},roomFile:{spaceId:'space:main_b3',page:1},zoom:2.5,panX:90,panY:-90}};
+  const scene=makeBagScene({map,job,memory,onRemember:value=>saved.push(value)});
+  uiSetLayoutSize({cols:113,rows:40});
+  scenes.push(scene);
+  try{
+    scene.render();
+    assert.equal(scene.debugState().mapNav.floorId,'b1','regular browsing keeps the last selected floor');
+    assert.equal(scene.debugState().mapNav.roomFile,null,'a saved file cannot replace the plan');
+    assert.ok(scene.debugState().mapPresentation.hits.some(hit=>hit.kind==='map-pan'));
+    scene.selectSection('kit');
+    scene.key({key:'m',code:'KeyM'});scene.render();
+    const {mapNav,mapPresentation,nav}=scene.debugState();
+    assert.equal(nav.sectionId,'map');assert.equal(mapNav.floorId,'g');
+    assert.equal(mapNav.zoom,1);assert.equal(mapNav.panX,0);assert.equal(mapNav.panY,0);
+    assert.equal(mapNav.roomFile,null);assert.equal(saved.at(-1).map.roomFile,undefined);
+    assert.ok(mapPresentation.hits.some(hit=>hit.kind==='map-pan'));
+  }finally{scenes.remove(scene);uiSetLayoutSize(null);}
 });
 
 test('arrival journal shares the real surfaces without equipment, work-order leaks or map writes',()=>{

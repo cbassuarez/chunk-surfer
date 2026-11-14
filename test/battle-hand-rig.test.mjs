@@ -5,7 +5,7 @@ import { Group, Vector3 } from 'three';
 import { BATTLE_HAND_AXES, createBattleHandRig, HAND_FINGERS, HAND_LIMITS, parseBattleHandTemplate } from '../src/render/battle-hand-rig.js';
 import { buildBattleHandTool } from '../src/render/battle-hand-tools.js';
 
-const bytes = readFileSync(new URL('../public/assets/battle-hands/right.glb', import.meta.url));
+const bytes = readFileSync(new URL('../public/assets/battle-hands/recordist.glb', import.meta.url));
 const template = await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 const digits = [...HAND_FINGERS, 'thumb'];
 const contactsOf = grip => Object.fromEntries(digits.filter(digit => grip[digit]).map(digit => [digit, grip[digit]]));

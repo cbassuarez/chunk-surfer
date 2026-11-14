@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { bagLayout, bagPanelBounds } from '../src/render/bag-layout.js';
+import { bagLayout, bagPanelBounds, bagInventoryGridLayout } from '../src/render/bag-layout.js';
 import { BAG_TABS_HEIGHT, bagTabRegions, bagTabButtonState } from '../src/render/bag-tabs.js';
 import { cancelControlScope, pressControl, releaseControl, sampleControl } from '../src/game/control-mechanics.js';
 import { bagInventoryGeometry, bagInventoryListLayout, bagInventoryActionLayout } from '../src/render/bag-view.js';
@@ -99,35 +99,49 @@ test('responsive panel bounds and drawing use the shared selectable regions', ()
   assert.deepEqual(bagTabRegions({ sections: [] }, bagLayout()), []);
   const source = readFileSync('src/render/bag-view.js', 'utf8');
   assert.match(source, /for \(const tab of bagTabRegions\(model, layout\)\)/);
-  assert.match(source, /const state=bagTabButtonState\(tab, active\)/);
+  assert.match(source, /const state=bagTabButtonState\(tab, active,/);
   assert.match(source, /drawLampButton\(tab\.x, tab\.y, tab\.w, tab\.h, state\)/);
 });
 
-test('80 by 30 cells keep the complete inventory inside the remaining body with four actionable rows', () => {
-  const outer=bagPanelBounds({cols:80,rows:30});
-  const body=machinePanelBody(outer.x,outer.y,outer.w,outer.h);
-  const layout=bagLayout({body});
-  const geo=bagInventoryGeometry(model,{},layout);
-  for(const name of ['ready','list','detail'])inside(geo[name],geo.region);
-  assert.ok(geo.ready.y+geo.ready.h<geo.list.y);
-  assert.ok(geo.list.x+geo.list.w<geo.detail.x);
-  assert.ok(geo.region.y>=layout.tabs.y+layout.tabs.h);
-  assert.ok(geo.region.y+geo.region.h<layout.taskRail.y);
-  assert.ok(bagInventoryListLayout(geo.list).capacity>=4,'several inventory entries remain visible');
-  const actions=Array.from({length:4},(_,index)=>({id:`action-${index}`,label:`ACTION ${index}`}));
-  const actionLayout=bagInventoryActionLayout(geo.detail,{actionList:actions});
-  assert.equal(actionLayout.rows.length,4,'SET, USE, DROP and INSPECT all fit');
-  actionLayout.rows.forEach(row=>inside(row,geo.detail));
+test('hovering a sibling indexes it without moving the open section or its powered lamp',()=>{
+  const layout=bagLayout({body:{x:3,y:4,w:90,h:28}}),tabs=bagTabRegions(model,layout);
+  const map=tabs.find(tab=>tab.sectionId==='map'),sheets=tabs.find(tab=>tab.sectionId==='sheets');
+  const open=bagTabButtonState(map,'map'),hovered=bagTabButtonState(sheets,'map',{hovered:true});
+  assert.equal(open.active,true);assert.equal(open.lit,true);assert.equal(open.focused,false);
+  assert.equal(hovered.active,false);assert.equal(hovered.lit,false);assert.equal(hovered.focused,true);
+  assert.equal(open.illumination,'powered');assert.equal(hovered.illumination,'powered');
+  assert.equal(open.latched,false);assert.equal(hovered.latched,false);
 });
 
-test('inventory summary and selectable rows never borrow height from the task/guide/footer rails', () => {
+test('80 by 30 cells keep the spatial inventory and every scrollable action inside the remaining body', () => {
+  const outer=bagPanelBounds({cols:80,rows:30,sectionId:'kit'});
+  const body=machinePanelBody(outer.x,outer.y,outer.w,outer.h);
+  const layout=bagLayout({body,sectionId:'kit'});
+  const geo=bagInventoryGeometry(model,{},layout);
+  for(const name of ['equipment','embodiment','grid','detail'])inside(geo[name],geo.region);
+  assert.equal(geo.slots.length,4);
+  assert.ok(geo.equipment.x+geo.equipment.w<geo.embodiment.x);
+  assert.ok(geo.embodiment.x+geo.embodiment.w<geo.detail.x);
+  assert.ok(geo.detail.y+geo.detail.h<geo.grid.y);
+  assert.ok(geo.region.y>=layout.tabs.y+layout.tabs.h);
+  assert.ok(geo.region.y+geo.region.h<layout.taskRail.y);
+  assert.ok(bagInventoryGridLayout(geo.grid,24).capacity>=4,'several item portraits remain visible');
+  const actions=Array.from({length:6},(_,index)=>({id:`action-${index}`,label:`ACTION ${index}`}));
+  for(let index=0;index<actions.length;index++){
+    const actionLayout=bagInventoryActionLayout(geo.detail,{actionList:actions},{actionFocus:true,actionIndex:index});
+    assert.ok(actionLayout.rows.some(row=>row.index===index),'each actual action scrolls into the inspector');
+    actionLayout.rows.forEach(row=>inside(row,geo.detail));
+  }
+});
+
+test('inventory regions and selectable grid cells never borrow height from the task/guide/footer rails', () => {
   for(const [cols,rows] of [[50,25],[65,25],[80,30],[113,30],[151,38]])for(const guideRows of [0,3,5]){
     const outer=bagPanelBounds({cols,rows});
     const layout=bagLayout({body:machinePanelBody(outer.x,outer.y,outer.w,outer.h),guideRows});
     const geo=bagInventoryGeometry(model,{},layout);
-    for(const name of ['ready','list','detail'])inside(geo[name],geo.region);
-    const list=bagInventoryListLayout(geo.list);
-    for(let index=0;index<list.capacity;index++)inside({x:geo.list.x,y:list.startY+index*list.rowH,w:geo.list.w,h:list.rowH},geo.list);
+    for(const name of ['equipment','embodiment','grid','detail'])inside(geo[name],geo.region);
+    const grid=bagInventoryGridLayout(geo.grid,24);
+    grid.cells.forEach(cell=>inside(cell,geo.grid));
     const entry={actionList:Array.from({length:5},(_,index)=>({id:`action-${index}`}))};
     const actions=bagInventoryActionLayout(geo.detail,entry,{actionFocus:true,actionIndex:4});
     actions.rows.forEach(row=>inside(row,geo.detail));

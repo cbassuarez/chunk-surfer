@@ -89,7 +89,14 @@ assert.ok(progression.weapons.length >= 6);
 // about the tool.
 const puzzles = await buildPuzzles();
 assert.deepEqual(puzzles.global.broken, [], 'nothing in the puzzles audit disagrees with the code');
-assert.ok(puzzles.counts.all >= 14);
+const remainingPuzzleIds = ['aperture', 'conservatory-power', 'key-cabinet', 'marble-head',
+  'plant-isolation', 'source-contact', 'redaction', 'bell-peal', 'practice-room',
+  'stair-anomaly', 'haystack', 'combat-drill', 'mic-test'];
+const puzzleIds = puzzles.puzzles.map(entry => entry.id);
+assert.equal(puzzleIds.includes('horizon-transport'), false, 'the retired tape puzzle is absent');
+assert.equal(new Set(puzzleIds).size, puzzleIds.length, 'puzzle IDs are unique');
+assert.deepEqual([...puzzleIds].sort(), [...remainingPuzzleIds].sort(), 'every retained puzzle remains audited');
+assert.equal(puzzles.counts.all, 13, 'one obsolete Horizon puzzle was retired from the former fourteen');
 assert.ok(puzzles.counts.puzzles >= 6 && puzzles.counts.microgames >= 5, 'both kinds are represented');
 assert.ok(puzzles.counts.gating >= 8, 'most of them open something');
 for (const entry of puzzles.puzzles) {

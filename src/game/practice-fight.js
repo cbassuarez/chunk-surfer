@@ -8,13 +8,14 @@ import { drawBattleWipe, drawCombatActionTile, drawCombatGauge, drawEnemyVoidSta
 import { pressControl, cancelControlScope } from './control-feedback.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
 import { flashMode, shakeMode } from './access.js';
+import { createHushBattleBody } from '../render/hush-battle-body.js';
 
 // A practice fight has its own finite rules. The ordinary combat reducer still
 // owns real battles; this scene teaches its four basic moves with a local kit.
 export function makePracticeFightScene({
   battle, seed = 0, difficulty, loadout = {}, resources = {}, getAudio,
   audio, practiceClues = null, onWin = () => {}, onLose = () => {}, onAbort = () => {},
-  encounterIntro = false,
+  encounterIntro = false, hushBody = createHushBattleBody(battle),
 } = {}) {
   const initial = createCombatState(battle.combat, {
     difficulty: difficulty || {}, injuries: loadout.injuries, composure: loadout.composure,
@@ -84,6 +85,7 @@ export function makePracticeFightScene({
     worldPresentation: 'hidden', lensPreset: 'battle',
     enter() {
       entered = true;
+      hushBody?.warm();
       const rig = getAudio?.();
       click = createPracticeClick({ context: rig?.ctx, destination: rig?.destination });
       if (!arriving) click.start();
@@ -95,6 +97,7 @@ export function makePracticeFightScene({
     },
     exit() {
       entered = false; generation++;
+      hushBody?.dispose();
       globalThis.window?.removeEventListener?.('chunk-surfer:fireball-forgive', dismissWindows);
       click?.stop(); cancelControlScope('combat:action:');
       void closeClues();
@@ -181,8 +184,12 @@ export function makePracticeFightScene({
       const impact = feedbackUntil ? Math.max(0,1-resolveProgress*3) : 0;
       const enemyW = Math.min(40,stage.w*.46), enemyX = stage.x+stage.w*.54-enemyW/2;
       drawEnemyVoidStage('practice',{...stage,enemyBox:{x:enemyX,w:enemyW},reduceFlash:flashMode()!=='full',resolveProgress});
+      hushBody?.draw({x:enemyX+(reducedMotion?0:state.last?.correct?impact:0),y:stage.y,w:enemyW,h:stage.h},{
+        clock:elapsed,resolveProgress,reducedMotion,reduceFlash:flashMode()!=='full',clip:stage,
+      });
       drawSignalBeing('practice',{
         x:enemyX,y:stage.y,w:enemyW,h:stage.h,snr:'signal',
+        cageOnly:!!hushBody,
         coherenceRatio:state.result==='win'?0:(4-state.step)/4,movementIndex:state.cycle,
         now:elapsed,resolveProgress,reducedMotion,oblique:-.05,
         hitFlash:flashMode()==='off'?0:state.last?.correct?impact:0,

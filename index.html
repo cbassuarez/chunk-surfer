@@ -73,6 +73,55 @@
       letter-spacing: 0.08em;
       text-align: center;
     }
+
+    #startupRecovery {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 16px;
+      padding: 32px;
+      box-sizing: border-box;
+      color: var(--critical-fg);
+      font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-align: center;
+    }
+    #startupRecovery[hidden], #startupRecovery [hidden] { display: none !important; }
+    #startupRecovery h1, #startupRecovery p { margin: 0; font: inherit; }
+    #startupRecovery h1 { font-size: 20px; }
+    #startupRecovery::before {
+      content: ""; position: absolute; inset: 0; background: var(--critical-bg);
+      transition: opacity 140ms linear;
+    }
+    #startupRecovery[data-phase="ready"] { pointer-events: none; }
+    #startupRecovery[data-phase="ready"]::before { opacity: 0; }
+    #startupVan { width: min(32vw, 160px); aspect-ratio: 1; position: relative; overflow: hidden; }
+    #startupVanPoster, #startupVanVideo { display: block; width: 100%; height: 100%; object-fit: contain; }
+    #startupVanPoster { position: absolute; inset: 0; z-index: 1; }
+    #startupRecovery[data-phase="ready"] #startupVanVideo {
+      -webkit-mask-image: radial-gradient(ellipse 85% 76%, black 55%, transparent 92%);
+      mask-image: radial-gradient(ellipse 85% 76%, black 55%, transparent 92%);
+    }
+    #startupVanPoster[data-repeating] { animation: startup-van-poster-pass 1.4s linear infinite; }
+    #startupVanVideo[data-departing], #startupVanPoster[data-departing="exit"] {
+      animation: startup-van-exit 360ms cubic-bezier(.35, .15, .65, .84) both;
+    }
+    #startupVanPoster[data-departing="pass"] { animation: startup-van-poster-pass 360ms linear both; }
+    @keyframes startup-van-exit {
+      from { transform: var(--startup-van-translate, translateX(0)); }
+      to { transform: translateX(-100%); }
+    }
+    @keyframes startup-van-poster-pass { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+    #startupRecovery h1, #startupRecovery p {
+      position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip-path: inset(50%); white-space: nowrap;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #startupRecovery::before { transition: none; }
+      #startupVanPoster[data-repeating] { animation: none; }
+    }
   </style>
   <link id="mainStyles" rel="stylesheet" href="./styles.css?v=20260907-guided-case-tour">
   <script>
@@ -136,7 +185,15 @@
   </script>
 </head>
 <body>
-<noscript><div class="critical-noscript">Chunk Surfer requires JavaScript.</div></noscript>
+<noscript><style>#startupRecovery { display: none !important; }</style><div class="critical-noscript">Chunk Surfer requires JavaScript.</div></noscript>
+<section id="startupRecovery" aria-live="polite" data-phase="starting">
+  <div id="startupVan" aria-hidden="true">
+    <img id="startupVanPoster" src="./app-icon/van-startup-poster.png" alt="" width="128" height="128" fetchpriority="low" hidden>
+    <video id="startupVanVideo" muted playsinline loop preload="auto" hidden></video>
+  </div>
+  <h1 id="startupRecoveryTitle">Starting Chunk Surfer</h1>
+  <p id="startupRecoveryMessage">The van is arriving.</p>
+</section>
 <div id="wrap">
   <div id="introTitle">
     <div id="introTitleAuthor"></div>
@@ -149,6 +206,8 @@
   <div id="hushJump"></div>
 </div>
 
-<script type="module" src="./src/main.js?v=20260907-guided-case-tour-encounter-preparation-radio-field-instrument-stack-v1-item-portraits-v2-vfd-glow-clear-van-kit-3d-hall-applause-v3-audio-clock-v1-chapel-service-v1-st-brendans-weight-presences-v1-source-threshold-omen-v2-ellery-threshold-gag-v11-earthfall-gag-v5-fake-ellery-traps-v5-completion-v7"></script>
+<script src="./startup-van.js"></script>
+<script src="./startup-guard.js"></script>
+<script id="chunkMain" type="module" src="./src/main.js?v=20260907-guided-case-tour-encounter-preparation-radio-field-instrument-stack-v1-item-portraits-v2-vfd-glow-clear-van-kit-3d-hall-applause-v3-audio-clock-v1-chapel-service-v1-st-brendans-weight-presences-v1-source-threshold-omen-v2-ellery-threshold-gag-v11-earthfall-gag-v5-fake-ellery-traps-v5-completion-v7"></script>
 </body>
 </html>

@@ -1,4 +1,6 @@
 import {CAB_LIGHT_GLSL} from './cab-light.js';
+import { graphicsStartupError } from './graphics-startup.js';
+import { assetUrl } from '../platform/paths.js';
 import { SOURCE_DEMOLITION_GEOMETRY } from '../data/generated/source-demolition-geometry.js';
 /* THRESHOLD_GAG_APPARITION_IMPORT_BEGIN */
 import {THRESHOLD_GAG_APPARITION_VERTEX_GLSL,THRESHOLD_GAG_APPARITION_FUNCTIONS_GLSL,THRESHOLD_GAG_APPARITION_FRAGMENT_GLSL} from './threshold-gag-apparition.js';
@@ -32,9 +34,11 @@ import { installAcademicPopulationSocialMeshes } from './academic-society-charac
 import { installAcademicGalleryPAMeshes } from './academic-gallery-pa.js';
 import { ACADEMIC_ATRIUM_LIGHT_GLSL, academicAtriumHollowKind } from './academic-atrium-light.js';
 import { realmCameraPosition, homeRealmAcquisition } from './realm-pocket-geometry.js';
+import { HOME_OLDV_STEP_LIMIT } from '../game/childhood-valley-oldv.js';
 import { createRealmEyeInterpolator } from './realm-eye.js';
 import { FIRE_ESCAPE_INK_GLSL } from './fire-escape-ink.js';
 import { SOURCE_CHUNK_ERROR_GLSL } from './source-material-finish.js';
+import { SOURCE_OBJECT_GLITCH_GLSL } from './source-object-glitch.js';
 import { SOURCE_WALKWAY_MARK_GLSL } from './source-walkway-finish.js';
 import {SOURCE_CODE_LIFT_METRES,sourceCodeMaterialEligible,sourceCodePhysicalLifts,sourceCodeTextEligible,sourceCodeStock,sourceCodeTargetSize,
   SOURCE_CODE_PHYSICAL_FRAG,SOURCE_CODE_TEXT_FRAG,SOURCE_CODE_COMPOSITE_VERT,SOURCE_CODE_COMPOSITE_FRAG} from './source-code-screen.js';
@@ -86,6 +90,7 @@ layout(location=12) in vec4 aPaperHandling;
 ${CHARACTER_DEFORM_GLSL}
 uniform mat4 uView,uProj;
 uniform float uSourceCodeLift;
+uniform vec3 uSourceObjectGlitchOffset;
 ${NATATORIUM_METRIC_GLSL}
 ${CURVED_SPACE_GLSL}
 uniform vec3 uWorldPatternOffset;
@@ -135,6 +140,7 @@ void main(){
   vec3 worldNormal=normalize(transpose(inverse(mat3(m)))*localNormal);vRestHorizonGone=0.0;
   if(aPaperIndex<-.5&&aPaperHandling.x<-1.5)vRestHorizonGone=restHorizonTide(w.xyz,worldNormal,aM3.xyz,aPaperHandling);
   w.xyz+=worldNormal*uSourceCodeLift;
+  w.xyz+=mat3(m)*uSourceObjectGlitchOffset;
   vWorld=w.xyz;vNormal=worldNormal;vUv=aUv;vLocalHeight=local.y;vZone=int((aDressingZone>0.0?aDressingZone-1.0:aZone)+.5);vPortrait=int(aPortrait+.5);vStructural=int(aStructural+.5);vEmissive=aEmissive;vPaperIndex=aNormal.y>.5?paper:-1;vPaperHandling=aPaperHandling;vFixturePower=aFixturePower;gl_Position=uProj*uView*vec4(natatoriumMetricPoint(w.xyz),w.w);
   if(uCurvedSpace.x!=0.0)gl_Position=uProj*uView*vec4(curvedSpacePoint(w.xyz,aM3.xyz),w.w);
 }`;
@@ -170,6 +176,7 @@ uniform vec3 uWorldPatternOffset;
 // x class (1 leaf, 2 stem, 3 dead leaf, 4 soil, 5 stone), y thin-leaf
 // transmission, z rain wetness, w reserved.
 uniform vec4 uVegetation;
+uniform vec4 uStormLight;
 uniform vec3 uTorchColor,uAmbientColor;uniform float uTorchReach,uTorchSpill,uTorchShoulder,uAmbientIntensity,uSkyExposed;uniform vec2 uTorchCone;
 uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[12],uLocalLightColor[12];uniform float uLocalLightPenetration[12];
 // See reserveEmergencyRed in r3d.js: red belongs to the emergency circuit, and
@@ -192,6 +199,10 @@ uniform sampler2D uPaperMaterial;uniform float uUsePaperMaterial,uPaperHeightRan
 uniform sampler2D uShadowTex;uniform mat4 uShadowMatrix;uniform float uShadowReady;uniform vec2 uShadowTexel;
 uniform float uSourceRoomLighting,uRenFold,uQuietFireEscape,uRoofSurface,uRoofGlass;
 uniform float uSourceChunkError;
+uniform vec4 uSourceObjectGlitch;
+uniform float uSourceObjectGlitchPass;
+uniform vec3 uSourceObjectGlitchMin,uSourceObjectGlitchSpan;
+${SOURCE_OBJECT_GLITCH_GLSL}
 uniform float uSourceWalkway;
 uniform float uSourceCodeClean;
 uniform vec3 uSourceCodeStock;
@@ -362,6 +373,19 @@ void main(){
   // the whole crown one mip at a time.
   float coverageWidth=clamp(fwidth(sampledAlpha)*.58,0.0,.16);
   if(sampledAlpha<uAlphaCut-coverageWidth)discard;
+  float objectGlitchPass=uSourceObjectGlitchPass;
+  float negativeMark=0.0;
+  if(objectGlitchPass>0.0){
+    vec3 point=clamp((vSourceSurroundingsLocal-uSourceObjectGlitchMin)/uSourceObjectGlitchSpan,0.0,.99999);
+    vec3 localNormal=cross(dFdx(vSourceSurroundingsLocal),dFdy(vSourceSurroundingsLocal));
+    float progress=uSourceObjectGlitch.y,seed=uSourceObjectGlitch.w;
+    if(objectGlitchPass==1.0){
+      if(uSourceRoomLighting>.5)
+        negativeMark=sourceObjectNegativeMark(uSourceObjectGlitch.z*sourceObjectNegativeMask(point,localNormal,seed,progress));
+    }else if(objectGlitchPass<5.0){
+      if(sourceObjectDisplacedSector(point,localNormal,seed,progress)!=(objectGlitchPass>3.0))discard;
+    }else if(!sourceObjectDonorFragment(point,localNormal,seed,progress))discard;
+  }
   // A finite opaque body material. It keeps the same skinning, depth and
   // shadows as its real garments, but no torch/specular term can light it.
   if(uMissingManCore>.5){
@@ -578,6 +602,8 @@ ${PUB_FASCIA_PAINT_GLSL}
   vec3 apparitionVeil=vec3(.67,.72,.78)*pow(apparitionBody,1.10)*apparitionLit*.46+vec3(.60,.67,.75)*pow(apparitionHalo,.75)*apparitionLit*.24;
   vec3 halfDir=normalize(ldir+normalize(toEye));float spec=pow(max(dot(n,halfDir),0.0),mix(72.0,5.0,rough))*mix(.08,.72,metal)*beamProfile*falloff*shadow*uLight;
   spec=spec/(1.0+uTorchShoulder*spec);
+  float stormExposure=(${OUTDOOR_ZONES.map(zone=>`vZone==${zone}`).join('||')})?1.0:uSkyExposed;
+  localLight+=vec3(.63,.74,1.0)*uStormLight.w*max(0.0,dot(n,uStormLight.xyz))*stormExposure*.72;
   vec3 incident=uAmbientColor*ambient*ao+uTorchColor*lamp*(1.0-metal*.45)+localLight;
   vec3 surfaceIncident=uAmbientColor*ambient*ao+uTorchColor*lamp*(1.0-metal*.45)+(letteringFinishEnabled>.5?vec3(0.0):localLight);
   float printedEmission=uPrintedSurface.z>.5?(uPrintedSurface.z<1.5?1.0-printedCoverage:printedCoverage):1.0;
@@ -714,6 +740,7 @@ ${PUB_FASCIA_PAINT_GLSL}
   // A depth-winning fault mesh keeps its authored hyperchromatic RGB through
   // acquisition. This categorical identity never comes from a color key.
   if(uSourceChunkError>.5)oSurfaceMarks.a=SOURCE_CHUNK_ERROR_TAG;
+  if(negativeMark>0.0)oSurfaceMarks.a=negativeMark;
 }`;
 
 const TEXT_VERT=`#version 300 es
@@ -944,8 +971,8 @@ export function sourceTextVisibleBudget(requested=0,{cap=SOURCE_TEXT_VISIBLE_CAP
 let textVao=null,textInstanceBuffer=null,textAtlas=null,textAtlasKey='',textAtlasEntries=new Map(),textAtlasBuilds=0,textAtlasSize=0,textAtlasCapacity=0,textAtlasEntryCount=0;
 let sourceCodeFrame=null,sourceCodeGpu=null;
 
-function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(`prop shader: ${gl.getShaderInfoLog(s)}`);return s;}
-function linkProgram(vertex,fragment,label='prop'){const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(`${label} link: ${gl.getProgramInfoLog(p)}`);return p;}
+function shader(type,src){const s=gl.createShader(type);if(!s)throw graphicsStartupError('prop shader allocation failed');gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw graphicsStartupError(`prop shader: ${gl.getShaderInfoLog(s)}`);return s;}
+function linkProgram(vertex,fragment,label='prop'){const p=gl.createProgram();if(!p)throw graphicsStartupError(`${label} program allocation failed`);gl.attachShader(p,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw graphicsStartupError(`${label} link: ${gl.getProgramInfoLog(p)}`);return p;}
 function makeProgram(){return linkProgram(VERT,FRAG);}
 const U=(n)=>{if(!uniformCache.has(n))uniformCache.set(n,gl.getUniformLocation(program,n));return uniformCache.get(n);};
 const TU=(n)=>{if(!textUniformCache.has(n))textUniformCache.set(n,gl.getUniformLocation(textProgram,n));return textUniformCache.get(n);};
@@ -1019,7 +1046,7 @@ export function props3dInit(context){
   // joint input still needs an integer generic value under WebGL validation.
   gl.vertexAttribI4ui(13,0,0,0,0);
   initTextPass();
-  if(!gl.isProgram(program)||!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error('prop program unavailable after successful link');
+  if(!gl.isProgram(program)||!gl.getProgramParameter(program,gl.LINK_STATUS))throw graphicsStartupError('prop program unavailable after successful link');
   // These large views first become visible after a long walk. Begin their
   // shader work during the existing asset load instead of on a door animation.
   try{portalProgramPending=deferGlProgram(gl,PORTAL_VERT,PORTAL_FRAG,'source portal');}
@@ -1313,6 +1340,8 @@ function resolvedMeshName(instance,lodEye){
 function identity(){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);}
 function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
 function modelMatrix(i,base=identity()){
+  // The donor mount already places its raw mesh coordinates in the receiver.
+  if(i.sourceObjectGlitchFragment)return i.matrix;
   if(i.matrix&&i.matrix.length===16)return multiply(new Float32Array(i.matrix),base);
   const s=i.scale||1,sx=(i.scaleX??1)*s,sy=(i.scaleY??1)*s,sz=(i.scaleZ??1)*s,c=Math.cos(i.yaw||0),n=Math.sin(i.yaw||0);
   return multiply(new Float32Array([c*sx,0,n*sx,0,0,sy,0,0,-n*sz,0,c*sz,0,i.x,i.y||0,i.z,1]),base);
@@ -1414,11 +1443,36 @@ function ordinaryPropInView(instance,mesh,frustum,matrices=null){
   matrices?.set(instance,matrix);
   return true;
 }
+// Decode the donor into the receiver's local volume, keeping its aspect
+// ratio and original materials. This is a render instance with no world body.
+function sourceObjectDonorInstance(receiver){
+  const donor=pack?.catalog.get(receiver.sourceObjectGlitchDonor);
+  const host=pack?.catalog.get(receiver.mesh);
+  if(!donor?.cullBounds||!host?.cullBounds)return null;
+  const {min,max}=host.cullBounds,source=donor.cullBounds;
+  const span=max.map((value,i)=>value-min[i]);
+  const donorSpan=source.max.map((value,i)=>value-source.min[i]);
+  const scale=Math.min(span[0]*.86/Math.max(.001,donorSpan[0]),span[1]*.94/Math.max(.001,donorSpan[1]));
+  const side=receiver.sourceObjectGlitch[3]>.5?1:-1;
+  const at=[(min[0]+max[0])*.5+span[0]*side*.28,(min[1]+max[1])*.5,min[2]];
+  const pivot=source.min.map((value,i)=>(value+source.max[i])*.5);
+  const offset=at.map((value,i)=>value-pivot[i]*scale);
+  const mount=[scale,0,0,0,0,scale,0,0,0,0,scale,0,...offset,1];
+  const matrix=multiply(modelMatrix(receiver,host.nodeMatrix),mount);
+  return {id:`${receiver.id}:glitch-donor`,mesh:donor.name,matrix,zone:receiver.zone,
+    sourceObjectGlitch:receiver.sourceObjectGlitch,sourceObjectGlitchFragment:true};
+}
+
 function visibleGroups(eye,maxDistance,{shadow=false,emergencyOnly=false,lodEye=eye,reflection=false,frustum=null,matrices=null,sourceCode=false}={}){
   const groups=new Map(),portalKeys=new WeakMap();
   const ordinary=propDiagnosticsEnabled&&propDiagnosticOptions?.exclusive
     ?[]:[...staticInstances,...dynamicInstances,...roofWatcherInstances,...emergencyShadowInstances,...stillnessReliefDrawInstances,...pressureSurfaceInstances];
   const instances=emergencyOnly?emergencyShadowInstances:[...ordinary,...(propDiagnosticsEnabled?diagnosticInstances:[])];
+  if(!shadow&&!sourceCode){
+    const receiver=instances.find(instance=>instance.sourceObjectGlitchDonor);
+    const fragment=receiver&&sourceObjectDonorInstance(receiver);
+    if(fragment)instances.push(fragment);
+  }
   for(const original of instances){
     // Glyph memories own no stock, shadow or reflection. Select them before
     // culling so a departed owner's live bounds cannot hide its old letters.
@@ -1438,7 +1492,8 @@ function visibleGroups(eye,maxDistance,{shadow=false,emergencyOnly=false,lodEye=
     if(!sourceDoorSceneryInView(i,frustum))continue;
     if(!ordinaryPropInView(i,pack.catalog.get(resolved),frustum,matrices))continue;
     const pose=i.character?characterSnapshot(i,pack?.catalog.get(resolved)):null;
-    const key=(pose?`${resolved}\0${pose.key}`:Number.isFinite(i.outskirtsFoldVisibility)?`${resolved}\0outskirts-fold`:resolved)+propPortalBatchKey(i,portalKeys);
+    const glitchKey=!shadow&&!sourceCode&&i.sourceObjectGlitch?`\0glitch:${i.id}`:'';
+    const key=(pose?`${resolved}\0${pose.key}`:Number.isFinite(i.outskirtsFoldVisibility)?`${resolved}\0outskirts-fold`:resolved)+glitchKey+propPortalBatchKey(i,portalKeys);
     if(!groups.has(key))groups.set(key,[]);groups.get(key).push(i);
   }
   return groups;
@@ -1515,10 +1570,10 @@ function renderShadowPass(eye,yaw,pitch,light,shadowLight=null,{timeSec=0,reduce
 
 // Prepare once before reflection and main so both see this frame's blockers.
 // Callers that do not need reflection retain renderPropPass's automatic path.
-export function preparePropShadowPass({camX,camY,camZ,yaw,pitch=0,light=1,shadowLight=null,timeSec=0,reducedMotion=false,torchYawOffset=0,torch={},patternOriginOffsetMetres=[0,0,0]}){
+export function preparePropShadowPass({camX,camY,camZ,yaw,pitch=0,light=1,shadowLight=null,timeSec=0,reducedMotion=false,torchYawOffset=0,torch={},lampFrame=null,patternOriginOffsetMetres=[0,0,0]}){
   prepareRoofWatcherFrame([camX,camY,camZ],timeSec,reducedMotion);
   if(characterFrameDirty)prepareCharacterFrame(timeSec);
-  return renderShadowPass([camX,camY,camZ],yaw,pitch,light,shadowLight,{timeSec,reducedMotion,lodEye:[camX,camY,camZ],torch,patternOriginOffsetMetres,torchFrame:resolveTorchFrame({eye:[camX,camY,camZ],yaw,pitch,yawOffset:torchYawOffset})});
+  return renderShadowPass([camX,camY,camZ],yaw,pitch,light,shadowLight,{timeSec,reducedMotion,lodEye:[camX,camY,camZ],torch,patternOriginOffsetMetres,torchFrame:lampFrame||resolveTorchFrame({eye:[camX,camY,camZ],yaw,pitch,yawOffset:torchYawOffset})});
 }
 
 // The van the camera may be riding in: the one instance that declares a cab
@@ -1983,6 +2038,8 @@ export function setGlassCourtRainFrame(frame){
   // A detached receipt is useful to tooling without exposing the live buffers.
   return{active,faces:[Array.from(faces.slice(0,4)),Array.from(faces.slice(4,8))],motion:Array.from(motion)};
 }
+let stormLightFrame=new Float32Array([0,.78,.626,0]);
+export function setStormLight(strength=0,bearing=0){stormLightFrame=new Float32Array([Math.sin(bearing)*.626,.78,Math.cos(bearing)*.626,Math.max(0,Math.min(1,Number(strength)||0))]);}
 export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=90,timeSec=0,reducedMotion=false,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency=null,localLightDirections=null,localLightConeInner=null,physicalStudyMaterials=false,sourceBodyTissue=false,localShadowIndex=-1,shadowLight=null,torch={},ambientColor=[.64,.65,.62],ambientIntensity=.022,planTexture=null,planSize=[0,0],planOrigin=[0,0],streetTextures=false,reflection=false,torchYawOffset=0,lampFrame=null,shadowPrepared=false,sourceRoomLighting=false,sourceCodeScreen=false,academicAtriumLight=false,patternOriginOffsetMetres=[0,0,0]}){
   if(!reflection){openingMaskReady=false;marksReady=false;missingManCoreVisible=false;}
   if(!gl||!fbo||!program||gl.isContextLost())return false;if(reflection&&!reflFbo)return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
@@ -1994,7 +2051,7 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
   if(!reflection)prepareRoofWatcherFrame(eye,timeSec,reducedMotion);
   if(characterFrameDirty)prepareCharacterFrame(timeSec);
   if(!reflection&&!shadowPrepared)renderShadowPass(eye,yaw,pitch,light,shadowLight,{timeSec,reducedMotion,lodEye:eye,torchFrame,torch,patternOriginOffsetMetres});
-  gl.bindFramebuffer(gl.FRAMEBUFFER,reflection?reflFbo:fbo);gl.viewport(0,0,reflection?reflW:width,reflection?reflH:height);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.drawBuffers(!reflection?[gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]:[gl.COLOR_ATTACHMENT0]);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform1f(U('uSourceCodeLift'),0);gl.uniform4fv(U('uNatatoriumMetric'),natatoriumMetricUniform(natatoriumMetric));bindStillnessPresentation(gl,U);bindSourceSurroundingsPressure(U);bindRestHorizonTide(U);gl.uniform3fv(U('uWorldPatternOffset'),patternOriginOffsetMetres);gl.uniform1f(U('uGlassCourtRainActive'),glassCourtRainFrame.active);gl.uniform4fv(U('uGlassCourtRainFaces[0]'),glassCourtRainFrame.faces);gl.uniform4fv(U('uGlassCourtRainMotion'),glassCourtRainFrame.motion);gl.uniform1f(U('uSourceRoomLighting'),sourceRoomLighting?1:0);gl.uniform1f(U('uAcademicAtriumLight'),academicAtriumLight&&!sourceRoomLighting?1:0);gl.uniform4f(U('uDriveHeadlight'),driveStudyFrame?.heading||0,driveStudyFrame?.lampDip??.02,driveStudyFrame?.physicalHeadlampCones?1:0,driveStudyFrame?1:0);{const cab=driveStudyFrame?.cabLight||parkedCabLight;gl.uniform4f(U('uCabLight'),cab?cab.gain:0,cab?.radio||0,cab?.road||0,cab?.sky||0);if(cab)gl.uniformMatrix4fv(U('uCabWorldToLocal'),false,cab.worldToCab);}gl.uniform1f(U('uDriveWetRoad'),driveStudyFrame?.weather?.roadWetness||0);for(let i=0;i<2;i++){const dir=driveStudyFrame?.inspectionLights?.[i]?.direction||[0,0,0];gl.uniform4f(U('uDriveInspection['+i+']'),dir[0],dir[1],dir[2],driveStudyFrame?.inspectionLights?.[i]?1:0);}gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),torchForward);gl.uniform3fv(U('uTorchOrigin'),torchFrame.origin);gl.uniform3fv(U('uTorchRight'),torchFrame.right);gl.uniform3fv(U('uTorchUp'),torchFrame.up);gl.uniform1f(U('uLight'),light);gl.uniform1f(U('uTimeSec'),Number(timeSec)||0);gl.uniform1f(U('uReducedMotion'),reducedMotion?1:0);gl.uniform3fv(U('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(U('uTorchReach'),torch.reach);gl.uniform2f(U('uTorchCone'),torch.coneInner,torch.coneOuter);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(U('uTorchShoulder'),torch.shoulder);gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),Number(ambientIntensity)||.022);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.uniform4fv(U('uLocalLightDirection[0]'),localLightDirections||EMPTY_LIGHT_DIRECTIONS);gl.uniform1fv(U('uLocalLightConeInner[0]'),localLightConeInner||EMPTY_LIGHT_CONE_INNER);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,reflection?reflFbo:fbo);gl.viewport(0,0,reflection?reflW:width,reflection?reflH:height);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.drawBuffers(!reflection?[gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]:[gl.COLOR_ATTACHMENT0]);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform1f(U('uSourceCodeLift'),0);gl.uniform4fv(U('uNatatoriumMetric'),natatoriumMetricUniform(natatoriumMetric));bindStillnessPresentation(gl,U);bindSourceSurroundingsPressure(U);bindRestHorizonTide(U);gl.uniform3fv(U('uWorldPatternOffset'),patternOriginOffsetMetres);gl.uniform1f(U('uGlassCourtRainActive'),glassCourtRainFrame.active);gl.uniform4fv(U('uGlassCourtRainFaces[0]'),glassCourtRainFrame.faces);gl.uniform4fv(U('uGlassCourtRainMotion'),glassCourtRainFrame.motion);gl.uniform1f(U('uSourceRoomLighting'),sourceRoomLighting?1:0);gl.uniform1f(U('uAcademicAtriumLight'),academicAtriumLight&&!sourceRoomLighting?1:0);gl.uniform4f(U('uDriveHeadlight'),driveStudyFrame?.heading||0,driveStudyFrame?.lampDip??.02,driveStudyFrame?.physicalHeadlampCones?1:0,driveStudyFrame?1:0);{const cab=driveStudyFrame?.cabLight||parkedCabLight;gl.uniform4f(U('uCabLight'),cab?cab.gain:0,cab?.radio||0,cab?.road||0,cab?.sky||0);if(cab)gl.uniformMatrix4fv(U('uCabWorldToLocal'),false,cab.worldToCab);}gl.uniform1f(U('uDriveWetRoad'),driveStudyFrame?.weather?.roadWetness||0);for(let i=0;i<2;i++){const dir=driveStudyFrame?.inspectionLights?.[i]?.direction||[0,0,0];gl.uniform4f(U('uDriveInspection['+i+']'),dir[0],dir[1],dir[2],driveStudyFrame?.inspectionLights?.[i]?1:0);}gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),torchForward);gl.uniform3fv(U('uTorchOrigin'),torchFrame.origin);gl.uniform3fv(U('uTorchRight'),torchFrame.right);gl.uniform3fv(U('uTorchUp'),torchFrame.up);gl.uniform1f(U('uLight'),light);gl.uniform1f(U('uTimeSec'),Number(timeSec)||0);gl.uniform1f(U('uReducedMotion'),reducedMotion?1:0);gl.uniform3fv(U('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(U('uTorchReach'),torch.reach);gl.uniform2f(U('uTorchCone'),torch.coneInner,torch.coneOuter);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(U('uTorchShoulder'),torch.shoulder);gl.uniform4fv(U('uStormLight'),stormLightFrame);gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),Number(ambientIntensity)||.022);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.uniform4fv(U('uLocalLightDirection[0]'),localLightDirections||EMPTY_LIGHT_DIRECTIONS);gl.uniform1fv(U('uLocalLightConeInner[0]'),localLightConeInner||EMPTY_LIGHT_CONE_INNER);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
   {const c=curvedSpaceUniforms(curvedSpace);gl.uniform4fv(U('uCurvedSpace'),c.space);gl.uniformMatrix4fv(U('uCurvedEye'),false,c.eye);}
   // Bind the current owner's physical aperture for both main and reflected draws.
   gl.uniform1i(U('uSourceSurroundingsSide'),0);
@@ -2041,6 +2098,10 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
   gl.uniform2f(U('uPaperAtlasGrid'),paperAtlasGrid[0],paperAtlasGrid[1]);
   gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D,paperAtlas);
   gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,portraitAtlas);
+  const glitchPassUniform=U('uSourceObjectGlitchPass');
+  const glitchOffsetUniform=U('uSourceObjectGlitchOffset');
+  gl.uniform1f(glitchPassUniform,0);
+  gl.uniform3f(glitchOffsetUniform,0,0,0);
   for(const [key,list] of groups){const marker=key.indexOf('\0portal:'),name=marker<0?key:key.slice(0,marker),m=pack?.catalog.get(groupMeshName(name));if(!m||!list.length)continue;bindCharacterPose(U,m,list[0]);const wind=m.extras?.vegetationWind||{};gl.uniform4f(U('uVegetationWind'),Number(wind.amplitudeM)||0,Number(wind.frequencyHz)||0,Number(wind.anchorY)||0,propWindHeight(wind));uploadInstances(m,list,matrices);
     const fold=list[0].outskirtsFoldVisibility;gl.uniform2f(U('uOutskirtsFold'),Number.isFinite(fold)?1:0,Number.isFinite(fold)?fold:1);
     // The isolated street proof explicitly shares the existing outdoor sky
@@ -2053,7 +2114,48 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
     const portalExcludes=portalExcludeArray(list[0].portalExcludePlanes);gl.uniform1i(U('uMeshPortalExcludeCount'),portalExcludes?portalExcludes.length/20:0);if(portalExcludes)gl.uniform4fv(U('uMeshPortalExcludePlanes[0]'),portalExcludes);
     bindSourceSurroundingsPresentation(U,list[0].sourceWorldMatrix);
     const portal=list[0].exteriorPortal;gl.uniform4fv(U('uExteriorPortalA'),portal?portal.slice(0,4):[0,0,0,0]);gl.uniform3f(U('uExteriorPortalB'),portal?.[4]||0,portal?.[5]||0,portal?1:0);
-    for(const p of m.primitives){setMaterialScalar('uRecordingFace',m.extras?.recordingEmbodiment===true?1:0);setMaterialScalar('uStillnessWallProxy',p.materialRole==='stillness-wall-proxy'?1:0);setMaterialScalar('uStillnessProxyMaterial',Number(p.stillnessProxyMaterial)||0);setMaterialScalar('uStillnessEligible',stillnessSurfaceEligible(m,p)?1:0);gl.uniform1i(U('uSourceSurroundingsSide'),sourceSurroundingsPrimitiveSide(p,list[0]));bindSourceSurroundingsPressureShape(U,p);setMaterialScalar('uGlassCourtRainMaterial',m.name==='glass_court_glass'&&p.materialName==='court sparse glazed reflection'?1:0);if(!reflection&&p.materialRole==='missing-man-core')missingManCoreVisible=true;setMaterialScalar('uMissingManCore',p.materialRole==='missing-man-core'?1:0);setMaterialScalar('uMissingManSmoke',p.materialRole==='missing-man-smoke'?1:0);setMaterialScalar('uFountainWater',p.materialName==='fountain running water'?1:0);setMaterialScalar('uPubFasciaPaint',pubFrontFasciaEligible(name,p,list)?1:0);setMaterialScalar('uDriveInterior',/^drive_(cabin|radio|wheel|wiper|speed|recorder|right|left)/.test(name)?1:0);setMaterialScalar('uCabInterior',/^(?:(?:opening_)?drive_(?:cabin|radio|wheel|speed|recorder))/.test(name)?1:name==='ending_van_cup'?.55:0);setMaterialScalar('uDriveSurface',p.worldVideo?3:driveStudyFrame||name==='opening_drive_radio_readout'?(p.driveStudySurface||0):0);setMaterialScalar('uDriveWetSurface',(name==='drive_road'||name==='drive_plain_paving')?1:0);const factors=p.mainFactors||(p.mainFactors=propMaterialFactors({roughness:p.roughness??1,metallic:p.metallic??0,hasOrm:!!p.ormTexture,semantics:p.materialFactors}));bindMeshCharacterMorph(U,m,p);gl.bindVertexArray(p.vao);setMaterialScalar('uAcademicHollow',academicAtriumHollowKind(m.name));setMaterialScalar('uRenFold',p.materialRole==='margin'?2:p.materialRole==='fold'?1:0);setMaterialScalar('uQuietFireEscape',p.materialRole==='quiet-metal'?1:0);setMaterialScalar('uRoofSurface',p.materialRole==='weathered-surface'?1:0);setMaterialScalar('uSourceChunkError',p.materialRole==='source-chunk-error'?1:0);setMaterialScalar('uSourceWalkway',p.printedSurface?.family==='source-ii-route'?1:0);const cleanSourceCode=(sourceRoomLighting||sourceCodeScreen)&&sourceCodeMaterialEligible(p);setMaterialScalar('uSourceCodeClean',cleanSourceCode?1:0);if(cleanSourceCode)gl.uniform3fv(U('uSourceCodeStock'),sourceCodeStock(p));setMaterialScalar('uRoofGlass',(name==='academic_roof_glazing'||name==='academic_roof_seat')&&p.materialName==='wired roof glass'?1:0);setMaterialScalar('uPayphoneCast',p.materialName==='payphone cast iron'?1:0);const print=p.printedSurface||(name.startsWith('loose_note')&&paperAtlasHasPigment?PAPER_PIGMENT_SURFACE:null);gl.uniform3f(U('uPrintedSurface'),PRINTED_SURFACE_POLARITY[print?.polarity]||0,print?.coverage==='solid'?1:0,print?.emission==='substrate'?1:print?.emission==='pigment'?2:0);setMaterialScalar('uPrintedAreaCoverage',print?.sampling==='area'?1:0);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform3fv(U('uMaterialEmissive'),p.emissive||[0,0,0]);gl.uniform4f(U('uVegetation'),VEGETATION_CLASS[p.vegetationClass]||0,p.vegetationTransmission||0,p.vegetationWetness||0,0);setMaterialScalar('uBaseAlpha',p.base[3]??1);setMaterialScalar('uAlphaCut',p.alphaCut);const street=streetTextures&&!p.texture?streetSetFor(p.materialName):null;setMaterialScalar('uStreetTex',street?1:0);setMaterialScalar('uStreetOrmEnabled',street?.ormTexture?1:0);setMaterialScalar('uStreetMix',street?street.mix:0);setMaterialScalar('uStreetScale',street?street.scale:1);setMaterialScalar('uUseTex',p.texture?1:0);setMaterialScalar('uUseNormal',!cleanSourceCode&&p.normalTexture?1:0);setMaterialScalar('uUseOrm',!cleanSourceCode&&p.ormTexture?1:0);setMaterialScalar('uNormalScale',p.normalScale??1);setMaterialScalar('uAoStrength',p.aoStrength??0);setMaterialScalar('uMetallic',cleanSourceCode?0:factors.metallic);setMaterialScalar('uRoughness',cleanSourceCode?.90:factors.roughness);setMaterialScalar('uStreetRoughnessFactor',factors.streetRoughnessFactor);setMaterialScalar('uLetteringFinish',!cleanSourceCode&&(p.letteringFinish?.localSpecular||((driveStudyFrame||physicalStudyMaterials)&&p.studyLocalFinish))?1:0);setMaterialScalar('uDriveTissue',driveStudyFrame&&p.cutTissue?1:0);gl.uniform2f(U('uTissueSurface'),p.tissueSurface?.preservePigment||(sourceBodyTissue&&p.cutTissue)?1:0,p.tissueSurface?.localSpecular||(sourceBodyTissue&&p.cutTissue)?1:0);setMaterialScalar('uUsePortrait',p.portrait&&portraitAtlas?1:0);setMaterialScalar('uUsePaperAtlas',name.startsWith('loose_note')&&paperAtlas?1:0);setMaterialTexture(0,street?.texture||p.texture);setMaterialTexture(4,p.normalTexture);setMaterialTexture(5,street?.ormTexture||p.ormTexture);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);if(activePropDiagnostics){activePropDiagnostics.mainDrawCalls+=1;activePropDiagnostics.mainDrawCallsByMesh[m.name]=(activePropDiagnostics.mainDrawCallsByMesh[m.name]||0)+1;activePropDiagnostics.triangles+=p.count/3*list.length;if(p.materialRole)activePropDiagnostics.visibleMaterialRoles.add(p.materialRole);}}
+    const instance=list[0];
+    const glitch=m.cullBounds&&instance.sourceObjectGlitch;
+    const glitchPasses=[];
+    let basePass=0;
+    if(glitch&&glitch[2]>.14&&(glitch[0]!==3||instance.sourceObjectGlitchFragment)){
+      const {min,max}=m.cullBounds;
+      const span=max.map((v,i)=>Math.max(.0001,v-min[i]));
+      const sign=glitch[3]>.5?1:-1;
+      gl.uniform4fv(U('uSourceObjectGlitch'),glitch);
+      gl.uniform3fv(U('uSourceObjectGlitchMin'),min);
+      gl.uniform3fv(U('uSourceObjectGlitchSpan'),span);
+      if(glitch[0]===1){
+        basePass=1;
+      }else if(glitch[0]===2){
+        const step=glitch[1]<.36?.26:glitch[1]<.68?.19:.11;
+        basePass=3;
+        const shift=Math.min(1,glitch[2]/.90);
+        glitchPasses.push([4,span[0]*sign*step*shift,-span[1]*.045*shift,-span[2]*.12*shift]);
+      }else basePass=5;
+    }
+    if(instance.sourceObjectGlitchFragment&&!basePass)continue;
+    if(basePass)gl.uniform1f(glitchPassUniform,basePass);
+    for(const p of m.primitives){
+      setMaterialScalar('uRecordingFace',m.extras?.recordingEmbodiment===true?1:0);setMaterialScalar('uStillnessWallProxy',p.materialRole==='stillness-wall-proxy'?1:0);setMaterialScalar('uStillnessProxyMaterial',Number(p.stillnessProxyMaterial)||0);setMaterialScalar('uStillnessEligible',stillnessSurfaceEligible(m,p)?1:0);gl.uniform1i(U('uSourceSurroundingsSide'),sourceSurroundingsPrimitiveSide(p,list[0]));bindSourceSurroundingsPressureShape(U,p);setMaterialScalar('uGlassCourtRainMaterial',m.name==='glass_court_glass'&&p.materialName==='court sparse glazed reflection'?1:0);if(!reflection&&p.materialRole==='missing-man-core')missingManCoreVisible=true;setMaterialScalar('uMissingManCore',p.materialRole==='missing-man-core'?1:0);setMaterialScalar('uMissingManSmoke',p.materialRole==='missing-man-smoke'?1:0);setMaterialScalar('uFountainWater',p.materialName==='fountain running water'?1:0);setMaterialScalar('uPubFasciaPaint',pubFrontFasciaEligible(name,p,list)?1:0);setMaterialScalar('uDriveInterior',/^drive_(cabin|radio|wheel|wiper|speed|recorder|right|left)/.test(name)?1:0);setMaterialScalar('uCabInterior',/^(?:(?:opening_)?drive_(?:cabin|radio|wheel|speed|recorder))/.test(name)?1:name==='ending_van_cup'?.55:0);setMaterialScalar('uDriveSurface',p.worldVideo?3:driveStudyFrame||name==='opening_drive_radio_readout'?(p.driveStudySurface||0):0);setMaterialScalar('uDriveWetSurface',(name==='drive_road'||name==='drive_plain_paving')?1:0);const factors=p.mainFactors||(p.mainFactors=propMaterialFactors({roughness:p.roughness??1,metallic:p.metallic??0,hasOrm:!!p.ormTexture,semantics:p.materialFactors}));bindMeshCharacterMorph(U,m,p);gl.bindVertexArray(p.vao);setMaterialScalar('uAcademicHollow',academicAtriumHollowKind(m.name));setMaterialScalar('uRenFold',p.materialRole==='margin'?2:p.materialRole==='fold'?1:0);setMaterialScalar('uQuietFireEscape',p.materialRole==='quiet-metal'?1:0);setMaterialScalar('uRoofSurface',p.materialRole==='weathered-surface'?1:0);setMaterialScalar('uSourceChunkError',p.materialRole==='source-chunk-error'?1:0);setMaterialScalar('uSourceWalkway',p.printedSurface?.family==='source-ii-route'?1:0);const cleanSourceCode=(sourceRoomLighting||sourceCodeScreen)&&sourceCodeMaterialEligible(p);setMaterialScalar('uSourceCodeClean',cleanSourceCode?1:0);if(cleanSourceCode)gl.uniform3fv(U('uSourceCodeStock'),sourceCodeStock(p));setMaterialScalar('uRoofGlass',(name==='academic_roof_glazing'||name==='academic_roof_seat')&&p.materialName==='wired roof glass'?1:0);setMaterialScalar('uPayphoneCast',p.materialName==='payphone cast iron'?1:0);const print=p.printedSurface||(name.startsWith('loose_note')&&paperAtlasHasPigment?PAPER_PIGMENT_SURFACE:null);gl.uniform3f(U('uPrintedSurface'),PRINTED_SURFACE_POLARITY[print?.polarity]||0,print?.coverage==='solid'?1:0,print?.emission==='substrate'?1:print?.emission==='pigment'?2:0);setMaterialScalar('uPrintedAreaCoverage',print?.sampling==='area'?1:0);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform3fv(U('uMaterialEmissive'),p.emissive||[0,0,0]);gl.uniform4f(U('uVegetation'),VEGETATION_CLASS[p.vegetationClass]||0,p.vegetationTransmission||0,p.vegetationWetness||0,0);setMaterialScalar('uBaseAlpha',p.base[3]??1);setMaterialScalar('uAlphaCut',p.alphaCut);const street=streetTextures&&!p.texture?streetSetFor(p.materialName):null;setMaterialScalar('uStreetTex',street?1:0);setMaterialScalar('uStreetOrmEnabled',street?.ormTexture?1:0);setMaterialScalar('uStreetMix',street?street.mix:0);setMaterialScalar('uStreetScale',street?street.scale:1);setMaterialScalar('uUseTex',p.texture?1:0);setMaterialScalar('uUseNormal',!cleanSourceCode&&p.normalTexture?1:0);setMaterialScalar('uUseOrm',!cleanSourceCode&&p.ormTexture?1:0);setMaterialScalar('uNormalScale',p.normalScale??1);setMaterialScalar('uAoStrength',p.aoStrength??0);setMaterialScalar('uMetallic',cleanSourceCode?0:factors.metallic);setMaterialScalar('uRoughness',cleanSourceCode?.90:factors.roughness);setMaterialScalar('uStreetRoughnessFactor',factors.streetRoughnessFactor);setMaterialScalar('uLetteringFinish',!cleanSourceCode&&(p.letteringFinish?.localSpecular||((driveStudyFrame||physicalStudyMaterials)&&p.studyLocalFinish))?1:0);setMaterialScalar('uDriveTissue',driveStudyFrame&&p.cutTissue?1:0);gl.uniform2f(U('uTissueSurface'),p.tissueSurface?.preservePigment||(sourceBodyTissue&&p.cutTissue)?1:0,p.tissueSurface?.localSpecular||(sourceBodyTissue&&p.cutTissue)?1:0);setMaterialScalar('uUsePortrait',p.portrait&&portraitAtlas?1:0);setMaterialScalar('uUsePaperAtlas',name.startsWith('loose_note')&&paperAtlas?1:0);setMaterialTexture(0,street?.texture||p.texture);setMaterialTexture(4,p.normalTexture);setMaterialTexture(5,street?.ormTexture||p.ormTexture);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);
+      for(const [pass,dx,dy,dz] of glitchPasses){
+        gl.uniform1f(glitchPassUniform,pass);
+        gl.uniform3f(glitchOffsetUniform,dx,dy,dz);
+        gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);
+      }
+      if(glitchPasses.length){
+        gl.uniform3f(glitchOffsetUniform,0,0,0);
+        gl.uniform1f(glitchPassUniform,basePass);
+      }
+      if(activePropDiagnostics){
+        const draws=1+glitchPasses.length;
+        activePropDiagnostics.mainDrawCalls+=draws;
+        activePropDiagnostics.mainDrawCallsByMesh[m.name]=(activePropDiagnostics.mainDrawCallsByMesh[m.name]||0)+draws;
+        activePropDiagnostics.triangles+=p.count/3*list.length*draws;
+        if(p.materialRole)activePropDiagnostics.visibleMaterialRoles.add(p.materialRole);
+      }
+    }
+    if(basePass)gl.uniform1f(glitchPassUniform,0);
   }
   gl.uniform1i(U('uSourceSurroundingsSide'),0);
   if(!reflection){sourceCodeFrame=sourceRoomLighting||sourceCodeScreen?{eye:[...eye],yaw,pitch,viewMatrix,projection,maxDistance,timeSec,reducedMotion,patternOriginOffsetMetres:[...patternOriginOffsetMetres]}:null;renderSourceText(viewMatrix,projection,eye,forward,maxDistance,{sourceRoomLighting,sourceCodeScreen,torch,torchForward,torchFrame,light,ambientColor,ambientIntensity,localLightCount,localLightPositions,localLightColors,localLightEmergency});marksReady=!!sourceRoomLighting;}
@@ -2141,9 +2243,12 @@ const CROSSING_FRAG=`#version 300 es
 precision highp float;
 uniform vec2 uRes,uDir;
 uniform float uPitch,uTime,uCalm,uReveal,uRealmDepth;
+uniform float uHomeRoll;
 uniform vec4 uWorld;
 uniform vec3 uRealmEye;
-out vec4 o;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 oSurfaceMarks;
+${PRINTED_SURFACE_GLSL}
 ${ELSEWHERE_GLSL}
 vec3 crossingDisplay(vec3 linear){
   vec3 low=linear*12.92;
@@ -2160,6 +2265,11 @@ void main(){
   vec3 fwd=normalize(vec3(uDir.x*cos(uPitch),sin(uPitch),uDir.y*cos(uPitch)));
   vec3 right=normalize(vec3(uDir.y,0.0,-uDir.x));
   vec3 up=cross(fwd,right);
+  if(abs(uHomeRoll)>.001){
+    float c=cos(uHomeRoll),s=sin(uHomeRoll);
+    vec3 rolledRight=right*c+up*s;
+    up=up*c-right*s;right=rolledRight;
+  }
   vec3 rd=normalize(fwd+right*ndc.x*aspect*.95+up*ndc.y*.95);
   // The whiteout's walk goes toward its one lit window (x 70 at z 420): walked far
   // enough, as on the way home, the camera arrives at it. An ordinary crossing drifts
@@ -2175,7 +2285,8 @@ void main(){
     }
   }
   float surfaceHit;
-  vec3 c=elsewhereSceneDepth(ro,rd,int(uWorld.x+.5),uWorld.y,uWorld.z,uTime,uCalm,surfaceHit);
+  vec2 surfacePrint;
+  vec3 c=elsewhereSceneDepth(ro,rd,int(uWorld.x+.5),uWorld.y,uWorld.z,uTime,uCalm,surfaceHit,surfacePrint);
   // Material failures resolve abruptly into the waiting station during the last
   // part of the automatic reassembly. No white flash or injury tint.
   float cohesion=1.0-smoothstep(.84,1.0,loss);
@@ -2184,6 +2295,7 @@ void main(){
   // for a display here washes out lamplight and cloth in the later engraving.
   vec3 sceneColour=uHomeState.x>.5?clamp(c,0.0,1.0):crossingDisplay(clamp(c,0.0,1.0));
   o=vec4(sceneColour,uRealmDepth>.5?packedDepth:smoothstep(0.0,.04,inside)*cohesion);
+  oSurfaceMarks=vec4(0.0,0.0,0.0,printedSurfaceTag(surfacePrint.y,surfacePrint.x));
 }`;
 // CAT'S EYES. Seb, 2026-11-06 (Northern drives audit). Road studs return the
 // van's own beam straight back at the driver, so a line of them draws the road's
@@ -2270,6 +2382,42 @@ function drawDriveRetroreflectors(viewMatrix,projection,eye,lampPositions,lampCo
   lastRetroDrawn=count;return count;
 }
 let portalProgram=null,portalProgramPending=null,portalProgramFailed=false,portalVao=null,portalBuffer=null;
+let valleySignTexture=null,valleySignOwner=null,valleySignReady=false;
+function bindValleySignAtlas(uniform, visible){
+  const unit=12;
+  gl.activeTexture(gl.TEXTURE0+unit);
+  if(visible&&!valleySignTexture){
+    const owner=gl,texture=gl.createTexture(),image=new Image();
+    valleySignTexture=texture;valleySignOwner=owner;
+    gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([220,218,209,255]));
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    image.onload=()=>{
+      if(valleySignTexture!==texture||gl!==owner||owner.isContextLost())return;
+      const priorUnit=owner.getParameter(owner.ACTIVE_TEXTURE);
+      owner.activeTexture(owner.TEXTURE0+unit);
+      const priorBinding=owner.getParameter(owner.TEXTURE_BINDING_2D);
+      const flip=owner.getParameter(owner.UNPACK_FLIP_Y_WEBGL);
+      owner.bindTexture(owner.TEXTURE_2D,texture);
+      owner.pixelStorei(owner.UNPACK_FLIP_Y_WEBGL,false);
+      owner.texImage2D(owner.TEXTURE_2D,0,owner.SRGB8_ALPHA8,owner.RGBA,owner.UNSIGNED_BYTE,image);
+      owner.generateMipmap(owner.TEXTURE_2D);
+      owner.texParameteri(owner.TEXTURE_2D,owner.TEXTURE_MIN_FILTER,owner.LINEAR_MIPMAP_LINEAR);
+      owner.pixelStorei(owner.UNPACK_FLIP_Y_WEBGL,flip);
+      owner.bindTexture(owner.TEXTURE_2D,priorBinding);
+      owner.activeTexture(priorUnit);
+      valleySignReady=true;
+    };
+    image.onerror=()=>{if(valleySignTexture===texture)console.warn('Tannenried sign atlas unavailable');};
+    image.src=assetUrl('assets/childhood-valley/signs.png');
+  }
+  gl.bindTexture(gl.TEXTURE_2D,valleySignTexture);
+  gl.uniform1i(uniform('uValleySignAtlas'),unit);
+  gl.uniform1f(uniform('uValleySignReady'),valleySignReady?1:0);
+}
 const portalUniforms=new Map();
 function PU(name){if(!portalUniforms.has(name))portalUniforms.set(name,gl.getUniformLocation(portalProgram,name));return portalUniforms.get(name);}
 export function sourcePortalShaders(){return{vertex:PORTAL_VERT,fragment:PORTAL_FRAG};}
@@ -2277,6 +2425,8 @@ export function sourceCrossingShaders(){return{vertex:CROSSING_VERT,fragment:CRO
 export function sourcePortalProgramReady(){return !!(gl&&portalProgram&&gl.isProgram(portalProgram));}
 function resetSourceDoorPrograms(){
   resetRetroreflectorProgram();
+  if(valleySignTexture)valleySignOwner?.deleteTexture(valleySignTexture);
+  valleySignTexture=valleySignOwner=null;valleySignReady=false;
   portalProgramPending?.dispose?.();towerViewProgramPending?.dispose?.();
   if(gl){
     for(const p of [portalProgram,towerViewProgram,openingProgram,crossingProgram])if(p)gl.deleteProgram(p);
@@ -2286,6 +2436,7 @@ function resetSourceDoorPrograms(){
   portalProgram=null;portalProgramPending=null;portalProgramFailed=false;portalVao=null;portalBuffer=null;
   towerViewProgram=null;towerViewProgramPending=null;towerViewProgramFailed=false;towerViewVao=null;towerViewBuffer=null;
   openingProgram=null;openingVao=null;openingBuffer=null;crossingProgram=null;crossingVao=null;
+  crossingProgramPending?.dispose?.();crossingProgramPending=null;crossingPrepareFailed=false;
   portalUniforms.clear();towerViewUniforms.clear();crossingUniforms.clear();
 }
 // Each open door is a marched world, so only the nearest few are drawn.
@@ -2336,6 +2487,7 @@ export function renderSourcePortals({camX,camY,camZ,yaw,pitch=0,portals=[],timeS
   gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]);
   gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);
   gl.useProgram(portalProgram);
+  bindValleySignAtlas(PU,nearest.some(({portal})=>Number(portal.variant)===5));
   gl.uniformMatrix4fv(PU('uView'),false,viewMatrix);gl.uniformMatrix4fv(PU('uProj'),false,projection);
   gl.uniform3fv(PU('uEye'),eye);gl.uniform1f(PU('uTime'),reducedMotion?0:Number(timeSec)||0);gl.uniform1f(PU('uCalm'),reducedMotion?1:0);gl.uniform1f(PU('uStormFlash'),Number(stormFlash)||0);gl.uniform1f(PU('uMarksPhysical'),marksReady?1:0);
   gl.bindVertexArray(portalVao);gl.bindBuffer(gl.ARRAY_BUFFER,portalBuffer);
@@ -2518,21 +2670,58 @@ export function renderSourceOpenings({camX,camY,camZ,yaw,pitch=0,openings=[]}={}
   return drawn;
 }
 
-let crossingProgram=null,crossingVao=null;
+let crossingProgram=null,crossingVao=null,crossingProgramPending=null,crossingPrepareFailed=false;
 const crossingUniforms=new Map();
 const realmEyeInterpolator=createRealmEyeInterpolator();
 export function resetSourceRealmEye(){realmEyeInterpolator.reset();}
 function CU(name){if(!crossingUniforms.has(name))crossingUniforms.set(name,gl.getUniformLocation(crossingProgram,name));return crossingUniforms.get(name);}
+const homeOldvSteps = new Float32Array(HOME_OLDV_STEP_LIMIT * 4);
+function bindHomeOldv(home) {
+  const returned = home.eligible && home.oldv?.returned === true;
+  const steps = returned ? home.oldv.steps : [];
+  gl.uniform1f(CU('uHomeOldvReturn'), returned ? 1 : 0);
+  let centreX = 0, centreZ = 0;
+  if (steps.length) {
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    homeOldvSteps.fill(0);
+    steps.forEach((step, index) => {
+      homeOldvSteps.set(step, index * 4);
+      minX = Math.min(minX, step[0]); maxX = Math.max(maxX, step[0]);
+      minZ = Math.min(minZ, step[1]); maxZ = Math.max(maxZ, step[1]);
+    });
+    centreX = (minX + maxX) * .5;
+    centreZ = (minZ + maxZ) * .5;
+    gl.uniform4fv(CU('uHomeOldvSteps[0]'), homeOldvSteps);
+  }
+  gl.uniform4f(CU('uHomeOldv'), steps.length ? 1 : 0, home.eligible && home.viewedRoom ? 1 : 0, centreX, centreZ);
+}
+function installCrossingProgram(program){
+  crossingProgram=program;crossingUniforms.clear();
+  crossingVao=gl.createVertexArray();const buffer=gl.createBuffer();
+  gl.bindVertexArray(crossingVao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);gl.bindVertexArray(null);
+}
+// Start while the player is still in the station, rather than compiling a
+// furnished house synchronously on the first ordinary step into its snow.
+export function prepareSourceCrossing(){
+  if(!gl||gl.isContextLost()||crossingPrepareFailed)return false;
+  if(crossingProgram)return true;
+  try{
+    crossingProgramPending ||= deferGlProgram(gl,CROSSING_VERT,CROSSING_FRAG,'source crossing');
+    const program=crossingProgramPending.poll();if(!program)return false;
+    crossingProgramPending=null;installCrossingProgram(program);return true;
+  }catch(error){crossingProgramPending?.dispose?.();crossingProgramPending=null;crossingPrepareFailed=true;console.warn('Source crossing preparation unavailable',error);return false;}
+}
+export function sourceCrossingProgramReady(){return !!(gl&&crossingProgram&&gl.isProgram(crossingProgram));}
 // `dir` is where the camera looks in the door's space (x right, z into the world).
 export function renderSourceCrossing({framebuffer=null,width:targetW=1,height:targetH=1,dir=[0,1],pitch=0,reveal=0,variant=0,seed=0,key=0,drift=0,timeSec=0,frameTimeSec=timeSec,reducedMotion=false,stormFlash=0,wayOut=0,realm=null,realmId=null,homePresentation=null,torchPower=0}={}){
   if(!gl||!(reveal>.02))return false;
   if(!crossingProgram||gl.isContextLost()){
-    crossingProgram=linkProgram(CROSSING_VERT,CROSSING_FRAG,'source crossing');crossingUniforms.clear();
-    crossingVao=gl.createVertexArray();const buffer=gl.createBuffer();
-    gl.bindVertexArray(crossingVao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
-    gl.bindVertexArray(null);
+    if(!prepareSourceCrossing()){
+      crossingProgramPending?.dispose?.();crossingProgramPending=null;
+      installCrossingProgram(linkProgram(CROSSING_VERT,CROSSING_FRAG,'source crossing'));
+    }
   }
   gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);gl.viewport(0,0,targetW,targetH);
   gl.disable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);
@@ -2540,6 +2729,7 @@ export function renderSourceCrossing({framebuffer=null,width:targetW=1,height:ta
   if(homeAcquisition)gl.disable(gl.BLEND);
   else{gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);}
   gl.useProgram(crossingProgram);
+  bindValleySignAtlas(CU,Number(variant)===5);
   const dirX=Number.isFinite(Number(dir[0]))?Number(dir[0]):0,dirZ=Number.isFinite(Number(dir[1]))?Number(dir[1]):1;
   gl.uniform2f(CU('uRes'),targetW,targetH);gl.uniform2f(CU('uDir'),dirX,dirZ);
   gl.uniform1f(CU('uPitch'),Number(pitch)||0);gl.uniform1f(CU('uTime'),reducedMotion?0:Number(timeSec)||0);
@@ -2550,12 +2740,26 @@ export function renderSourceCrossing({framebuffer=null,width:targetW=1,height:ta
   gl.uniform1f(CU('uRealmActive'),realm?1:0);
   const realmKey=realm?`${realmId??realm.entryDoorId??''}:${realm.variant??variant}:${realm.startedAt??0}`:null;
   if(!realm)realmEyeInterpolator.reset();
-  gl.uniform3fv(CU('uRealmEye'),realm?realmEyeInterpolator.position(realmKey,realmCameraPosition(realm),frameTimeSec):[0,1.62,1]);
+  const realmEye=realm?realmEyeInterpolator.position(realmKey,realmCameraPosition(realm),frameTimeSec):[0,1.62,1];
+  gl.uniform3fv(CU('uRealmEye'),realmEye);
   gl.uniform1f(CU('uRealmDecoherence'),Math.max(0,Math.min(1,Number(realm?.decoherence)||0)));
   gl.uniform1f(CU('uRealmTorch'),Math.max(0,Math.min(1.4,Number(torchPower)||0)));
   gl.uniform3f(CU('uRealmView'),dirX*Math.cos(Number(pitch)||0),Math.sin(Number(pitch)||0),dirZ*Math.cos(Number(pitch)||0));
   const home=realm?.home||{},attention=homePresentation?.attention??home.attention??0,hold=homePresentation?.hold??homePresentation?.seduction??attention;
   gl.uniform4f(CU('uHomeState'),home.eligible?1:0,Math.max(0,Math.min(1,Number(attention)||0)),Math.max(0,Math.min(1,Number(hold)||0)),Math.max(0,Math.min(1,Number(home.fold)||0)));
+  bindHomeOldv(home);
+  const activity=home.eligible?homePresentation?.activity:null;
+  const maul=activity?.maul,angel=activity?.angel,imprint=angel?.body||angel?.imprint;
+  const rest=home.eligible?homePresentation?.rest:null;
+  const clamp01=value=>Math.max(0,Math.min(1,Number(value)||0));
+  const toolPose=maul?.phase==='lifting'?1:maul?.phase==='held'?2:maul?.phase==='swinging'?3:0;
+  const sleeveSweep=angel?.phase==='sweeping'&&!reducedMotion?clamp01(angel.body?.sweep):-1;
+  gl.uniform4f(CU('uHomeActivity'),toolPose,clamp01(maul?.progress),maul?.split?1:0,sleeveSweep);
+  gl.uniform4f(CU('uHomeAngel'),Number(imprint?.x)||0,Number(imprint?.z)||0,Number(imprint?.yaw)||0,
+    angel?.body?clamp01(angel.body.sweep):imprint?1:0);
+  gl.uniform3fv(CU('uHomeActivityEye'),realmEye);
+  gl.uniform3f(CU('uHomeRest'),clamp01(rest?.settle),clamp01(rest?.commit),clamp01(rest?.frost));
+  gl.uniform1f(CU('uHomeRoll'),reducedMotion?0:Number(activity?.camera?.roll)||0);
   gl.bindVertexArray(crossingVao);gl.drawArrays(gl.TRIANGLES,0,3);gl.bindVertexArray(null);
   gl.disable(gl.BLEND);
   return true;

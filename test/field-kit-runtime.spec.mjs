@@ -32,7 +32,7 @@ test('reference hardware preserves actual spoil, duration, and progress behavior
   assert.equal(REC.tickRecording(ROOM_TONE.takeSeconds / 2), 'complete');
   assert.equal(REC.stopRecording().completed, true);
   reset(); roll(); REC.emitNoise(.2, 1, 2, 'test');
-  assert.equal(REC.tickRecording(.1), 'spoiled');
+  assert.equal(REC.tickRecording(.1), 'running');assert.equal(REC.recState().spoiled,true);
   assert.equal(REC.stopRecording().completed, false);
 });
 
@@ -47,7 +47,7 @@ test('directional and wide microphones change actual spoil decisions, not raw ac
       REC.setLoudNoiseSink((rawLevel, reason, meta) => hunters.push({ level: rawLevel, reason, ...meta }));
       roll(); REC.emitNoise(level, 1, 2, 'test', { kind: 'paper_rustle', sourceKind: 'player', sourceId: 'test' });
       close(REC.currentNoise(), level, 'world envelope must not be multiplied');
-      assert.equal(REC.tickRecording(.1) === 'spoiled', expected[microphone]);
+      assert.equal(REC.tickRecording(.1), 'running');assert.equal(REC.recState().spoiled, expected[microphone]);
       close(REC.takeEvents()[0].level, level * fieldKitEffects({ microphone }).recordingNoiseScale);
       heard.push({ acoustic: events[0], hunter: hunters[0] });
     }
@@ -78,7 +78,7 @@ test('scaled recording input, overload mark, and raw-world catch mark agree on m
   assert.equal(REC.takeEvents()[0].kind, 'near');
   reset({ microphone: 'wide', recorder: 'low-draw' }); roll();
   REC.emitNoise(.15, 1, 2, 'test');
-  assert.equal(REC.tickRecording(.1), 'spoiled');
+  assert.equal(REC.tickRecording(.1), 'running');assert.equal(REC.recState().spoiled,true);
 });
 
 test('microphone length changes actual completion and remains latched for each rolling take', () => {
@@ -101,7 +101,7 @@ test('held takes and explicit actions retain their authored rules under every ha
   REC.stallTake(); REC.emitNoise(.9, 1, 2, 'permitted return');
   assert.equal(REC.tickRecording(20), 'stalled'); close(REC.takeProgress(), 0);
   REC.resumeTake(); assert.equal(REC.tickRecording(1), 'running');
-  REC.toggleLight(); assert.equal(REC.tickRecording(1), 'spoiled', 'reaching for the light remains an unconditional break');
+  REC.toggleLight(); assert.equal(REC.tickRecording(1), 'running');assert.equal(REC.recState().spoiled,true,'the light still marks the attempt for the sheet');
   reset({ microphone: 'wide' }); roll();
   REC.emitNoise(.9, 1, 2, 'weather', { spoils: false, sourceKind: 'environment' });
   assert.equal(REC.tickRecording(1), 'running', 'weather does not become take contamination');

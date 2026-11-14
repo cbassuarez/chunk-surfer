@@ -1,7 +1,9 @@
 import { uiSize, uiFill, uiDraw } from './ui.js';
 import { drawSignalBeing, drawOpponentCombatArt } from './combat-view.js';
+import { fieldSignalCage, usesHushBattleBody } from './hush-battle-body.js';
 
-export function drawEncounterSplash(battle, { phase, progress = 0, reducedMotion = false, showTitle = true } = {}) {
+export function drawEncounterSplash(battle, { phase, progress = 0, reducedMotion = false, showTitle = true,
+  hushBody = null, clock = 0 } = {}) {
   const {cols,rows}=uiSize();
   if(phase==='hold'){uiFill(0,0,cols,rows,`rgba(0,0,0,${.2+progress*.77})`);return;}
   uiFill(0,0,cols,rows,'#020503');
@@ -9,7 +11,14 @@ export function drawEncounterSplash(battle, { phase, progress = 0, reducedMotion
   const box=impact&&!reducedMotion?{x:cols*.12,y:-rows*.60,w:cols*1.36,h:rows*2.2}
     :{x:cols*.41,y:rows*.08,w:cols*.66,h:rows*.9};
   const art=battle.art||battle.combat?.art,artId=typeof art==='string'?art:art?.id;
-  if(['surfer','guard'].includes(artId))drawOpponentCombatArt(art,{...box,coherence:1,maxCoherence:1,snr:'signal',reduceFlash:true});
+  const cage=fieldSignalCage(battle);
+  if (usesHushBattleBody(battle) || cage) {
+    const close=impact&&!reducedMotion;
+    hushBody?.draw(close ? {x:cols*.30,y:0,w:cols*.70,h:rows} : box, {
+      clock, close, reducedMotion, reduceFlash:reducedMotion, clip:{x:0,y:0,w:cols,h:rows},
+    });
+    if (cage) drawSignalBeing(cage,{...box,now:0,snr:'signal',reducedMotion:true,cageOnly:true});
+  } else if(['surfer','guard'].includes(artId))drawOpponentCombatArt(art,{...box,coherence:1,maxCoherence:1,snr:'signal',reduceFlash:true});
   else drawSignalBeing(battle.combat?.id||battle.id,{...box,now:0,snr:'signal',reducedMotion:true});
   uiDraw(({ctx,dpr,cellW,cellH})=>{
     const w=cols*cellW*dpr,h=rows*cellH*dpr;

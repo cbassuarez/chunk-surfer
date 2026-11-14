@@ -43,10 +43,6 @@ export function sourceHallCellIntervalMs(cellMetres = SOURCE_HALL.cellMetres) {
     * positive(cellMetres, SOURCE_HALL.cellMetres) / SOURCE_HALL.lengthMetres;
 }
 
-export function sourceHallPaceMultiplier(baseMoveMs, cellMetres = SOURCE_HALL.cellMetres) {
-  return sourceHallCellIntervalMs(cellMetres) / positive(baseMoveMs, 45);
-}
-
 function hash32(value) {
   let x = value | 0;
   x ^= x >>> 16; x = Math.imul(x, 0x7feb352d);

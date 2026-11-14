@@ -14,7 +14,7 @@ function meshPayload(piece){
     const ids=[piece.i[at],piece.i[at+1],piece.i[at+2]],[a,b,c]=ids.map(id=>piece.p.slice(id*3,id*3+3)),u=b.map((v,k)=>v-a[k]),v=c.map((n,k)=>n-a[k]),
       n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],length=Math.hypot(...n)||1;
     [a,b,c].forEach((point,k)=>{
-      positions.push(...point);uvs.push(point[0],point[2]);
+      positions.push(...point);uvs.push(...(piece.uv?piece.uv.slice(ids[k]*2,ids[k]*2+2):[point[0],point[2]]));
       if(piece.n)normals.push(...piece.n.slice(ids[k]*3,ids[k]*3+3));else normals.push(n[0]/length,n[1]/length,n[2]/length);
     });
   }

@@ -22,3 +22,44 @@ test('the actual opening hull never intersects the retained road-base footprints
  const a=worldAt(292),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed:6,furthest:292}});let count=0,min=Infinity;
  try{c.start();for(let i=0;i<300&&!c.snapshot().commitment;i++)c.update(1/120);assert.ok(c.snapshot().commitment);for(let i=0;i<1200&&!c.snapshot().finished;i++){const s=c.snapshot();if(s.worldOwner!=='drive')break;const body=s.vehiclePose.bodyMatrix;for(const x of[-1.04,0,1.04])for(const y of[0,1.3,2.57])for(const z of[-3.25,-.35,2.55]){const p=coastalLocalPoint(coastalWorldPoint([x,y,z],body));min=Math.min(min,clearance(p[0],p[2]));count++;}c.update(1/120);}assert.ok(count>10000);assert.ok(min>6.5,`actual hull clearance ${min}`);}finally{c.dispose();}
 });
+
+// Distance between the full projected conservative body envelope and every
+// exact physical bay, including edge interiors. Corner samples alone cannot
+// detect two crossing polygon edges whose endpoints remain outside.
+function convexHull(points){
+ const sorted=points.map(p=>[p[0],p[2]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+ const half=list=>{const out=[];for(const p of list){while(out.length>1&&cross(out.at(-2),out.at(-1),p)<=0)out.pop();out.push(p);}return out;};
+ const low=half(sorted),high=half([...sorted].reverse());return[...low.slice(0,-1),...high.slice(0,-1)];
+}
+function polygonClearance(a,b){
+ const cross=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+ for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++){
+  const p=a[i],q=a[(i+1)%a.length],r=b[j],s=b[(j+1)%b.length];
+  if(cross(p,q,r)*cross(p,q,s)<0&&cross(r,s,p)*cross(r,s,q)<0)return 0;
+ }
+ return Math.min(...a.map(p=>distance(p[0],p[1],b)),...b.map(p=>distance(p[0],p[1],a)));
+}
+test('the entire projected hull envelope clears every retained bay with ordinary input timing',()=>{
+ const corners=[];for(const x of[-1.04,1.04])for(const y of[0,2.57])for(const z of[-3.25,2.55])corners.push([x,y,z]);
+ for(const speed of[4,6,9])for(const dt of[1/120,1/60]){
+  const a=worldAt(292),controller=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed,furthest:292}});
+  let minimum=Infinity,frames=0,previous=null,firstReturn=false;
+  try{
+   controller.start();for(let i=0;i<500&&!controller.snapshot().commitment;i++)controller.update(dt);
+   assert.ok(controller.snapshot().commitment);
+   for(let i=0;i<1500&&!controller.snapshot().finished;i++){
+    const s=controller.snapshot(),pose=s.vehiclePose;
+    if(previous)assert.ok(Math.hypot(...['x','y','z'].map(k=>pose.position[k]-previous.position[k]))<.5,'clearance must not come from a body teleport');
+    if(s.worldOwner==='drive'){
+     const hull=convexHull(corners.map(p=>coastalLocalPoint(coastalWorldPoint(p,pose.bodyMatrix))));
+     for(const bay of R)minimum=Math.min(minimum,polygonClearance(hull,bay.footprint));
+     frames++;
+    }else if(!firstReturn){assert.equal(s.coverAlpha,1,'handoff remains fully covered');firstReturn=true;}
+    previous=pose;controller.update(dt);
+   }
+   assert.ok(frames>250);assert.ok(minimum>6.5,`full hull ${speed}m/s,${dt}s clearance ${minimum}`);
+   assert.ok(firstReturn&&controller.snapshot().finished);
+  }finally{controller.dispose();}
+ }
+});

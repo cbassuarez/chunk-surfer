@@ -34,6 +34,7 @@ writeFileSync(path.join(appDir, 'README.txt'), [
   'Run chunk-surfer.exe from the extracted folder.',
   'Uses the authored materials renderer. No Stable Diffusion model or NVIDIA CUDA GPU is required.',
   'Requires Windows x64 and Microsoft Edge WebView2 Runtime.',
+  'If the window remains blank, close the game and run chunk-surfer.exe --graphics-recovery from this extracted folder to try another graphics path. Your saved game is kept.',
   'To uninstall, quit and delete the extracted Chunk Surfer folder. This retains your saves.',
   'To erase progress, settings and local recordings first, choose Settings > Memory > Erase all data & restart on the title screen and confirm. Then quit and delete the folder.',
   '',

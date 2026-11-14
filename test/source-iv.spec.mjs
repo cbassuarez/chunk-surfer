@@ -76,9 +76,9 @@ test('free walking, stopping, turning and looking back retain one actual body an
   let state=initial();const before=copy(state);
   const waiting=advance(state,1,{look:{yaw:Math.PI,pitch:.4}}).state;
   assert.equal(waiting.x,before.x);assert.equal(waiting.z,before.z);near(waiting.yaw,Math.PI);
-  state=advance(state,2,{side:1}).state;near(state.x,4);near(state.z,-2.5);
-  state=advance(state,1,{forward:1}).state;near(state.x,4);near(state.z,-4.5);
-  state=advance(state,1,{forward:-1}).state;near(state.z,-2.5);
+  state=advance(state,2,{side:1}).state;near(state.x,2*C.walkSpeed);near(state.z,C.spawn.z);
+  state=advance(state,1,{forward:1}).state;near(state.x,2*C.walkSpeed);near(state.z,C.spawn.z-C.walkSpeed);
+  state=advance(state,1,{forward:-1}).state;near(state.z,C.spawn.z);
   assert.equal(frame(state).player.feet,0);assert.equal(frame(state).support.y,0);
   assert.equal(state.status,'active');assert.equal(state.exitReceipt,null);
 });

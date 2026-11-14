@@ -16,3 +16,19 @@ test('opening monitor and physical recording tap share the same water medium; or
  assert.ok(ordinaryEngine>0);a.dispose();});
 
 test('one contact crossing emits one water event and pause freezes opening audio history',async()=>{const f=context(),a=await new SourceDriveAcoustics({context:f.c,destination:f.c.createGain(),fetcher:async()=>({ok:false,status:404})}).initialize();a.setPaused(false);const events=[];a.transient=value=>events.push(value.kind);a.sync(opening(DOOR_DRIVE_WATER_ENTRY-.03,'fall'),[],weather,evolution);a.sync(opening(DOOR_DRIVE_WATER_ENTRY+.03,'submerge'),[],weather,evolution);for(let i=0;i<20;i++)a.sync(opening(DOOR_DRIVE_WATER_ENTRY+.03+i*.01,'submerge'),[],weather,evolution);assert.equal(events.filter(e=>e==='opening-water-impact').length,1);assert.equal(a.diagnostics().opening.cues.filter(c=>c.id==='sea-impact').length,1);const before=structuredClone(a.diagnostics().opening);a.setPaused(true);a.sync(opening(90,'submerge'),[],weather,evolution);assert.deepEqual(a.diagnostics().opening,before);assert.equal(a.cabin.gain.value,0);assert.equal(f.c.state,'running');a.dispose();});
+
+test('the life flash briefly draws back radio and weather without swallowing sea impact',async()=>{
+ const f=context(),a=await new SourceDriveAcoustics({context:f.c,destination:f.c.createGain(),fetcher:async()=>({ok:false,status:404})}).initialize();
+ a.setPaused(false);
+ const before=opening(DOOR_DRIVE_WATER_ENTRY-.32,'fall');
+ a.sync(before,[],weather,evolution);
+ const radio=a.radio.gain.value,rain=a.glassRain.gain.gain.value;
+ a.sync({...before,openingCinematic:{...before.openingCinematic,lifeFlash:1}},[],weather,evolution);
+ assert.ok(a.radio.gain.value<radio*.3);
+ assert.ok(a.glassRain.gain.gain.value<rain*.3);
+ assert.ok(a.openingFilter.frequency.value<7000);
+ a.sync(opening(DOOR_DRIVE_WATER_ENTRY+.02,'submerge'),[],weather,evolution);
+ assert.equal(a.diagnostics().opening.lifeFlash,0);
+ assert.equal(a.diagnostics().opening.cues.filter(cue=>cue.id==='sea-impact').length,1);
+ a.dispose();
+});

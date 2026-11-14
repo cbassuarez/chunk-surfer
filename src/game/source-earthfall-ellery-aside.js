@@ -202,7 +202,8 @@ function startChase(s,events){
  s.hushDensity=normalizeHushDensityPose({...freshHushDensityPose(37),event:'notice',listening:true});
 }
 function advanceChase(s,dt,input,events){
- const c=s.chase,raw=earthfallChaseLocalPoint(s,c),beforeCompression=c.compression,beforeHeading=c.heading;
+ const c=s.chase,raw=earthfallChaseLocalPoint(s,c),beforeCompression=c.compression,beforeHeading=c.heading,
+  beforeHushX=c.hushX,beforeHushZ=c.hushZ;
  let acceptedMetres=0,attempting=false;
  const armed=s.gag.elapsed>=sourceEarthfallGagFrame(s).finishAt;
  // A real reaction during the spoken word is retained through its tail.
@@ -233,6 +234,9 @@ function advanceChase(s,dt,input,events){
   if(c.compression>=1-1e-7&&c.phase!=='contact'){c.phase='collapse';s.elapsed=0;chaseEvent(s,events,'collapse-start',{catches:c.catches});}
  }
  if(earthfallChaseActive(c))s.hushDensity=stepHushDensityPose(s.hushDensity,{dt,acceptedMetres,
+  acceptedDelta:{x:(Math.cos(c.heading)*(c.hushX-beforeHushX)+Math.sin(c.heading)*(c.hushZ-beforeHushZ))*earthfallChaseFactors(c).xz,
+   z:(-Math.sin(c.heading)*(c.hushX-beforeHushX)+Math.cos(c.heading)*(c.hushZ-beforeHushZ))*earthfallChaseFactors(c).xz},
+  acceptedFloorDelta:0,
   headingDelta:angle(c.heading-beforeHeading),listening:c.phase==='chase'&&c.grace>0,
   blocked:c.phase==='chase'&&attempting&&acceptedMetres<1e-8,
   loading:c.phase==='contact',loadProgress:Math.min(1,c.contactElapsed/CHASE.contactArrestSeconds),

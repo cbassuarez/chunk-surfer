@@ -145,6 +145,27 @@ const comfortSources = (audio) => audio.nodes.filter((node) => node.kind === 'no
 const homeCrossing = { id: 'last-clear-pane', variant: 5, home: true, phase: 'inside', reveal: 1 };
 const homeListener = { x: -.18, y: 1.62, z: 67, yaw: 0 };
 
+test('the outdoor lee quiets the same wind graph using the occupied local position', () => {
+  const audio = fakeAudio(), sound = createElsewhereBeds({ context: audio.ctx, destination: audio.destination });
+  const exposed = { x: 0, z: 40 }, lee = { x: 5.3, z: 40 };
+  const crossing = { ...homeCrossing, realm: { pose: exposed } };
+  sound.update({ crossing, listener });
+  const wind = outputGain(audio, outputs(audio)[0]);
+  const filter = audio.nodes.find((node) => node.connections.includes(wind));
+  const openGain = wind.gain.value, openCutoff = filter.frequency.value, nodeCount = audio.nodes.length;
+  crossing.realm.pose = lee;
+  sound.update({ crossing, listener });
+  assert.ok(wind.gain.value < openGain * .75, 'the wall should materially shelter the wind');
+  assert.ok(filter.frequency.value < 850, 'the existing wind should lose its high band in the lee');
+  assert.equal(outputs(audio).length, 1);
+  assert.equal(audio.nodes.length, nodeCount);
+  crossing.realm.pose = exposed;
+  sound.update({ crossing, listener });
+  assert.equal(wind.gain.value, openGain);
+  assert.equal(filter.frequency.value, openCutoff);
+  sound.stop();
+});
+
 test('bedroom mechanisms transmit at the fixed window, turn with the listener and lose detail behind its wall', () => {
   const front = homeWindowAudioMix({ listener: homeListener, anchor: HOME_BEDROOM.anchors.clock });
   assert.equal(front.occluded, false);

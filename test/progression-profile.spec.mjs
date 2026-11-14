@@ -14,6 +14,7 @@ local.platform.pendingAchievements = ['ACH_FIRST_TAKE'];
 local.presentation.pendingNotices = [{ id: 'local-notice' }];
 
 const exported = exportProfile(local, {
+  desktopFightEffects: true,
   lastDifficulty: 'night',
   seenTextMode: 'instant',
   archiveSignals: 'off',
@@ -27,6 +28,7 @@ const exported = exportProfile(local, {
 }, { build: 'TEST', now: 1000 });
 assert.equal(exported.format, 'chunk-surfer-profile');
 assert.equal(exported.version, 1);
+assert.equal('desktopFightEffects' in exported.settings, false);
 assert.equal(exported.settings.lastDifficulty, 'night');
 assert.equal(exported.settings.customShiftRules.escapeTimer, 'off');
 assert.equal(exported.settings.controller.lookSensitivity, 1.4);
@@ -45,6 +47,7 @@ imported.meta.stats.takesCompleted = 7;
 imported.meta.knowledge.lines.alpha = { firstSeenAt: 50, firstSeenRunId: 'run_old', lastSeenAt: 300, count: 4 };
 imported.meta.knowledge.lines.beta = { firstSeenAt: 200, firstSeenRunId: 'run_b', lastSeenAt: 200, count: 1 };
 imported.meta.challengeCompletions.deadAir = true;
+imported.settings.desktopFightEffects = true;
 
 const merged = mergeImportedProfile(local, { volume: 0.8 }, imported);
 assert.equal(merged.ok, true);
@@ -62,7 +65,9 @@ assert.deepEqual(merged.meta.platform.pendingAchievements, ['ACH_FIRST_TAKE']);
 assert.deepEqual(merged.meta.presentation.pendingNotices, [{ id: 'local-notice' }]);
 assert.equal(merged.settings.seenTextMode, 'instant');
 assert.equal(merged.settings.volume, 0.8);
+assert.equal(merged.settings.desktopFightEffects, false);
 assert.equal(merged.settings.controller.bindings.interact.id, 'north');
+assert.equal(mergeImportedProfile(local, { desktopFightEffects: true }, exported).settings.desktopFightEffects, true);
 
 const remote = mergeRemoteProfile(local, {
   achievements: ['ACH_NAME_SARAH', 'ACH_NOT_REAL'],

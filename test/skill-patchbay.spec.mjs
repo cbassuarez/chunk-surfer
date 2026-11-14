@@ -56,10 +56,10 @@ test('same-column cables still require the exact authored upstream socket', () =
   assert.equal(connectSkillPatch(build, expected, T.OVEREXPOSE).changed, true);
 });
 
-test('locked outputs have no continuity, even when their source descriptor is known', () => {
+test('unfitted source skills reject the patch even with a valid socket address', () => {
   const build = funded(), source = skillPatchSource(T.WHITEOUT);
   const failed = rejected(build, source, T.WHITEOUT);
-  assert.match(failed.reason, /CONTINUITY/);
+  assert.match(failed.reason, /FIT THE SOURCE SKILL FIRST/);
   assert.deepEqual(compatibleSkillInputs(build, source), []);
   const connected = buildWith(T.AFTERIMAGE);
   assert.equal(skillPatchAvailability(connected, source, T.WHITEOUT).enabled, true);
@@ -126,7 +126,7 @@ test('no spare lead and finalized zero-starter runs never create a cable', () =>
     assert.match(rejected(build, source, T.DEEP_RESERVE).reason, /NO SPARE LEAD/);
   }
   const noRig = funded();
-  assert.match(rejected(noRig, skillPatchSource(T.OVERDUB), T.OVERDUB).reason, /BENT RIG/);
+  assert.match(rejected(noRig, skillPatchSource(T.OVERDUB), T.OVERDUB).reason, /SERVICE INTERFACE/);
 });
 
 test('every authored routing source follows requires rather than the displayed tier', () => {
@@ -135,7 +135,7 @@ test('every authored routing source follows requires rather than the displayed t
     assert.equal(source.kind, 'output');
     assert.equal(source.branch, definition.branch);
     assert.equal(source.techniqueId, definition.requires || null);
-    assert.equal(source.id, definition.requires ? `output:skill:${definition.requires}` : `supply:${definition.branch}`);
+    assert.equal(source.id, definition.circuitBend ? `terminal:feed:${definition.id}` : definition.requires ? `output:skill:${definition.requires}` : `supply:${definition.branch}`);
   }
   assert.equal(skillPatchSource(T.ROOM_TONE).id, 'supply:recorder', 'tier four can still be an independent input');
   assert.equal(skillPatchSource(T.HEADROOM).id, 'supply:fork', 'a flat tier three does not invent a tier-two prerequisite');

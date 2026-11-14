@@ -3,7 +3,7 @@
   "asset": "/assets/glass-court.glb",
   "canonicalCourt": {
     "id": "natatorium-glasshouse",
-    "revision": 3,
+    "revision": 4,
     "pack": "/assets/glass-court.glb",
     "origin": {
       "x": 82,
@@ -37,7 +37,7 @@
     "outdoorCourts": [
       {
         "id": "west",
-        "x0": 75,
+        "x0": 74,
         "x1": 82,
         "z0": 15,
         "z1": 27
@@ -45,7 +45,7 @@
       {
         "id": "east",
         "x0": 86,
-        "x1": 95,
+        "x1": 98,
         "z0": 15,
         "z1": 27
       }
@@ -792,8 +792,8 @@
   "maximumBytes": 5242880,
   "sourceSha256": {
     "tools/chunk_surfer/build-glass-court.mjs": "6b26ef54babf6ca3f0049e91e976b0048d65591d600fa0b4ba3d0f293e062281",
-    "tools/chunk_surfer/glass-court-geometry.mjs": "4f822a7ca42ef65f247ceec124ffbefe23aab447f43a8e00873a0a4f302b0ec5",
-    "src/data/glass-court.js": "0cd8d99703213a6c931c2f4690df486a16564e47dfd1e33de8f797f28cd68499",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "32403f8ddd990b4b6a68c786db99870625d21a542267fe8dc5a3f25f330b054e",
+    "src/data/glass-court.js": "8f68560d4bfca04a09afd623aebc4464dad4ae4a44e93535397b301d5bc0d012",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
     "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
@@ -801,7 +801,7 @@
     "tools/chunk_surfer/lettering/fonts/NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264"
   },
   "protectedAssetSha256": {
-    "public/assets/conservatory-props.glb": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
+    "public/assets/conservatory-props.glb": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
     "public/assets/conservatory-landing-fittings.glb": "6b7860a05b66c00ef789612e60df57df2e8f99fa5d4a9b5472058fdc11024200"
   },
   "meshes": {
@@ -818,7 +818,7 @@
           12.119999885559082
         ]
       },
-      "triangles": 2296,
+      "triangles": 2224,
       "parts": [
         {
           "id": "greenhouse-paving-substrate",
@@ -7384,56 +7384,6 @@
               -0.11999999731779099
             ],
             "max": [
-              13,
-              9.5,
-              0.11999999731779099
-            ]
-          },
-          "closed": true,
-          "obb": {
-            "center": [
-              8,
-              4.75,
-              0
-            ],
-            "size": [
-              10,
-              9.5,
-              0.24
-            ],
-            "basis": [
-              [
-                1,
-                0,
-                0
-              ],
-              [
-                0,
-                1,
-                0
-              ],
-              [
-                0,
-                0,
-                1
-              ]
-            ]
-          }
-        },
-        {
-          "id": "ellery-rear-wall:97",
-          "role": "ellery-envelope",
-          "material": "court changing mineral wall",
-          "materialIndex": 18,
-          "startTriangle": 48,
-          "triangles": 12,
-          "bounds": {
-            "min": [
-              15,
-              0,
-              -0.11999999731779099
-            ],
-            "max": [
               16,
               9.5,
               0.11999999731779099
@@ -7442,12 +7392,12 @@
           "closed": true,
           "obb": {
             "center": [
-              15.5,
+              9.5,
               4.75,
               0
             ],
             "size": [
-              1,
+              13,
               9.5,
               0.24
             ],
@@ -7475,7 +7425,7 @@
           "role": "ellery-envelope",
           "material": "court changing mineral wall",
           "materialIndex": 18,
-          "startTriangle": 60,
+          "startTriangle": 48,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -7521,61 +7471,11 @@
           }
         },
         {
-          "id": "ellery-rear-header:95",
-          "role": "ellery-envelope",
-          "material": "court changing mineral wall",
-          "materialIndex": 18,
-          "startTriangle": 72,
-          "triangles": 12,
-          "bounds": {
-            "min": [
-              13,
-              3.4000000953674316,
-              -0.11999999731779099
-            ],
-            "max": [
-              15,
-              9.5,
-              0.11999999731779099
-            ]
-          },
-          "closed": true,
-          "obb": {
-            "center": [
-              14,
-              6.45,
-              0
-            ],
-            "size": [
-              2,
-              6.1,
-              0.24
-            ],
-            "basis": [
-              [
-                1,
-                0,
-                0
-              ],
-              [
-                0,
-                1,
-                0
-              ],
-              [
-                0,
-                0,
-                1
-              ]
-            ]
-          }
-        },
-        {
           "id": "baths-north-wall:70",
           "role": "natatorium-envelope",
           "material": "court changing mineral wall",
           "materialIndex": 18,
-          "startTriangle": 84,
+          "startTriangle": 60,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -7625,7 +7525,7 @@
           "role": "natatorium-envelope",
           "material": "court changing mineral wall",
           "materialIndex": 18,
-          "startTriangle": 96,
+          "startTriangle": 72,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -7675,7 +7575,7 @@
           "role": "natatorium-envelope",
           "material": "court changing mineral wall",
           "materialIndex": 18,
-          "startTriangle": 108,
+          "startTriangle": 84,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -7700,206 +7600,6 @@
               2,
               6.1,
               0.24
-            ],
-            "basis": [
-              [
-                1,
-                0,
-                0
-              ],
-              [
-                0,
-                1,
-                0
-              ],
-              [
-                0,
-                0,
-                1
-              ]
-            ]
-          }
-        },
-        {
-          "id": "hall-return-west-wall",
-          "role": "hall-return",
-          "material": "court changing mineral wall",
-          "materialIndex": 18,
-          "startTriangle": 120,
-          "triangles": 12,
-          "bounds": {
-            "min": [
-              12.90999984741211,
-              0,
-              0
-            ],
-            "max": [
-              13.09000015258789,
-              3.5999999046325684,
-              9
-            ]
-          },
-          "closed": true,
-          "obb": {
-            "center": [
-              13,
-              1.8,
-              4.5
-            ],
-            "size": [
-              0.18,
-              3.6,
-              9
-            ],
-            "basis": [
-              [
-                1,
-                0,
-                0
-              ],
-              [
-                0,
-                1,
-                0
-              ],
-              [
-                0,
-                0,
-                1
-              ]
-            ]
-          }
-        },
-        {
-          "id": "hall-return-ceiling",
-          "role": "hall-return",
-          "material": "court changing mineral wall",
-          "materialIndex": 18,
-          "startTriangle": 132,
-          "triangles": 12,
-          "bounds": {
-            "min": [
-              13,
-              3.5799999237060547,
-              0
-            ],
-            "max": [
-              16,
-              3.7200000286102295,
-              9
-            ]
-          },
-          "closed": true,
-          "obb": {
-            "center": [
-              14.5,
-              3.65,
-              4.5
-            ],
-            "size": [
-              3,
-              0.14,
-              9
-            ],
-            "basis": [
-              [
-                1,
-                0,
-                0
-              ],
-              [
-                0,
-                1,
-                0
-              ],
-              [
-                0,
-                0,
-                1
-              ]
-            ]
-          }
-        },
-        {
-          "id": "hall-lobby-west-wall",
-          "role": "hall-return",
-          "material": "court changing mineral wall",
-          "materialIndex": 18,
-          "startTriangle": 144,
-          "triangles": 12,
-          "bounds": {
-            "min": [
-              11.90999984741211,
-              0,
-              9
-            ],
-            "max": [
-              12.09000015258789,
-              3.5999999046325684,
-              12
-            ]
-          },
-          "closed": true,
-          "obb": {
-            "center": [
-              12,
-              1.8,
-              10.5
-            ],
-            "size": [
-              0.18,
-              3.6,
-              3
-            ],
-            "basis": [
-              [
-                1,
-                0,
-                0
-              ],
-              [
-                0,
-                1,
-                0
-              ],
-              [
-                0,
-                0,
-                1
-              ]
-            ]
-          }
-        },
-        {
-          "id": "hall-lobby-south-wall",
-          "role": "hall-return",
-          "material": "court changing mineral wall",
-          "materialIndex": 18,
-          "startTriangle": 156,
-          "triangles": 12,
-          "bounds": {
-            "min": [
-              12,
-              0,
-              11.90999984741211
-            ],
-            "max": [
-              16,
-              3.5999999046325684,
-              12.09000015258789
-            ]
-          },
-          "closed": true,
-          "obb": {
-            "center": [
-              14,
-              1.8,
-              12
-            ],
-            "size": [
-              4,
-              3.6,
-              0.18
             ],
             "basis": [
               [
@@ -90150,13 +89850,13 @@
       ]
     }
   },
-  "totalTriangles": 39140,
+  "totalTriangles": 39068,
   "textures": {
     "glass": {
       "width": 128,
       "height": 256,
-      "bytes": 1491,
-      "sha256": "d0638ebac6ba398db96e2da3c733b9fde7e3cc31bd82a2f0b480169cacd9eba1",
+      "bytes": 1492,
+      "sha256": "9b0a04f776d50c348d0521579071dd6a5307d377b5dd31d3c1d8f82e9c67af54",
       "coverage": 0.064971923828125
     },
     "brick": {
@@ -90195,8 +89895,8 @@
       "coverage": 0.04762098524305555
     }
   },
-  "bytes": 4161532,
-  "sha256": "f77146e0bd183799670c83da460f16e29d711bb441ca258418b048e79bbe35fb",
+  "bytes": 4154184,
+  "sha256": "4ce57ce1c5978cb507de493faa4b5277bbd8876ead9e256cb9adb59f05ff0477",
   "lettering": {
     "inputSha256": "fb19f8eea64f636c5dfc1a7177f55bfa0102b8134c1a96e0cece90d29acb2910",
     "entries": [

@@ -1,11 +1,15 @@
 {
   "schema": 1,
-  "revision": "van-wreck-4",
-  "bytes": 6789396,
-  "sha256": "22ca9f4f73efe67143d1fc1fa129f68d3ef56758a1e93e9728d1884ffe8ab153",
+  "revision": "van-wreck-5",
+  "bytes": 6551372,
+  "sha256": "3499a87d5c3fce56fd2529ac992d2907dd3b1c7c9e15e2fbbdcba0eb0b0ca184",
   "source": {
     "path": "public/assets/source-drive/drive.glb",
     "sha256": "59155ba454894283e68ecde1d976996b326221a98930d164a77dd8ab7aab8316"
+  },
+  "brand": {
+    "path": "public/assets/van-brand.glb",
+    "sha256": "70121ae12be3d7d10dc20612d4fd5ccbf84d00c5ce6e5be29aa0807aa30b6a78"
   },
   "crash": {
     "mass": 2350,
@@ -199,10 +203,12 @@
     "rearDoor": 1124,
     "cabDoorNear": 10360,
     "rearDoorFar": 1122,
-    "brand": 24416
+    "brand": 7456,
+    "brandRearDoor": 1162,
+    "brandRearDoorFar": 2634
   },
   "smashed": 188,
   "gone": 13761,
   "torn": 3097,
-  "refined": 112620
+  "refined": 112688
 }

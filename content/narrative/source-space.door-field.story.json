@@ -93,7 +93,11 @@
     "land.school-hall.roof",
     "land.tape-field.case",
     "land.dead-broadcast.surface",
-    "land.ash-room.door"
+    "land.ash-room.door",
+    "field.first.inspected",
+    "field.second.inspected",
+    "field.third.inspected",
+    "field.fourth.inspected"
   ],
   "tags": [
     "source-space",
@@ -1281,6 +1285,54 @@
           "id": "land.ash-room.door.1",
           "who": "direction",
           "text": "The lead passes beneath the open leaf. Fine ash has collected against the jambs; the middle of the sill has been brushed clear."
+        }
+      ]
+    },
+    "field.first.inspected": {
+      "id": "field.first.inspected",
+      "type": "dialogue",
+      "speaker": "THE FIELD",
+      "lines": [
+        {
+          "id": "field.first.inspected.1",
+          "who": "you",
+          "text": "The same white bag."
+        }
+      ]
+    },
+    "field.second.inspected": {
+      "id": "field.second.inspected",
+      "type": "dialogue",
+      "speaker": "THE SLAB",
+      "lines": [
+        {
+          "id": "field.second.inspected.1",
+          "who": "you",
+          "text": "Every crack a ravine."
+        }
+      ]
+    },
+    "field.third.inspected": {
+      "id": "field.third.inspected",
+      "type": "dialogue",
+      "speaker": "THE VAN DOOR",
+      "lines": [
+        {
+          "id": "field.third.inspected.1",
+          "who": "you",
+          "text": "The van door. The handle answers."
+        }
+      ]
+    },
+    "field.fourth.inspected": {
+      "id": "field.fourth.inspected",
+      "type": "dialogue",
+      "speaker": "THE VAN DOOR",
+      "lines": [
+        {
+          "id": "field.fourth.inspected.1",
+          "who": "you",
+          "text": "The door. All the weight of it."
         }
       ]
     }

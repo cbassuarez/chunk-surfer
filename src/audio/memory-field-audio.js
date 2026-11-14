@@ -98,7 +98,12 @@ export function createMemoryFieldAudio({context,destination}={}){
     },
     setPaused(value){
       const next=!!value;if(next===paused||!bus)return;paused=next;
-      bus.gain.setTargetAtTime(next?0:1,now(),.05);
+      // A pause during the initial half-second must cancel its pending ramp
+      // to full level; otherwise that old ramp can unmute a held scene.
+      const t=now();
+      if(typeof bus.gain.cancelAndHoldAtTime==='function')bus.gain.cancelAndHoldAtTime(t);
+      else bus.gain.cancelScheduledValues(t);
+      bus.gain.setTargetAtTime(next?0:1,t,.05);
     },
     stop(){
       if(stopped)return;stopped=true;

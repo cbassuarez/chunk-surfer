@@ -514,7 +514,7 @@ export function stepSourceFalseReturn(value, input = {}, layout = {}) {
     const before={x:state.x,z:state.z,feet:state.feet},transferred=advanceMove(state, dx, dz, layout, events, travel);
     advanceThresholdGag(state,before,h,events,{layout,reduced:!!input.reducedMotion,audioReady:input.gagAudioReady!==false});
     advanceThresholdGagInspection(state,before,h,events,{layout,reduced:!!input.reducedMotion,protectedScare:!!input.inspectionProtected});
-    const oldHush=state.localHush?{x:state.localHush.x,z:state.localHush.z,yaw:state.localHush.yaw,eventId:state.localHush.eventId}:null;
+    const oldHush=state.localHush?{x:state.localHush.x,z:state.localHush.z,feet:state.localHush.feet,yaw:state.localHush.yaw,eventId:state.localHush.eventId}:null;
     advanceNoiseTrap(state,h,input,layout,events,events.slice(eventStart));
     if(state.localHush&&!input.hushProtected){
       const actor=state.localHush,same=oldHush?.eventId===actor.eventId,
@@ -522,6 +522,9 @@ export function stepSourceFalseReturn(value, input = {}, layout = {}) {
       // Navigation/contact owns every root change. The material receives only
       // this accepted step; spawn and spatial transfers never become traction.
       actor.density=stepHushDensityPose(actor.density,{dt:h,acceptedMetres:accepted,
+        acceptedDelta:same?{x:Math.cos(actor.yaw)*(actor.x-oldHush.x)+Math.sin(actor.yaw)*(actor.z-oldHush.z),
+          z:-Math.sin(actor.yaw)*(actor.x-oldHush.x)+Math.cos(actor.yaw)*(actor.z-oldHush.z)}:{x:0,z:0},resetSupport:!same,
+        acceptedFloorDelta:same?actor.feet-oldHush.feet:0,
         headingDelta:same?angle(actor.yaw-oldHush.yaw):0,listening:!same,
         blocked:same&&actor.phase==='approach'&&accepted<1e-8,
         loading:actor.phase==='contact',loadProgress:Math.min(1,state.noiseTrap.contactElapsed/.22),

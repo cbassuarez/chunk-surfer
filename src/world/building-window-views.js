@@ -1,7 +1,7 @@
 import {BUILDING_WINDOWS} from '../data/building-windows.js';
 import {CELL,F,MATERIAL,ZONE,isOutdoorZone} from '../data/floorplan/legend.js';
 import {GLASS_COURT as C} from '../data/glass-court.js';
-import {GLASS_COURT_SIGHTLINES as S} from '../data/glass-court-sightlines.js';
+import {GLASS_COURT_SIGHTLINES as S,GREENHOUSE_SIDE_WINDOWS} from '../data/glass-court-sightlines.js';
 
 const foyerWindow=()=>BUILDING_WINDOWS.find(w=>w.id===S.windowId);
 export function isGreenhouseBorrowedViewObserver({x,z,y,spaceId,renderGroup}={}){
@@ -10,7 +10,10 @@ export function isGreenhouseBorrowedViewObserver({x,z,y,spaceId,renderGroup}={})
 }
 
 export function buildingWindowForObserver({x,z,y,spaceId,renderGroup}={}){
- if(isGreenhouseBorrowedViewObserver({x,z,y,spaceId,renderGroup}))return foyerWindow();
+ if(isGreenhouseBorrowedViewObserver({x,z,y,spaceId,renderGroup})){
+  // The complete long side, rather than one arbitrary pane, is the portal.
+  return GREENHOUSE_SIDE_WINDOWS.reduce((a,b)=>Math.abs(x-a.physical.plane)<Math.abs(x-b.physical.plane)?a:b);
+ }
  const candidates=BUILDING_WINDOWS.filter(w=>{
   const min=w.observerFloorRange?.min??w.roomFloor,max=w.observerFloorRange?.max??w.roomFloor;
   return w.group===renderGroup&&w.space===spaceId&&y>min-.6&&y<max+.6;
@@ -22,6 +25,10 @@ export function buildingWindowForObserver({x,z,y,spaceId,renderGroup}={}){
 // Observer y is the physical body-floor datum, as in the ordinary outlook
 // selector. The renderer still intersects the actual eye ray with the aperture.
 export function buildingWindowForExteriorObserver({x,z,y,zone}={}){
+ if(isOutdoorZone(zone)&&Math.abs(y)<.6){
+  const side=GREENHOUSE_SIDE_WINDOWS.find(w=>{const p=w.physical,d=(p.plane-x)*w.inwardNormal.x;return d>=0&&d<=10&&z>=p.from-.4&&z<=p.to+.4;});
+  if(side)return side;
+ }
  const w=foyerWindow();
  if(!w||!isOutdoorZone(zone)||![x,z,y].every(Number.isFinite)||Math.abs(y-w.roomFloor)>.6)return null;
  const p=w.physical,outward=p.z0-z;
@@ -34,19 +41,21 @@ export function buildingWindowForExteriorObserver({x,z,y,zone}={}){
 // Only rendering bytes change; physicalCells and all logical movement stay put.
 export function applyBuildingWindowInteriorView(slice,observer,physicalCells){
  const window=buildingWindowForExteriorObserver(observer);if(!window||!physicalCells?.get)return null;
- const {w,h,originX=0,originY=0,solid,floor,ceil,flags,zone,material}=slice;
- for(const r of S.enclosures){
+ const {w,h,originX=0,originY=0,solid,floor,ceil,flags,zone,material,borrowedInterior}=slice;
+ const enclosures=window.enclosures||S.enclosures;
+ for(const r of enclosures){
   for(let pz=Math.round(r.z0/CELL);pz<Math.round(r.z1/CELL);pz++)for(let px=Math.round(r.x0/CELL);px<Math.round(r.x1/CELL);px++){
    const ix=px-originX,iy=pz-originY;if(ix<0||iy<0||ix>=w||iy>=h)continue;
    const i=iy*w+ix;
-   const spans=(physicalCells.get(`${px},${pz}`)||[]).filter(s=>S.enclosures.some(q=>q.spaceId===s.spaceId)
+   if(borrowedInterior)borrowedInterior[i]=1;
+   const spans=(physicalCells.get(`${px},${pz}`)||[]).filter(s=>enclosures.some(q=>q.spaceId===s.spaceId)
     &&s.renderGroup==='ground'&&s.floor<3.4&&s.ceil>1);
    if(!spans.length){solid[i]=1;floor[i]=ceil[i]=0;flags[i]=F.SOLID;zone[i]=0;continue;}
    const s=spans.reduce((a,b)=>Math.abs(a.floor-observer.y)<=Math.abs(b.floor-observer.y)?a:b);
    solid[i]=0;floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;
   }
  }
- applyGlassCourtFanlightView(slice);
+ if(window.id===S.windowId||window.id.startsWith('GH-'))applyGlassCourtFanlightView(slice);
  return window;
 }
 
@@ -63,9 +72,10 @@ export function applyGlassCourtFanlightView({w,h,originX=0,originY=0,solid,floor
 
 // A view interval changes rendered air only. All logical collision, keys,
 // acoustic paths and room ownership continue to come from the actual plan.
-export function applyBuildingWindowView(slice,observer){
+export function applyBuildingWindowView(slice,observer,physicalCells=null){
  const window=buildingWindowForObserver(observer);if(!window)return null;
- const p=window.physical,n=window.inwardNormal;
+ const windows=window.id.startsWith('GH-')?[foyerWindow(),...GREENHOUSE_SIDE_WINDOWS]:[window];
+ for(const aperture of windows){const p=aperture.physical,n=aperture.inwardNormal;
  const plane=p.axis==='x'?(n.x>0?p.x0:p.x1):(n.z>0?p.z0:p.z1);
  const center=(p.from+p.to)/2,half=(p.to-p.from)/2;
  const {w,h,originX=0,originY=0,solid,floor,ceil,flags,zone,material}=slice;
@@ -76,7 +86,7 @@ export function applyBuildingWindowView(slice,observer){
   // of the high sill's air interval. Restore only the approved aperture, with
   // its real sill and head; neither the jambs nor body collision are changed.
   if(x>=p.x0&&x<p.x1&&z>=p.z0&&z<p.z1){
-   solid[i]=0;floor[i]=window.sill;ceil[i]=window.head;flags[i]=0;zone[i]=window.zone;material[i]=MATERIAL.doorGlassDuct;
+   solid[i]=0;floor[i]=aperture.sill;ceil[i]=aperture.head;flags[i]=0;zone[i]=aperture.zone;material[i]=MATERIAL.doorGlassDuct;
    continue;
   }
   const outward=p.axis==='x'?(plane-x)*n.x:(plane-z)*n.z;
@@ -84,13 +94,26 @@ export function applyBuildingWindowView(slice,observer){
   // On a south/east face the first exterior cell starts exactly at the outer
   // plane. Skipping zero leaves a half-metre masonry strip behind the glass.
   if(outward<0||Math.abs(along-center)>half+.65*outward)continue;
+  if(aperture.id.startsWith('GH-')){
+    // A side pane looks onto actual gardens and their real overhangs. It does
+    // not replace neighbouring occupied rooms with a synthetic street cone.
+    const spans=physicalCells?.get?.(`${ix+originX},${iy+originY}`)||[];
+    const outside=spans.find(s=>isOutdoorZone(s.zone)&&s.floor<.6&&s.ceil>1.8);
+    if(outside){solid[i]=0;floor[i]=outside.floor;ceil[i]=outside.ceil;flags[i]=outside.flags;zone[i]=outside.zone;material[i]=outside.material;}
+    continue;
+  }
   solid[i]=0;floor[i]=0;ceil[i]=24;flags[i]=F.SKY|F.WALLED;zone[i]=ZONE.street;material[i]=MATERIAL.wetTarmac;
   // The chapel/practice floors are real overhead construction south of the
   // baths. Looking out below them must retain their soffit, not open the sky.
   if(window.id==='W4-pool-south'&&x>=86&&x<100&&z<84.5){ceil[i]=4.6;flags[i]=0;}
  }
- if(window.id===S.windowId)applyGlassCourtFanlightView(slice);
+ }
+ if(window.id===S.windowId||window.id.startsWith('GH-'))applyGlassCourtFanlightView(slice);
  return window;
+}
+
+export function buildingWindowsForObserver(observer){
+ const window=buildingWindowForObserver(observer);return window?.id.startsWith('GH-')?[foyerWindow(),...GREENHOUSE_SIDE_WINDOWS]:window?[window]:[];
 }
 
 export function buildingWindowInteriorPlane(window){

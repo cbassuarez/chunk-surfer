@@ -171,7 +171,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
     omittedMeshes = [...omitted].sort();return result;
   }
   function clearShared() {
-    renderer.r3dSetHorizon?.(null); renderer.r3dSetSourceShore?.(null); renderer.r3dSetSourceEmergency?.(0); renderer.r3dSetSourceWhiteout?.(0); renderer.r3dSetSourceFault?.(0);
+     renderer.r3dSetSourceShore?.(null); renderer.r3dSetSourceEmergency?.(0); renderer.r3dSetSourceWhiteout?.(0);
     renderer.r3dSetSourcePortals?.([]); renderer.r3dSetSourceOpenings?.([]); renderer.r3dSetSourceTowerView?.(null); renderer.r3dSetSourceDoorLights?.([]); renderer.r3dSetSourceCrossing?.(null); renderer.r3dSetSourceReflection?.(null);
     renderer.r3dSetLocalLights?.([]); renderer.r3dSetEmergencyShadows?.([]); renderer.r3dSetSourceTextInstances?.([]); renderer.r3dSetIndoorRain?.(0); renderer.r3dSetDynamicProps?.([]); renderer.r3dSetProps?.([]); props.setPressureInstances?.([]); props.setPressureSurfaceInstances?.([]);
   }

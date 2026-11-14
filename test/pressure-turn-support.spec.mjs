@@ -211,12 +211,14 @@ test('blocked density stays visible and retains compression through the human sc
       previousVisibility = visibility;
       assert.equal(rendered.snapshot.primary.performance.density.phase, advance.snapshot.primary.performance.density.phase,
         'stationary recovery spends new locomotion phase');
-      assert.equal(rendered.character.support, undefined, 'the density acquired humanoid support solving');
+      assert.equal(rendered.character.support.mode,'held');
+      assert.equal(rendered.character.support.clip,'pressure_hold');
+      assert.ok(rendered.character.support.contacts.every(contact=>contact.planted && contact.weight===1),'arrested density holds both actual feet');
       assert.equal(rendered.character.morphs, undefined);
       if (gait.recoveryReset) sawReset = true;
       const replay = createPressurePerformance(); replay.applyFrame(JSON.parse(JSON.stringify(rendered.snapshot)));
       assert.deepEqual(hushDensityCharacter(replay.snapshot().primary.performance), rendered.character,
-        'saved recovery frame reconstructs different fold controls');
+        'saved recovery frame reconstructs a different supported body');
       if (gait.recoveryReset && gait.elapsed > .7) break;
       const result = stepPressureGait(gait, { dt: .02, x, y, targetX: gait.stepTargetX, targetY: gait.stepTargetY, speed: 2 });
       x = result.x; y = result.y; gait = result.gait;

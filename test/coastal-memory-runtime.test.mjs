@@ -3,7 +3,7 @@ import{COASTAL_MEMORY_LAYOUT as L}from'../src/data/coastal-memory.js';
 import{normalizeCoastalMemory,stepCoastalMemory,beginCoastalMemory as beginVisit,requestCoastalReturn,acknowledgeCoastalReturn,COASTAL_MEMORY_TAKE,COASTAL_MEMORY_CUE}from'../src/game/coastal-memory.js';
 import{normalizeTowerPersonalJourney,beginTowerPersonalJourney}from'../src/game/tower-personal-journey.js';
 import{normalizeSourceStation,normalizeChunkSurfState,reduceChunkSurf,CHUNK_SURF_PHASE,SOURCE_FINALE_ROUTE,SOURCE_FINALE_STAGE}from'../src/game/chunk-surf-state.js';
-import{createSourceSpaceRuntime}from'../src/game/source-space-runtime.js';import{buildBellsGodPreset}from'../src/game/chunk-surf-god.js';
+import{createSourceSpaceRuntime}from'../src/game/source-space-runtime.js';import{buildBellsGodPreset,buildChapelOutskirtsGodPreset}from'../src/game/chunk-surf-god.js';
 import{cathedralBellCombatBattle,cathedralBellCombatDefinition}from'../src/data/combat-definitions.js';import{createCombatState}from'../src/game/combat-state.js';
 import{coastalMemoryRecordingBuffer,loadCoastalMemoryRecording}from'../src/audio/coastal-memory.js';import{TOWER_PERSONAL_TAKE,TOWER_PERSONAL_CUE,towerPersonalRecordingBuffer}from'../src/audio/tower-personal-recording.js';import*as PB from'../src/game/playback.js';
 const back={x:12.125,y:-4200.0625,facing:.37,yaw:.3712,pitch:-.1245,floorH:1.28,eyeHeight:1.62},copy=x=>JSON.parse(JSON.stringify(x)),options={layout:L,runId:'coast-test'},make=(station={})=>createSourceSpaceRuntime({initialState:{...buildBellsGodPreset(440,{seed:31}).state,station}});
@@ -15,6 +15,53 @@ test('real new invitation borrows the exact Source pose and clears old timers wi
 test('a stationary look immediately before crossing preserves the actual view including explicit zero angles',()=>{for(const look of[{facing:.8,yaw:.8734,pitch:-.31},{facing:0,yaw:0,pitch:0}]){const rt=make(),door=rt.doorFieldDoors().find(d=>d.personal),[a,b]=door.threshold,[nx,,nz]=door.normal,from={x:(a.x+b.x)/2+nx*2,y:(a.y+b.y)/2+nz*2},to={x:(a.x+b.x)/2-nx*2,y:(a.y+b.y)/2-nz*2,...look};rt.setPlayerPosition({...from,facing:2.3,yaw:2.312,pitch:.6});rt.openDoorFieldDoor(door.id);const event=rt.onStep(from,to),expected={...from,...look};assert.equal(event.event,'coastal-entry');assert.deepEqual(event.checkpoint.returnPose,expected);const resumed=createSourceSpaceRuntime({initialState:copy(rt.state())});assert.deepEqual(resumed.coastalMemoryState().returnPose,expected);assert.deepEqual(resumed.finishCoastalMemory(readyReturn(event.checkpoint)).position,expected);}});
 test('active unfinished legacy pocket migrates to fresh coast while preserving its old heard evidence',()=>{let old=beginTowerPersonalJourney(null,{entryDoorId:'old-invitation',returnPose:back});old={...old,recordingHeard:true,listenedSeconds:9};const expected=normalizeTowerPersonalJourney(old),rt=make({personal:old}),coast=rt.coastalMemoryState();assert.equal(coast.active,true);assert.equal(coast.recordingHeard,false);assert.equal(coast.rewardEarned,false);assert.deepEqual(coast.pose,L.spawn);assert.deepEqual(coast.returnPose,expected.returnPose);assert.equal(coast.entryDoorId,'old-invitation');assert.equal(rt.state().station.personal.active,false);assert.equal(rt.state().station.personal.recordingHeard,expected.recordingHeard);const resumed=createSourceSpaceRuntime({initialState:copy(rt.state())});assert.deepEqual(resumed.coastalMemoryState(),coast);assert.deepEqual(resumed.onStep(back,{x:0,y:0}).position,expected.returnPose);});
 test('completed old visits retain their reward and never silently become a new coastal visit',()=>{const old=normalizeTowerPersonalJourney({completed:true,recordingHeard:true,rewardEarned:true,rewardConsumed:false,returnPose:back}),rt=make({personal:old});assert.deepEqual(rt.state().station.personal,old);assert.equal(rt.coastalMemoryState().active,false);assert.equal(rt.beginCoastalMemory({returnPose:back}),null);});
+test('fresh coastal invitations work on both roads while completed legacy authority cannot be replayed on either',()=>{
+ const old=normalizeTowerPersonalJourney({completed:true,recordingHeard:true,rewardEarned:true,rewardConsumed:false,returnPose:back});
+ for(const preset of[buildBellsGodPreset,buildChapelOutskirtsGodPreset]){
+  const initial=preset(440,{seed:31}).state;
+  const fresh=createSourceSpaceRuntime({initialState:initial}),door=fresh.doorFieldDoors().find(d=>d.personal);
+  assert.ok(door&&!door.shut);assert.equal(fresh.beginCoastalMemory({entryDoorId:door.id,returnPose:back}).active,true);
+  const legacy=createSourceSpaceRuntime({initialState:{...initial,station:{personal:old}}});
+  const before=copy(legacy.state().station.personal);
+  assert.equal(legacy.beginCoastalMemory({entryDoorId:door.id,returnPose:back}),null);
+  assert.deepEqual(legacy.state().station.personal,before);assert.deepEqual(before,old);
+  assert.equal(legacy.coastalMemoryState().active,false);assert.equal(legacy.coastalMemoryState().rewardEarned,false);
+ }
+});
+test('completed legacy or coastal visits leave no false invitation on either road, including a newly assigned door id',()=>{
+ const old=normalizeTowerPersonalJourney({completed:true,recordingHeard:true,rewardEarned:true,rewardConsumed:false,entryDoorId:'old-invitation',returnPose:back});
+ const completedCoast=finishPure(beginVisit(null,{...options,entryDoorId:'previous-invitation',returnPose:back}));
+ for(const preset of[buildBellsGodPreset,buildChapelOutskirtsGodPreset])for(const station of[{personal:old},{coastalMemory:completedCoast}]){
+  const runtime=createSourceSpaceRuntime({initialState:{...preset(440,{seed:31}).state,station}});
+  const before=copy(runtime.state().station),door=runtime.doorFieldDoors().find(d=>d.personal),[a,b]=door.threshold;
+  assert.equal(runtime.state().routeDoorsErased.includes(door.id),false,'fixture uses the new invitation id, not the old consumed id');
+  const from={x:(a.x+b.x)/2+door.normal[0]*2,y:(a.y+b.y)/2+door.normal[2]*2};
+  const to={x:(a.x+b.x)/2-door.normal[0]*2,y:(a.y+b.y)/2-door.normal[2]*2};
+  assert.equal(door.erased,true);assert.equal(runtime.openDoorFieldDoor(door.id).opened,false);
+  assert.ok(!runtime.outskirtPortals(from.x,from.y).some(p=>p.id===door.id));
+  assert.ok(!runtime.doorFieldLeaks(from.x,from.y).some(p=>p.id===door.id));
+  const parts=runtime.propInstances(from.x,from.y,{time:30,reducedMotion:true});
+  assert.ok(!parts.some(p=>p.id===door.id||p.id.startsWith(`${door.id}:leaf-`)),'completed visit renders no live frame or leaves');
+  runtime.setPlayerPosition(from);runtime.onStep(from,to);
+  assert.equal(runtime.coastalMemoryState().active,false);
+  assert.deepEqual(runtime.state().station.personal,before.personal);
+  assert.deepEqual(runtime.state().station.coastalMemory,before.coastalMemory);
+ }
+});
+test('an unfinished fresh invitation remains available after retreat and reload on both roads',()=>{
+ for(const preset of[buildBellsGodPreset,buildChapelOutskirtsGodPreset]){
+  let runtime=createSourceSpaceRuntime({initialState:preset(440,{seed:31}).state});
+  const door=runtime.doorFieldDoors().find(d=>d.personal);
+  const begun=runtime.beginCoastalMemory({entryDoorId:door.id,returnPose:back});
+  assert.equal(begun.active,true);
+  const retreated=readyReturn(begun,'retreat');runtime.setCoastalMemoryState(retreated);
+  assert.equal(runtime.finishCoastalMemory(retreated).checkpoint.completed,false);
+  runtime=createSourceSpaceRuntime({initialState:copy(runtime.state())});
+  assert.equal(runtime.doorFieldDoors().find(d=>d.id===door.id).erased,false);
+  assert.equal(runtime.openDoorFieldDoor(door.id).opened,true);
+  assert.equal(runtime.beginCoastalMemory({entryDoorId:door.id,returnPose:back}).active,true);
+ }
+});
 test('covered completion restores exact source once and retires only the entered invitation, heard or unheard',()=>{for(const listen of[false,true]){const rt=make(),door=rt.doorFieldDoors().find(d=>d.personal);let s=rt.beginCoastalMemory({entryDoorId:door.id,returnPose:back});assert.deepEqual(s.returnPose,back);if(listen)s=heard(s);s=requestCoastalReturn(s,{layout:L,reason:'pier'});rt.setCoastalMemoryState(s);assert.equal(rt.finishCoastalMemory(s),null);assert.equal(rt.state().routeDoorsErased.includes(door.id),false);s=readyReturn(s);rt.setCoastalMemoryState(s);const result=rt.finishCoastalMemory(s);assert.equal(result.handled,true);assert.deepEqual(result.position,back);assert.deepEqual(result.checkpoint.returnPose,back);assert.equal(result.checkpoint.completed,true);assert.equal(result.checkpoint.rewardEarned,listen);assert.deepEqual(rt.state().routeDoorsErased,[door.id]);assert.equal(rt.finishCoastalMemory(s),null);assert.equal(rt.setCoastalMemoryState(s),null,'stale active data cannot reopen completion');assert.deepEqual(rt.state().routeDoorsErased,[door.id]);}});
 test('local checkpoints cannot rewrite the exact borrowed body or retire a different door',()=>{const rt=make(),door=rt.doorFieldDoors().find(d=>d.personal),s=rt.beginCoastalMemory({entryDoorId:door.id,returnPose:back}),forged=readyReturn({...s,returnPose:{x:999,y:999,yaw:2},entryDoorId:'not-the-entered-door'});const stored=rt.setCoastalMemoryState(forged);assert.deepEqual(stored.returnPose,back);assert.equal(stored.entryDoorId,door.id);const result=rt.finishCoastalMemory(forged);assert.deepEqual(result.position,back);assert.deepEqual(rt.state().routeDoorsErased,[door.id]);});
 test('retreat can return with evidence without erasing the door or granting the completed reward',()=>{const rt=make(),door=rt.doorFieldDoors().find(d=>d.personal),s=readyReturn(heard(rt.beginCoastalMemory({entryDoorId:door.id,returnPose:back})),'retreat');rt.setCoastalMemoryState(s);const result=rt.finishCoastalMemory(s);assert.deepEqual(result.position,back);assert.equal(result.checkpoint.completed,false);assert.equal(result.checkpoint.recordingHeard,true);assert.equal(result.checkpoint.rewardEarned,false);assert.equal(rt.state().routeDoorsErased.includes(door.id),false);assert.ok(rt.beginCoastalMemory({entryDoorId:door.id,returnPose:back}));});

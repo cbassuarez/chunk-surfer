@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { assetUrl } from '../platform/paths.js';
 import { buildRadioContactModel, RADIO_CONTACT_CONTROLS } from './radio-contact-model.js';
-import { createBattleHandRig, loadBattleHandTemplate } from './battle-hand-rig.js';
+import { createBattleHandRig, loadRecordistHandTemplate } from './battle-hand-rig.js';
 import { createRecordistHandMaterial, addRecordistForearm, shapeRecordistForearm,
   recordistHandsDisplay } from './battle-hands.js';
 import { createTransparentPixelMesh } from './pixel-mesh/transparent.js';
@@ -141,7 +141,7 @@ export function warmRadioContact3D(){
   const canvas=browserCanvas();if(!canvas)return Promise.resolve(null);
   const version=generation;
   pending=(async()=>{
-    const [template,{RoomEnvironment}]=await Promise.all([loadBattleHandTemplate(assetUrl('assets/battle-hands/right.glb')),
+    const [template,{RoomEnvironment}]=await Promise.all([loadRecordistHandTemplate(),
       import('three/addons/environments/RoomEnvironment.js')]);
     if(version!==generation)return null;
     const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'low-power',premultipliedAlpha:true});

@@ -295,14 +295,14 @@ test('physical mouse-look can frame each chosen release edge at wide and portrai
 });
 test('one actual density core and fitted return preserve saved identity, material phase and portal transforms',()=>{
   const actor={id:'source-continuation-hush',active:true,x:-31,z:-10,feet:2.4,heading:.7,mode:'follow',animationClock:1.25,
-    density:{version:1,phase:.37,traction:.8,compression:.5,event:'travel',eventTime:0,seed:0}},state=catchState(1,{hush:actor}),anchor={x:12,y:4,z:-8},rotation=Math.PI/2;
+    density:{version:1,postureVersion:2,phase:.37,rate:.6,traction:.8,compression:.5,event:'travel',eventTime:0,seed:0}},state=catchState(1,{hush:actor}),anchor={x:12,y:4,z:-8},rotation=Math.PI/2;
   const plain=sourceContinuationRenderFrame(state,{anchor}),turned=sourceContinuationRenderFrame(state,{anchor,studyRotation:rotation}),instances=pressureInstances(turned.hush,null);
   assert.equal(instances.length,1);assert.equal(instances[0].mesh,'hush_density_core');assert.equal(instances[0].densitySurface,true);assert.equal(plain.hush.id,actor.id);assert.equal(turned.hush.id,actor.id);assert.equal(turned.counts.hush,1);
   assert.ok(Math.abs((plain.hush.x+.5)*CELL-(anchor.x+actor.x))<1e-5);assert.ok(Math.abs((plain.hush.y+.5)*CELL-(anchor.z+actor.z))<1e-5);assert.equal(plain.hush.floorH,anchor.y+actor.feet);
   assert.ok(Math.abs(instances[0].x-(anchor.x+C.catch.center.x-(actor.z-C.catch.center.z)))<1e-5);assert.ok(Math.abs(instances[0].z-(anchor.z+C.catch.center.z+(actor.x-C.catch.center.x)))<1e-5);assert.equal(instances[0].y,anchor.y+actor.feet);
   assert.equal(turned.hush.performance.clip,'pressure_approach');assert.equal(turned.hush.performance.time,actor.animationClock/2.36*2.4);assert.ok(Math.abs(turned.hush.performance.heading-(actor.heading+rotation))<1e-6);
   assert.equal(instances[0].character.time,actor.density.phase*2.4,'canonical material phase wins over the legacy human clock');
-  assert.equal(instances[0].character.support,undefined);assert.ok(instances[0].character.joints.fold_B_3);
+  assert.equal(instances[0].character.support.mode,'gathering');assert.ok(instances[0].character.joints.head && instances[0].character.joints.chest);
   const returns=pressureSurfaceInstances(turned.pressureInstances);assert.equal(returns.length,turned.pressureInstances.length);
   for(let i=0;i<returns.length;i++){
     const core=turned.pressureInstances[i],surface=returns[i];assert.equal(surface.mesh,'hush_density_return');

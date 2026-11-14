@@ -34,7 +34,7 @@ const section=(start,end)=>{
       r3dLookAngles:()=>({...camera}),r3dFacing:()=>2,
       r3dSetLookAngles:(look)=>{camera={yaw:look.yaw,pitch:look.pitch};calls.push('look');},
       ...Object.fromEntries(['r3dSetSourceSurface','r3dSetHorizon','r3dSetSourceEmergency',
-        'r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetLocalLights','r3dSetEmergencyShadows',
+        'r3dSetSourceWhiteout','r3dSetLocalLights','r3dSetEmergencyShadows',
         'r3dSetSourceScene'].map((name)=>[name,()=>{}])),
     },
     PROPS:{setLooseProp:()=>{}},r3dCache:{},syncSourceRender:()=>calls.push('source-render'),

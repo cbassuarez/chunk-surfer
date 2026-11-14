@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { REALM_POCKETS, homeSnowHeight } from '../src/data/realm-pockets.js';
 import { HOME_HOUSE } from '../src/data/childhood-house.js';
+import { HOME_APPROACH_WALLS, homeGroundProfile } from '../src/data/childhood-grounds.js';
+import { HOME_VALLEY_SITES } from '../src/data/childhood-valley.js';
+import { HOME_MOUNTAIN_TRAILS, HOME_MOUNTAIN_SITES, HOME_VALLEY_TREES } from '../src/data/childhood-valley-trail.js';
 import { createStationRealm, normalizeStationRealm, moveStationRealm, stationRealmFloor,
   stationRealmCanOccupy, stationRealmFrame, stationRealmAtWindow, stationRealmSeed, STATION_DECOHERENCE_SECONDS } from '../src/game/station-realms.js';
 
@@ -90,6 +93,31 @@ test('a blocked wall gives no footsteps and swept movement cannot tunnel through
   assert.equal(realm.strideM, stride);
 });
 
+test('a return to the commons recovers the exact outbound steps, including a backstep', () => {
+  const realm = create(5, true);
+  realm.pose = { ...realm.pose, x: -26, z: 49 };
+  moveStationRealm(realm, { dz: .68, yaw: 0 });
+  moveStationRealm(realm, { dx: .68, yaw: Math.PI / 2 });
+  moveStationRealm(realm, { dx: -.68, yaw: Math.PI / 2 });
+  const oldv = realm.homeState.oldv;
+  assert.equal(oldv.returned, false);
+  assert.equal(oldv.steps.length, 3);
+  assert.deepEqual(oldv.steps.map(row => row[3]), [-1, 1, -1]);
+  // These are 3D strides on shallow graded snow, so their planar displacements
+  // are slightly shorter than .68 metres. Check the bend and return endpoints.
+  assert.ok(Math.abs(oldv.steps[0][1] - 49.68) < .015);
+  assert.ok(Math.abs(oldv.steps[1][0] + 25.32) < .015);
+  assert.ok(Math.abs(oldv.steps[2][0] + 26) < .015);
+  assert.equal(oldv.steps[1][2], oldv.steps[2][2]);
+  for (let i = 0; i < 8; i++) moveStationRealm(realm, { dz: -.8 });
+  assert.equal(realm.homeState.oldv.left, true);
+  const saved = normalizeStationRealm(JSON.parse(JSON.stringify(realm)));
+  for (let i = 0; i < 8; i++) moveStationRealm(saved, { dz: .8 });
+  assert.equal(saved.homeState.oldv.returned, true);
+  assert.deepEqual(saved.homeState.oldv.steps, realm.homeState.oldv.steps);
+  assert.deepEqual(saved.homeState.oldv.steps.slice(0, 3), oldv.steps);
+});
+
 test('the entrance is a physical retreat plane, and eligible whiteout exceeds ordinary allowance', () => {
   const retreat = create();
   moveStationRealm(retreat, { dz: -.6 });
@@ -160,6 +188,99 @@ function walkTo(realm, x, z) {
   assert.ok(Math.hypot(x - realm.pose.x, z - realm.pose.z) < 1e-7);
   return travelled;
 }
+
+test('the lower whiteout way forms a walkable loop with a physical wall and field opening', () => {
+  const realm = create(5, true);
+  walkTo(realm, 0, 19.5);
+  walkTo(realm, 5.05, 20.1);
+  walkTo(realm, 5.05, 40);
+  assert.ok(stationRealmFloor(5, 5.05, 40) < -.65);
+  assert.ok(homeGroundProfile(5.05, 40).shelter > .85);
+  assert.equal(homeGroundProfile(0, 40).shelter, 0);
+  assert.equal(stationRealmAtWindow(realm), false);
+  assert.deepEqual(normalizeStationRealm(JSON.parse(JSON.stringify(realm))), realm);
+  for (let i = 0; i < 35; i++) moveStationRealm(realm, { dx: -.08 }, 15);
+  assert.ok(realm.pose.x > 3.2, 'the body crosses the visible boundary wall');
+  walkTo(realm, 5.05, 40);
+  walkTo(realm, 5.05, 49.9);
+  walkTo(realm, 0, 53.1);
+  walkTo(realm, 0, 61);
+  assert.equal(realm.stage, 'inside');
+  assert.equal(stationRealmAtWindow(realm), false);
+  const gap = create(5, true);
+  walkTo(gap, 0, 34);
+  walkTo(gap, 5.05, 34);
+  assert.equal(gap.stage, 'inside');
+  for (const wall of HOME_APPROACH_WALLS) {
+    const x = wall.id === 'house-boundary-left' ? -3.4 : (wall.x0 + wall.x1) / 2;
+    const z = (wall.z0 + wall.z1) / 2;
+    assert.equal(stationRealmCanOccupy(5, x, z, homeSnowHeight(x, z)), false, wall.id);
+  }
+});
+
+test('the valley circuit and return work without entering the bedroom recognition area', () => {
+  let realm = create(5, true);
+  const route = [[0,12],[-12,13],[-23,18],[-24,22],[-24,29],[-29,39],[-28,49],[-25,52],[-20,53],
+    [-13,54],[-13,63],[-20,65],[-27,74],[-32,79],[-25.5,79.2],[-25.2,85],[-15,91],[0,92],
+    [13,87],[23,76],[22.8,59],[21,46],[23,34],[15,22],[1,17],[0,2.5]];
+  for (const [x,z] of route) {
+    walkTo(realm,x,z);
+    assert.equal(realm.stage,'inside');
+    assert.equal(stationRealmAtWindow(realm),false);
+    if(z===79){
+      assert.ok(stationRealmFloor(5,x,z)>5);
+      const restored=normalizeStationRealm(JSON.parse(JSON.stringify(realm)));
+      assert.deepEqual(restored,realm);
+      realm=restored;
+    }
+  }
+  assert.ok(realm.steps>REALM_POCKETS[5].stepBudget);
+  walkTo(realm,0,.6);
+  const exit=moveStationRealm(realm,{dz:-1},16);
+  assert.equal(exit.retreated,true);
+  assert.equal(realm.returnReason,'retreat');
+  assert.equal(realm.windowReached,false);
+
+  assert.equal(stationRealmCanOccupy(5,-27.1,22,stationRealmFloor(5,-27.1,22)),true,'the bus shelter is actually open');
+  for(const {pieces} of HOME_VALLEY_SITES)for(const piece of pieces.filter(piece=>piece.id.endsWith('closed-envelope'))){
+    const x=(piece.x0+piece.x1)*.5,z=(piece.z0+piece.z1)*.5;
+    assert.equal(stationRealmCanOccupy(5,x,z,stationRealmFloor(5,x,z)),false,piece.id);
+  }
+});
+
+test('wooded climb, off-road shelter and alternate descent share real support with the valley', () => {
+  const trails = Object.fromEntries(HOME_MOUNTAIN_TRAILS.map(({id,points}) => [id,points]));
+  let realm = create(5, true);
+  const follow = (points) => {
+    for (const [x,z] of points) {
+      walkTo(realm,x,z);
+      assert.equal(stationRealmAtWindow(realm),false);
+      assert.equal(realm.stage,'inside');
+    }
+  };
+  follow([[0,12],[-12,13],[-23,18],[-24,22],[-24,29],[-29,39],[-28,49],[-25,52],[-20,53],
+    [-13,54],[-13,63],[-20,65],[-27,74],[-32,79],[-25.3,79.2],...trails['hay-cut']]);
+  const fork = stationRealmFrame(realm).pose.floorY;
+  follow(trails['timber-track'].slice(1,5));
+  follow(trails['woodcutters-rest'].slice(1));
+  follow([[-66.2,106.4]]);
+  const deck = HOME_MOUNTAIN_SITES.find(({id})=>id==='timber-rest').pieces.find(({id})=>id==='timber-rest-floor');
+  assert.ok(Math.abs(stationRealmFrame(realm).pose.floorY-deck.y1)<1e-9);
+  follow([[-64,107],[-61,108],[-57,109],...trails['timber-track'].slice(5)]);
+  const lookout = stationRealmFrame(realm).pose.floorY;
+  assert.ok(lookout - fork > 20,'the mountain must be a real climb from the trailhead');
+  const restored = normalizeStationRealm(JSON.parse(JSON.stringify(realm)));
+  assert.deepEqual(restored,realm);
+  realm=restored;
+  follow(trails['spring-track'].slice(1,5));
+  follow(trails['spring-spur'].slice(1));
+  follow([...trails['spring-spur'].slice(0,-1).reverse(),...trails['spring-track'].slice(5)]);
+  assert.equal(stationRealmFrame(realm).pose.floorY,fork);
+  for (const {x,y,z} of HOME_VALLEY_TREES) {
+    assert.equal(stationRealmFloor(5,x,z),y,'the forest is rooted in traversable terrain');
+    assert.equal(stationRealmCanOccupy(5,x,z,y),false,'a visible trunk must stop the body');
+  }
+});
 
 test('the level upstairs approach joins finite continuous scoured snow without a flat support overriding it', () => {
   for (let z = 1; z < 69.8; z += .08) assert.equal(stationRealmFloor(5, 0, z), 0);

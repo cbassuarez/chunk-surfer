@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {HUSH_CATCH as C,hushCatchPlan,hushCatchFrame,hushCatchAfterimageAlpha,hushCatchVacuumLevel} from '../src/game/hush-catch.js';
 import {contactHitPlan} from '../src/audio/contact-hit.js';
+import {pressureBodyPosition} from '../src/game/pressure-performance.js';
+import {pressureInstances} from '../src/render/pressure-volume.js';
 
 const eye={x:10,z:10},near=(a,b,m=1e-6)=>assert.ok(Math.abs(a-b)<m,`${a} != ${b}`);
 const plan=(target,extra={})=>hushCatchPlan({eye,target,viewYaw:0,lookYaw:.5,lookPitch:0,heightM:2.18,metresPerUnit:.5,...extra});
@@ -26,7 +28,15 @@ test('the camera turns to the real body, faster than it could be looked at',()=>
 test('nothing in the plan moves the body or invents a place for it',()=>{
   const gone=hushCatchPlan({eye,target:null,viewYaw:0,lookYaw:.5});assert.equal(gone.moves,false);assert.equal(gone.flashAt,0);
   assert.equal(hushCatchFrame(gone,0).look,null);assert.equal(hushCatchFrame(gone,.01).flash,1,'a catch with nothing to show still lands');
-  assert.equal(body('armHushJump').includes('target:anchor?{x:anchor.x,z:anchor.y}:null'),true,'the turn aims at the captured body');
+  assert.match(body('armHushJump'),/const target=pressureBodyPosition\(anchor,CELL\)/);
+  assert.match(body('armHushJump'),/hushCatchPlan\(\{[^\n]*,target,/);
+  const anchor={x:11,y:8,performance:{role:'live-pressure',manifestation:1,
+    density:{version:1,postureVersion:2,doorX:.3,doorZ:-.15}}};
+  const target=pressureBodyPosition(anchor,.5), [rendered]=pressureInstances(anchor);
+  near(target.x,12.1);near(target.z,8.2);
+  near(rendered.x,target.x*.5);near(rendered.z,target.z*.5);
+  near(plan(target).yawDelta,Math.atan2(2.1,1.8));
+  assert.equal(anchor.x,11);assert.equal(anchor.y,8);
 });
 
 test('the hit: one white frame behind the body, its negative, a stutter, then the zoom lets go',()=>{

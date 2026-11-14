@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "composer": "Robert de Visée",
+  "performer": "Andrej Jovanić",
+  "recordingCredit": "Andrej Jovanić, Nimbus Art Belgrade",
+  "licence": "Creative Commons Attribution (YouTube)",
+  "licenceUrl": "https://support.google.com/youtube/answer/2797468",
+  "sourceVerification": "The performer and recorder’s public YouTube uploads each display ‘Creative Commons Attribution license (reuse allowed)’. The watch pages omit a version number. All four were uploaded before August 2025, when YouTube's standard option was CC BY 3.0. YouTube's current help links CC BY 4.0. The date when the uploader set the licence is unavailable. Only the audio is used.",
+  "historicalLicenceUrl": "https://creativecommons.org/licenses/by/3.0/",
+  "currentLicenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "historicalLicenceReference": "https://commons.wikimedia.org/wiki/Template:YouTube_CC-BY",
+  "sources": [
+    {
+      "movement": "Prélude",
+      "sourceUrl": "https://www.youtube.com/watch?v=CQ-p1S3dC-U",
+      "published": "2021-11-21",
+      "compositionSource": "Suite in D minor, Livre de pièces pour la guitare (Paris, 1686)",
+      "instruments": "baroque guitar and theorbo with realized continuo"
+    },
+    {
+      "movement": "Allemande",
+      "sourceUrl": "https://www.youtube.com/watch?v=cPOqu4kaE-0",
+      "published": "2021-11-21",
+      "compositionSource": "Suite in D minor, Livre de pièces pour la guitare (Paris, 1686)",
+      "instruments": "baroque guitar and theorbo with realized continuo"
+    },
+    {
+      "movement": "Courante",
+      "sourceUrl": "https://www.youtube.com/watch?v=QiUbIZxIeI0",
+      "published": "2021-12-03",
+      "compositionSource": "Suite in D minor, Livre de pièces pour la guitare (Paris, 1686)",
+      "instruments": "baroque guitar and theorbo with realized continuo"
+    },
+    {
+      "movement": "La Montfermeil",
+      "sourceUrl": "https://www.youtube.com/watch?v=NlW5w3RH1pI",
+      "published": "2023-08-19",
+      "compositionSource": "Vaudry de Saizenay (1699), Besançon MS 279.152, p. 308, E minor",
+      "instruments": "solo theorbo"
+    }
+  ],
+  "asset": "audio/childhood-valley/visee-tannenried-jovanic.mp3",
+  "bytes": 1556058,
+  "sha256": "5de4681ca6b0c90fe2250859886a6a34642166fe346a5a4273a8cd3029ef5d24",
+  "durationSeconds": 132.51452083333334,
+  "sampleRate": 48000,
+  "channels": 1,
+  "loudnessLufs": -23.1,
+  "truePeakDbtp": -3.5,
+  "adaptation": "Extracted and downmixed the original published performances. Pitch-preserving FFmpeg atempo runs at 1.055× before level matching, edge fades and a single MP3 encode. The 120 ms edit gaps remain outside the playable phrases. Dither and spatial reverb are applied in game.",
+  "sourceVideoSha256": {
+    "CQ-p1S3dC-U": "28ec222c960695e62ede4da935f7dbe9eced3b416d188362245cfda2c7a2c9f0",
+    "cPOqu4kaE-0": "cdae3bcaa1e0f1b5ee12e6e69d95cacf2fab8cf7612eb96cf4a9a53547ea0170",
+    "QiUbIZxIeI0": "419b0f3bbf1ed55ac1350ccaeee284028a30c9006e00fa29115ba3e3bf9561db",
+    "NlW5w3RH1pI": "00c3ae43db37ca0e6bb03da491613d507abfadd621a73122c4e4a2aaaffb1717"
+  },
+  "tempoMultiplier": 1.055
+}

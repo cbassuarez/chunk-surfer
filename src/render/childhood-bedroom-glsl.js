@@ -3,6 +3,7 @@
 import { HOME_BEDROOM, HOME_COMFORT_LOOP_SECONDS } from '../data/childhood-bedroom.js';
 
 const f = (n) => Number.isInteger(n) ? `${n}.0` : String(n);
+const bookcase=HOME_BEDROOM.bookcase,joinery=HOME_BEDROOM.joinery;
 export const CHILDHOOD_BEDROOM_GLSL = `
 const vec3 hbOrigin=vec3(${f(HOME_BEDROOM.origin.x)},0.0,${f(HOME_BEDROOM.origin.z)});
 const float hbLoopSeconds=${f(HOME_COMFORT_LOOP_SECONDS)};
@@ -53,6 +54,9 @@ float hbRoomMap(vec3 q,float t,out float material){
     s=hbRounded(leg,vec3(.035,.25,.035),.009);
     s=min(s,ewBox(vec3(abs(q.x+1.215)-.435,q.y-.34,q.z-3.225),vec3(.033,.08,1.005)));
     s=min(s,ewBox(vec3(q.x+1.215,q.y-.35,abs(q.z-3.225)-.98),vec3(.465,.075,.033)));
+    // Head posts and their rail shoulders meet the same legs, with clear air
+    // below the frame. Nothing in the mattress suggests an occupied body.
+    s=min(s,hbRounded(vec3(abs(q.x+1.215)-.43,q.y-.70,q.z-4.205),vec3(.036,.25,.036),.009));
     float arch=.86+.09*cos(clamp((q.x+1.215)/.44,-1.0,1.0)*1.5707963);
     s=min(s,max(hbRounded(q-vec3(-1.215,.72,4.205),vec3(.46,.25,.035),.014),q.y-arch));
     s=min(s,hbRounded(q-vec3(-1.215,.52,2.23),vec3(.46,.20,.035),.014));
@@ -77,6 +81,7 @@ float hbRoomMap(vec3 q,float t,out float material){
     vec3 leg=q-vec3(.175,.365,3.94);leg.x=abs(leg.x)-.572;leg.z=abs(leg.z)-.26;
     s=min(s,hbRounded(leg,vec3(.028,.35,.028),.006));
     s=min(s,ewBox(q-vec3(.175,.66,4.18),vec3(.58,.06,.023)));
+    s=min(s,ewBox(q-vec3(-.06,.673,3.676),vec3(.365,.048,.023)));
     s=min(s,hbRounded(q-vec3(.57,.58,3.96),vec3(.185,.15,.27),.012));
     hbUnion(s,25.0,d,material);
     vec3 drawers=q-vec3(.57,.582,3.674);drawers.y=mod(drawers.y+.073,.145)-.073;
@@ -102,6 +107,9 @@ float hbRoomMap(vec3 q,float t,out float material){
     s=hbRounded(legs,vec3(.019,.23,.019),.005);
     s=min(s,hbRounded(cq-vec3(0.0,.46,0.0),vec3(.215,.036,.205),.022));
     s=min(s,ewBox(vec3(abs(cq.x)-.18,cq.y-.67,cq.z+.18),vec3(.017,.24,.017)));
+    // Low stretchers join the legs; a chair is not four unrelated sticks.
+    s=min(s,ewBox(vec3(cq.x,cq.y-${f(joinery.chairStretcherHeight)},abs(cq.z)-.17),vec3(.175,.013,.013)));
+    s=min(s,ewBox(vec3(abs(cq.x)-.175,cq.y-${f(joinery.chairStretcherHeight + .025)},cq.z),vec3(.013,.013,.17)));
     vec3 back=cq-vec3(0.0,.84,-.18);back.z+=.025*cos(back.x*6.0);
     s=min(s,hbRounded(back,vec3(.205,.075,.018),.012));
     hbUnion(s,25.0,d,material);
@@ -113,10 +121,14 @@ float hbRoomMap(vec3 q,float t,out float material){
   bound=ewBox(q-vec3(1.48,.46,2.79),vec3(.40,.48,.43));
   if(bound<.15){
     s=hbRounded(q-vec3(1.52,.455,2.79),vec3(.27,.455,.40),.018);
+    // The ajar front opens onto a real dark drawer cavity, not a solid block.
+    s=max(s,-ewBox(q-vec3(1.35,.215,2.79),vec3(.21,.108,.35)));
     s=min(s,hbRounded(q-vec3(1.51,.925,2.79),vec3(.30,.025,.425),.015));
     hbUnion(s,25.0,d,material);
     s=min(hbRounded(q-vec3(1.232,.70,2.79),vec3(.018,.10,.35),.008),hbRounded(q-vec3(1.232,.46,2.79),vec3(.018,.10,.35),.008));
     s=min(s,hbRounded(q-vec3(1.105,.215,2.79),vec3(.018,.10,.35),.008));
+    s=min(s,ewBox(q-vec3(1.32,${f(joinery.drawerBottom)},2.79),vec3(.215,.012,.35)));
+    s=min(s,ewBox(vec3(q.x-1.32,q.y-.215,abs(q.z-2.79)-.344),vec3(.215,.095,.012)));
     hbUnion(s,25.0,d,material);
     s=min(ewCapsule(q,vec3(1.205,.70,2.70),vec3(1.205,.70,2.88),.012),ewCapsule(q,vec3(1.205,.46,2.70),vec3(1.205,.46,2.88),.012));
     s=min(s,ewCapsule(q,vec3(1.08,.215,2.70),vec3(1.08,.215,2.88),.012));
@@ -137,11 +149,20 @@ float hbRoomMap(vec3 q,float t,out float material){
   s=max(abs(length(lamp.xz)-shadeRadius)-.008,abs(lamp.y)-.14);
   hbUnion(s,28.0,d,material);
 
-  // Books were taken, not arranged for a visitor. A few remain on the low shelf.
-  hbUnion(hbRounded(q-vec3(.16,1.61,4.10),vec3(.62,.018,.14),.006),25.0,d,material);
-  vec3 book=q-vec3(-.205,1.76,4.12);book.x=mod(book.x+.045,.09)-.045;
-  s=max(hbRounded(book,vec3(.033,.13,.095),.003),abs(q.x+.205)-.17);
-  s=min(s,hbRounded(q-vec3(.67,1.69,4.12),vec3(.035,.06,.09),.003));
+  // The middle is visibly missing from an actual three-shelf cupboard. Its
+  // retained books live at the ends; the broad empty span carries recognition.
+  bound=ewBox(q-vec3(${f((bookcase.x0+bookcase.x1)/2)},${f((bookcase.y0+bookcase.y1)/2)},${f((bookcase.z0+bookcase.z1)/2)}),vec3(.68,.39,.15));
+  if(bound<.15){
+    s=min(ewBox(q-vec3(${f(bookcase.x0+.015)},${f((bookcase.y0+bookcase.y1)/2)},4.12),vec3(.015,${f((bookcase.y1-bookcase.y0)/2)},.13)),
+      ewBox(q-vec3(${f(bookcase.x1-.015)},${f((bookcase.y0+bookcase.y1)/2)},4.12),vec3(.015,${f((bookcase.y1-bookcase.y0)/2)},.13)));
+${bookcase.shelves.map(y=>`    s=min(s,ewBox(q-vec3(${f((bookcase.x0+bookcase.x1)/2)},${f(y)},4.12),vec3(${f((bookcase.x1-bookcase.x0)/2)},.018,.13)));`).join('\n')}
+    s=min(s,ewBox(q-vec3(.18,1.455,4.238),vec3(.63,.36,.012)));
+    hbUnion(s,25.0,d,material);
+  }else d=min(d,bound);
+  vec3 book=q-vec3(-.255,1.595,4.12);book.x=mod(book.x+.045,.09)-.045;
+  s=max(hbRounded(book,vec3(.033,.13,.095),.003),abs(q.x+.255)-.135);
+  s=min(s,hbRounded(q-vec3(.67,1.525,4.12),vec3(.035,.06,.09),.003));
+  s=min(s,hbRounded(q-vec3(.55,1.168,4.12),vec3(.16,.028,.095),.004));
   hbUnion(s,35.0,d,material);
   vec3 fallen=q-vec3(-.66,.035,2.08);fallen.xz=ewRot(fallen.xz,.28);
   hbUnion(hbRounded(fallen,vec3(.11,.025,.15),.006),35.0,d,material);
@@ -197,9 +218,15 @@ float ewBedroomMap(vec3 p,float t,out float material){
   s=min(s,hbRounded(q-vec3(-.31,1.49,-.258),vec3(.029,.70,.033),.006));
   s=min(s,hbRounded(q-vec3(-.18,1.94,-.258),vec3(.86,.023,.028),.005));
   s=min(s,hbRounded(q-vec3(-.18,.752,-.08),vec3(.995,.038,.25),.012));
+  // Slim planted beads and a weathered lower rail reveal the glazing's depth.
+  // Keep the middle of both panes empty; glass/occlusion remains scene-owned.
+  float bead=${f(joinery.windowBead)};
+  s=min(s,min(ewBox(q-vec3(left+.052,1.49,-.276),vec3(bead,.655,.013)),ewBox(q-vec3(right-.052,1.49,-.276),vec3(bead,.655,.013))));
+  s=min(s,ewBox(q-vec3(-.18,.824,-.276),vec3(.826,bead,.013)));
   hbUnion(s,21.0,d,material);
   hbUnion(hbRounded(q-vec3(-.18,.796,-.28),vec3(.995,.012,.095),.007),13.0,d,material);
   hbUnion(ewCapsule(q,vec3(-.30,1.30,-.31),vec3(-.21,1.30,-.31),.010),29.0,d,material);
+  hbUnion(hbRounded(q-vec3(-.31,1.957,-.294),vec3(.065,.014,.026),.006),29.0,d,material);
   return d;
 }
 
@@ -212,21 +239,24 @@ float hbLightBlockers(vec3 q){
   return min(d,ewBox(q-vec3(1.52,.455,2.79),vec3(.27,.455,.40)));
 }
 void ewBedroomMaterial(vec3 q,vec3 n,vec3 rd,float t,float m,out vec3 albedo,out vec3 ambient,out vec3 emit){
-  float grain=.96+.04*ewNoise(q.xy*45.0);
+  float grain=.975+.025*ewNoise(q.xy*28.0);
   albedo=vec3(.61,.59,.49)*grain;emit=vec3(0.0);
   if(m<20.5)albedo=vec3(.43,.45,.40);
   else if(m<21.5)albedo=vec3(.69,.70,.59)*grain;
   else if(m<22.5){
-    albedo=vec3(.64,.64,.53)*grain;
+    albedo=vec3(.68,.64,.54)*grain;
     float poster=step(-.34,q.x)*step(q.x,.18)*step(1.85,q.y)*step(q.y,2.25)*step(4.23,q.z);
     albedo=mix(albedo,vec3(.73,.71,.61),poster*.6);
     float mark=step(1.77,q.x)*step(3.20,q.z)*step(q.z,3.29)*step(.50,q.y)*step(q.y,1.82);
     float ticks=1.0-smoothstep(.004,.011,abs(mod(q.y-.62,.145)-.0725));
     albedo*=1.0-mark*ticks*.30;
   }else if(m<23.5)albedo=vec3(.68,.68,.58)*grain;
-  else if(m<24.5){float knit=.92+.08*sin(q.z*185.0)*sin(q.y*160.0);albedo=vec3(.20,.46,.24)*knit;}
+  else if(m<24.5){float knit=.97+.03*sin(q.z*135.0)*sin(q.y*120.0);albedo=vec3(.24,.48,.27)*knit;}
   else if(m<25.5){
-    float timber=.88+.12*ewNoise(vec2(q.x*16.0+q.z*8.0,q.y*100.0));albedo=vec3(.43,.30,.17)*timber;
+    float timber=.94+.06*ewNoise(vec2(q.x*12.0+q.z*7.0,q.y*45.0));albedo=vec3(.45,.32,.19)*timber;
+    // Handling wears edges; the empty middle shelf stays broad and quiet.
+    float shelf=(1.0-smoothstep(.014,.040,abs(q.y-1.44)))*(1.0-smoothstep(3.99,4.03,q.z));
+    albedo=mix(albedo,vec3(.55,.42,.26),shelf*.24);
     if(q.y<.01){float seam=1.0-smoothstep(.005,.012,abs(mod(q.x+.09,.18)-.09));albedo*=1.0-seam*.22;}
   }else if(m<26.5)albedo=vec3(.60,.62,.52)*grain;
   else if(m<27.5){
@@ -239,7 +269,7 @@ void ewBedroomMaterial(vec3 q,vec3 n,vec3 rd,float t,float m,out vec3 albedo,out
   else if(m<30.5)albedo=vec3(.43,.56,.30);
   else if(m<31.5)albedo=vec3(.73,.70,.60);
   else if(m<32.5)albedo=vec3(.47,.50,.40)*grain;
-  else if(m<33.5)albedo=vec3(.50,.52,.46)*grain;
+  else if(m<33.5)albedo=vec3(.47,.48,.44)*grain;
   else if(m<34.5){float weave=.92+.08*sin(q.x*100.0)*sin(q.z*90.0);albedo=vec3(.38,.34,.25)*weave;}
   else albedo=mix(vec3(.30,.36,.31),vec3(.46,.35,.23),step(.5,ewHash(floor(q.xz*12.0))));
   vec3 lamp=vec3(-.52,1.35,3.91)-q;float ld=length(lamp);vec3 L=lamp/max(ld,.001);

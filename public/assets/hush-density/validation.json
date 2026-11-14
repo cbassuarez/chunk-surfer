@@ -1,21 +1,21 @@
 {
   "kind": "production-hush-density-cpu-validation",
-  "assetSha256": "bcb293cf38e1e5492920fe4eeca46037b66f82bd0b8fc449b7b16093c21a21e8",
+  "assetSha256": "ee79a62f65255fad8d107a85cffcbf2050b3aed2b6b02c638c033f38c1a8bca5",
   "originalHumanSha256": "29f4321a45f48cff08f243591153adbc0de5b25e31a3adb2f26ce2c6d78368b9",
-  "authorityModuleSha256": "7a799e9fb2cf7b9b138d1891a94b7cf90bcfcc9038c8d561440f11abc4dde1ad",
+  "authorityModuleSha256": "6e7c08746561291e94f62774f90e6a3dd4c9f96e04f16ea478c15b814288b5b7",
   "materialPartitionExact": true,
   "sharedVertexChannelsExact": true,
   "sharedDescriptorBonePalettesExact": true,
-  "sharedVertices": 22480,
-  "uniqueSculptVertices": 22002,
-  "uniqueSculptTriangles": 44000,
-  "exportedVertices": 44482,
-  "joints": 19,
+  "sharedVertices": 12540,
+  "uniqueSculptVertices": 11833,
+  "uniqueSculptTriangles": 23662,
+  "exportedVertices": 24373,
+  "joints": 43,
   "clips": 16,
   "morphs": 0,
-  "scaleChannelCount": 288,
-  "normalUnitError": 4.871062253553049e-8,
-  "weightsError": 4.470348358154297e-8,
+  "scaleChannelCount": 0,
+  "normalUnitError": 4.701263134343492e-8,
+  "weightsError": 4.284083843231201e-8,
   "topology": {
     "connectedComponents": 1,
     "boundaryEdges": 0,
@@ -24,19 +24,19 @@
   },
   "sampledBounds": {
     "min": [
-      -0.45234031567730637,
-      0,
-      -0.4425209656516606
+      -0.289069265127182,
+      -0.02725729794529696,
+      -0.613213986158371
     ],
     "max": [
-      0.45074599373573554,
-      2.0596217396401393,
-      0.384758868578086
+      0.5900260376890708,
+      2.046409500627771,
+      0.2217959247341407
     ]
   },
-  "maximumSampledRadialEnvelopeM": 0.5623244979022394,
-  "maximumRootRelativeBaseDriftM": 0,
-  "maximumSampledEdgeExtensionRatio": 3.1231996351384144,
+  "maximumSampledRadialEnvelopeM": 0.6297078404547227,
+  "maximumRootRelativeGatherMotionM": 0.30154673112826497,
+  "maximumSampledEdgeExtensionRatio": 1.1652542260272436,
   "clipMetrics": [
     {
       "clip": "pressure_hold",
@@ -45,9 +45,9 @@
       "maximumMotionFromFirstM": 0,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.000002678008215,
-        "p99": 1.0000055158660222,
-        "maximum": 1.0000150857118368
+        "p95": 1.0000016004611547,
+        "p99": 1.0000039424698404,
+        "maximum": 1.0000119162531138
       }
     },
     {
@@ -57,69 +57,69 @@
       "maximumMotionFromFirstM": 0,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.000002678008215,
-        "p99": 1.0000055158660222,
-        "maximum": 1.0000150857118368
+        "p95": 1.0000016004611547,
+        "p99": 1.0000039424698404,
+        "maximum": 1.0000119162531138
       }
     },
     {
       "clip": "pressure_approach",
       "duration": 2.4000000953674316,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.16921745796319818,
+      "maximumMotionFromFirstM": 0.05739150496063844,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.146332197613153,
-        "p99": 1.2516686290683257,
-        "maximum": 2.2329183769307974
+        "p95": 1.0097295840598683,
+        "p99": 1.0338421603415078,
+        "maximum": 1.1625479633663076
       }
     },
     {
       "clip": "pressure_limp",
       "duration": 3.4000000953674316,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.16921409083035824,
+      "maximumMotionFromFirstM": 0.05739150496063844,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.1462632879445689,
-        "p99": 1.2512298833890778,
-        "maximum": 2.2324661446046146
+        "p95": 1.0097295840598683,
+        "p99": 1.0338355315546153,
+        "maximum": 1.1625479633663076
       }
     },
     {
       "clip": "pressure_listen",
       "duration": 4.800000190734863,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.475764226186936,
+      "maximumMotionFromFirstM": 0.02889300381089304,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.0373947907577992,
-        "p99": 1.1276712066578551,
-        "maximum": 2.988631994552786
+        "p95": 1.001855197722609,
+        "p99": 1.0176361561232574,
+        "maximum": 1.1213199994402911
       }
     },
     {
       "clip": "pressure_load",
       "duration": 0.5,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.3712935076455244,
+      "maximumMotionFromFirstM": 0.02885957697465285,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.0298678710021387,
-        "p99": 1.0993913898186953,
-        "maximum": 2.2953501758752437
+        "p95": 1.000003345181159,
+        "p99": 1.0058492315475058,
+        "maximum": 1.0503147873784244
       }
     },
     {
       "clip": "pressure_advance",
       "duration": 0.7200000286102295,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.2987410847850945,
+      "maximumMotionFromFirstM": 0.05739150496063844,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.1094846443867503,
-        "p99": 1.2136682785631925,
-        "maximum": 3.1092099872591916
+        "p95": 1.0097255334214872,
+        "p99": 1.0337301940533241,
+        "maximum": 1.1625479633663076
       }
     },
     {
@@ -129,33 +129,33 @@
       "maximumMotionFromFirstM": 0,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.016203633379309,
-        "p99": 1.0395335563058206,
-        "maximum": 1.3036156700713273
+        "p95": 1.0000016004611547,
+        "p99": 1.0000039424698404,
+        "maximum": 1.0000119162531138
       }
     },
     {
       "clip": "pressure_pivot",
       "duration": 0.7200000286102295,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.2987410847850945,
+      "maximumMotionFromFirstM": 0.05739150496063844,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.1107714013864745,
-        "p99": 1.2212017012043217,
-        "maximum": 3.1231996351384144
+        "p95": 1.0097255334214872,
+        "p99": 1.0337301940533241,
+        "maximum": 1.1625479633663076
       }
     },
     {
       "clip": "density_clamp",
       "duration": 2.200000047683716,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.475764226186936,
+      "maximumMotionFromFirstM": 0.0166332396975495,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.0373947907577992,
-        "p99": 1.1276712066578551,
-        "maximum": 2.988631994552786
+        "p95": 1.000916384762312,
+        "p99": 1.0079008805102196,
+        "maximum": 1.0458420325192188
       }
     },
     {
@@ -165,69 +165,69 @@
       "maximumMotionFromFirstM": 0,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.016203633379309,
-        "p99": 1.0395335563058206,
-        "maximum": 1.3036156700713273
+        "p95": 1.0000016004611547,
+        "p99": 1.0000039424698404,
+        "maximum": 1.0000119162531138
       }
     },
     {
       "clip": "density_release",
       "duration": 1.5,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.07551048929871734,
+      "maximumMotionFromFirstM": 0.0166332396975495,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.016203633379309,
-        "p99": 1.0395335563058206,
-        "maximum": 1.3036156700713273
+        "p95": 1.000916384762312,
+        "p99": 1.0079008805102196,
+        "maximum": 1.0458420325192188
       }
     },
     {
       "clip": "density_reload",
       "duration": 0.5,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.2987410847850945,
+      "maximumMotionFromFirstM": 0.02885957697465285,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.0308473482063658,
-        "p99": 1.099585293510781,
-        "maximum": 2.2953501758752437
+        "p95": 1.000003345181159,
+        "p99": 1.0058492315475058,
+        "maximum": 1.0503147873784244
       }
     },
     {
       "clip": "density_listen",
       "duration": 4.800000190734863,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.4033852786749208,
+      "maximumMotionFromFirstM": 0.02889300381089304,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.0373947907577992,
-        "p99": 1.1276712066578551,
-        "maximum": 2.988631994552786
+        "p95": 1.001855197722609,
+        "p99": 1.0176361561232574,
+        "maximum": 1.1213199994402911
       }
     },
     {
       "clip": "density_idle",
       "duration": 6.400000095367432,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.047846799716369764,
+      "maximumMotionFromFirstM": 0.0166332396975495,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.0370845923766172,
-        "p99": 1.0650804230130713,
-        "maximum": 1.5235237845730456
+        "p95": 1.000916384762312,
+        "p99": 1.0079008805102196,
+        "maximum": 1.0458420325192188
       }
     },
     {
       "clip": "density_chase",
       "duration": 2.4000000953674316,
       "samples": 25,
-      "maximumMotionFromFirstM": 0.20628099701135505,
+      "maximumMotionFromFirstM": 0.061946239439421846,
       "edgeExtension": {
         "measure": "Per edge maximum over 25 clip samples; edges>5mm",
-        "p95": 1.1361423004621867,
-        "p99": 1.2136916565743314,
-        "maximum": 2.2419706940035966
+        "p95": 1.0099431655613134,
+        "p99": 1.0346386349968835,
+        "maximum": 1.1652542260272436
       }
     }
   ],
@@ -242,7 +242,7 @@
     },
     {
       "id": "advance-retained",
-      "maximumVertexDifferenceM": 1.2705678522390755e-8
+      "maximumVertexDifferenceM": 0
     },
     {
       "id": "retained-reload",
@@ -262,21 +262,21 @@
     },
     {
       "id": "idle-end-retained",
-      "maximumVertexDifferenceM": 2.664471676190282e-10
+      "maximumVertexDifferenceM": 0
     },
     {
       "id": "approach-loop",
-      "maximumVertexDifferenceM": 2.7511771475962023e-9
+      "maximumVertexDifferenceM": 0
     },
     {
       "id": "chase-loop",
-      "maximumVertexDifferenceM": 3.038447952141987e-9
+      "maximumVertexDifferenceM": 0
     }
   ],
   "combinedDescriptorSamples": 500,
   "limits": [
     "CPU actual exported skin and shared descriptor checks; no native rendering or human fear validation.",
-    "Root-relative base deliberately drags with accepted root; not world-planted support.",
+    "The in-place gather displaces feet relative to the root; separate accepted-world contact tests establish planted support.",
     "No all-time self-collision or global route-clearance proof."
   ]
 }

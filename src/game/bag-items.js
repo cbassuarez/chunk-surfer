@@ -8,6 +8,8 @@ import { mapAcquired } from './map-ownership.js';
 import { runtimeTree } from '../narrative/runtime-content.js';
 import { TUNING_FORK_BAG_LINE } from '../data/tuning-fork-discovery.js';
 import { pubQuestState } from './pub-quest.js';
+import { recordingCassetteId, parseRecordingCassetteId } from './carry-items.js';
+import { RETAINED_BELONGINGS, retainedBelongingDefinition, retainedBelongingInspection, ownsRetainedBelonging } from './retained-belongings.js';
 
 export const BAG_ACTION_MODE = Object.freeze({
   COMMAND: 'command',
@@ -23,6 +25,7 @@ export const BAG_AUTOMATIC_USE = Object.freeze({
 });
 
 export const BAG_ITEM_REGISTRY = Object.freeze({
+  ...Object.fromEntries(Object.values(RETAINED_BELONGINGS).map(item=>[item.id,Object.freeze({role:item.role,automaticUse:null})])),
   light: Object.freeze({ role: 'exploration-command', automaticUse: null }),
   recorder: Object.freeze({ role: 'exploration-command', automaticUse: null }),
   map: Object.freeze({ role: 'navigation', automaticUse: null }),
@@ -73,9 +76,11 @@ export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'pub-opener', acquired: 'pub.help.opener.carried', destination: 'kit' },
   { id: 'pub-orderbook', acquired: 'pub.help.orderbook.carried', destination: 'kit' },
   { id: 'building-pages:1-16', acquired: 'obj.read', destination: 'file' },
-  { id: 'battery-cells', acquired: 'pickup', destination: 'battery-resource' },
+  { id: 'battery-cells', acquired: 'existing cache flags / sealed supply items', destination: 'kit' },
   { id: 'calibration-pins', acquired: 'pickup', destination: 'skill-resource' },
   { id: 'plant-stillson', acquired: 'grip', destination: 'external-load' },
+  ...Object.keys(RETAINED_BELONGINGS).map(id=>({id,acquired:'save.items explicit KEEP',destination:'kit'})),
+  { id: 'recording-cassettes', acquired: 'cassette-ledger physical numbered records', destination: 'kit' },
   { id: 'source-sheets', acquired: 'read-in-place', destination: 'transient-source-document' },
   { id: 'station-relics', acquired: 'station.relic.<world>', destination: 'kit' },
   { id: 'lyle-jumper', acquired: 'station.jumper', destination: 'kit' },
@@ -101,6 +106,7 @@ export function resolveBagOwnership(context = {}) {
   if (Number(context.relicsCarried) > 0) kit.push('station-relics');
   if (context.jumperOwned) kit.push('lyle-jumper');
   if (context.renCassetteOwned) kit.push('ren-home-cassette');
+  for(const id of Object.keys(RETAINED_BELONGINGS))if(ownsRetainedBelonging({items:context.items},id))kit.push(id);
   const pub = pubQuestState(flags);
   if (pub.carryingTray) kit.push('pub-service-tray');
   if (pub.favors.opener.carried) kit.push('pub-opener');
@@ -133,7 +139,7 @@ export function resolveBagItemAction(itemId, context = {}) {
   const id = String(itemId || '');
   const carried = context.present !== false && !context.missing;
 
-  if (!ACTIONABLE_ITEMS.has(id)) {
+  if (!ACTIONABLE_ITEMS.has(id) && parseRecordingCassetteId(id) == null) {
     return action('none', '', BAG_ACTION_MODE.DIALOG, {
       enabled: false,
       reason: 'NO DIRECT ACTION',
@@ -150,6 +156,9 @@ export function resolveBagItemAction(itemId, context = {}) {
       reason: 'ITEM NOT CARRIED',
     });
   }
+
+  if (retainedBelongingDefinition(id)) return action('inspect-retained-belonging', 'INSPECT', BAG_ACTION_MODE.DIALOG);
+  if (parseRecordingCassetteId(id) != null) return action('inspect-recording-cassette', 'READ LABEL', BAG_ACTION_MODE.DIALOG);
 
   switch (id) {
     case 'light':
@@ -236,6 +245,45 @@ export function resolveBagItemAction(itemId, context = {}) {
   }
 }
 
+// Projection only: this neither creates a fresh ledger nor assigns a blank. A
+// lost numbered cassette remains owned evidence with an unavailable reservation.
+export function cassetteBagItems(ledger) {
+  const seen=new Set();
+  return (Array.isArray(ledger?.cassettes)?ledger.cassettes:[]).flatMap(cassette=>{
+    const id=recordingCassetteId(cassette?.n);
+    if (!id || seen.has(id)) return [];
+    seen.add(id);
+    const content=cassette.content && typeof cassette.content==='object' ? structuredClone(cassette.content) : null;
+    const present=!cassette.lost;
+    const value=!present?'MISSING':!content?'BLANK':content.kind==='tutorial'?'LEVEL CHECK'
+      :content.kind==='take'?`${String(content.outcome||'unclassified').toUpperCase()} TAKE`:'RECORDED';
+    const room=content?.kind==='take'?String(content.roomId||'unlabelled room'):null;
+    const label=`Cassette ${cassette.n}`;
+    return [{id,sourceId:id,cassetteNumber:cassette.n,source:cassette.source,history:structuredClone(cassette.history||[]),role:'recording-stock',label,title:label.toUpperCase(),
+      present,missing:!present,readyCapable:true,battleCapable:false,icon:'cassette',value,
+      subtitle:'NUMBERED RECORDING STOCK',statusTone:present?'metadata':'danger',location:present?'IN THE CASE':'UNKNOWN',
+      description:!content?'A numbered blank recording cassette.':content.kind==='tutorial'
+        ?'The microphone level check. The first room take records over it.'
+        :content.kind==='take'?`A ${String(content.outcome||'recorded')} take from ${room}.`:'A numbered recording cassette.',
+      facts:[['NUMBER',String(cassette.n)],['STOCK',cassette.source==='b3-store'?'B3 STORE':'ISSUED'],
+        ['LABEL',value],...(room?[['ROOM',room]]:[])],content,
+      primaryAction:resolveBagItemAction(id,{present,missing:!present})}];
+  }).sort((a,b)=>a.cassetteNumber-b.cassetteNumber);
+}
+
+function cassetteInspectionDialogue(itemId,context) {
+  const item=cassetteBagItems(context.cassetteLedger).find(item=>item.id===itemId);
+  if (!item) return {start:{speaker:'FIELD CASE',lines:[{who:'you',text:'No cassette with that number in my stock.'}]}};
+  const lines=[{who:'direction',text:`${item.title}. ${item.description}`}];
+  if (!item.present) lines.push({who:'you',text:'That cassette is missing. Its entry is still on the sheet; it is not in my hand.'});
+  else if (!item.content) lines.push({who:'you',text:'Still blank. Putting it within reach does not choose what I record over.'});
+  else if (item.content.kind==='tutorial') lines.push({who:'you',text:'The level check. The first room take goes over this one.'});
+  else if (item.content.kind==='take') lines.push({who:'you',text:item.content.outcome==='clean'
+    ?'A clean take. This is the physical cassette that holds it.'
+    :'I kept the cassette. That does not turn the attempt into an accepted room take.'});
+  return {start:{speaker:'FIELD CASE',lines}};
+}
+
 export function bagKeyFacts({ master = false, chapel = false, chapelIdentified = false, services = false, ren = false } = {}) {
   const facts = [['POSITION', 'CARRIED'], ['FUNCTION', 'AUTOMATIC ACCESS']];
   if (master) facts.push(['MASTER', 'BUILDING MASTER']);
@@ -275,6 +323,9 @@ function stationInspectionDialogue(itemId, context) {
 }
 
 export function bagInspectionDialogue(itemId, context = {}) {
+  if (parseRecordingCassetteId(itemId) != null) return cassetteInspectionDialogue(itemId,context);
+  const retained=retainedBelongingInspection(itemId);
+  if(retained)return{start:{speaker:retained.title,lines:retained.lines},inspectionActions:retained.actions};
   if (itemId === 'station-relics' || itemId === 'lyle-jumper') return stationInspectionDialogue(itemId, context);
   const pub = pubQuestState(context.flags);
   const keyLines = [];

@@ -45,7 +45,7 @@ export function installSourceRecordingCassetteMeshes(gl,pack){
  }
  gl.bindVertexArray(null);return MESHES;
 }
-function labelBitmap(recording,{ownerDocument=globalThis.document}={}){
+function labelBitmap(recording,{ownerDocument=globalThis.document,identityOnly=false,stock=null}={}){
  const data=sourceRecordingCassetteIdentity(recording),colour=ownerDocument.createElement('canvas'),mask=ownerDocument.createElement('canvas');
  colour.width=mask.width=C.labelWidth;colour.height=mask.height=C.labelHeight;
  const c=colour.getContext('2d',{willReadFrequently:true}),m=mask.getContext('2d',{willReadFrequently:true}),rows=[];
@@ -53,17 +53,39 @@ function labelBitmap(recording,{ownerDocument=globalThis.document}={}){
  c.fillStyle='#c6bea0';c.fillRect(0,0,1024,512);m.clearRect(0,0,1024,512);
  const ink=(text,x,y,w,h,role='mono',maxFont=40)=>{const fit=fitWorldLetteringLine(c,text,{width:w,height:h,maxFont,minFont:3,role});if(!fit.fits)throw Error('Cassette label does not fit its physical row.');
   m.font=fit.font;m.textBaseline='alphabetic';m.textAlign='left';m.fillStyle='#fff';c.fillStyle='#22251d';const baseline=y+fit.ascent;c.fillText(fit.text,x+fit.left,baseline);m.fillText(fit.text,x+fit.left,baseline);rows.push({...fit,x,y,baseline});};
- ink('AUDIOCORP / FIELD CARTRIDGE',28,12,950,35,'sansBold',30);ink(`TAKE ${data.ordinalLabel}`,28,62,950,63,'monoBold',64);ink(data.room,28,130,950,45,'sansBold',41);
+ ink('AUDIOCORP / FIELD CARTRIDGE',28,12,950,35,'sansBold',30);
+ if(stock){
+  const number=Number(stock.cassetteNumber),ordinal=Number.isSafeInteger(number)&&number>0?String(number).padStart(3,'0'):data.ordinalLabel;
+  const content=stock.content,room=content?.roomId?sourceRecordingCassetteIdentity({roomId:content.roomId}).room:'';
+  const status=content===null?'UNRECORDED':content?.kind==='take'?'RECORDED':'';
+  ink(`CASSETTE ${ordinal}`,28,62,950,63,'monoBold',64);
+  if(status)ink(status,28,130,950,45,'sansBold',41);
+  if(room)ink(room,28,183,950,30,'sansBold',27);
+  ink(`CASSETTE ${ordinal}`,28,238,950,43,'monoBold',38);
+  if(content?.takeId)ink(content.takeId,28,294,950,32,'mono',28);
+  if(room)ink(room,28,335,950,32,'sansBold',28);
+  ink(`CASSETTE ${ordinal}${status?'  /  '+status:''}`,18,465,985,34,'monoBold',31);
+ }else if(identityOnly){
+  // Stock can have a number without a take. Do not invent a place, duration,
+  // slate or an UNRECORDED claim when only its inventory identity is known.
+  ink(`CASSETTE ${data.ordinalLabel}`,28,62,950,63,'monoBold',64);
+  ink(`CASSETTE ${data.ordinalLabel}`,28,238,950,43,'monoBold',38);
+  ink(`CASSETTE ${data.ordinalLabel}`,18,465,985,34,'monoBold',31);
+ }else{
+ ink(`TAKE ${data.ordinalLabel}`,28,62,950,63,'monoBold',64);ink(data.room,28,130,950,45,'sansBold',41);
  ink(`${data.duration}  /  ${data.takeId||'NO TAPE ID'}`,28,183,950,30,'mono',27);
  ink(`TAKE ${data.ordinalLabel}  ·  ${data.room}`,28,238,950,43,'monoBold',38);
  const slate=data.slateText||'No slate text retained.',chunks=slate.match(/.{1,74}(?:\s|$)|.{1,74}/g)||[slate],pitch=Math.min(34,138/Math.max(1,chunks.length));
  chunks.forEach((text,n)=>ink(text,28,294+n*pitch,950,pitch-2,'mono',Math.min(28,pitch-3)));
  ink(`${data.ordinalLabel}  ${data.room}  ${data.duration}`,18,465,985,34,'monoBold',31);
+ }
  // Causal label-edge rub: on stock margins only; exact printed letters survive.
  c.fillStyle='#a9a28b';for(let n=0;n<12;n++)c.fillRect(3+n*83,n%2?209:2,30+n%5,2);
  const rgb=c.getImageData(0,0,C.labelWidth,C.labelHeight).data,coverage=m.getImageData(0,0,C.labelWidth,C.labelHeight).data;
  return{pixels:sourceSurfaceInkRGBA(rgb,coverage,{width:C.labelWidth,flipY:true}),width:C.labelWidth,height:C.labelHeight,identity:data,rows};
 }
+// The carried cartridge borrows the same authored front/back/spine raster.
+export { labelBitmap as sourceRecordingCassetteLabelBitmap };
 export function installSourceRecordingCassetteLabels(gl,pack,recordings=[],options={}){
  if(!gl||!pack?.catalog?.has('source_recording_cassette_label'))return false;
  const state=labelState(pack),cache=state.entries,owner=options.labelOwner??'world',requested=new Set(recordings.map(sourceRecordingCassetteLabelMesh)),pins=new Map(state.pins);pins.set(owner,requested);

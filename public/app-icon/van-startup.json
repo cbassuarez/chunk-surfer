@@ -1,0 +1,106 @@
+{
+  "version": 5,
+  "purpose": "optional lightweight app widget",
+  "frameCount": 42,
+  "cell": 128,
+  "cellSize": 128,
+  "columns": 7,
+  "rows": 6,
+  "durationSeconds": 3.4,
+  "stages": [
+    {
+      "atSeconds": 0,
+      "name": "arrival"
+    },
+    {
+      "atSeconds": 0.95,
+      "name": "brake"
+    },
+    {
+      "atSeconds": 1.27,
+      "name": "settle"
+    },
+    {
+      "atSeconds": 1.55,
+      "name": "departure"
+    },
+    {
+      "atSeconds": 3.2,
+      "name": "offscreen"
+    }
+  ],
+  "stagesSeconds": {
+    "accelerateEnd": 0.3,
+    "finalAccelerationStart": 0.8,
+    "brakeStart": 0.95,
+    "lockStart": 0.95,
+    "stop": 1.27,
+    "settleEnd": 2.35,
+    "smokeEnd": 1.65,
+    "poolEnd": 2.9,
+    "tracksEnd": 3.25
+  },
+  "weather": {
+    "rain": true,
+    "seed": 1987,
+    "rainDrops": 72,
+    "lightningAtSeconds": [],
+    "thunderAtSeconds": [],
+    "lightningDurationSeconds": 0,
+    "flashRanges": [],
+    "lightningPolicy": "The app loop uses the reduced-flash render.",
+    "nativeAudio": false
+  },
+  "video": "van-startup.mp4",
+  "poster": "van-startup-poster.png",
+  "videoSha256": "53824451ce94a6a7bbf6c63bba19bc6c8e07459d0c399101e2472f958d9c0dbc",
+  "posterSha256": "aa9796f2876e0cee78c9b05f88e76fa8a579b650b8935b5d8b21e6e81684286c",
+  "bytes": {
+    "video": 51856,
+    "poster": 4495
+  },
+  "acquisition": {
+    "revision": "hero-vfd-acquisition-mix-4",
+    "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
+    "shaderModule": "src/render/pixel-mesh/shader.js",
+    "shaderExport": "PIXEL_MESH_FRAG",
+    "shaderFingerprint": "fnv1a32:afbfd081",
+    "shaderCharacters": 95847,
+    "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
+    "startingProfile": "calm",
+    "profile": "van-icon-detail",
+    "colourResolve": "src/render/pixel-mesh/final-look.js#finalMaterialLightInk (Living Materials)",
+    "interference": "src/render/pixel-mesh/final-look.js#finalScreenInterference (moire)",
+    "screen": "crosshatch",
+    "fineDetail": "runtime formStipple / luma-edge crossover",
+    "coverage": "separate real scene alpha; premultiplied output",
+    "depth": "inverse real orthographic/perspective projection",
+    "toneMapping": "linear scene → ACES/exposure → sRGB → runtime acquisition, once",
+    "temporalMemory": false,
+    "pressureFinish": false,
+    "externalRawOverlay": false,
+    "pureOneBit": false,
+    "recordingMode": "hero mix of game VFD/acquisition; variant and output dependent",
+    "variants": {
+      "detail": {
+        "recordingMix": 0.45,
+        "toneAmount": 0.12
+      },
+      "ink": {
+        "recordingMix": 0.65,
+        "toneAmount": 0.15
+      }
+    },
+    "compactPolicy": {
+      "belowPixels": 64,
+      "recordingMix": 0.3,
+      "toneAmount": 0.1
+    },
+    "markPolicy": "src/render/world-light-treatment.js (marks-only)",
+    "screenPhase": "existing continuous held runtime phase, not floor(world*3.1)",
+    "fineRank": "runtime blueNoise / fineMarkFootprint in output pixels",
+    "tonePolicy": "recording capture uses real broad source luma and densityGamma; VFD whitePoint shapes the supporting form/colour branch"
+  },
+  "sourceManifestSha256": "b958e66627712838cdf5c6b007d92b676ad3cb729d7e3a28ebbdc71784187e3d",
+  "notes": "App-only 128px recording of the van in rain through the game shader. The van enters and leaves the frame so the shot can loop while the game loads."
+}

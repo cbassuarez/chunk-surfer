@@ -16,7 +16,7 @@ fn build_dock_tile_plugin() {
 
     let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let source = manifest.join("macos/DockTile");
-    for file in ["ChunkSurferDockTile.m", "Info.plist", "DockTile.icns"] {
+    for file in ["ChunkSurferDockTile.m", "DockIconPolicy.h", "Info.plist", "DockTile.icns", "Ear.icns"] {
         println!("cargo:rerun-if-changed={}", source.join(file).display());
     }
     println!("cargo:rerun-if-env-changed=APPLE_SIGNING_IDENTITY");
@@ -28,6 +28,7 @@ fn build_dock_tile_plugin() {
     std::fs::create_dir_all(contents.join("Resources")).unwrap();
     std::fs::copy(source.join("Info.plist"), contents.join("Info.plist")).unwrap();
     std::fs::copy(source.join("DockTile.icns"), contents.join("Resources/DockTile.icns")).unwrap();
+    std::fs::copy(source.join("Ear.icns"), contents.join("Resources/Ear.icns")).unwrap();
 
     // Universal, because the Dock loads it into its own helper whatever the
     // game itself was built for.
@@ -69,6 +70,9 @@ fn build_dock_assembly() {
     let object = output.join("DockAssembly.o");
     let library = output.join("libchunk_surfer_dock_assembly.a");
     println!("cargo:rerun-if-changed={}", source.display());
+    for file in ["DockIconPolicy.h", "VanLaunch.inc", "VanLaunch.png", "DockTile.icns", "Ear.icns"] {
+        println!("cargo:rerun-if-changed={}", manifest.join("macos/DockTile").join(file).display());
+    }
     println!("cargo:rerun-if-env-changed=MACOSX_DEPLOYMENT_TARGET");
     let architecture = match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
         Ok("aarch64") => "arm64",

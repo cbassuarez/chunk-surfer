@@ -8,8 +8,8 @@
   "scope": "Existing dry north pool approach, indoor greenhouse and changing vestibule. Rehosts the original admission fittings without changing their instance. No new exterior connection, actors, triggers, rewards or mechanics.",
   "sourceSha256": {
     "tools/chunk_surfer/build-glass-court.mjs": "6b26ef54babf6ca3f0049e91e976b0048d65591d600fa0b4ba3d0f293e062281",
-    "tools/chunk_surfer/glass-court-geometry.mjs": "4f822a7ca42ef65f247ceec124ffbefe23aab447f43a8e00873a0a4f302b0ec5",
-    "src/data/glass-court.js": "0cd8d99703213a6c931c2f4690df486a16564e47dfd1e33de8f797f28cd68499",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "32403f8ddd990b4b6a68c786db99870625d21a542267fe8dc5a3f25f330b054e",
+    "src/data/glass-court.js": "8f68560d4bfca04a09afd623aebc4464dad4ae4a44e93535397b301d5bc0d012",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
     "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
@@ -18,13 +18,13 @@
   },
   "pack": {
     "file": "public/assets/glass-court.glb",
-    "bytes": 4161532,
-    "sha256": "f77146e0bd183799670c83da460f16e29d711bb441ca258418b048e79bbe35fb"
+    "bytes": 4154184,
+    "sha256": "4ce57ce1c5978cb507de493faa4b5277bbd8876ead9e256cb9adb59f05ff0477"
   },
   "meshes": [
     {
       "name": "glass_court_frame",
-      "triangles": 2296,
+      "triangles": 2224,
       "bounds": {
         "min": [
           -12,

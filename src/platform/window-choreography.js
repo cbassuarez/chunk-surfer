@@ -697,6 +697,7 @@ export function createWindowChoreographyDirector({
   let sourceDesktopGeneration=0;
   let sourceDesktopEvents=null;
   let sourceDesktopLastReason=null;
+  let paneAuthority=null,takeoverLease=null;
   const simulation=createSimulation(documentApi,effects);
 
   const reduced=()=>!!getReducedMotion();
@@ -809,11 +810,18 @@ export function createWindowChoreographyDirector({
     return transaction;
   }
 
-  async function performPlan(plan,{forceSimulate=false,compositionMode='cold',handoffDurationMs=260,isCurrent=()=>true,startOnPresent=false,onPresentationPlan=()=>{}}={}){
-    if(sourceDesktop||!isCurrent())return null;
-    const active=await beginTransaction(plan.sceneId,{forceSimulate});
+  async function performPlan(plan,{forceSimulate=false,nativeOnly=false,presentationOwner=null,compositionMode='cold',handoffDurationMs=260,isCurrent=()=>true,startOnPresent=false,onPresentationPlan=()=>{}}={}){
+    if(sourceDesktop||!isCurrent()||(nativeOnly&&(transaction||transactionOpening)))return null;
+    // A pane's cleanup owns one exact submission and transaction, never the
+    // next battle/ending that happens to reuse its choreography transaction.
+    const authority={epoch,cueId:plan.cueId,transaction:null,opening:null};
+    paneAuthority=authority;if(presentationOwner)presentationOwner.authority=authority;
+    const pending=beginTransaction(plan.sceneId,{forceSimulate});
+    authority.opening=transactionOpening;
+    const active=await pending;authority.transaction=active;
     if(!active||!isCurrent())return null;
     const useNative=active.native&&!forceSimulate;
+    if(nativeOnly&&!useNative)return{plan,native:false,simulated:false};
     let nativeMoved=false,nativePanes=false;
     if(plan.kind==='composition'){
       // A fullscreen notice or a queued transaction may take arbitrary time.
@@ -826,9 +834,9 @@ export function createWindowChoreographyDirector({
       if(!isCurrent())return null;
       const simulated=forceSimulate||!useNative||!nativePanes;
       if(simulated&&useNative)startScore();
-      if(simulated)simulation.show(plan);else simulation.hide();
-      onState({type:'composition',plan,native:useNative&&!simulated,simulated});
-      return{plan,native:useNative&&!simulated,simulated};
+      if(simulated&&!nativeOnly)simulation.show(plan);else simulation.hide();
+      onState({type:'composition',plan,native:useNative&&!simulated,simulated:simulated&&!nativeOnly});
+      return{plan,native:useNative&&!simulated,simulated:simulated&&!nativeOnly};
     }
     if(useNative&&api?.invoke&&plan.mainFrame.length){
       onGeometryMotion(true);
@@ -1094,6 +1102,7 @@ export function createWindowChoreographyDirector({
     composition=null;
   }
   async function restore(reason='restore',{closePool=false,preserveComposition=false,preserveSnapshots=false}={}){
+    paneAuthority=null;takeoverLease=null;
     returnGeneration+=1;returnPending=null;
     const desktop=sourceDesktop;sourceDesktop=null;sourceDesktopGeneration+=1;
     sourceDesktopLastReason=reason;
@@ -1131,14 +1140,35 @@ export function createWindowChoreographyDirector({
 
   // Only ever beside a window that is free to have something beside it. A fullscreen
   // handoff would stop for a notice, and a takeover must never stop the game to start.
-  async function showTakeoverPane(mediaId,{reducedMotion=false}={}){
-    if(!nativeDesired()||!compositionContext().introduced||transaction||transactionOpening||sourceDesktop||battle||ending)return false;
+  async function releaseTakeoverLease(lease,reason='takeover-complete'){
+    if(!lease||takeoverLease!==lease)return false;
+    takeoverLease=null; // invalidate in-flight assignment before any native await
+    const authority=lease.authority;
+    if(!authority||authority!==paneAuthority||authority.epoch!==epoch||battle||ending||sourceDesktop)return false;
+    const owns=authority.transaction?transaction===authority.transaction
+      :authority.opening&&transactionOpening===authority.opening;
+    if(!owns)return false;
+    const activeCue=effects?.debug?.()?.activeCompositionCue;
+    if(activeCue&&activeCue!==authority.cueId)return false;
+    await restore(reason);return true;
+  }
+  async function hideTakeoverPane(){return releaseTakeoverLease(takeoverLease);}
+  async function showTakeoverPane(mediaId,{reducedMotion=false,name,isCurrent=()=>true}={}){
+    const available=()=>isCurrent()&&nativeDesired()&&compositionContext().introduced&&!transaction&&!transactionOpening&&!sourceDesktop&&!battle&&!ending;
+    if(!available())return false;
     const nativeApi=await loadApi();
-    if(!nativeApi?.invoke||await measuredFullscreen(nativeApi))return false;
-    const plan=compileTakeoverPanePlan({mediaId,reducedMotion,flashMode:compositionContext().flashMode,name:getSourceIdentity?.()?.operatorName||null});
+    if(!nativeApi?.invoke||await measuredFullscreen(nativeApi)||!available())return false;
+    const identity=getSourceIdentity?.();
+    const paperName=name===undefined?(identity?.permitted?identity.operatorName:null):name;
+    const plan=compileTakeoverPanePlan({mediaId,reducedMotion,flashMode:compositionContext().flashMode,name:paperName});
     if(!plan)return false;
-    const result=await runPlan(plan);
-    return !!result?.native;
+    const lease={authority:null};takeoverLease=lease;
+    const current=()=>takeoverLease===lease&&isCurrent()&&!battle&&!ending&&!sourceDesktop;
+    // The takeover owns its prepared in-game surface. A second generic
+    // composition simulation would obscure it and duplicate the encounter.
+    const result=await runPlan(plan,{nativeOnly:true,presentationOwner:lease,isCurrent:current});
+    if(!result?.native||!current()){await releaseTakeoverLease(lease,'takeover-unavailable');return false;}
+    return true;
   }
 
   async function showPracticeCue(cue){
@@ -1811,7 +1841,7 @@ export function createWindowChoreographyDirector({
 
   return{
     prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceFault,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
-    emergencyRestore,suspend,runPlan,showPracticeCue,showTakeoverPane,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,requestSourceRestRecorder,updateStudyFrames,updateStudyArchitecture,layoutStudyArchitecture,
+    emergencyRestore,suspend,runPlan,showPracticeCue,showTakeoverPane,hideTakeoverPane,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,requestSourceRestRecorder,updateStudyFrames,updateStudyArchitecture,layoutStudyArchitecture,
     beginSourceDesktop,updateSourceDesktop,endSourceDesktop,sourceDesktopState,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take

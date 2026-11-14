@@ -5,9 +5,9 @@ import {CONSERVATORY_PROPS} from '../src/data/conservatory-props.js';
 import {inscriptionTileDimensions} from '../tools/chunk_surfer/lettering/world-inscription-substrates.mjs';
 const omissions=JSON.parse(fs.readFileSync('artifacts/lettering-study/final-lettering-omissions.json'));
 const excluded=new Set(['b1-stencil','b2-stencil','b3-stencil','b5-stencil','chapel-hymn-board',
- 'tower-peal-board','box-office-ledger','box-office-key-ring-ch04','box-office-key-ring-c17','box-office-key-ring-fohm']);
+ 'tower-peal-board','box-office-returns-tray','box-office-ledger','box-office-key-ring-ch04','box-office-key-ring-c17','box-office-key-ring-fohm']);
 const expected=Object.values(omissions.groups).flat().filter(job=>!excluded.has(job.id));
-assert.equal(WORLD_INSCRIPTIONS.length,38);
+assert.equal(WORLD_INSCRIPTIONS.length,37);
 assert.deepEqual(new Set(WORLD_INSCRIPTIONS.map(job=>job.id)),new Set(expected.map(job=>job.id)),
  'all assigned literal inscriptions must be present once, without duplicating separately baked puzzle/static faces');
 const normalize=text=>text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -33,4 +33,4 @@ for(const job of WORLD_INSCRIPTIONS.filter(job=>job.id.startsWith('acq-practice-
 const sofa=WORLD_INSCRIPTIONS.find(job=>job.id==='acq-foyer-sofa-01');
 assert.ok(sofa.center[1]<.12&&sofa.up[2]===1,'sofa code remains beneath the centre rail');
 assert.equal(WORLD_INSCRIPTIONS.filter(job=>job.substrate).length,17,'all twelve direct wood stamps and five painted panel codes preserve their host stock');
-console.log('38 exact per-placement inscriptions: complete copy, current host guards, unscaled reader axes, underside positions and finite coverage pass');
+console.log('37 overlays plus the private tray’s single baked inscription: exact per-placement inscriptions: complete copy, current host guards, unscaled reader axes, underside positions and finite coverage pass');

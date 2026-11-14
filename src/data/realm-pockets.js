@@ -2,6 +2,11 @@
 // and its body collision; the distant procedural world is never extra ground.
 import { HOME_BEDROOM } from './childhood-bedroom.js';
 import { HOME_HOUSE } from './childhood-house.js';
+import { HOME_APPROACH_WALLS, HOME_APPROACH_POLES, HOME_APPROACH_TREES, homeApproachRise } from './childhood-grounds.js';
+import { HOME_VALLEY_BOUNDS, HOME_VALLEY_SITES, homeValleyRise } from './childhood-valley.js';
+import { HOME_COMMONS_STEP_SUPPORTS } from './childhood-valley-works.js';
+import { HOME_VALLEY_LIFE_SITES } from './childhood-valley-life.js';
+import { HOME_MOUNTAIN_BOUNDS, HOME_MOUNTAIN_SITES, HOME_VALLEY_TREES, homeMountainRise } from './childhood-valley-trail.js';
 const box = (id, x0, x1, z0, z1, top = 0, thickness = .4, material = 0) => Object.freeze({
   id, center: Object.freeze([(x0 + x1) / 2, top - thickness / 2, (z0 + z1) / 2]),
   half: Object.freeze([(x1 - x0) / 2, thickness / 2, (z1 - z0) / 2]), material,
@@ -23,6 +28,10 @@ const pocket = (world, variant, steps, supports, solids, extra = {}) => Object.f
   entrance: Object.freeze({ z: 0, halfWidth: .515 }),
   supports: Object.freeze(supports), solids: Object.freeze([...solids, ...entranceSolids]), ...extra,
 });
+
+const valley = HOME_VALLEY_BOUNDS;
+const mountain = HOME_MOUNTAIN_BOUNDS;
+const timberDeck = HOME_MOUNTAIN_SITES.find(site=>site.id==='timber-rest').pieces.find(piece=>piece.id==='timber-rest-floor');
 
 export const REALM_POCKETS = Object.freeze([
   pocket('burning', 0, 36, [
@@ -52,17 +61,41 @@ export const REALM_POCKETS = Object.freeze([
   ], [solid('low-fin', -1.8, -.7, 7, 13, 2.2), solid('glass-bank', 6.5, 8.7, 11, 15, 3.5),
     solid('glass-tooth', 10.5, 11.6, 23, 25, 2.4)],
   { reveal: Object.freeze({ x: 8.5, z: 20 }) }),
-  pocket('whiteout', 5, 36, [Object.freeze({ ...box('snow-route', -8.5, 9.5, -1, 81.5, 0, 3.4),
-    heightfield: 'home-snow' })], [
-    solid('pole-one', -5, -4.7, 12, 12.3, 9), solid('pole-two', -5, -4.7, 28, 28.3, 9),
-    solid('pole-three', -5, -4.7, 44, 44.3, 9),
+  pocket('whiteout', 5, 36, [Object.freeze({ ...box('snow-route', valley.x0, valley.x1, valley.z0, valley.z1, valley.top, valley.top - valley.bottom, 'snow'),
+    heightfield: 'home-snow' }),
+    Object.freeze({ ...box('mountain-trail', mountain.x0, mountain.x1, mountain.z0, mountain.z1, mountain.top, mountain.top - mountain.bottom, 'snow'),
+      heightfield: 'home-snow' }),
+    Object.freeze({...box(timberDeck.id,timberDeck.x0,timberDeck.x1,timberDeck.z0,timberDeck.z1,
+      timberDeck.y1,timberDeck.y1-timberDeck.y0,'yard-wood'),collisionOnly:true}),
+    ...HOME_COMMONS_STEP_SUPPORTS.map(({id,x0,x1,y0,y1,z0,z1})=>Object.freeze({
+      ...box(id,x0,x1,z0,z1,y1,y1-y0,'yard-stone'),collisionOnly:true,
+    }))], [
+    ...HOME_APPROACH_WALLS.map(({ id, x0, x1, z0, z1, base, top, material }) =>
+      box(id, x0, x1, z0, z1, top, top - base, material)),
+    ...HOME_APPROACH_POLES.map(({ id, x, z, base, top, radius }) => Object.freeze({
+      ...box(id, x - radius, x + radius, z - radius, z + radius, top, top - base, 'yard-wood'),
+      collisionOnly: true,
+    })),
+    ...HOME_APPROACH_TREES.map(({ id, x, z, base, height, radius }) => Object.freeze({
+      ...box(id, x - radius, x + radius, z - radius, z + radius, base + height, height, 'yard-wood'),
+      collisionOnly: true,
+    })),
     // The whole closed house stops the body, while both front corners remain
     // reachable. Its rendered walls and aperture belong to the exterior model.
     box('closed-house-body', HOME_HOUSE.x0, HOME_HOUSE.x1, HOME_HOUSE.z0, HOME_HOUSE.z1,
       HOME_HOUSE.eaves, HOME_HOUSE.eaves - HOME_HOUSE.bottom, 'plaster'),
-    snowbank('snow-bank-left', -11, -7.95, -2, 83, 1.38, .7),
-    snowbank('snow-bank-right', 8.95, 12, -2, 83, 1.27, 2.2),
-    snowbank('snow-bank-rear', -11, 12, 80.9, 84, 1.45, 4.8),
+    // The old banks are local drifts. Their ends now open to the rest of the site.
+    snowbank('snow-bank-left', -10.8, -7.95, 68, 77.8, 1.38, .7),
+    snowbank('snow-bank-right', 8.95, 11.8, 69, 77.8, 1.27, 2.2),
+    snowbank('snow-bank-rear', -6.5, 6.7, 80.9, 83.6, 1.45, 4.8),
+    ...HOME_VALLEY_TREES.map(({ x, z, y, height, radius }, index) => Object.freeze({
+      ...box('forest-trunk-'+index, x-radius, x+radius, z-radius, z+radius, y+height*.83, height*.83+.14, 'yard-wood'),
+      collisionOnly: true, radius,
+    })),
+    ...[...HOME_VALLEY_SITES, ...HOME_VALLEY_LIFE_SITES, ...HOME_MOUNTAIN_SITES].flatMap(site => site.pieces.filter(piece => piece.blocking !== false)
+      .map(({ id, x0, x1, y0, y1, z0, z1, material }) => Object.freeze({
+        ...box(id, x0, x1, z0, z1, y1, y1 - y0, material), collisionOnly: true,
+      }))),
   ], { home: Object.freeze({ wallZ: HOME_HOUSE.z0, foldFrom: 58, foldTo: 66.7,
     window: HOME_BEDROOM.window,
     viewingRadius: 3.3 }), reveal: Object.freeze({ x: 0, z: 20 }) }),
@@ -81,7 +114,7 @@ export function homeSnowHeight(x, z) {
     const strength = Math.max(0, 1 - dx * dx - dz * dz);
     height = Math.min(height, -scour.depth * strength * strength);
   }
-  return height || 0;
+  return height + homeApproachRise(x, z) + homeValleyRise(x, z) + homeMountainRise(x, z) || 0;
 }
 
 export const realmSupportHeight = (support, x, z) => support.heightfield === 'home-snow'

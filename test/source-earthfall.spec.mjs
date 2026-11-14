@@ -222,7 +222,7 @@ test('finite fragments remain as shallow debris instead of accelerating away to 
 
 test('an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt',()=>{
   let state={...freshSourceEarthfall({runId:'capsule-jamb'}),committed:true,phase:'landed',feet:0,z:C.passage.exitZ+.05,clock:15,elapsed:15,exitDoor:{open:true,progress:1}};
-  state=stepSourceEarthfall(state,{dt:.12,forward:1}).state;assert.ok(state.z<C.passage.exitZ&&state.z>C.passage.exitZ-C.bodyRadius);
+  state=stepSourceEarthfall(state,{dt:(.05+C.bodyRadius/2)/C.walkSpeed,forward:1}).state;assert.ok(state.z<C.passage.exitZ&&state.z>C.passage.exitZ-C.bodyRadius);
   for(let i=0;i<2;i++)state=stepSourceEarthfall(state,{dt:.25,side:1}).state;
   assert.ok(state.x<=C.door.width/2-C.bodyRadius+1e-7,'the body still inside the real frame cannot strafe through its post');
   let events=[];for(let i=0;i<20&&state.status==='active';i++){const r=stepSourceEarthfall(state,{dt:.1,forward:1});state=r.state;events.push(...r.events);}

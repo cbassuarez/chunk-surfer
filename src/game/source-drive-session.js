@@ -109,6 +109,15 @@ export function createSourceDriveSession(host = {}) {
   const report = error => { lastError = String(error?.message || error); host.onError?.(error); publish(); return error; };
   const event = (type, data = {}) => { const value = note(s, type, data); host.onEvent?.(clone(value)); return value; };
   const tapeStatus = () => recording?.status?.() || recording?.snapshot?.() || {};
+  const getPresentation=typeof host.getPresentation==='function'?host.getPresentation:()=>({});
+  function syncAcoustics(evolution=frame?.evolution){
+    if(!frame)return;
+    let presentation,external;try{presentation=getPresentation()||{};external=typeof presentation.protectedAudio==='function'?presentation.protectedAudio():presentation.protectedAudio;}catch{presentation={};external=true;}
+    const tape=tapeStatus(),protectedAudio=!!(external||tape.recording||tape.playing||tape.cuing||tape.slating||tape.listening);
+    acoustics.setStormPresentation?.({flashMode:presentation.flashMode||(presentation.effectsMode==='off'?'off':'full'),protectedAudio,listenerYaw:frame.look?.yaw||0});
+    acoustics.sync?.(s,frame.scene.cut?.sources||[],frame.weather,evolution,frame.scene.predicaments?.sources||[]);
+    frame.storm=acoustics.stormFrame?.()||null;
+  }
   const tapeCheckpoint = () => recording?.checkpoint?.() ?? saved.tape;
   const deadlinePending=()=>{const value=host.getDeadlinePending?.();return value===true?{eventId:`night-deadline:${saved.runId}`,phase:'pending'}:
     value&&['pending','presenting'].includes(value.phase)?value:null;};
@@ -214,7 +223,7 @@ export function createSourceDriveSession(host = {}) {
     keys.clear(); s.paused = false;
     if(s.boundaryRecovery)s.boundaryRecovery.acknowledged=true;
     acoustics.setPaused?.(false); await recording?.setPaused?.(false);
-    rebuild();acoustics.sync?.(s,frame.scene.cut?.sources||[],frame.weather,frame.evolution,frame.scene.predicaments?.sources||[]);
+    rebuild();syncAcoustics();
     event(started ? 'journey-resume' : 'journey-start', { encounterId: SOURCE_DRIVE_ENCOUNTER });
     started = true; checkpoint(started ? 'start-or-resume' : 'entry'); publish(); return true;
   }
@@ -327,7 +336,7 @@ export function createSourceDriveSession(host = {}) {
     const wf = driveWeatherFrame(weather, { bodyMatrix: scene.body, cabinMount: metrics.cabinBodyMount, headlamps: scene.lamps.slice(0, 2) });
     frame = { scene, eye: scene.eye, look: { yaw: s.heading + look.yaw, pitch: look.pitch + scene.roadPitch }, props: scene.props, lights: scene.lamps,
       weather: wf, heading: s.heading, lampDip: .020 - scene.roadPitch, mirrors: scene.mirrors, timeSec: s.programTime, driveState: s,
-      evolution: scene.evolution, radio: acoustics?.programmeFrame?.()||programmeFrame(s,scene.evolution), readout: readout(), active: true };
+      evolution: scene.evolution, radio: acoustics?.programmeFrame?.()||programmeFrame(s,scene.evolution),storm:acoustics?.stormFrame?.()||null, readout: readout(), active: true };
     if(firstStrike)applyDriveFirstStrikeFrame(frame,firstStrike);
   }
   function advanceFingerprint(before) {
@@ -373,7 +382,7 @@ export function createSourceDriveSession(host = {}) {
     let deadlineEvents=[];
     if(firstStrike){const result=stepDriveFirstStrike(firstStrike,s,{dt:elapsed,protected:deadlineProtected(),doorCrossing:crossing});firstStrike=result.state;deadlineEvents=result.events;
       if(deadlineEvents.length)checkpoint('deadline-structural');}
-    rebuild();updateControl();acoustics.sync?.(s, frame.scene.cut?.sources || [],frame.weather,evolution,frame.scene.predicaments?.sources||[]);
+    rebuild();updateControl();syncAcoustics(evolution);
     if(firstStrike){frame.firstStrike.events=deadlineEvents;host.onDeadlineFrame?.(frame,{events:deadlineEvents,protected:deadlineProtected(),listener:{x:frame.eye[0],y:frame.eye[1],z:frame.eye[2],yaw:frame.look.yaw}});}
     if(opening&&!opening.picture&&opening.soundStartedAt!=null&&s.programTime-opening.soundStartedAt>=SOURCE_DRIVE_OPENING.audioLeadSeconds){
       opening.picture=true;event('journey-picture',{speed:s.speed,station:s.station,programmeTime:s.programTime});checkpoint('moving-picture');publish();

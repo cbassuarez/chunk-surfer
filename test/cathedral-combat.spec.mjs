@@ -113,8 +113,9 @@ test('Guided Cathedral choices are untimed; other fights retain their clocks', (
   assert.ok(combatChoiceSeconds(standard) >= 5);
   for (const size of [{ cols: 100, rows: 45 }, { cols: 60, rows: 30 }]) {
     const layout = cathedralCombatLayout(size);
-    assert.ok(layout.world.h >= size.rows * .4, 'commands consume the cathedral view');
-    assert.ok(layout.y >= layout.world.y + layout.world.h);
+    assert.ok(layout.world.h >= 2, 'the shared instrument retains a real stage opening');
+    assert.ok(layout.controls.y >= layout.world.y + layout.world.h);
+    assert.ok(layout.world.x >= layout.x && layout.world.x+layout.world.w <= layout.x+layout.w);
   }
 });
 

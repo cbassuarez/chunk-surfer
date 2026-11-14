@@ -8,6 +8,10 @@ const idOf = value => definition(typeof value === 'string' ? value : value?.tech
 export function skillPatchSource(id) {
   const target = definition(id);
   if (!target) return null;
+  if (target.circuitBend) {
+    return { id: `terminal:feed:${target.id}`, kind: 'output', branch: target.branch,
+      techniqueId: target.requires, skillId: null };
+  }
   return target.requires
     ? { id: `output:skill:${target.requires}`, kind: 'output', branch: target.branch, techniqueId: target.requires, skillId: `skill:${target.requires}` }
     : { id: `supply:${target.branch}`, kind: 'output', branch: target.branch, techniqueId: null, skillId: null };
@@ -20,12 +24,13 @@ function patchCandidate(value, source, targetId, { hasRig = false, rerouteId = n
   const build = pull?.changed ? pull.build : original;
   if (rerouteId && !pull?.changed) return { original, reason: 'THAT LEAD IS NO LONGER PATCHED' };
   if (!target || !source) return { original, reason: 'CHOOSE AN INPUT SOCKET' };
+  if (target.circuitBend && !hasRig) return { original, reason: 'SERVICE INTERFACE REQUIRED' };
   if (source.kind !== 'output') return { original, reason: 'START FROM AN OUTPUT SOCKET' };
-  if (source.branch !== target.branch) return { original, reason: 'MATCH THE SOCKET COLOR AND COLUMN' };
+  if (source.branch !== target.branch) return { original, reason: 'MATCH THE CHANNEL' };
   const expected = skillPatchSource(target.id);
   // Check the fixed allowlisted source identity as well as its current power.
-  if (source.id !== expected.id) return { original, reason: target.requires ? `FEED FROM ${definition(target.requires).label}` : 'FEED THIS INPUT FROM THE COLUMN SUPPLY' };
-  if (expected.techniqueId && !build.techniques.includes(expected.techniqueId)) return { original, reason: 'SOURCE OUTPUT HAS NO CONTINUITY' };
+  if (source.id !== expected.id) return { original, reason: target.circuitBend ? 'USE THE TWO EXPOSED TERMINALS' : target.requires ? `FEED FROM ${definition(target.requires).label}` : 'FEED THIS INPUT FROM CHANNEL SEND' };
+  if (expected.techniqueId && !build.techniques.includes(expected.techniqueId)) return { original, reason: target.circuitBend ? 'FIT OVERDUB FIRST' : 'FIT THE SOURCE SKILL FIRST' };
   const availability = techniqueAvailability(build, target.id, { hasRig });
   if (!availability.enabled) return { original, reason: availability.reason };
   return { original, build, target, pull, reason: '' };

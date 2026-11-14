@@ -17,7 +17,7 @@ test('the same authored body survives contained, dissolving and desktop presenta
   const contained=sourceDesktopRenderFrame(state({active:false}));
   assert.equal(contained.state.active,true,'a not-yet-breached mechanics frame still presents the antagonist');
   assert.equal(contained.openness,0);
-  assert.ok(contained.body?.character.joints.fold_B_3);
+  assert.ok(contained.body?.character.joints.head && contained.body?.character.joints.chest);
   assert.equal(contained.body.mesh,'hush_density_core');
   assert.equal(SOURCE_DESKTOP_DISSOLVE_SECONDS,2.4);
   const frames=[0,.25,.5,.75,1].map(transition=>sourceDesktopRenderFrame(state({phase:'dissolving',transition})));
@@ -83,7 +83,7 @@ test('comfort settings stop authored motion while retaining tells and attack sta
   for(const kind of ['broadcast','conceal','overload','loop','silence']) {
     const a=sourceDesktopRenderFrame(state({intent:{kind,progress:.6},reducedMotion:true,reduceFlash:true,clock:1}));
     const b=sourceDesktopRenderFrame(state({intent:{kind,progress:.6},reducedMotion:true,reduceFlash:true,clock:101}));
-    assert.equal(a.clip,'pressure_approach'); assert.equal(a.clipTime,0); assert.deepEqual(a.body,b.body);
+    assert.equal(a.clip,'pressure_hold'); assert.equal(a.clipTime,0); assert.deepEqual(a.body,b.body);
     assert.equal(a.state.intent.kind,kind); assert.equal(a.state.intent.progress,.6);
   }
   assert.notDeepEqual(sourceDesktopRenderFrame(state({intent:{kind:'overload',progress:.6}})).body.character,
@@ -121,11 +121,11 @@ test('finite desktop plates reuse closed Source strata and their real source gly
   const lines=sourceDesktopGlyphLines(); assert.ok(lines.length>=24); assert.ok(lines.every(line=>actual.has(line)));
 });
 
-test('the shipped density has its actual nonhuman skin and all required authored performances', async () => {
+test('the shipped density has its actual anatomical skin and all required authored performances', async () => {
   const bytes=await readFile(new URL('../public/assets/hush-density.glb',import.meta.url));
   assert.equal(bytes.toString('ascii',0,4),'glTF'); assert.equal(bytes.readUInt32LE(4),2);
   const json=JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)).trim());
-  assert.equal(json.skins[0].joints.length,19);
+  assert.equal(json.skins[0].joints.length,43);
   const names=new Set(json.animations.map(animation=>animation.name));
   for(const name of ['pressure_approach','density_idle','density_listen','density_retained']) assert.ok(names.has(name));
   assert.ok(json.nodes.some(node=>node.skin!==undefined&&node.mesh!==undefined));

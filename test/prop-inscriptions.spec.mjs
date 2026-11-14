@@ -43,7 +43,7 @@ const hosts=[{id:'roof-gate',mesh:'gate',x:2,y:1,z:4,yaw:.2},
   {id:'floating-host',mesh:'float',waterlineBody:'basin',waterlineOffset:.3,y:1}];
 const labels=hosts.map(p=>({id:`${p.id}-ink`,hostId:p.id,hostMesh:p.mesh,mesh:`lettering_overlay_${p.id}`}));
 const calls=[];
-const boundary={usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchitecturalLocalLights:()=>{},
+const boundary={interiorOutlookKey:()=>[],shouldPortalOwnScenery:()=>false,buildingWindowsForObserver:()=>[],usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchitecturalLocalLights:()=>{},
   studentStrikePresentationFrame:()=>null,studentStrikeScene:null,
   openingObserver:()=>null,currentExteriorWindow:()=>null,buildingWindowInteriorInstance,
   shouldStageOpeningCinematic:()=>false,openingCinematicFrame:()=>null,openingOvertureScene:null,

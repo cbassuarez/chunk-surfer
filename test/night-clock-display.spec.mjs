@@ -24,9 +24,13 @@ function hardwareFont(){
  return{measure(value,size){return{width:[...String(value)].reduce((sum,ch)=>sum+b.readUInt16BE(tables.hmtx+4*Math.min(glyph(ch.codePointAt(0)),count-1)),0)/units*size,actualBoundingBoxAscent:ascent/units*size,actualBoundingBoxDescent:descent/units*size};}};
 }
 const font=hardwareFont();
+class Gradient {
+ constructor(coords){this.coords=coords;this.stops=[];}
+ addColorStop(at,color){this.stops.push([at,color]);}
+}
 function context(){
  const state={globalAlpha:.8,shadowBlur:6,shadowOffsetX:3,shadowOffsetY:2,font:'12px sans-serif'},draws=[],stack=[];
- const methods={save(){stack.push({...state});},restore(){assert.ok(stack.length);for(const k of Object.keys(state))delete state[k];Object.assign(state,stack.pop());},measureText(value){const size=Number(/([\d.]+)px/.exec(state.font)?.[1]||12);return font.measure(value,size);}};
+ const methods={save(){stack.push({...state});},restore(){assert.ok(stack.length);for(const k of Object.keys(state))delete state[k];Object.assign(state,stack.pop());},measureText(value){const size=Number(/([\d.]+)px/.exec(state.font)?.[1]||12);return font.measure(value,size);},createLinearGradient(...coords){return new Gradient(coords);}};
  const ctx=new Proxy(state,{get(target,key){if(key in methods)return methods[key];if(key in target)return target[key];return(...args)=>draws.push({kind:key,args,state:{...state}});},set(target,key,value){target[key]=value;return true;}});
  return{ctx,draws,state,stack};
 }
@@ -60,7 +64,8 @@ test('formed HH:MM ink and native identity fit compact header at real UI scale a
   const fills=p.draws.filter(d=>d.kind==='fillText');assert.ok(fills.length);assert.ok(fills.every(d=>d.state.font.includes('Hardware Sans')));
   for(const draw of fills){const value=draw.args[0],size=Number(/([\d.]+)px/.exec(draw.state.font)[1]),m=font.measure(value,size),x=draw.args[1],baseline=draw.args[2],bounds={x,y:baseline-m.actualBoundingBoxAscent,w:m.width,h:m.actualBoundingBoxAscent+m.actualBoundingBoxDescent};
     assert.ok(contains(value==='~'?g.estimate:g.identity,bounds),'native identity/estimate ink cannot clip vertically or encroach on digits '+JSON.stringify({scale,dpr,value,bounds,box:g.identity}));}
-  assert.ok(p.draws.every(d=>d.state.shadowBlur===0),'reflective clock does not glow');
+  assert.ok(p.draws.some(d=>d.kind==='fill'&&d.state.shadowBlur>0),'active clock electrodes emit');
+  assert.ok(fills.every(d=>d.state.shadowBlur===0),'etched identity never emits');
  }
 });
 

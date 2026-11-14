@@ -1,0 +1,7959 @@
+{
+  "schemaVersion": 1,
+  "asset": "/assets/ellery-garden-approaches.glb",
+  "sourcePacks": {
+    "public/assets/conservatory-props.glb": {
+      "sha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
+      "bytes": 64730312
+    },
+    "public/assets/ellery-public-front.glb": {
+      "sha256": "350a707335e5af660bcd6497d8390aa43d10e661abe7d13d97eabcb1bf709ec5",
+      "bytes": 5094504
+    }
+  },
+  "meshes": {
+    "ellery_garden_elevation": {
+      "sourcePack": "public/assets/ellery-public-front.glb",
+      "sourceMesh": "conservatory_west_elevation",
+      "anchor": {
+        "x": 50,
+        "z": 7.5
+      },
+      "worldClips": [
+        {
+          "min": [
+            71,
+            -3,
+            0
+          ],
+          "max": [
+            74,
+            9.45,
+            18
+          ]
+        },
+        {
+          "min": [
+            98,
+            -3,
+            0
+          ],
+          "max": [
+            101,
+            9.45,
+            15
+          ]
+        }
+      ],
+      "inputTriangles": 17618,
+      "outputTriangles": 17548,
+      "modifiedInputTriangles": 776,
+      "removedInputTriangles": 170,
+      "relocatedLedgeTriangles": 0,
+      "skyline": {
+        "chapel-belfry": {
+          "triangles": 322,
+          "sourceTop": 27.700000762939453,
+          "top": 19.500000472295852
+        },
+        "fly-tower-tank": {
+          "triangles": 88,
+          "sourceTop": 21.989999771118164,
+          "top": 18.949999929614926
+        }
+      },
+      "bounds": {
+        "min": [
+          -3.75,
+          0,
+          -9.864999771118164
+        ],
+        "max": [
+          79.66500091552734,
+          19.5,
+          85.80000305175781
+        ]
+      }
+    },
+    "ellery_garden_dock": {
+      "sourcePack": "public/assets/conservatory-props.glb",
+      "sourceMesh": "scene_dock_room_fabric",
+      "anchor": {
+        "x": 53,
+        "z": 7.5
+      },
+      "worldClips": [
+        {
+          "min": [
+            71,
+            -3,
+            3
+          ],
+          "max": [
+            1000,
+            9.45,
+            18
+          ]
+        }
+      ],
+      "inputTriangles": 2352,
+      "outputTriangles": 2044,
+      "modifiedInputTriangles": 476,
+      "removedInputTriangles": 364,
+      "relocatedLedgeTriangles": 72,
+      "bounds": {
+        "min": [
+          4.25,
+          -0.0020000000949949026,
+          -4.25
+        ],
+        "max": [
+          18,
+          5.409999847412109,
+          8.149999618530273
+        ]
+      }
+    },
+    "ellery_garden_getin_sightline": {
+      "sourcePack": "public/assets/conservatory-props.glb",
+      "sourceMesh": "getin_sightline_shell",
+      "anchor": {
+        "x": 53,
+        "z": 7.5
+      },
+      "worldClips": [
+        {
+          "min": [
+            71,
+            -3,
+            0
+          ],
+          "max": [
+            74,
+            9.45,
+            18
+          ]
+        }
+      ],
+      "inputTriangles": 144,
+      "outputTriangles": 120,
+      "modifiedInputTriangles": 96,
+      "removedInputTriangles": 48,
+      "relocatedLedgeTriangles": 0,
+      "bounds": {
+        "min": [
+          4.050000190734863,
+          0,
+          -4.369999885559082
+        ],
+        "max": [
+          18,
+          5.5,
+          7.869999885559082
+        ]
+      }
+    },
+    "ellery_garden_hall": {
+      "sourcePack": "public/assets/conservatory-props.glb",
+      "sourceMesh": "hall_structure",
+      "anchor": {
+        "x": 113,
+        "z": 23
+      },
+      "worldClips": [
+        {
+          "min": [
+            98,
+            -3,
+            0
+          ],
+          "max": [
+            101,
+            9.45,
+            15
+          ]
+        }
+      ],
+      "inputTriangles": 3948,
+      "outputTriangles": 3968,
+      "modifiedInputTriangles": 26,
+      "removedInputTriangles": 2,
+      "relocatedLedgeTriangles": 0,
+      "bounds": {
+        "min": [
+          -13.75,
+          -2.5,
+          -19
+        ],
+        "max": [
+          13.75,
+          13.659750938415527,
+          17
+        ]
+      }
+    },
+    "ellery_baths_roof": {
+      "sourcePack": "public/assets/conservatory-props.glb",
+      "sourceMesh": "natatorium_roof_structure",
+      "anchor": {
+        "x": 83,
+        "z": 38.5
+      },
+      "worldClips": [],
+      "inputTriangles": 3276,
+      "outputTriangles": 3276,
+      "modifiedInputTriangles": 0,
+      "removedInputTriangles": 0,
+      "relocatedLedgeTriangles": 0,
+      "bounds": {
+        "min": [
+          -11.404624938964844,
+          5.1148762702941895,
+          -9.75
+        ],
+        "max": [
+          11.404624938964844,
+          9.124939918518066,
+          9.75
+        ]
+      }
+    },
+    "ellery_garden_built_edges": {
+      "anchor": {
+        "x": 72,
+        "z": 2
+      },
+      "outputTriangles": 3936,
+      "parts": [
+        {
+          "id": "west-deep-masonry-side-3",
+          "center": [
+            70.5,
+            2.75,
+            7.95
+          ],
+          "size": [
+            0.5,
+            5.5,
+            9.9
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-deep-masonry-side-14.1",
+          "center": [
+            70.5,
+            2.75,
+            14.55
+          ],
+          "size": [
+            0.5,
+            5.5,
+            0.9000000000000004
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-load-bearing-lintel-masonry",
+          "center": [
+            70.5,
+            4.45,
+            13.5
+          ],
+          "size": [
+            0.5,
+            2.1,
+            1.2
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-service-stone-jamb-12.81",
+          "center": [
+            70.515,
+            1.7,
+            12.81
+          ],
+          "size": [
+            0.57,
+            3.4,
+            0.18
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-service-dressed-jamb-foot-12.81",
+          "center": [
+            70.515,
+            0.25,
+            12.81
+          ],
+          "size": [
+            0.61,
+            0.5,
+            0.22
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-service-stone-jamb-14.19",
+          "center": [
+            70.515,
+            1.7,
+            14.19
+          ],
+          "size": [
+            0.57,
+            3.4,
+            0.18
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-service-dressed-jamb-foot-14.19",
+          "center": [
+            70.515,
+            0.25,
+            14.19
+          ],
+          "size": [
+            0.61,
+            0.5,
+            0.22
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-service-stone-lintel",
+          "center": [
+            70.515,
+            3.49,
+            13.5
+          ],
+          "size": [
+            0.61,
+            0.18,
+            1.6
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-service-threshold",
+          "center": [
+            70.5,
+            0.008,
+            13.5
+          ],
+          "size": [
+            0.58,
+            0.016,
+            1.19
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-inner-timber-stop-12.918000000000001",
+          "center": [
+            70.39,
+            1.69,
+            12.918000000000001
+          ],
+          "size": [
+            0.055,
+            3.38,
+            0.036
+          ],
+          "material": 8
+        },
+        {
+          "id": "west-inner-timber-stop-14.081999999999999",
+          "center": [
+            70.39,
+            1.69,
+            14.081999999999999
+          ],
+          "size": [
+            0.055,
+            3.38,
+            0.036
+          ],
+          "material": 8
+        },
+        {
+          "id": "west-stone-course-0.32-3",
+          "center": [
+            70.773,
+            0.32,
+            7.86
+          ],
+          "size": [
+            0.085,
+            0.1,
+            9.72
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-stone-course-0.32-14.28",
+          "center": [
+            70.773,
+            0.32,
+            14.64
+          ],
+          "size": [
+            0.085,
+            0.1,
+            0.7200000000000006
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-stone-course-1.2-3",
+          "center": [
+            70.773,
+            1.2,
+            7.86
+          ],
+          "size": [
+            0.085,
+            0.1,
+            9.72
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-stone-course-1.2-14.28",
+          "center": [
+            70.773,
+            1.2,
+            14.64
+          ],
+          "size": [
+            0.085,
+            0.1,
+            0.7200000000000006
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-stone-course-3.72-3",
+          "center": [
+            70.773,
+            3.72,
+            7.86
+          ],
+          "size": [
+            0.085,
+            0.1,
+            9.72
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-stone-course-3.72-14.28",
+          "center": [
+            70.773,
+            3.72,
+            14.64
+          ],
+          "size": [
+            0.085,
+            0.1,
+            0.7200000000000006
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-structural-bay-pier-3.2",
+          "center": [
+            70.75,
+            2.75,
+            3.2
+          ],
+          "size": [
+            0.16,
+            5.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-pier-stone-foot-3.2",
+          "center": [
+            70.77,
+            0.23,
+            3.2
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-pier-cap-3.2",
+          "center": [
+            70.78,
+            5.2,
+            3.2
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-structural-bay-pier-5.550000000000001",
+          "center": [
+            70.75,
+            2.75,
+            5.550000000000001
+          ],
+          "size": [
+            0.16,
+            5.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-pier-stone-foot-5.550000000000001",
+          "center": [
+            70.77,
+            0.23,
+            5.550000000000001
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-pier-cap-5.550000000000001",
+          "center": [
+            70.78,
+            5.2,
+            5.550000000000001
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-structural-bay-pier-7.9",
+          "center": [
+            70.75,
+            2.75,
+            7.9
+          ],
+          "size": [
+            0.16,
+            5.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-pier-stone-foot-7.9",
+          "center": [
+            70.77,
+            0.23,
+            7.9
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-pier-cap-7.9",
+          "center": [
+            70.78,
+            5.2,
+            7.9
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-structural-bay-pier-10.25",
+          "center": [
+            70.75,
+            2.75,
+            10.25
+          ],
+          "size": [
+            0.16,
+            5.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-pier-stone-foot-10.25",
+          "center": [
+            70.77,
+            0.23,
+            10.25
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-pier-cap-10.25",
+          "center": [
+            70.78,
+            5.2,
+            10.25
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-structural-bay-pier-12.6",
+          "center": [
+            70.75,
+            2.75,
+            12.6
+          ],
+          "size": [
+            0.16,
+            5.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-pier-stone-foot-12.6",
+          "center": [
+            70.77,
+            0.23,
+            12.6
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-pier-cap-12.6",
+          "center": [
+            70.78,
+            5.2,
+            12.6
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-continuous-bearing-cornice",
+          "center": [
+            70.77,
+            5.42,
+            9
+          ],
+          "size": [
+            0.32,
+            0.16,
+            12.1
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-roof-edge-coping",
+          "center": [
+            70.72,
+            5.535,
+            9
+          ],
+          "size": [
+            0.48,
+            0.07,
+            12.12
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-deep-end-return",
+          "center": [
+            70.32,
+            2.75,
+            15.05
+          ],
+          "size": [
+            0.86,
+            5.5,
+            0.3
+          ],
+          "material": 0
+        },
+        {
+          "id": "west-end-return-stone-cap",
+          "center": [
+            70.32,
+            5.42,
+            15.05
+          ],
+          "size": [
+            0.9,
+            0.16,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-deep-masonry-side-4",
+          "center": [
+            101.5,
+            4.75,
+            7.45
+          ],
+          "size": [
+            0.5,
+            9.5,
+            6.9
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-deep-masonry-side-12.1",
+          "center": [
+            101.5,
+            4.75,
+            13.55
+          ],
+          "size": [
+            0.5,
+            9.5,
+            2.9000000000000004
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-load-bearing-lintel-masonry",
+          "center": [
+            101.5,
+            6.45,
+            11.5
+          ],
+          "size": [
+            0.5,
+            6.1,
+            1.2
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-service-stone-jamb-10.81",
+          "center": [
+            101.485,
+            1.7,
+            10.81
+          ],
+          "size": [
+            0.57,
+            3.4,
+            0.18
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-service-dressed-jamb-foot-10.81",
+          "center": [
+            101.485,
+            0.25,
+            10.81
+          ],
+          "size": [
+            0.61,
+            0.5,
+            0.22
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-service-stone-jamb-12.19",
+          "center": [
+            101.485,
+            1.7,
+            12.19
+          ],
+          "size": [
+            0.57,
+            3.4,
+            0.18
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-service-dressed-jamb-foot-12.19",
+          "center": [
+            101.485,
+            0.25,
+            12.19
+          ],
+          "size": [
+            0.61,
+            0.5,
+            0.22
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-service-stone-lintel",
+          "center": [
+            101.485,
+            3.49,
+            11.5
+          ],
+          "size": [
+            0.61,
+            0.18,
+            1.6
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-service-threshold",
+          "center": [
+            101.5,
+            0.008,
+            11.5
+          ],
+          "size": [
+            0.58,
+            0.016,
+            1.19
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-inner-timber-stop-10.918000000000001",
+          "center": [
+            101.61,
+            1.69,
+            10.918000000000001
+          ],
+          "size": [
+            0.055,
+            3.38,
+            0.036
+          ],
+          "material": 8
+        },
+        {
+          "id": "east-inner-timber-stop-12.081999999999999",
+          "center": [
+            101.61,
+            1.69,
+            12.081999999999999
+          ],
+          "size": [
+            0.055,
+            3.38,
+            0.036
+          ],
+          "material": 8
+        },
+        {
+          "id": "east-stone-course-0.32-4",
+          "center": [
+            101.227,
+            0.32,
+            7.36
+          ],
+          "size": [
+            0.085,
+            0.1,
+            6.720000000000001
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-stone-course-0.32-12.28",
+          "center": [
+            101.227,
+            0.32,
+            13.64
+          ],
+          "size": [
+            0.085,
+            0.1,
+            2.7200000000000006
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-stone-course-1.2-4",
+          "center": [
+            101.227,
+            1.2,
+            7.36
+          ],
+          "size": [
+            0.085,
+            0.1,
+            6.720000000000001
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-stone-course-1.2-12.28",
+          "center": [
+            101.227,
+            1.2,
+            13.64
+          ],
+          "size": [
+            0.085,
+            0.1,
+            2.7200000000000006
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-stone-course-3.72-4",
+          "center": [
+            101.227,
+            3.72,
+            7.36
+          ],
+          "size": [
+            0.085,
+            0.1,
+            6.720000000000001
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-stone-course-3.72-12.28",
+          "center": [
+            101.227,
+            3.72,
+            13.64
+          ],
+          "size": [
+            0.085,
+            0.1,
+            2.7200000000000006
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-structural-bay-pier-4.2",
+          "center": [
+            101.25,
+            4.75,
+            4.2
+          ],
+          "size": [
+            0.16,
+            9.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-pier-stone-foot-4.2",
+          "center": [
+            101.23,
+            0.23,
+            4.2
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-pier-cap-4.2",
+          "center": [
+            101.22,
+            9.2,
+            4.2
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-structural-bay-pier-6.550000000000001",
+          "center": [
+            101.25,
+            4.75,
+            6.550000000000001
+          ],
+          "size": [
+            0.16,
+            9.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-pier-stone-foot-6.550000000000001",
+          "center": [
+            101.23,
+            0.23,
+            6.550000000000001
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-pier-cap-6.550000000000001",
+          "center": [
+            101.22,
+            9.2,
+            6.550000000000001
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-structural-bay-pier-8.9",
+          "center": [
+            101.25,
+            4.75,
+            8.9
+          ],
+          "size": [
+            0.16,
+            9.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-pier-stone-foot-8.9",
+          "center": [
+            101.23,
+            0.23,
+            8.9
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-pier-cap-8.9",
+          "center": [
+            101.22,
+            9.2,
+            8.9
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-structural-bay-pier-13.6",
+          "center": [
+            101.25,
+            4.75,
+            13.6
+          ],
+          "size": [
+            0.16,
+            9.5,
+            0.24
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-pier-stone-foot-13.6",
+          "center": [
+            101.23,
+            0.23,
+            13.6
+          ],
+          "size": [
+            0.2,
+            0.46,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-pier-cap-13.6",
+          "center": [
+            101.22,
+            9.2,
+            13.6
+          ],
+          "size": [
+            0.22,
+            0.13,
+            0.38
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-continuous-bearing-cornice",
+          "center": [
+            101.23,
+            9.42,
+            9.5
+          ],
+          "size": [
+            0.32,
+            0.16,
+            11.1
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-roof-edge-coping",
+          "center": [
+            101.28,
+            9.535,
+            9.5
+          ],
+          "size": [
+            0.48,
+            0.07,
+            11.12
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-deep-end-return",
+          "center": [
+            101.68,
+            4.75,
+            15.05
+          ],
+          "size": [
+            0.86,
+            9.5,
+            0.3
+          ],
+          "material": 0
+        },
+        {
+          "id": "east-end-return-stone-cap",
+          "center": [
+            101.68,
+            9.42,
+            15.05
+          ],
+          "size": [
+            0.9,
+            0.16,
+            0.36
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-paving-0-0.02",
+          "center": [
+            71.5,
+            0.003,
+            0.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-1-0.02",
+          "center": [
+            72.5,
+            0.003,
+            0.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-0.02",
+          "center": [
+            73.5,
+            0.003,
+            0.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-1.22",
+          "center": [
+            71.5,
+            0.003,
+            1.81
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-1.22",
+          "center": [
+            72.5,
+            0.003,
+            1.81
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-2-1.22",
+          "center": [
+            73.5,
+            0.003,
+            1.81
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-2.42",
+          "center": [
+            71.5,
+            0.003,
+            3.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-2.42",
+          "center": [
+            72.5,
+            0.003,
+            3.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-2.42",
+          "center": [
+            73.5,
+            0.003,
+            3.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-0-3.62",
+          "center": [
+            71.5,
+            0.003,
+            4.21
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-3.62",
+          "center": [
+            72.5,
+            0.003,
+            4.21
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-3.62",
+          "center": [
+            73.5,
+            0.003,
+            4.21
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-4.82",
+          "center": [
+            71.5,
+            0.003,
+            5.41
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-4.82",
+          "center": [
+            72.5,
+            0.003,
+            5.41
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-4.82",
+          "center": [
+            73.5,
+            0.003,
+            5.41
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-6.0200000000000005",
+          "center": [
+            71.5,
+            0.003,
+            6.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-6.0200000000000005",
+          "center": [
+            72.5,
+            0.003,
+            6.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-6.0200000000000005",
+          "center": [
+            73.5,
+            0.003,
+            6.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-7.220000000000001",
+          "center": [
+            71.5,
+            0.003,
+            7.8100000000000005
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-7.220000000000001",
+          "center": [
+            72.5,
+            0.003,
+            7.8100000000000005
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-7.220000000000001",
+          "center": [
+            73.5,
+            0.003,
+            7.8100000000000005
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-8.42",
+          "center": [
+            71.5,
+            0.003,
+            9.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-1-8.42",
+          "center": [
+            72.5,
+            0.003,
+            9.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-8.42",
+          "center": [
+            73.5,
+            0.003,
+            9.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-9.62",
+          "center": [
+            71.5,
+            0.003,
+            10.209999999999999
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-9.62",
+          "center": [
+            72.5,
+            0.003,
+            10.209999999999999
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-2-9.62",
+          "center": [
+            73.5,
+            0.003,
+            10.209999999999999
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-10.819999999999999",
+          "center": [
+            71.5,
+            0.003,
+            11.409999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-10.819999999999999",
+          "center": [
+            72.5,
+            0.003,
+            11.409999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-10.819999999999999",
+          "center": [
+            73.5,
+            0.003,
+            11.409999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-0-12.019999999999998",
+          "center": [
+            71.5,
+            0.003,
+            12.609999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-12.019999999999998",
+          "center": [
+            72.5,
+            0.003,
+            12.609999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-12.019999999999998",
+          "center": [
+            73.5,
+            0.003,
+            12.609999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-13.219999999999997",
+          "center": [
+            71.5,
+            0.003,
+            13.809999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-13.219999999999997",
+          "center": [
+            72.5,
+            0.003,
+            13.809999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-13.219999999999997",
+          "center": [
+            73.5,
+            0.003,
+            13.809999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-14.419999999999996",
+          "center": [
+            71.5,
+            0.003,
+            15.009999999999996
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-14.419999999999996",
+          "center": [
+            72.5,
+            0.003,
+            15.009999999999996
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-14.419999999999996",
+          "center": [
+            73.5,
+            0.003,
+            15.009999999999996
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-15.619999999999996",
+          "center": [
+            71.5,
+            0.003,
+            16.209999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-1-15.619999999999996",
+          "center": [
+            72.5,
+            0.003,
+            16.209999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-15.619999999999996",
+          "center": [
+            73.5,
+            0.003,
+            16.209999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-0-16.819999999999997",
+          "center": [
+            71.5,
+            0.003,
+            17.4
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.1600000000000033
+          ],
+          "material": 4
+        },
+        {
+          "id": "west-paving-1-16.819999999999997",
+          "center": [
+            72.5,
+            0.003,
+            17.4
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.1600000000000033
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-paving-2-16.819999999999997",
+          "center": [
+            73.5,
+            0.003,
+            17.4
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.1600000000000033
+          ],
+          "material": 3
+        },
+        {
+          "id": "west-recessed-drain-shadow",
+          "center": [
+            71.13,
+            0.003,
+            9
+          ],
+          "size": [
+            0.18,
+            0.014,
+            17.92
+          ],
+          "material": 7
+        },
+        {
+          "id": "west-drain-cross-bar-0.1",
+          "center": [
+            71.13,
+            0.006,
+            0.1
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-0.33",
+          "center": [
+            71.13,
+            0.006,
+            0.33
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-0.56",
+          "center": [
+            71.13,
+            0.006,
+            0.56
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-0.79",
+          "center": [
+            71.13,
+            0.006,
+            0.79
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-1.02",
+          "center": [
+            71.13,
+            0.006,
+            1.02
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-1.25",
+          "center": [
+            71.13,
+            0.006,
+            1.25
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-1.48",
+          "center": [
+            71.13,
+            0.006,
+            1.48
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-1.71",
+          "center": [
+            71.13,
+            0.006,
+            1.71
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-1.94",
+          "center": [
+            71.13,
+            0.006,
+            1.94
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-2.17",
+          "center": [
+            71.13,
+            0.006,
+            2.17
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-2.4",
+          "center": [
+            71.13,
+            0.006,
+            2.4
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-2.63",
+          "center": [
+            71.13,
+            0.006,
+            2.63
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-2.86",
+          "center": [
+            71.13,
+            0.006,
+            2.86
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-3.09",
+          "center": [
+            71.13,
+            0.006,
+            3.09
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-3.32",
+          "center": [
+            71.13,
+            0.006,
+            3.32
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-3.55",
+          "center": [
+            71.13,
+            0.006,
+            3.55
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-3.78",
+          "center": [
+            71.13,
+            0.006,
+            3.78
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-4.01",
+          "center": [
+            71.13,
+            0.006,
+            4.01
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-4.24",
+          "center": [
+            71.13,
+            0.006,
+            4.24
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-4.470000000000001",
+          "center": [
+            71.13,
+            0.006,
+            4.470000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-4.700000000000001",
+          "center": [
+            71.13,
+            0.006,
+            4.700000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-4.9300000000000015",
+          "center": [
+            71.13,
+            0.006,
+            4.9300000000000015
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-5.160000000000002",
+          "center": [
+            71.13,
+            0.006,
+            5.160000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-5.390000000000002",
+          "center": [
+            71.13,
+            0.006,
+            5.390000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-5.620000000000003",
+          "center": [
+            71.13,
+            0.006,
+            5.620000000000003
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-5.850000000000003",
+          "center": [
+            71.13,
+            0.006,
+            5.850000000000003
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-6.080000000000004",
+          "center": [
+            71.13,
+            0.006,
+            6.080000000000004
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-6.310000000000004",
+          "center": [
+            71.13,
+            0.006,
+            6.310000000000004
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-6.5400000000000045",
+          "center": [
+            71.13,
+            0.006,
+            6.5400000000000045
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-6.770000000000005",
+          "center": [
+            71.13,
+            0.006,
+            6.770000000000005
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-7.000000000000005",
+          "center": [
+            71.13,
+            0.006,
+            7.000000000000005
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-7.230000000000006",
+          "center": [
+            71.13,
+            0.006,
+            7.230000000000006
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-7.460000000000006",
+          "center": [
+            71.13,
+            0.006,
+            7.460000000000006
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-7.690000000000007",
+          "center": [
+            71.13,
+            0.006,
+            7.690000000000007
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-7.920000000000007",
+          "center": [
+            71.13,
+            0.006,
+            7.920000000000007
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-8.150000000000007",
+          "center": [
+            71.13,
+            0.006,
+            8.150000000000007
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-8.380000000000008",
+          "center": [
+            71.13,
+            0.006,
+            8.380000000000008
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-8.610000000000008",
+          "center": [
+            71.13,
+            0.006,
+            8.610000000000008
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-8.840000000000009",
+          "center": [
+            71.13,
+            0.006,
+            8.840000000000009
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-9.07000000000001",
+          "center": [
+            71.13,
+            0.006,
+            9.07000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-9.30000000000001",
+          "center": [
+            71.13,
+            0.006,
+            9.30000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-9.53000000000001",
+          "center": [
+            71.13,
+            0.006,
+            9.53000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-9.76000000000001",
+          "center": [
+            71.13,
+            0.006,
+            9.76000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-9.99000000000001",
+          "center": [
+            71.13,
+            0.006,
+            9.99000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-10.220000000000011",
+          "center": [
+            71.13,
+            0.006,
+            10.220000000000011
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-10.450000000000012",
+          "center": [
+            71.13,
+            0.006,
+            10.450000000000012
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-10.680000000000012",
+          "center": [
+            71.13,
+            0.006,
+            10.680000000000012
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-10.910000000000013",
+          "center": [
+            71.13,
+            0.006,
+            10.910000000000013
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-11.140000000000013",
+          "center": [
+            71.13,
+            0.006,
+            11.140000000000013
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-11.370000000000013",
+          "center": [
+            71.13,
+            0.006,
+            11.370000000000013
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-11.600000000000014",
+          "center": [
+            71.13,
+            0.006,
+            11.600000000000014
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-11.830000000000014",
+          "center": [
+            71.13,
+            0.006,
+            11.830000000000014
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-12.060000000000015",
+          "center": [
+            71.13,
+            0.006,
+            12.060000000000015
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-12.290000000000015",
+          "center": [
+            71.13,
+            0.006,
+            12.290000000000015
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-12.520000000000016",
+          "center": [
+            71.13,
+            0.006,
+            12.520000000000016
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-12.750000000000016",
+          "center": [
+            71.13,
+            0.006,
+            12.750000000000016
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-12.980000000000016",
+          "center": [
+            71.13,
+            0.006,
+            12.980000000000016
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-13.210000000000017",
+          "center": [
+            71.13,
+            0.006,
+            13.210000000000017
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-13.440000000000017",
+          "center": [
+            71.13,
+            0.006,
+            13.440000000000017
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-13.670000000000018",
+          "center": [
+            71.13,
+            0.006,
+            13.670000000000018
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-13.900000000000018",
+          "center": [
+            71.13,
+            0.006,
+            13.900000000000018
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-14.130000000000019",
+          "center": [
+            71.13,
+            0.006,
+            14.130000000000019
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-14.360000000000019",
+          "center": [
+            71.13,
+            0.006,
+            14.360000000000019
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-14.59000000000002",
+          "center": [
+            71.13,
+            0.006,
+            14.59000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-14.82000000000002",
+          "center": [
+            71.13,
+            0.006,
+            14.82000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-15.05000000000002",
+          "center": [
+            71.13,
+            0.006,
+            15.05000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-15.28000000000002",
+          "center": [
+            71.13,
+            0.006,
+            15.28000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-15.510000000000021",
+          "center": [
+            71.13,
+            0.006,
+            15.510000000000021
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-15.740000000000022",
+          "center": [
+            71.13,
+            0.006,
+            15.740000000000022
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-15.970000000000022",
+          "center": [
+            71.13,
+            0.006,
+            15.970000000000022
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-16.20000000000002",
+          "center": [
+            71.13,
+            0.006,
+            16.20000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-16.43000000000002",
+          "center": [
+            71.13,
+            0.006,
+            16.43000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-16.66000000000002",
+          "center": [
+            71.13,
+            0.006,
+            16.66000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-16.890000000000022",
+          "center": [
+            71.13,
+            0.006,
+            16.890000000000022
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-17.120000000000022",
+          "center": [
+            71.13,
+            0.006,
+            17.120000000000022
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-17.350000000000023",
+          "center": [
+            71.13,
+            0.006,
+            17.350000000000023
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-17.580000000000023",
+          "center": [
+            71.13,
+            0.006,
+            17.580000000000023
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-drain-cross-bar-17.810000000000024",
+          "center": [
+            71.13,
+            0.006,
+            17.810000000000024
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-gate-hinge-post-15.15",
+          "center": [
+            71.13,
+            0.82,
+            15.15
+          ],
+          "size": [
+            0.075,
+            1.64,
+            0.075
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-gate-post-stone-shoe-15.15",
+          "center": [
+            71.13,
+            0.11,
+            15.15
+          ],
+          "size": [
+            0.16,
+            0.22,
+            0.16
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-gate-hinge-post-16.85",
+          "center": [
+            71.13,
+            0.82,
+            16.85
+          ],
+          "size": [
+            0.075,
+            1.64,
+            0.075
+          ],
+          "material": 5
+        },
+        {
+          "id": "west-gate-post-stone-shoe-16.85",
+          "center": [
+            71.13,
+            0.11,
+            16.85
+          ],
+          "size": [
+            0.16,
+            0.22,
+            0.16
+          ],
+          "material": 1
+        },
+        {
+          "id": "west-parked-gate-rail-0.2",
+          "a": [
+            71.13,
+            0.2,
+            15.2
+          ],
+          "b": [
+            71.13,
+            0.2,
+            16.8
+          ],
+          "width": 0.026,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-rail-1.4",
+          "a": [
+            71.13,
+            1.4,
+            15.2
+          ],
+          "b": [
+            71.13,
+            1.4,
+            16.8
+          ],
+          "width": 0.026,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-0",
+          "a": [
+            71.13,
+            0.2,
+            15.24
+          ],
+          "b": [
+            71.13,
+            1.48,
+            15.24
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-1",
+          "a": [
+            71.13,
+            0.2,
+            15.43
+          ],
+          "b": [
+            71.13,
+            1.48,
+            15.43
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-2",
+          "a": [
+            71.13,
+            0.2,
+            15.620000000000001
+          ],
+          "b": [
+            71.13,
+            1.48,
+            15.620000000000001
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-3",
+          "a": [
+            71.13,
+            0.2,
+            15.81
+          ],
+          "b": [
+            71.13,
+            1.48,
+            15.81
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-4",
+          "a": [
+            71.13,
+            0.2,
+            16
+          ],
+          "b": [
+            71.13,
+            1.48,
+            16
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-5",
+          "a": [
+            71.13,
+            0.2,
+            16.19
+          ],
+          "b": [
+            71.13,
+            1.48,
+            16.19
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-6",
+          "a": [
+            71.13,
+            0.2,
+            16.38
+          ],
+          "b": [
+            71.13,
+            1.48,
+            16.38
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-7",
+          "a": [
+            71.13,
+            0.2,
+            16.57
+          ],
+          "b": [
+            71.13,
+            1.48,
+            16.57
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "west-parked-gate-spindle-8",
+          "a": [
+            71.13,
+            0.2,
+            16.76
+          ],
+          "b": [
+            71.13,
+            1.48,
+            16.76
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-paving-0-0.02",
+          "center": [
+            98.5,
+            0.003,
+            0.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "east-paving-1-0.02",
+          "center": [
+            99.5,
+            0.003,
+            0.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-0.02",
+          "center": [
+            100.5,
+            0.003,
+            0.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-1.22",
+          "center": [
+            98.5,
+            0.003,
+            1.81
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-1.22",
+          "center": [
+            99.5,
+            0.003,
+            1.81
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "east-paving-2-1.22",
+          "center": [
+            100.5,
+            0.003,
+            1.81
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-2.42",
+          "center": [
+            98.5,
+            0.003,
+            3.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-2.42",
+          "center": [
+            99.5,
+            0.003,
+            3.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-2.42",
+          "center": [
+            100.5,
+            0.003,
+            3.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "east-paving-0-3.62",
+          "center": [
+            98.5,
+            0.003,
+            4.21
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-3.62",
+          "center": [
+            99.5,
+            0.003,
+            4.21
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-3.62",
+          "center": [
+            100.5,
+            0.003,
+            4.21
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-4.82",
+          "center": [
+            98.5,
+            0.003,
+            5.41
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-4.82",
+          "center": [
+            99.5,
+            0.003,
+            5.41
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-4.82",
+          "center": [
+            100.5,
+            0.003,
+            5.41
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-6.0200000000000005",
+          "center": [
+            98.5,
+            0.003,
+            6.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-6.0200000000000005",
+          "center": [
+            99.5,
+            0.003,
+            6.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-6.0200000000000005",
+          "center": [
+            100.5,
+            0.003,
+            6.61
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-7.220000000000001",
+          "center": [
+            98.5,
+            0.003,
+            7.8100000000000005
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-7.220000000000001",
+          "center": [
+            99.5,
+            0.003,
+            7.8100000000000005
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-7.220000000000001",
+          "center": [
+            100.5,
+            0.003,
+            7.8100000000000005
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-8.42",
+          "center": [
+            98.5,
+            0.003,
+            9.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "east-paving-1-8.42",
+          "center": [
+            99.5,
+            0.003,
+            9.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-8.42",
+          "center": [
+            100.5,
+            0.003,
+            9.01
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-9.62",
+          "center": [
+            98.5,
+            0.003,
+            10.209999999999999
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-9.62",
+          "center": [
+            99.5,
+            0.003,
+            10.209999999999999
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "east-paving-2-9.62",
+          "center": [
+            100.5,
+            0.003,
+            10.209999999999999
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-10.819999999999999",
+          "center": [
+            98.5,
+            0.003,
+            11.409999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-10.819999999999999",
+          "center": [
+            99.5,
+            0.003,
+            11.409999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-10.819999999999999",
+          "center": [
+            100.5,
+            0.003,
+            11.409999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 4
+        },
+        {
+          "id": "east-paving-0-12.019999999999998",
+          "center": [
+            98.5,
+            0.003,
+            12.609999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-12.019999999999998",
+          "center": [
+            99.5,
+            0.003,
+            12.609999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-12.019999999999998",
+          "center": [
+            100.5,
+            0.003,
+            12.609999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-13.219999999999997",
+          "center": [
+            98.5,
+            0.003,
+            13.809999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-13.219999999999997",
+          "center": [
+            99.5,
+            0.003,
+            13.809999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-13.219999999999997",
+          "center": [
+            100.5,
+            0.003,
+            13.809999999999997
+          ],
+          "size": [
+            0.982,
+            0.01,
+            1.18
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-0-14.419999999999996",
+          "center": [
+            98.5,
+            0.003,
+            14.699999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            0.5600000000000036
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-1-14.419999999999996",
+          "center": [
+            99.5,
+            0.003,
+            14.699999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            0.5600000000000036
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-paving-2-14.419999999999996",
+          "center": [
+            100.5,
+            0.003,
+            14.699999999999998
+          ],
+          "size": [
+            0.982,
+            0.01,
+            0.5600000000000036
+          ],
+          "material": 3
+        },
+        {
+          "id": "east-recessed-drain-shadow",
+          "center": [
+            100.87,
+            0.003,
+            7.5
+          ],
+          "size": [
+            0.18,
+            0.014,
+            14.92
+          ],
+          "material": 7
+        },
+        {
+          "id": "east-drain-cross-bar-0.1",
+          "center": [
+            100.87,
+            0.006,
+            0.1
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-0.33",
+          "center": [
+            100.87,
+            0.006,
+            0.33
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-0.56",
+          "center": [
+            100.87,
+            0.006,
+            0.56
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-0.79",
+          "center": [
+            100.87,
+            0.006,
+            0.79
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-1.02",
+          "center": [
+            100.87,
+            0.006,
+            1.02
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-1.25",
+          "center": [
+            100.87,
+            0.006,
+            1.25
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-1.48",
+          "center": [
+            100.87,
+            0.006,
+            1.48
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-1.71",
+          "center": [
+            100.87,
+            0.006,
+            1.71
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-1.94",
+          "center": [
+            100.87,
+            0.006,
+            1.94
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-2.17",
+          "center": [
+            100.87,
+            0.006,
+            2.17
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-2.4",
+          "center": [
+            100.87,
+            0.006,
+            2.4
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-2.63",
+          "center": [
+            100.87,
+            0.006,
+            2.63
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-2.86",
+          "center": [
+            100.87,
+            0.006,
+            2.86
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-3.09",
+          "center": [
+            100.87,
+            0.006,
+            3.09
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-3.32",
+          "center": [
+            100.87,
+            0.006,
+            3.32
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-3.55",
+          "center": [
+            100.87,
+            0.006,
+            3.55
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-3.78",
+          "center": [
+            100.87,
+            0.006,
+            3.78
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-4.01",
+          "center": [
+            100.87,
+            0.006,
+            4.01
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-4.24",
+          "center": [
+            100.87,
+            0.006,
+            4.24
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-4.470000000000001",
+          "center": [
+            100.87,
+            0.006,
+            4.470000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-4.700000000000001",
+          "center": [
+            100.87,
+            0.006,
+            4.700000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-4.9300000000000015",
+          "center": [
+            100.87,
+            0.006,
+            4.9300000000000015
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-5.160000000000002",
+          "center": [
+            100.87,
+            0.006,
+            5.160000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-5.390000000000002",
+          "center": [
+            100.87,
+            0.006,
+            5.390000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-5.620000000000003",
+          "center": [
+            100.87,
+            0.006,
+            5.620000000000003
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-5.850000000000003",
+          "center": [
+            100.87,
+            0.006,
+            5.850000000000003
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-6.080000000000004",
+          "center": [
+            100.87,
+            0.006,
+            6.080000000000004
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-6.310000000000004",
+          "center": [
+            100.87,
+            0.006,
+            6.310000000000004
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-6.5400000000000045",
+          "center": [
+            100.87,
+            0.006,
+            6.5400000000000045
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-6.770000000000005",
+          "center": [
+            100.87,
+            0.006,
+            6.770000000000005
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-7.000000000000005",
+          "center": [
+            100.87,
+            0.006,
+            7.000000000000005
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-7.230000000000006",
+          "center": [
+            100.87,
+            0.006,
+            7.230000000000006
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-7.460000000000006",
+          "center": [
+            100.87,
+            0.006,
+            7.460000000000006
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-7.690000000000007",
+          "center": [
+            100.87,
+            0.006,
+            7.690000000000007
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-7.920000000000007",
+          "center": [
+            100.87,
+            0.006,
+            7.920000000000007
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-8.150000000000007",
+          "center": [
+            100.87,
+            0.006,
+            8.150000000000007
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-8.380000000000008",
+          "center": [
+            100.87,
+            0.006,
+            8.380000000000008
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-8.610000000000008",
+          "center": [
+            100.87,
+            0.006,
+            8.610000000000008
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-8.840000000000009",
+          "center": [
+            100.87,
+            0.006,
+            8.840000000000009
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-9.07000000000001",
+          "center": [
+            100.87,
+            0.006,
+            9.07000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-9.30000000000001",
+          "center": [
+            100.87,
+            0.006,
+            9.30000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-9.53000000000001",
+          "center": [
+            100.87,
+            0.006,
+            9.53000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-9.76000000000001",
+          "center": [
+            100.87,
+            0.006,
+            9.76000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-9.99000000000001",
+          "center": [
+            100.87,
+            0.006,
+            9.99000000000001
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-10.220000000000011",
+          "center": [
+            100.87,
+            0.006,
+            10.220000000000011
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-10.450000000000012",
+          "center": [
+            100.87,
+            0.006,
+            10.450000000000012
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-10.680000000000012",
+          "center": [
+            100.87,
+            0.006,
+            10.680000000000012
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-10.910000000000013",
+          "center": [
+            100.87,
+            0.006,
+            10.910000000000013
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-11.140000000000013",
+          "center": [
+            100.87,
+            0.006,
+            11.140000000000013
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-11.370000000000013",
+          "center": [
+            100.87,
+            0.006,
+            11.370000000000013
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-11.600000000000014",
+          "center": [
+            100.87,
+            0.006,
+            11.600000000000014
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-11.830000000000014",
+          "center": [
+            100.87,
+            0.006,
+            11.830000000000014
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-12.060000000000015",
+          "center": [
+            100.87,
+            0.006,
+            12.060000000000015
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-12.290000000000015",
+          "center": [
+            100.87,
+            0.006,
+            12.290000000000015
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-12.520000000000016",
+          "center": [
+            100.87,
+            0.006,
+            12.520000000000016
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-12.750000000000016",
+          "center": [
+            100.87,
+            0.006,
+            12.750000000000016
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-12.980000000000016",
+          "center": [
+            100.87,
+            0.006,
+            12.980000000000016
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-13.210000000000017",
+          "center": [
+            100.87,
+            0.006,
+            13.210000000000017
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-13.440000000000017",
+          "center": [
+            100.87,
+            0.006,
+            13.440000000000017
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-13.670000000000018",
+          "center": [
+            100.87,
+            0.006,
+            13.670000000000018
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-13.900000000000018",
+          "center": [
+            100.87,
+            0.006,
+            13.900000000000018
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-14.130000000000019",
+          "center": [
+            100.87,
+            0.006,
+            14.130000000000019
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-14.360000000000019",
+          "center": [
+            100.87,
+            0.006,
+            14.360000000000019
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-14.59000000000002",
+          "center": [
+            100.87,
+            0.006,
+            14.59000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-drain-cross-bar-14.82000000000002",
+          "center": [
+            100.87,
+            0.006,
+            14.82000000000002
+          ],
+          "size": [
+            0.18,
+            0.014,
+            0.018
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-gate-hinge-post-12.65",
+          "center": [
+            100.87,
+            0.82,
+            12.65
+          ],
+          "size": [
+            0.075,
+            1.64,
+            0.075
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-gate-post-stone-shoe-12.65",
+          "center": [
+            100.87,
+            0.11,
+            12.65
+          ],
+          "size": [
+            0.16,
+            0.22,
+            0.16
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-gate-hinge-post-14.35",
+          "center": [
+            100.87,
+            0.82,
+            14.35
+          ],
+          "size": [
+            0.075,
+            1.64,
+            0.075
+          ],
+          "material": 5
+        },
+        {
+          "id": "east-gate-post-stone-shoe-14.35",
+          "center": [
+            100.87,
+            0.11,
+            14.35
+          ],
+          "size": [
+            0.16,
+            0.22,
+            0.16
+          ],
+          "material": 1
+        },
+        {
+          "id": "east-parked-gate-rail-0.2",
+          "a": [
+            100.87,
+            0.2,
+            12.7
+          ],
+          "b": [
+            100.87,
+            0.2,
+            14.3
+          ],
+          "width": 0.026,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-rail-1.4",
+          "a": [
+            100.87,
+            1.4,
+            12.7
+          ],
+          "b": [
+            100.87,
+            1.4,
+            14.3
+          ],
+          "width": 0.026,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-0",
+          "a": [
+            100.87,
+            0.2,
+            12.74
+          ],
+          "b": [
+            100.87,
+            1.48,
+            12.74
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-1",
+          "a": [
+            100.87,
+            0.2,
+            12.93
+          ],
+          "b": [
+            100.87,
+            1.48,
+            12.93
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-2",
+          "a": [
+            100.87,
+            0.2,
+            13.120000000000001
+          ],
+          "b": [
+            100.87,
+            1.48,
+            13.120000000000001
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-3",
+          "a": [
+            100.87,
+            0.2,
+            13.31
+          ],
+          "b": [
+            100.87,
+            1.48,
+            13.31
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-4",
+          "a": [
+            100.87,
+            0.2,
+            13.5
+          ],
+          "b": [
+            100.87,
+            1.48,
+            13.5
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-5",
+          "a": [
+            100.87,
+            0.2,
+            13.69
+          ],
+          "b": [
+            100.87,
+            1.48,
+            13.69
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-6",
+          "a": [
+            100.87,
+            0.2,
+            13.88
+          ],
+          "b": [
+            100.87,
+            1.48,
+            13.88
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-7",
+          "a": [
+            100.87,
+            0.2,
+            14.07
+          ],
+          "b": [
+            100.87,
+            1.48,
+            14.07
+          ],
+          "width": 0.018,
+          "material": 5
+        },
+        {
+          "id": "east-parked-gate-spindle-8",
+          "a": [
+            100.87,
+            0.2,
+            14.26
+          ],
+          "b": [
+            100.87,
+            1.48,
+            14.26
+          ],
+          "width": 0.018,
+          "material": 5
+        }
+      ],
+      "apertures": [
+        {
+          "id": "west-service",
+          "axis": "x",
+          "x0": 70.25,
+          "x1": 70.75,
+          "z0": 12.9,
+          "z1": 14.1,
+          "sill": 0,
+          "head": 3.4
+        },
+        {
+          "id": "east-service",
+          "axis": "x",
+          "x0": 101.25,
+          "x1": 101.75,
+          "z0": 10.9,
+          "z1": 12.1,
+          "sill": 0,
+          "head": 3.4
+        }
+      ],
+      "bounds": {
+        "min": [
+          -2.130000114440918,
+          -0.004000000189989805,
+          -1.9800000190734863
+        ],
+        "max": [
+          30.1299991607666,
+          9.569999694824219,
+          15.979999542236328
+        ]
+      }
+    },
+    "ellery_garden_steps": {
+      "anchor": {
+        "x": 102,
+        "z": 9
+      },
+      "outputTriangles": 1560,
+      "parts": [
+        {
+          "id": "L-service-turning-landing",
+          "center": [
+            102.5,
+            -0.09,
+            10
+          ],
+          "size": [
+            1,
+            0.18,
+            4
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-support-102.09-8.1",
+          "center": [
+            102.09,
+            -0.84,
+            8.1
+          ],
+          "size": [
+            0.07,
+            1.32,
+            0.07
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-foot-102.09-8.1",
+          "center": [
+            102.09,
+            -1.48,
+            8.1
+          ],
+          "size": [
+            0.14,
+            0.04,
+            0.14
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-102.09-11.9",
+          "center": [
+            102.09,
+            -0.84,
+            11.9
+          ],
+          "size": [
+            0.07,
+            1.32,
+            0.07
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-foot-102.09-11.9",
+          "center": [
+            102.09,
+            -1.48,
+            11.9
+          ],
+          "size": [
+            0.14,
+            0.04,
+            0.14
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-102.91-8.1",
+          "center": [
+            102.91,
+            -0.84,
+            8.1
+          ],
+          "size": [
+            0.07,
+            1.32,
+            0.07
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-foot-102.91-8.1",
+          "center": [
+            102.91,
+            -1.48,
+            8.1
+          ],
+          "size": [
+            0.14,
+            0.04,
+            0.14
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-102.91-11.9",
+          "center": [
+            102.91,
+            -0.84,
+            11.9
+          ],
+          "size": [
+            0.07,
+            1.32,
+            0.07
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-support-foot-102.91-11.9",
+          "center": [
+            102.91,
+            -1.48,
+            11.9
+          ],
+          "size": [
+            0.14,
+            0.04,
+            0.14
+          ],
+          "material": 5
+        },
+        {
+          "id": "service-tread-0",
+          "center": [
+            103.25,
+            -0.05,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-0",
+          "center": [
+            103.474,
+            0.001,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-tread-1",
+          "center": [
+            103.75,
+            -0.2642857142857143,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-1",
+          "center": [
+            103.974,
+            -0.21328571428571427,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-1",
+          "center": [
+            103.51,
+            -0.10714285714285714,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.21428571428571427,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-2",
+          "center": [
+            104.25,
+            -0.47857142857142854,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-2",
+          "center": [
+            104.474,
+            -0.42757142857142855,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-2",
+          "center": [
+            104.01,
+            -0.3214285714285714,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.21428571428571427,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-3",
+          "center": [
+            104.75,
+            -0.692857142857143,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-3",
+          "center": [
+            104.974,
+            -0.6418571428571429,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-3",
+          "center": [
+            104.51,
+            -0.5357142857142857,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.21428571428571436,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-4",
+          "center": [
+            105.25,
+            -0.9071428571428571,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-4",
+          "center": [
+            105.474,
+            -0.8561428571428571,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-4",
+          "center": [
+            105.01,
+            -0.75,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.2142857142857142,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-5",
+          "center": [
+            105.75,
+            -1.1214285714285714,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-5",
+          "center": [
+            105.974,
+            -1.0704285714285715,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-5",
+          "center": [
+            105.51,
+            -0.9642857142857142,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.2142857142857143,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-6",
+          "center": [
+            106.25,
+            -1.3357142857142859,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-6",
+          "center": [
+            106.474,
+            -1.284714285714286,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-6",
+          "center": [
+            106.01,
+            -1.1785714285714286,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.2142857142857144,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-7",
+          "center": [
+            106.75,
+            -1.55,
+            8.75
+          ],
+          "size": [
+            0.5,
+            0.1,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-tread-worn-nosing-7",
+          "center": [
+            106.974,
+            -1.499,
+            8.75
+          ],
+          "size": [
+            0.052,
+            0.002,
+            1.44
+          ],
+          "material": 1
+        },
+        {
+          "id": "service-closed-riser-7",
+          "center": [
+            106.51,
+            -1.3928571428571428,
+            8.75
+          ],
+          "size": [
+            0.02,
+            0.2142857142857142,
+            1.5
+          ],
+          "material": 6
+        },
+        {
+          "id": "service-stringer-first-return-8.045",
+          "a": [
+            103,
+            -0.105,
+            8.045
+          ],
+          "b": [
+            103.25,
+            -0.105,
+            8.045
+          ],
+          "width": 0.1,
+          "material": 5
+        },
+        {
+          "id": "service-diagonal-stringer-8.045",
+          "a": [
+            103.25,
+            -0.105,
+            8.045
+          ],
+          "b": [
+            106.75,
+            -1.605,
+            8.045
+          ],
+          "width": 0.1,
+          "material": 5
+        },
+        {
+          "id": "service-stringer-last-return-8.045",
+          "a": [
+            106.75,
+            -1.605,
+            8.045
+          ],
+          "b": [
+            107,
+            -1.605,
+            8.045
+          ],
+          "width": 0.1,
+          "material": 5
+        },
+        {
+          "id": "service-stringer-first-return-9.455",
+          "a": [
+            103,
+            -0.105,
+            9.455
+          ],
+          "b": [
+            103.25,
+            -0.105,
+            9.455
+          ],
+          "width": 0.1,
+          "material": 5
+        },
+        {
+          "id": "service-diagonal-stringer-9.455",
+          "a": [
+            103.25,
+            -0.105,
+            9.455
+          ],
+          "b": [
+            106.75,
+            -1.605,
+            9.455
+          ],
+          "width": 0.1,
+          "material": 5
+        },
+        {
+          "id": "service-stringer-last-return-9.455",
+          "a": [
+            106.75,
+            -1.605,
+            9.455
+          ],
+          "b": [
+            107,
+            -1.605,
+            9.455
+          ],
+          "width": 0.1,
+          "material": 5
+        },
+        {
+          "id": "landing-north-guard-post-0",
+          "center": [
+            102.025,
+            0.475,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-north-guard-post-shoe-0",
+          "center": [
+            102.025,
+            0.025,
+            7.965
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-north-guard-post-1",
+          "center": [
+            102.5,
+            0.475,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-north-guard-post-shoe-1",
+          "center": [
+            102.5,
+            0.025,
+            7.965
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-north-guard-post-2",
+          "center": [
+            102.975,
+            0.475,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-north-guard-post-shoe-2",
+          "center": [
+            102.975,
+            0.025,
+            7.965
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-north-guard-rail-0.95",
+          "a": [
+            102.025,
+            0.95,
+            7.965
+          ],
+          "b": [
+            102.975,
+            0.95,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "landing-north-guard-rail-0.45599999999999996",
+          "a": [
+            102.025,
+            0.45599999999999996,
+            7.965
+          ],
+          "b": [
+            102.975,
+            0.45599999999999996,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "landing-south-guard-post-0",
+          "center": [
+            102.025,
+            0.475,
+            12.035
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-south-guard-post-shoe-0",
+          "center": [
+            102.025,
+            0.025,
+            12.035
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-south-guard-post-1",
+          "center": [
+            102.5,
+            0.475,
+            12.035
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-south-guard-post-shoe-1",
+          "center": [
+            102.5,
+            0.025,
+            12.035
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-south-guard-post-2",
+          "center": [
+            102.975,
+            0.475,
+            12.035
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-south-guard-post-shoe-2",
+          "center": [
+            102.975,
+            0.025,
+            12.035
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-south-guard-rail-0.95",
+          "a": [
+            102.025,
+            0.95,
+            12.035
+          ],
+          "b": [
+            102.975,
+            0.95,
+            12.035
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "landing-south-guard-rail-0.45599999999999996",
+          "a": [
+            102.025,
+            0.45599999999999996,
+            12.035
+          ],
+          "b": [
+            102.975,
+            0.45599999999999996,
+            12.035
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-post-0",
+          "center": [
+            103.035,
+            0.475,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-post-shoe-0",
+          "center": [
+            103.035,
+            0.025,
+            9.535
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-east-guard-post-1",
+          "center": [
+            103.035,
+            0.475,
+            10.151250000000001
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-post-shoe-1",
+          "center": [
+            103.035,
+            0.025,
+            10.151250000000001
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-east-guard-post-2",
+          "center": [
+            103.035,
+            0.475,
+            10.7675
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-post-shoe-2",
+          "center": [
+            103.035,
+            0.025,
+            10.7675
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-east-guard-post-3",
+          "center": [
+            103.035,
+            0.475,
+            11.38375
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-post-shoe-3",
+          "center": [
+            103.035,
+            0.025,
+            11.38375
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-east-guard-post-4",
+          "center": [
+            103.035,
+            0.475,
+            12
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-post-shoe-4",
+          "center": [
+            103.035,
+            0.025,
+            12
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-east-guard-rail-0.95",
+          "a": [
+            103.035,
+            0.95,
+            9.535
+          ],
+          "b": [
+            103.035,
+            0.95,
+            12
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "landing-east-guard-rail-0.45599999999999996",
+          "a": [
+            103.035,
+            0.45599999999999996,
+            9.535
+          ],
+          "b": [
+            103.035,
+            0.45599999999999996,
+            12
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-post-0",
+          "center": [
+            101.965,
+            0.475,
+            8
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-post-shoe-0",
+          "center": [
+            101.965,
+            0.025,
+            8
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-west-guard-post-1",
+          "center": [
+            101.965,
+            0.475,
+            8.73
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-post-shoe-1",
+          "center": [
+            101.965,
+            0.025,
+            8.73
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-west-guard-post-2",
+          "center": [
+            101.965,
+            0.475,
+            9.46
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-post-shoe-2",
+          "center": [
+            101.965,
+            0.025,
+            9.46
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-west-guard-post-3",
+          "center": [
+            101.965,
+            0.475,
+            10.19
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-post-shoe-3",
+          "center": [
+            101.965,
+            0.025,
+            10.19
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-west-guard-post-4",
+          "center": [
+            101.965,
+            0.475,
+            10.92
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-post-shoe-4",
+          "center": [
+            101.965,
+            0.025,
+            10.92
+          ],
+          "size": [
+            0.09,
+            0.05,
+            0.09
+          ],
+          "material": 6
+        },
+        {
+          "id": "landing-west-guard-rail-0.95",
+          "a": [
+            101.965,
+            0.95,
+            8
+          ],
+          "b": [
+            101.965,
+            0.95,
+            10.92
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "landing-west-guard-rail-0.45599999999999996",
+          "a": [
+            101.965,
+            0.45599999999999996,
+            8
+          ],
+          "b": [
+            101.965,
+            0.45599999999999996,
+            10.92
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-0-7.965",
+          "center": [
+            103.25,
+            0.475,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-1-7.965",
+          "center": [
+            103.75,
+            0.2607142857142857,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-2-7.965",
+          "center": [
+            104.25,
+            0.04642857142857143,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-3-7.965",
+          "center": [
+            104.75,
+            -0.16785714285714293,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-4-7.965",
+          "center": [
+            105.25,
+            -0.3821428571428571,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-5-7.965",
+          "center": [
+            105.75,
+            -0.5964285714285714,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-6-7.965",
+          "center": [
+            106.25,
+            -0.8107142857142858,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-7-7.965",
+          "center": [
+            106.75,
+            -1.025,
+            7.965
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-1",
+          "a": [
+            103,
+            0.95,
+            7.965
+          ],
+          "b": [
+            103.25,
+            0.95,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-2",
+          "a": [
+            103.25,
+            0.95,
+            7.965
+          ],
+          "b": [
+            103.75,
+            0.7357142857142857,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-3",
+          "a": [
+            103.75,
+            0.7357142857142857,
+            7.965
+          ],
+          "b": [
+            104.25,
+            0.5214285714285714,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-4",
+          "a": [
+            104.25,
+            0.5214285714285714,
+            7.965
+          ],
+          "b": [
+            104.75,
+            0.30714285714285705,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-5",
+          "a": [
+            104.75,
+            0.30714285714285705,
+            7.965
+          ],
+          "b": [
+            105.25,
+            0.09285714285714286,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-6",
+          "a": [
+            105.25,
+            0.09285714285714286,
+            7.965
+          ],
+          "b": [
+            105.75,
+            -0.12142857142857144,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-7",
+          "a": [
+            105.75,
+            -0.12142857142857144,
+            7.965
+          ],
+          "b": [
+            106.25,
+            -0.33571428571428585,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-8",
+          "a": [
+            106.25,
+            -0.33571428571428585,
+            7.965
+          ],
+          "b": [
+            106.75,
+            -0.55,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.95-9",
+          "a": [
+            106.75,
+            -0.55,
+            7.965
+          ],
+          "b": [
+            107,
+            -0.55,
+            7.965
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-1",
+          "a": [
+            103,
+            0.45599999999999996,
+            7.965
+          ],
+          "b": [
+            103.25,
+            0.45599999999999996,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-2",
+          "a": [
+            103.25,
+            0.45599999999999996,
+            7.965
+          ],
+          "b": [
+            103.75,
+            0.2417142857142857,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-3",
+          "a": [
+            103.75,
+            0.2417142857142857,
+            7.965
+          ],
+          "b": [
+            104.25,
+            0.027428571428571413,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-4",
+          "a": [
+            104.25,
+            0.027428571428571413,
+            7.965
+          ],
+          "b": [
+            104.75,
+            -0.18685714285714294,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-5",
+          "a": [
+            104.75,
+            -0.18685714285714294,
+            7.965
+          ],
+          "b": [
+            105.25,
+            -0.40114285714285713,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-6",
+          "a": [
+            105.25,
+            -0.40114285714285713,
+            7.965
+          ],
+          "b": [
+            105.75,
+            -0.6154285714285714,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-7",
+          "a": [
+            105.75,
+            -0.6154285714285714,
+            7.965
+          ],
+          "b": [
+            106.25,
+            -0.8297142857142858,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-8",
+          "a": [
+            106.25,
+            -0.8297142857142858,
+            7.965
+          ],
+          "b": [
+            106.75,
+            -1.044,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-7.965-0.45599999999999996-9",
+          "a": [
+            106.75,
+            -1.044,
+            7.965
+          ],
+          "b": [
+            107,
+            -1.044,
+            7.965
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-0-9.535",
+          "center": [
+            103.25,
+            0.475,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-1-9.535",
+          "center": [
+            103.75,
+            0.2607142857142857,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-2-9.535",
+          "center": [
+            104.25,
+            0.04642857142857143,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-3-9.535",
+          "center": [
+            104.75,
+            -0.16785714285714293,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-4-9.535",
+          "center": [
+            105.25,
+            -0.3821428571428571,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-5-9.535",
+          "center": [
+            105.75,
+            -0.5964285714285714,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-6-9.535",
+          "center": [
+            106.25,
+            -0.8107142857142858,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-rail-post-7-9.535",
+          "center": [
+            106.75,
+            -1.025,
+            9.535
+          ],
+          "size": [
+            0.045,
+            0.95,
+            0.045
+          ],
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-1",
+          "a": [
+            103,
+            0.95,
+            9.535
+          ],
+          "b": [
+            103.25,
+            0.95,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-2",
+          "a": [
+            103.25,
+            0.95,
+            9.535
+          ],
+          "b": [
+            103.75,
+            0.7357142857142857,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-3",
+          "a": [
+            103.75,
+            0.7357142857142857,
+            9.535
+          ],
+          "b": [
+            104.25,
+            0.5214285714285714,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-4",
+          "a": [
+            104.25,
+            0.5214285714285714,
+            9.535
+          ],
+          "b": [
+            104.75,
+            0.30714285714285705,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-5",
+          "a": [
+            104.75,
+            0.30714285714285705,
+            9.535
+          ],
+          "b": [
+            105.25,
+            0.09285714285714286,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-6",
+          "a": [
+            105.25,
+            0.09285714285714286,
+            9.535
+          ],
+          "b": [
+            105.75,
+            -0.12142857142857144,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-7",
+          "a": [
+            105.75,
+            -0.12142857142857144,
+            9.535
+          ],
+          "b": [
+            106.25,
+            -0.33571428571428585,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-8",
+          "a": [
+            106.25,
+            -0.33571428571428585,
+            9.535
+          ],
+          "b": [
+            106.75,
+            -0.55,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.95-9",
+          "a": [
+            106.75,
+            -0.55,
+            9.535
+          ],
+          "b": [
+            107,
+            -0.55,
+            9.535
+          ],
+          "width": 0.038,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-1",
+          "a": [
+            103,
+            0.45599999999999996,
+            9.535
+          ],
+          "b": [
+            103.25,
+            0.45599999999999996,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-2",
+          "a": [
+            103.25,
+            0.45599999999999996,
+            9.535
+          ],
+          "b": [
+            103.75,
+            0.2417142857142857,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-3",
+          "a": [
+            103.75,
+            0.2417142857142857,
+            9.535
+          ],
+          "b": [
+            104.25,
+            0.027428571428571413,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-4",
+          "a": [
+            104.25,
+            0.027428571428571413,
+            9.535
+          ],
+          "b": [
+            104.75,
+            -0.18685714285714294,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-5",
+          "a": [
+            104.75,
+            -0.18685714285714294,
+            9.535
+          ],
+          "b": [
+            105.25,
+            -0.40114285714285713,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-6",
+          "a": [
+            105.25,
+            -0.40114285714285713,
+            9.535
+          ],
+          "b": [
+            105.75,
+            -0.6154285714285714,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-7",
+          "a": [
+            105.75,
+            -0.6154285714285714,
+            9.535
+          ],
+          "b": [
+            106.25,
+            -0.8297142857142858,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-8",
+          "a": [
+            106.25,
+            -0.8297142857142858,
+            9.535
+          ],
+          "b": [
+            106.75,
+            -1.044,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        },
+        {
+          "id": "run-continuous-rail-9.535-0.45599999999999996-9",
+          "a": [
+            106.75,
+            -1.044,
+            9.535
+          ],
+          "b": [
+            107,
+            -1.044,
+            9.535
+          ],
+          "width": 0.025,
+          "material": 5
+        }
+      ],
+      "apertures": [],
+      "bounds": {
+        "min": [
+          -0.07999999821186066,
+          -1.6549999713897705,
+          -1.0800000429153442
+        ],
+        "max": [
+          5,
+          0.968999981880188,
+          3.0799999237060547
+        ]
+      }
+    },
+    "ellery_baths_roof_exterior": {
+      "anchor": {
+        "x": 83,
+        "z": 38.5
+      },
+      "outputTriangles": 960,
+      "parts": [
+        {
+          "id": "roof-bearing-wallplate-71.65",
+          "center": [
+            71.65,
+            5.1,
+            38.5
+          ],
+          "size": [
+            0.32,
+            0.16,
+            19.78
+          ],
+          "material": 1
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-28.75",
+          "center": [
+            71.65,
+            5.21,
+            28.75
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-28.64",
+          "center": [
+            71.65,
+            5.27,
+            28.64
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-28.86",
+          "center": [
+            71.65,
+            5.27,
+            28.86
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-32",
+          "center": [
+            71.65,
+            5.21,
+            32
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-31.89",
+          "center": [
+            71.65,
+            5.27,
+            31.89
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-32.11",
+          "center": [
+            71.65,
+            5.27,
+            32.11
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-35.25",
+          "center": [
+            71.65,
+            5.21,
+            35.25
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-35.14",
+          "center": [
+            71.65,
+            5.27,
+            35.14
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-35.36",
+          "center": [
+            71.65,
+            5.27,
+            35.36
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-38.5",
+          "center": [
+            71.65,
+            5.21,
+            38.5
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-38.39",
+          "center": [
+            71.65,
+            5.27,
+            38.39
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-38.61",
+          "center": [
+            71.65,
+            5.27,
+            38.61
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-41.75",
+          "center": [
+            71.65,
+            5.21,
+            41.75
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-41.64",
+          "center": [
+            71.65,
+            5.27,
+            41.64
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-41.86",
+          "center": [
+            71.65,
+            5.27,
+            41.86
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-45",
+          "center": [
+            71.65,
+            5.21,
+            45
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-44.89",
+          "center": [
+            71.65,
+            5.27,
+            44.89
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-45.11",
+          "center": [
+            71.65,
+            5.27,
+            45.11
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-71.65-48.25",
+          "center": [
+            71.65,
+            5.21,
+            48.25
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-48.14",
+          "center": [
+            71.65,
+            5.27,
+            48.14
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-71.65-48.36",
+          "center": [
+            71.65,
+            5.27,
+            48.36
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "eaves-gutter-bottom-71.65",
+          "center": [
+            71.38000000000001,
+            5.055,
+            38.5
+          ],
+          "size": [
+            0.25,
+            0.025,
+            19.78
+          ],
+          "material": 6
+        },
+        {
+          "id": "eaves-gutter-open-channel-71.65",
+          "center": [
+            71.38000000000001,
+            5.072,
+            38.5
+          ],
+          "size": [
+            0.2,
+            0.01,
+            19.7
+          ],
+          "material": 7
+        },
+        {
+          "id": "eaves-gutter-upstand-71.65--1",
+          "center": [
+            71.26,
+            5.105,
+            38.5
+          ],
+          "size": [
+            0.022,
+            0.1,
+            19.78
+          ],
+          "material": 6
+        },
+        {
+          "id": "eaves-gutter-upstand-71.65-1",
+          "center": [
+            71.50000000000001,
+            5.105,
+            38.5
+          ],
+          "size": [
+            0.022,
+            0.1,
+            19.78
+          ],
+          "material": 6
+        },
+        {
+          "id": "gutter-end-stop-71.65-28.61",
+          "center": [
+            71.38000000000001,
+            5.105,
+            28.61
+          ],
+          "size": [
+            0.25,
+            0.1,
+            0.022
+          ],
+          "material": 6
+        },
+        {
+          "id": "gutter-end-stop-71.65-48.39",
+          "center": [
+            71.38000000000001,
+            5.105,
+            48.39
+          ],
+          "size": [
+            0.25,
+            0.1,
+            0.022
+          ],
+          "material": 6
+        },
+        {
+          "id": "gutter-outlet-neck-71.65-29",
+          "a": [
+            71.38000000000001,
+            5.055,
+            29
+          ],
+          "b": [
+            71.35000000000001,
+            4.82,
+            29
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-downpipe-71.65-29",
+          "a": [
+            71.35000000000001,
+            4.82,
+            29
+          ],
+          "b": [
+            71.35000000000001,
+            0.24,
+            29
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-wall-strap-71.65-29-1.1",
+          "center": [
+            71.35000000000001,
+            1.1,
+            29
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-71.65-29-2.85",
+          "center": [
+            71.35000000000001,
+            2.85,
+            29
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-71.65-29-4.4",
+          "center": [
+            71.35000000000001,
+            4.4,
+            29
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-shoe-71.65-29",
+          "a": [
+            71.35000000000001,
+            0.24,
+            29
+          ],
+          "b": [
+            71.23,
+            0.09,
+            29
+          ],
+          "width": 0.09,
+          "material": 6
+        },
+        {
+          "id": "gutter-outlet-neck-71.65-47.9",
+          "a": [
+            71.38000000000001,
+            5.055,
+            47.9
+          ],
+          "b": [
+            71.35000000000001,
+            4.82,
+            47.9
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-downpipe-71.65-47.9",
+          "a": [
+            71.35000000000001,
+            4.82,
+            47.9
+          ],
+          "b": [
+            71.35000000000001,
+            0.24,
+            47.9
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-wall-strap-71.65-47.9-1.1",
+          "center": [
+            71.35000000000001,
+            1.1,
+            47.9
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-71.65-47.9-2.85",
+          "center": [
+            71.35000000000001,
+            2.85,
+            47.9
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-71.65-47.9-4.4",
+          "center": [
+            71.35000000000001,
+            4.4,
+            47.9
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-shoe-71.65-47.9",
+          "a": [
+            71.35000000000001,
+            0.24,
+            47.9
+          ],
+          "b": [
+            71.23,
+            0.09,
+            47.9
+          ],
+          "width": 0.09,
+          "material": 6
+        },
+        {
+          "id": "roof-bearing-wallplate-94.35",
+          "center": [
+            94.35,
+            5.1,
+            38.5
+          ],
+          "size": [
+            0.32,
+            0.16,
+            19.78
+          ],
+          "material": 1
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-28.75",
+          "center": [
+            94.35,
+            5.21,
+            28.75
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-28.64",
+          "center": [
+            94.35,
+            5.27,
+            28.64
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-28.86",
+          "center": [
+            94.35,
+            5.27,
+            28.86
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-32",
+          "center": [
+            94.35,
+            5.21,
+            32
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-31.89",
+          "center": [
+            94.35,
+            5.27,
+            31.89
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-32.11",
+          "center": [
+            94.35,
+            5.27,
+            32.11
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-35.25",
+          "center": [
+            94.35,
+            5.21,
+            35.25
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-35.14",
+          "center": [
+            94.35,
+            5.27,
+            35.14
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-35.36",
+          "center": [
+            94.35,
+            5.27,
+            35.36
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-38.5",
+          "center": [
+            94.35,
+            5.21,
+            38.5
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-38.39",
+          "center": [
+            94.35,
+            5.27,
+            38.39
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-38.61",
+          "center": [
+            94.35,
+            5.27,
+            38.61
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-41.75",
+          "center": [
+            94.35,
+            5.21,
+            41.75
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-41.64",
+          "center": [
+            94.35,
+            5.27,
+            41.64
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-41.86",
+          "center": [
+            94.35,
+            5.27,
+            41.86
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-45",
+          "center": [
+            94.35,
+            5.21,
+            45
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-44.89",
+          "center": [
+            94.35,
+            5.27,
+            44.89
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-45.11",
+          "center": [
+            94.35,
+            5.27,
+            45.11
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "steel-arch-bearing-shoe-94.35-48.25",
+          "center": [
+            94.35,
+            5.21,
+            48.25
+          ],
+          "size": [
+            0.3,
+            0.1,
+            0.34
+          ],
+          "material": 6
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-48.14",
+          "center": [
+            94.35,
+            5.27,
+            48.14
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "bearing-anchor-bolt-94.35-48.36",
+          "center": [
+            94.35,
+            5.27,
+            48.36
+          ],
+          "size": [
+            0.03,
+            0.035,
+            0.03
+          ],
+          "material": 5
+        },
+        {
+          "id": "eaves-gutter-bottom-94.35",
+          "center": [
+            94.61999999999999,
+            5.055,
+            38.5
+          ],
+          "size": [
+            0.25,
+            0.025,
+            19.78
+          ],
+          "material": 6
+        },
+        {
+          "id": "eaves-gutter-open-channel-94.35",
+          "center": [
+            94.61999999999999,
+            5.072,
+            38.5
+          ],
+          "size": [
+            0.2,
+            0.01,
+            19.7
+          ],
+          "material": 7
+        },
+        {
+          "id": "eaves-gutter-upstand-94.35--1",
+          "center": [
+            94.49999999999999,
+            5.105,
+            38.5
+          ],
+          "size": [
+            0.022,
+            0.1,
+            19.78
+          ],
+          "material": 6
+        },
+        {
+          "id": "eaves-gutter-upstand-94.35-1",
+          "center": [
+            94.74,
+            5.105,
+            38.5
+          ],
+          "size": [
+            0.022,
+            0.1,
+            19.78
+          ],
+          "material": 6
+        },
+        {
+          "id": "gutter-end-stop-94.35-28.61",
+          "center": [
+            94.61999999999999,
+            5.105,
+            28.61
+          ],
+          "size": [
+            0.25,
+            0.1,
+            0.022
+          ],
+          "material": 6
+        },
+        {
+          "id": "gutter-end-stop-94.35-48.39",
+          "center": [
+            94.61999999999999,
+            5.105,
+            48.39
+          ],
+          "size": [
+            0.25,
+            0.1,
+            0.022
+          ],
+          "material": 6
+        },
+        {
+          "id": "gutter-outlet-neck-94.35-29",
+          "a": [
+            94.61999999999999,
+            5.055,
+            29
+          ],
+          "b": [
+            94.64999999999999,
+            4.82,
+            29
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-downpipe-94.35-29",
+          "a": [
+            94.64999999999999,
+            4.82,
+            29
+          ],
+          "b": [
+            94.64999999999999,
+            0.24,
+            29
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-wall-strap-94.35-29-1.1",
+          "center": [
+            94.64999999999999,
+            1.1,
+            29
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-94.35-29-2.85",
+          "center": [
+            94.64999999999999,
+            2.85,
+            29
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-94.35-29-4.4",
+          "center": [
+            94.64999999999999,
+            4.4,
+            29
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-shoe-94.35-29",
+          "a": [
+            94.64999999999999,
+            0.24,
+            29
+          ],
+          "b": [
+            94.77,
+            0.09,
+            29
+          ],
+          "width": 0.09,
+          "material": 6
+        },
+        {
+          "id": "gutter-outlet-neck-94.35-47.9",
+          "a": [
+            94.61999999999999,
+            5.055,
+            47.9
+          ],
+          "b": [
+            94.64999999999999,
+            4.82,
+            47.9
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-downpipe-94.35-47.9",
+          "a": [
+            94.64999999999999,
+            4.82,
+            47.9
+          ],
+          "b": [
+            94.64999999999999,
+            0.24,
+            47.9
+          ],
+          "width": 0.075,
+          "material": 6
+        },
+        {
+          "id": "rainwater-wall-strap-94.35-47.9-1.1",
+          "center": [
+            94.64999999999999,
+            1.1,
+            47.9
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-94.35-47.9-2.85",
+          "center": [
+            94.64999999999999,
+            2.85,
+            47.9
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-wall-strap-94.35-47.9-4.4",
+          "center": [
+            94.64999999999999,
+            4.4,
+            47.9
+          ],
+          "size": [
+            0.115,
+            0.045,
+            0.115
+          ],
+          "material": 5
+        },
+        {
+          "id": "rainwater-shoe-94.35-47.9",
+          "a": [
+            94.64999999999999,
+            0.24,
+            47.9
+          ],
+          "b": [
+            94.77,
+            0.09,
+            47.9
+          ],
+          "width": 0.09,
+          "material": 6
+        }
+      ],
+      "apertures": [],
+      "bounds": {
+        "min": [
+          -11.805139541625977,
+          0.06188872456550598,
+          -9.920000076293945
+        ],
+        "max": [
+          11.805139541625977,
+          5.287499904632568,
+          9.920000076293945
+        ]
+      }
+    }
+  },
+  "totalTriangles": 33412,
+  "addedTriangles": 6456,
+  "budgets": {
+    "maximumBytes": 12582912,
+    "maximumAddedTriangles": 6500
+  },
+  "bytes": 3532292,
+  "sha256": "0f37bf6d43f920133a4aae73065fb6d8ebac83480fc6507f9368dfb6e8816487",
+  "protectedSourcePacksUnchangedDuringBuild": true,
+  "sourceSha256": {
+    "tools/chunk_surfer/build-ellery-garden-approaches.mjs": "41ac2752e11b1ccd06367af025b4830a89f4c049d1770c0aa40b4ebae0ec9e46",
+    "tools/chunk_surfer/ellery-garden-approaches-geometry.mjs": "8e9229dfab58534c099ba2fc86781fa156363b66efcb1a14291cfcaa92b2e91f",
+    "src/data/ellery-garden-approaches.js": "0a4ea6f2a35ec6e142cdd948ee548967faa359711b3e9fb667717c614611f96f",
+    "src/data/atrium-circulation.js": "aac03b29a28d63fca4cb4c14058a3aa87cfe2be6458316ed93a15c6e6e3cf73c",
+    "tools/chunk_surfer/exterior-stationers-geometry.mjs": "8f75bc41256f63caa1de03151cf5f6f17bfb88102ed94082bbecef5a657e5d43",
+    "tools/chunk_surfer/build-exterior-collision.mjs": "0e782bc451304594022ec0122fe21d68f0176ecae24bdaa0196cb11c33f70325",
+    "tools/chunk_surfer/rebuild-tree-crowns.mjs": "32c5cf47512c20f7d7789062d86c6ed8372d851cb7fa553cb89afd390df4f1a1"
+  },
+  "collision": {
+    "file": "src/data/generated/ellery-garden-collision.js",
+    "source": {
+      "version": 1,
+      "asset": "public/assets/ellery-garden-approaches.glb",
+      "sha256": "0f37bf6d43f920133a4aae73065fb6d8ebac83480fc6507f9368dfb6e8816487",
+      "generator": "tools/chunk_surfer/build-ellery-garden-approaches.mjs",
+      "coordinateSpace": "exact clipped private mesh local metres; apply actual instance matrix",
+      "derivation": "Existing extractExteriorCollision on actual final packed triangles, retaining aperture holes.",
+      "meshes": [
+        "ellery_garden_elevation"
+      ]
+    },
+    "wallCount": 4405,
+    "triangleCount": 1588
+  }
+}

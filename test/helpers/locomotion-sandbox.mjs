@@ -7,6 +7,7 @@ import { CELL } from '../../src/data/floorplan/legend.js';
 import { MOVE_MS, WORLD_BOUNDARY_FRICTION, VOID_TRUDGE } from '../../src/config.js';
 import { CHUNK_SURF_PHASE } from '../../src/game/chunk-surf-state.js';
 import * as LOCO from '../../src/game/locomotion.js';
+import * as SOURCE_GAIT from '../../src/game/source-chase-gait.js';
 
 export const mainSource = fs.readFileSync(new URL('../../src/main.js', import.meta.url), 'utf8');
 
@@ -23,7 +24,7 @@ export const LOCOMOTION_BLOCK_END = '\nfunction currentTurnIntervalMs(';
 export function locomotionSandbox(overrides = {}, { extra = '' } = {}) {
   let run = false;
   const context = {
-    CELL, MOVE_MS, WORLD_BOUNDARY_FRICTION, VOID_TRUDGE, CHUNK_SURF_PHASE, ...LOCO,
+    CELL, MOVE_MS, WORLD_BOUNDARY_FRICTION, VOID_TRUDGE, CHUNK_SURF_PHASE, ...LOCO,...SOURCE_GAIT,
     createExertionBreath: () => ({ update() {}, snapshot: () => ({}) }),
     actx: null, sfxGain: null, performance: { now: () => 1000 }, Math, Number, String, Object, Array,
     motionInput: { isHeld: code => run && (code === 'ShiftLeft' || code === 'ShiftRight') },

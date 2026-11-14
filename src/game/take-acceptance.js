@@ -15,6 +15,7 @@ export const TAKE_FREE_ABORT_SECONDS=2;
 
 /** The cause he writes on the sheet, from the recorder's reason and metadata. */
 export function takeNoiseCause(reason='',meta={}){
+  if(meta?.interruption==='contact')return'PRESENCE';
   const text=`${reason} ${meta?.sourceId||''} ${meta?.sourceKind||''}`.toLowerCase();
   if(/presence|hush|apparition|it reached you|hunter/.test(text))return'PRESENCE';
   if(/breath/.test(text))return'BREATH';
@@ -31,8 +32,9 @@ export function classifyTakeAttempt(result,{events=[],forgiveness='standard'}={}
   if(!result)return null;
   const elapsed=Math.max(0,Number(result.elapsed)||0),list=Array.isArray(events)?events:[];
   if(result.spoiled){
-    const at=list.filter(e=>e?.kind==='spoil').at(-1);
-    return{outcome:'spoilt',atSec:Number(at?.atSec??elapsed)||0,cause:at?.cause||takeNoiseCause(result.reason,result.spoilMeta||{})};
+    const at=list.find(e=>e?.kind==='spoil'),stamped=Number.isFinite(result.spoilMeta?.atSec);
+    return{outcome:'spoilt',atSec:Number(stamped?result.spoilMeta.atSec:at?.atSec??elapsed)||0,
+      cause:stamped?takeNoiseCause(result.reason,result.spoilMeta):at?.cause||takeNoiseCause(result.reason,result.spoilMeta||{})};
   }
   if(!result.completed){
     if(elapsed<TAKE_FREE_ABORT_SECONDS)return null;

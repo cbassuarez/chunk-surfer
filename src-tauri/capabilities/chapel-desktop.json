@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "chapel-desktop",
+  "description": "Allows Chapel's two fixed game-owned surfaces to receive presentation events.",
+  "windows": ["chapel-desktop-backdrop", "chapel-desktop-target"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

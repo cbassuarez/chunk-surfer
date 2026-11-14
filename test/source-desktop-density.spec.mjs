@@ -14,13 +14,14 @@ import {
 const state = overrides => ({ token: 'density-battle', phase: 'desktop', clock: 4,
   cover: { count: 3, capacity: 3 }, intent: { kind: 'broadcast', progress: .4 }, ...overrides });
 
-test('desktop battle motion derives only from its owner clock and preserves the entry reference', () => {
-  const captured = { density: { version: 1, phase: 2.3, retained: .7, attention: .2, seed: 73 } };
+test('desktop battle holds the carried posture without inventing walking distance and preserves the entry reference', () => {
+  const captured = { density: { version: 1, postureVersion: 2, phase: 2.3, retained: .7, attention: .2, seed: 73 } };
   const before = structuredClone(captured);
   const a = sourceDesktopDensityPerformance(state({}), captured);
   const b = sourceDesktopDensityPerformance(state({ clock: 5 }), captured);
-  assert.ok(Math.abs(a.phase - 3.5) < 1e-10);
-  assert.ok(Math.abs(b.phase - a.phase - .3) < 1e-10);
+  assert.equal(a.phase, 2.3);
+  assert.equal(b.phase, a.phase);
+  assert.equal(a.rate,0);assert.equal(a.drive,0);assert.equal(a.traction,0);
   assert.deepEqual(captured, before, 'the combat presentation must not mutate the saved Source performer');
   const held = sourceDesktopDensityPerformance(state({ reducedMotion: true }), captured);
   assert.equal(held.phase, 2.3); assert.equal(held.traction, 0);
@@ -34,8 +35,10 @@ test('every combat intent has a bounded material response and keeps the pressure
     assert.equal(frame.body.mesh, 'hush_density_core');
     assert.equal(frame.surface?.mesh, 'hush_density_return');
     assert.equal(frame.body.densitySurface, true);
-    assert.equal(frame.body.character.support, undefined, 'density cannot acquire a human leg solver');
-    assert.ok(Object.keys(frame.body.character.joints).every(name => name.startsWith('fold_')));
+    assert.equal(frame.body.character.support.mode, 'held', 'a fixed stage cannot invent a travelling footfall');
+    assert.ok(frame.body.character.support.contacts.every(c=>c.offset.every(v=>v===0)&&c.yaw===0));
+    assert.ok(frame.body.character.joints.head&&frame.body.character.joints.chest);
+    assert.ok(Object.keys(frame.body.character.joints).every(name => !name.startsWith('fold_')));
     poses.push(JSON.stringify(frame.body.character));
   }
   assert.equal(new Set(poses).size, 5, 'incoming kinds cannot all look like the same idle pose');
@@ -62,7 +65,8 @@ test('the density desktop finish uses fitted return geometry rather than white e
   assert.equal(root.children.length, 3, 'production cannot silently add six outline meshes per physical layer');
   const core=root.getObjectByName('hush_density_core').material;
   assert.deepEqual(core.color.toArray(), [1, 1, 1]);
-  assert.equal(core.userData.hushCosmos.space,'screen-viewport');
+  assert.equal(core.userData.hushCosmos.space,'world-direction');
+  assert.equal(core.userData.hushCosmos.transport,'signed-half-float-rgb');
   assert.equal(finish.returns[0].material, original, 'the production surface material remains inspectable');
   assert.equal(finish.volumes[0].visible, false, 'the complete glow volume is diagnostic-only');
 });
@@ -77,19 +81,21 @@ test('desktop and echo share the fixed 2D field at the actual acquisition pixel 
   assert.deepEqual(vector.toArray(), [1280, 960]); assert.deepEqual(plain, {x: 1280, y: 960});
 });
 
-test('repeated exact samples do not accumulate unanimated fold translations or rotations', () => {
-  const root = new THREE.Group(), bone = new THREE.Bone(); bone.name = 'fold_A_3'; root.add(bone);
+test('repeated exact samples do not accumulate unanimated anatomical translations or rotations', () => {
+  const root = new THREE.Group(), bone = new THREE.Bone(); bone.name = 'chest'; root.add(bone);
   bone.position.set(.1, .7, -.2);
-  const clip = new THREE.AnimationClip('held', 1, []);
-  const sampler = createSourceDesktopPressureSampler(THREE, root, [clip]);
+  const clip = { name: 'held', duration: 1, channels: [] };
+  const asset = { nodes: [{ name: 'chest', parent: -1, translation: [.1, .7, -.2], rotation: [0, 0, 0, 1], scale: [1, 1, 1] }],
+    order: [0], entries: [], clips: new Map([[clip.name, clip]]) };
+  const sampler = createSourceDesktopPressureSampler(THREE, root, asset);
   const pose = { clip: 'held', time: .5, loop: false,
-    joints: { fold_A_3: { translation: [.03, -.02, .04], rotation: [0, Math.sin(.12), 0, Math.cos(.12)] } } };
+    joints: { chest: { translation: [.03, -.02, .04], rotation: [0, Math.sin(.12), 0, Math.cos(.12)] } } };
   sampler.sample(pose);
   const first = bone.matrixWorld.toArray();
   for (let i = 0; i < 20; i++) sampler.sample(pose);
   assert.deepEqual(bone.matrixWorld.toArray(), first);
   sampler.sample({ clip: 'held', time: .5 });
-  assert.deepEqual(bone.position.toArray(), [.1, .7, -.2]);
+  assert.deepEqual(bone.position.toArray(), [.1, .7, -.2].map(Math.fround));
   assert.deepEqual(bone.quaternion.toArray(), [0, 0, 0, 1]);
   sampler.dispose();
 });
@@ -100,10 +106,10 @@ test('production Three skins sample the same blended density descriptor as the w
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   const asset = parseCharacterAsset(buffer);
   const gltf = await new GLTFLoader().parseAsync(buffer, '');
-  const sampler = createSourceDesktopPressureSampler(THREE, gltf.scene, gltf.animations);
+  const sampler = createSourceDesktopPressureSampler(THREE, gltf.scene, asset);
   const core = gltf.scene.getObjectByName('hush_density_core');
   assert.ok(core?.isSkinnedMesh);
-  assert.equal(core.skeleton.bones.length, 19);
+  assert.equal(core.skeleton.bones.length, 43);
   for (const density of [
     { version: 1, phase: .27, traction: .83, compression: .91, attention: -.3, event: 'notice', eventTime: 2.3, seed: 11 },
     { version: 1, phase: 2.13, traction: .26, compression: .62, attention: .4, event: 'settle', eventTime: 4.1, seed: 11 },
@@ -114,7 +120,7 @@ test('production Three skins sample the same blended density descriptor as the w
     const expected = sampleCharacterPose(asset, entry, descriptor);
     sampler.sample(descriptor); core.skeleton.update();
     const actual = core.skeleton.boneMatrices;
-    assert.equal(actual.length, 19 * 16);
+    assert.equal(actual.length, 43 * 16);
     const errors = actual.map((v, index) => Math.abs(v - expected.bones[index]));
     assert.ok(Math.max(...errors) < 3e-5, `world/desktop bone matrix error ${Math.max(...errors)}`);
     const first = [...actual];

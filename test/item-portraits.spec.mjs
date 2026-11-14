@@ -9,10 +9,13 @@ import {itemInspectionLayout} from '../src/render/item-inspection-view.js';
 test('every physical battle item resolves to a shipped GLB and both usable WebP sizes',async()=>{
  const io=new NodeIO();
  for(const id of Object.keys(BATTLE_GEAR))assert.ok(itemPortrait(id),id);
- for(const item of Object.values(ITEM_PORTRAITS)){
+ for(const item of Object.values(ITEM_PORTRAITS).filter(item=>item.model)){
   const doc=await io.read(`public/${item.model}`);assert.ok(doc.getRoot().listScenes().length,item.id);
   for(const path of [item.small,item.large]){const bytes=await readFile(`public/${path}`);assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');assert.ok(bytes.length>200);}
-  assert.ok((await stat(`public/${item.model}`)).size<1_000_000,`${item.id} remains a small inspection asset`);
+  // The broken keepsake retains the original photo, printed side/rear panels
+  // and damage maps. Its isolated asset also replaces a 5.9 MB world-pack fetch.
+  const keepsake=['music-box','lyle-music-box'].includes(item.id);
+  assert.ok((await stat(`public/${item.model}`)).size<(keepsake?1_600_000:1_000_000),`${item.id} remains a small inspection asset`);
  }
  assert.equal(itemPortrait({id:'kit:radio',sourceId:'radio'}).id,'radio');
  assert.equal(itemPortrait('key-c17').id,'chapel-key');
@@ -24,11 +27,12 @@ test('every physical battle item resolves to a shipped GLB and both usable WebP 
 test('compact inspection reserves a useful portrait and keeps both exit controls inside the panel',()=>{
  for(const rect of [{x:0,y:0,w:90,h:22},{x:4,y:4,w:72,h:8},{x:1,y:1,w:48,h:14}]){
   const l=itemInspectionLayout(rect);
-  for(const area of [l.portrait,l.text,l.back,l.reset]){
+  for(const area of [l.portrait,l.objectView,l.text,l.back,l.reset]){
    assert.ok(area.x>=rect.x&&area.y>=rect.y);
    assert.ok(area.x+area.w<=rect.x+rect.w&&area.y+area.h<=rect.y+rect.h+.01,JSON.stringify({rect,area}));
   }
   assert.ok(l.portrait.h>=4,'large text retains at least four rows for the object');
+  assert.equal(l.portrait.h-l.objectView.h,1,'the object renderer cannot overlap the rotation legend');
  }
 });
 

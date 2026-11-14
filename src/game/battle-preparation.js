@@ -4,7 +4,7 @@ import { activeInputPromptDevice, promptLine } from './bindings.js';
 import { pressControl, cancelControlScope } from './control-feedback.js';
 import * as scenes from './scenes.js';
 import {makeItemInspectionScene} from './item-inspection-scene.js';
-import {BATTLE_GEAR} from './combat-loadout.js';
+import {carryItemDefinition} from './carry-items.js';
 import {battleOperatingCopy,combatOperatingFacts} from './combat-operating-facts.js';
 
 export function makeBattlePreparation({ title='', getOpeningState, getLoadout, getEquipment, getBuild, hasRig, getBattery, getSheets, readSheet, apply, onReady, audio, createView = createBattlePreparationView } = {}) {
@@ -49,7 +49,7 @@ export function makeBattlePreparation({ title='', getOpeningState, getLoadout, g
     }
     else if(value==='inspect'){
       const id=before.loadout.top[before.selectedSlot];
-      if(id){view?.visible(false);scenes.push(makeItemInspectionScene({id,title:BATTLE_GEAR[id].label,description:battleOperatingCopy(id,facts()).detail}));}
+      if(id){const item=carryItemDefinition(id);view?.visible(false);scenes.push(makeItemInspectionScene({id,title:item?.label||id,description:item?.battleToolId?battleOperatingCopy(id,facts()).detail:item?.description||'No combat move.'}));}
       return;
     }
     else if(value.startsWith('skill:')){model.skill(value.slice(6));if(before.selectedSkill!==model.snapshot().selectedSkill)sound='menuMove';}

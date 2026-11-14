@@ -1,56 +1,65 @@
-// THE DIAL. Every time skip on the cliff road (src/game/source-drive/time-skips.js)
-// sounds like turning the cab radio through the band: detent clicks under the
-// fingers, static sweeping as the needle crosses nothing, a heterodyne whistle
-// sliding down, and one last click as it lands on a station. Procedural, so it
-// is the same cut every time and costs nothing to load.
-const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+// One owned, finite interruption in the physical receiver. The waveform is
+// procedural timing material; it is not a recorded radio or human performance.
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,Number(v)||0));
+export const RADIO_DIAL_CUT=Object.freeze({seconds:1.6,clicks:Object.freeze([.025,.19,.69]),land:.78,
+  static:Object.freeze({attack:.035,release:1,level:.12}),bitDepth:12,rate:28000});
 
-export const RADIO_DIAL_CUT=Object.freeze({
-  clicks:Object.freeze([0,.06,.13,.21]),land:.8,
-  static:Object.freeze({attack:.05,release:.92,level:.16,sweep:Object.freeze([[0,700],[.25,2600],[.5,1400],[.72,3200],[.9,1800]])}),
-  whistle:Object.freeze({from:2400,to:600,seconds:.5,level:.022}),
-});
-
-function noiseBuffer(ctx,seconds){
-  const buffer=ctx.createBuffer(1,Math.max(1,Math.floor(ctx.sampleRate*seconds)),ctx.sampleRate),data=buffer.getChannelData(0);let s=4417;
-  for(let n=0;n<data.length;n++){s=(Math.imul(s,1664525)+1013904223)>>>0;data[n]=s/2147483648-1;}
-  return buffer;
+export function renderRadioDialCut({sampleRate=44100,seconds=RADIO_DIAL_CUT.seconds,seed=4417,reason='driven',sourceBuffer=null,sourceOffset=0}={}){
+  const length=Math.max(1,Math.ceil(sampleRate*seconds)),out=new Float32Array(length),contact=reason==='contact';
+  const inherited=sourceBuffer?.getChannelData?.(0),inheritRate=sourceBuffer?.sampleRate||sampleRate;
+  let random=seed>>>0||4417,low=0,mid=0,last=0,phase=0;
+  const lfo=contact?1.09:.71;
+  for(let n=0;n<length;n++){
+    const t=n/sampleRate,u=t/seconds;random=(Math.imul(random,1664525)+1013904223)>>>0;
+    const white=random/2147483648-1;low+=.035*(white-low);mid+=.24*(white-mid);
+    const carrier=(mid-low)*(.48+.28*Math.sin(t*7.13+seed)+.12*Math.sin(t*23.7));
+    const attack=clamp(t/.035),release=clamp((seconds-t)/.18),loss=.5+.5*Math.sin(Math.PI*u),notch=1-.78*Math.exp(-(((u-.48)/.075)**2));
+    let value=carrier*.12*attack*release*loss*notch;
+    // Receiver fragments come from its actual current programme when available.
+    // No new words or synthetic substitute are manufactured by this effect.
+    if(inherited?.length){const at=Math.floor((sourceOffset+t)*inheritRate),index=((at%inherited.length)+inherited.length)%inherited.length;value+=inherited[index]*.055*loss*notch;}
+    for(const click of RADIO_DIAL_CUT.clicks){const age=t-click*seconds;if(age>=0&&age<.075)value+=(white*.12*Math.exp(-age*110)+Math.sin(age*2*Math.PI*(contact?116:147))*.045*Math.exp(-age*55))*(contact?1:.68);}
+    value+=Math.sin(t*2*Math.PI*(97+13*Math.sin(t*lfo)))*.012*Math.exp(-(((u-.42)/.21)**2));
+    // A mild sample/quantization fault belongs to this finite signal, not the
+    // whole mix. Silence, user gain and the supplied output bus remain exact.
+    phase+=RADIO_DIAL_CUT.rate/sampleRate;if(phase>=1){phase%=1;last=Math.round(Math.tanh(value*1.15)*2047)/2047;}
+    out[n]=last;
+  }
+  return out;
 }
-/** Schedule one dial turn at `context.currentTime`. Returns the nodes it made. */
-export function playRadioDialCut({context,destination,seconds=.95,gain=1,reducedFlash=false}={}){
-  if(!context||!destination)return null;
-  const A=RADIO_DIAL_CUT,now=context.currentTime,nodes=[],own=node=>(nodes.push(node),node);
-  const out=own(context.createGain());out.gain.value=clamp(gain,0,1.5);out.connect(destination);
-  const noise=noiseBuffer(context,seconds+.2);
-  // Detents: a tick of plastic, and the small thunk of the shaft.
-  const click=(at,level=1)=>{
-    const src=own(context.createBufferSource()),hp=own(context.createBiquadFilter()),g=own(context.createGain());
-    src.buffer=noise;hp.type='highpass';hp.frequency.value=1800;g.gain.setValueAtTime(0,now+at);g.gain.linearRampToValueAtTime(.22*level,now+at+.002);g.gain.exponentialRampToValueAtTime(.0005,now+at+.02);
-    src.connect(hp);hp.connect(g);g.connect(out);src.start(now+at,(at*7)%.1,.03);
-    const thunk=own(context.createOscillator()),tg=own(context.createGain());thunk.frequency.value=140;tg.gain.setValueAtTime(0,now+at);tg.gain.linearRampToValueAtTime(.1*level,now+at+.003);tg.gain.exponentialRampToValueAtTime(.0005,now+at+.03);
-    thunk.connect(tg);tg.connect(out);thunk.start(now+at);thunk.stop(now+at+.04);
+
+export function createRadioDialCut({context,destination,seconds=RADIO_DIAL_CUT.seconds,seed=4417,reason='driven',
+  sourceBuffer=null,sourceOffset=0,gain=1,authoredPowerException=false,receiverPowered=true}={}){
+  if(!context?.createBuffer||!context?.createGain||!destination)return null;
+  const pcm=renderRadioDialCut({sampleRate:context.sampleRate,seconds,seed,reason,sourceBuffer,sourceOffset}),buffer=context.createBuffer(1,pcm.length,context.sampleRate);
+  buffer.getChannelData(0).set(pcm);
+  const out=context.createGain(),panner=context.createStereoPanner?.();out.gain.value=clamp(gain,0,1.5);
+  if(panner){panner.pan.value=-.58;out.connect(panner);panner.connect(destination);}else out.connect(destination);
+  let source=null,offset=0,startedAt=0,paused=true,disposed=false,protectedCancelled=false,serial=0,lastPowered=receiverPowered;
+  function stopSource(){if(!source)return;const old=source;source=null;old.onended=null;try{old.stop();}catch{}try{old.disconnect();}catch{}}
+  function current(){return Math.min(buffer.duration,offset+(source?Math.max(0,context.currentTime-startedAt):0));}
+  function play(){
+    if(disposed||paused||protectedCancelled||source||offset>=buffer.duration)return;
+    const node=context.createBufferSource();node.buffer=buffer;node.connect(out);source=node;startedAt=context.currentTime;const token=++serial;
+    node.onended=()=>{if(token!==serial||source!==node)return;source=null;offset=buffer.duration;try{node.disconnect();}catch{}dispose();};
+    try{node.start(startedAt,offset);}catch{source=null;try{node.disconnect();}catch{}}
+  }
+  function setPaused(value){const next=!!value;if(next===paused)return;offset=current();paused=next;if(next)stopSource();else play();}
+  function dispose(){if(disposed)return;disposed=true;stopSource();try{out.disconnect();panner?.disconnect();}catch{}}
+  return{
+    sync({age=offset,paused:hold=false,protectedAudio=false,receiverPowered:powered=receiverPowered}={}){
+      if(disposed)return false;
+      lastPowered=!!powered;
+      if(protectedAudio||!powered&&!authoredPowerException){protectedCancelled=true;stopSource();return false;}
+      const wanted=clamp(age,0,buffer.duration),drift=Math.abs(current()-wanted);if(drift>.075){stopSource();offset=wanted;}
+      setPaused(hold);if(!hold){offset=source?offset:wanted;play();}return!!source;
+    },
+    setPaused,dispose,cancel:dispose,
+    snapshot:()=>({disposed,paused,protectedCancelled,offsetSeconds:current(),duration:buffer.duration,playing:!!source,
+      authoredPowerException,receiverPowered:lastPowered,signal:'finite synthesized receiver interruption',containsInventedVoice:false}),
   };
-  for(const at of A.clicks)click(at*seconds/.95);
-  click(A.land*seconds/.95,1.25);
-  // The band between stations. White noise shaped by the IF filters (a fixed
-  // de-emphasis low-pass keeps the hiss warm, not piercing), swept through the
-  // dial, and captured the moment the needle lands on a station: the static
-  // squelches instead of fading.
-  const hiss=own(context.createBufferSource()),band=own(context.createBiquadFilter()),lp=own(context.createBiquadFilter()),hg=own(context.createGain());
-  hiss.buffer=noise;band.type='bandpass';band.Q.value=1.2;
-  for(const [u,hz] of A.static.sweep)band.frequency.linearRampToValueAtTime(hz,now+u*seconds);
-  lp.type='lowpass';lp.frequency.value=5200;lp.Q.value=.55;
-  const level=A.static.level*(reducedFlash?.7:1);
-  hg.gain.setValueAtTime(0,now);hg.gain.linearRampToValueAtTime(level,now+A.static.attack*seconds);
-  hg.gain.setValueAtTime(level,now+A.land*seconds);
-  hg.gain.linearRampToValueAtTime(level*.07,now+A.land*seconds+.035);
-  hg.gain.linearRampToValueAtTime(0,now+A.static.release*seconds);
-  hiss.connect(band);band.connect(lp);lp.connect(hg);hg.connect(out);hiss.start(now);hiss.stop(now+seconds+.05);
-  // A carrier crossed on the way: the whistle sliding down.
-  const w=own(context.createOscillator()),wg=own(context.createGain());w.type='sine';
-  w.frequency.setValueAtTime(A.whistle.from,now+.08*seconds);w.frequency.exponentialRampToValueAtTime(A.whistle.to,now+(.08+A.whistle.seconds)*seconds);
-  wg.gain.setValueAtTime(0,now);wg.gain.linearRampToValueAtTime(A.whistle.level,now+.12*seconds);wg.gain.linearRampToValueAtTime(0,now+(.1+A.whistle.seconds)*seconds);
-  w.connect(wg);wg.connect(out);w.start(now+.06*seconds);w.stop(now+(.12+A.whistle.seconds)*seconds);
-  setTimeout(()=>{for(const node of nodes)try{node.disconnect();}catch{}},Math.ceil((seconds+.4)*1000));
-  return nodes;
 }
+
+// Compatibility for callers that deliberately want a one-shot. Production
+// traversal retains the returned owner and synchronizes it to its picture.
+export function playRadioDialCut(options={}){const voice=createRadioDialCut(options);voice?.sync({age:0});return voice;}

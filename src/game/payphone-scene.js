@@ -18,6 +18,7 @@
 // Pointer only for the dial. Escape steps out of the box — and if his own van
 // is ringing up the road, he leaves the handset hanging.
 import * as scenes from './scenes.js';
+import { inputPrompt } from './bindings.js';
 import { uiCellMetrics, uiCenter, uiSize } from '../render/ui.js';
 import {
   dialAngleAt, dialGeometry, dialHoleAt, drawPayphone, inCentre, payphoneLayout, releasePayphoneArt, ROTARY_SPACING, rotaryTravelAngle,
@@ -52,6 +53,7 @@ export function makePayphoneScene({
   mapPointer = (event) => event,
   onLook = () => {},
   startOnHook = false,
+  firstBellAt = 0,
   exchangeSeconds = () => 1.4 + Math.random() * 1.6,
   reducedMotion = () => false,
   clock = () => (globalThis.performance?.now?.() ?? Date.now()) / 1000,
@@ -74,7 +76,9 @@ export function makePayphoneScene({
   let scene = null;
   let handset = startOnHook ? 'hook' : 'up';
   let incomingWaiting = !!incoming;
-  let incomingBellAt = 0;
+  let incomingBellAt = firstBellAt;
+  let loopBell = null, loopBellStartedAt = null;
+  let loopAnswered = false;
   let looking = null;
   const waitingCall = () => typeof incoming === 'function' ? incoming() : incomingWaiting ? incoming : null;
 
@@ -109,8 +113,13 @@ export function makePayphoneScene({
 
   function dialTone() { phase = 'dialtone'; line?.tone?.('dial'); at.idle = clock(); }
 
+  function stopLoopBell() {
+    loopBell?.stop?.(); loopBell = null; loopBellStartedAt = null;
+  }
+
   function lift() {
     if (handset === 'up' && phase !== 'onhook') return false;
+    stopLoopBell();
     handset = 'up';
     onHandset('lifted');
     line?.mechanism?.('lift');
@@ -120,6 +129,7 @@ export function makePayphoneScene({
     // A late-pass call is waiting behind the physical receiver, not a menu.
     if (waiting) {
       incomingWaiting = false;
+      if (waiting.id === 'loop') loopAnswered = true;
       outcome = waiting;
       phase = 'connected';
       line?.silence?.();
@@ -294,6 +304,7 @@ export function makePayphoneScene({
     view: () => ({
       digits, phase, handset, hover, flap,
       incoming: handset === 'hook' ? waitingCall()?.id || null : null,
+      loopBellStartedAt, loopAnswered,
       focusRegion: keyboardRegion,
       slot: slot ? { ...slot } : null,
       window: windowView ? { ...windowView } : null,
@@ -305,9 +316,13 @@ export function makePayphoneScene({
     },
     update() {
       const t = clock();
-      if (handset === 'hook' && waitingCall()?.rings > 0 && t >= incomingBellAt) {
+      const waiting = handset === 'hook' ? waitingCall() : null;
+      if (waiting?.rings > 0 && t >= incomingBellAt) {
         incomingBellAt = t + 3;
-        line?.bell?.({ rings: 1, distance01: 0, gain: .65 });
+        if (waiting.id === 'loop') {
+          stopLoopBell(); loopBellStartedAt = t;
+          loopBell = line?.bell?.({ rings: 1, distance01: 0, gain: 1.1 });
+        } else line?.bell?.({ rings: 1, distance01: 0, gain: .65 });
       }
       settleDial();
       if (windowView?.turning) windowView.angle = (windowView.angle || 0) + 0.06;
@@ -363,6 +378,11 @@ export function makePayphoneScene({
         keyboardRegion = regions[(index + (event.shiftKey ? -1 : 1) + regions.length) % regions.length];
         return true;
       }
+      const liftKey = event.code === 'KeyE' || String(event.key || '').toLowerCase() === 'e'
+        || event.controllerAction === 'interact'
+        || (!keyboardRegion && (event.key === 'Enter' || event.key === ' '));
+      if (phase === 'onhook' && liftKey && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey
+        && waitingCall()?.id === 'loop') return lift();
       if (keyboardRegion && !event.repeat && (event.key === 'Enter' || event.key === ' ')) {
         if (keyboardRegion === 'handset') { if (handset === 'hook') lift(); else hangUp(); }
         else if (keyboardRegion === 'cradle') pressHook();
@@ -447,20 +467,27 @@ export function makePayphoneScene({
     },
     render() {
       const size = uiSize();
+      const waiting = phase === 'onhook' ? waitingCall() : null;
+      const loopWaiting = waiting?.id === 'loop';
       layout = drawPayphone({
         rotation: rotationNow(), card: PAYPHONE_CARD, instructions: PAYPHONE_INSTRUCTIONS,
         scratches: PAYPHONE_SCRATCHES, directory: PAYPHONE_DIRECTORY,
         slotLit: phase === 'pips' && Math.floor(clock() * 4) % 2 === 0,
-        slot: slot ? 'tape' : null, window: windowView, flap, handset, hover: keyboardRegion || hover, hoverHole: grab ? null : hoverHole,
+        slot: slot ? 'tape' : null, window: windowView, flap, handset,
+        hover: keyboardRegion || hover || (loopWaiting ? 'handset' : null), hoverHole: grab ? null : hoverHole,
         credit: slot?.credit ?? null, creditFull: slot?.full ?? null,
         time: clock(), reducedMotion: !!reducedMotion(),
       }, size);
-      const hint = phase === 'onhook' ? (waitingCall() ? 'THE TELEPHONE IS RINGING · LIFT THE RECEIVER · RIGHT DRAG TO LOOK' : 'LIFT THE RECEIVER · RIGHT DRAG TO LOOK · ESC STEPS OUT')
+      const hint = loopWaiting ? `TELEPHONE RINGING · ${inputPrompt('interact')} LIFT THE RECEIVER`
         : phase === 'pips' ? 'PIPS: SOMEBODY HAS ANSWERED · PAY TO BE HEARD'
+        : loopAnswered && !digits && ['connected','cleared','onhook','dialtone'].includes(phase) && (!outcome || outcome.id === 'loop')
+          ? `${inputPrompt('back')} STEP OUT TO THE ROAD`
+        : phase === 'onhook' ? (waiting ? 'THE TELEPHONE IS RINGING · LIFT THE RECEIVER · RIGHT DRAG TO LOOK' : 'LIFT THE RECEIVER · RIGHT DRAG TO LOOK · ESC STEPS OUT')
         : 'DRAG A FINGER HOLE ROUND TO THE STOP · RIGHT DRAG TO LOOK · ESC STEPS OUT';
-      uiCenter(Math.min(size.rows - 1, layout.hint.y), hint, phase === 'pips' ? 'ui-amber' : 'ui-label');
+      uiCenter(Math.min(size.rows - 1, layout.hint.y), hint, phase === 'pips' || loopWaiting ? 'ui-amber' : 'ui-label');
     },
     exit() {
+      stopLoopBell();
       clearGrab(); returning = null;
       try { looking?.target?.releasePointerCapture?.(looking.id); } catch (_) {}
       looking = null; line?.stop?.(); releasePayphoneArt();

@@ -4,11 +4,14 @@ import { readFileSync } from 'node:fs';
 import { buildBagModel } from '../src/game/bag-model.js';
 import { PIN_SOURCES, TECHNIQUE_DEFS, learnCombatTechnique, normalizeCombatBuild } from '../src/game/combat-progression.js';
 import { patchBayLayout } from '../src/render/bag-skills.js';
+import { PATCH_LCD_GLYPHS } from '../src/render/patch-lcd-glyphs.js';
+import { patchInstrumentState } from '../src/render/patch-channel-strip.js';
+import { channelLcdState, skillLcdState } from '../src/render/patch-lcd.js';
 import { PATCH_COLORS, drawPatchCable, drawPatchLabel, drawPatchRack, drawPatchSocket, patchCableCurve } from '../src/render/patchbay-material.js';
 
 function layout(build = null, region = { x: 2, y: 4, w: 96, h: 26 }) {
   const tree = buildBagModel({ build, hasRig: true }).sections.find((section) => section.id === 'skills').tree;
-  return patchBayLayout({ region, branches: tree.branches, maxTier: tree.maxTier });
+  return patchBayLayout({ region, branches: tree.branches });
 }
 
 test('every skill has one coloured input and only installed skills have an output', () => {
@@ -59,17 +62,23 @@ test('rack sockets and return tray stay recoverable at wide and compact sizes', 
     { x: 2, y: 4, w: 96, h: 26 }, { x: 0, y: 0, w: 60, h: 14 }, { x: 0, y: 0, w: 34, h: 10 },
   ]) {
     const bay = layout(null, region);
-    assert.ok(bay.detail.y + bay.detail.h <= region.y + region.h + 1e-9);
-    assert.ok(bay.returnZone.x >= region.x);
-    assert.ok(bay.returnZone.x + bay.returnZone.w <= region.x + region.w);
-    assert.ok(bay.returnZone.y + bay.returnZone.h <= bay.treeTop);
+    const { rack, detail, tray, side } = bay.strip;
+    const inside = (box, outer) => {
+      const epsilon = 1e-9;
+      return box.x >= outer.x - epsilon && box.y >= outer.y - epsilon
+        && box.x + box.w <= outer.x + outer.w + epsilon
+        && box.y + box.h <= outer.y + outer.h + epsilon;
+    };
+    assert.ok(inside(rack, region) && inside(detail, region));
+    assert.ok(inside(tray, detail));
+    assert.ok(side ? rack.x + rack.w < detail.x : rack.y + rack.h < detail.y);
     for (const socket of bay.sockets) {
-      assert.ok(socket.hit.x >= region.x, `${socket.id}: hit stays inside left rack edge`);
-      assert.ok(socket.hit.x + socket.hit.w <= region.x + region.w);
-      assert.ok(socket.hit.y >= bay.treeTop);
-      assert.ok(socket.hit.y + socket.hit.h <= bay.detail.y);
-      assert.ok(socket.hit.w > socket.rX * 2);
-      assert.ok(socket.hit.h > socket.rY * 2);
+      assert.ok(inside(socket.hit, rack), `${socket.id}: target stays inside the rack`);
+      assert.ok(inside({ x: socket.x, y: socket.y, w: 0, h: 0 }, socket.hit));
+    }
+    for (const node of bay.nodes) {
+      const [left,right]=[node.input.hit,node.outPosition.hit].sort((a,b)=>a.x-b.x);
+      assert.ok(left.x + left.w < right.x,`${node.id}: the two contacts never overlap`);
     }
   }
 });
@@ -101,11 +110,85 @@ test('material primitives form nickel throats, continuous rack metal and solid h
   assert.ok(curve.c2.y > curve.to.y, 'the loose lead bows below its destination');
 });
 
-test('skills body has no lamp-button renderer and shows only the live routed leads', () => {
+test('the Skills panel has a single renderer with routed leads and a return tray', () => {
   const source = readFileSync(new URL('../src/render/bag-skills.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /drawLampButton|drawButtonCluster/);
-  assert.match(source, /for \(const cable of tree\.cables\)/);
-  assert.match(source, /patchDrag\?\.rerouteId === cable\.skillId/);
-  assert.match(source, /SPARES \/ RETURN LEAD/);
-  assert.match(source, /DRAG MATCHING SEND TO INPUT/);
+  const strip = readFileSync(new URL('../src/render/patch-channel-strip.js', import.meta.url), 'utf8');
+  assert.match(source, /uiDraw\(surface => drawChannelStripBay\(/);
+  assert.doesNotMatch(source, /drawLampButton|drawButtonCluster|drawAlternate|\blook\b/);
+  assert.match(strip, /for\(const cable of tree\.cables\)/);
+  assert.match(strip, /RETURN TO SPARES/);
+});
+
+test('every skill and idle channel has a distinct LCD glyph', () => {
+  const ids = [...new Set(TECHNIQUE_DEFS.map(entry => entry.branch)), ...TECHNIQUE_DEFS.map(entry => entry.id)];
+  const glyphs = ids.map(id => {
+    const glyph = PATCH_LCD_GLYPHS[id];
+    assert.equal(glyph?.length, 9, id);
+    assert.ok(glyph.every(row => /^[.#]{11}$/.test(row)), id);
+    return glyph.join('');
+  });
+  assert.equal(new Set(glyphs).size, ids.length);
+});
+
+test('the channel LCD follows fitted skills in the current case draft', () => {
+  const id = 'skill:torch.whiteout';
+  const entries = [
+    { id: 'skill:torch.afterimage', techniqueId: 'torch.afterimage', tier: 1, owned: true },
+    { id, techniqueId: 'torch.whiteout', tier: 2, owned: true, pending: true },
+    { id: 'skill:torch.overexpose', techniqueId: 'torch.overexpose', tier: 3, enabled: true },
+  ];
+  assert.deepEqual(channelLcdState('torch', entries, entries[0].id),
+    { glyph: 'torch.afterimage', state: 'patched' });
+  assert.deepEqual(channelLcdState('torch', entries, entries[2].id),
+    { glyph: 'torch.whiteout', state: 'pending' });
+  assert.deepEqual(channelLcdState('torch', entries.slice(2), null),
+    { glyph: 'torch', state: 'idle' });
+  assert.equal(skillLcdState(entries[2]), 'ready');
+});
+
+test('a one-for-one lead swap marks both edits without changing lead stock', () => {
+  const stock = { b3LeadEarned: true, rewardedFlags: ['pin.academic'] };
+  const settledBuild = normalizeCombatBuild({ ...stock, techniques: ['recorder.room-tone'] });
+  const build = normalizeCombatBuild({ ...stock, techniques: ['radio.misdirection'] });
+  const model = buildBagModel({ build, settledBuild });
+  const section = model.sections.find(item => item.id === 'skills');
+  assert.equal(section.tree.pins.spent, 1);
+  assert.equal(section.tree.pins.unspent, 1);
+  assert.match(section.countLabel, /1 NEW.*1 PULLED/);
+  const edit = patchInstrumentState(section.tree.pins);
+  assert.equal(edit.edited, true);
+  assert.equal(edit.changes, '+1 NEW / -1 PULLED');
+  assert.equal(edit.message, 'CLOSE CASE TO APPLY');
+  const reopened = buildBagModel({ build }).sections.find(item => item.id === 'skills');
+  assert.equal(patchInstrumentState(reopened.tree.pins).edited, false);
+});
+
+test('route witnesses describe the current gesture and clear after release or cancel', () => {
+  const pins = { pending: 0, pulled: 0 };
+  const valid = patchInstrumentState(pins, { targetId: 'input', valid: true });
+  assert.equal(valid.matched, true);
+  assert.equal(valid.fault, false);
+  const invalid = patchInstrumentState(pins, { targetId: 'input', valid: false });
+  assert.equal(invalid.fault, true);
+  assert.equal(invalid.matched, false);
+  const tray = patchInstrumentState(pins, { returnHover: true, valid: true });
+  assert.equal(tray.message, 'RELEASE TO RETURN');
+  assert.equal(tray.matched, false);
+  assert.equal(tray.fault, false);
+  const idle = patchInstrumentState(pins);
+  assert.equal(idle.fault, false);
+  assert.equal(idle.message, '');
+});
+
+
+test('the bypass has a dedicated pair of contacts and no standard output socket', () => {
+  const funded = normalizeCombatBuild(null, PIN_SOURCES.encounters);
+  const rig = learnCombatTechnique(funded,'rig.overdub',{hasRig:true}).build;
+  const live = learnCombatTechnique(rig,'rig.return-bridge',{hasRig:true}).build;
+  const bay = layout(live);
+  const node = bay.nodes.find(node => node.techniqueId === 'rig.return-bridge');
+  assert.equal(node.output, null);
+  assert.ok(node.feed.x < node.input.x);
+  assert.deepEqual(bay.terminals,[node.feed]);
+  assert.equal(bay.cables.find(cable => cable.skillId === node.id).from.id,node.feed.id);
 });

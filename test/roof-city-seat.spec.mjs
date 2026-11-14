@@ -87,9 +87,9 @@ test('an exposed roof hold has fresh air while the plant still contaminates encl
   const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   const start=source.indexOf('function hypoxiaSourceHere(){'),end=source.indexOf('function tickHypoxia(dt){',start);
   assert.ok(start>=0&&end>start);
-  let zone=5,physical={spaceId:'academic_roof',renderGroup:'academicRoof',y:17};
+  let zone=5,physical={spaceId:'academic_roof',renderGroup:'academicRoof',y:17},inB3=false;
   const context={usingPlan:()=>true,usingSpecialSpace:()=>false,px:420,py:580,
-    PLANT:{plantIncidentState:()=>({phase:'venting'}),PLANT_INCIDENT_PHASE:{DORMANT:'dormant',SEALED:'sealed'}},
+    plantIncidentActive:()=>true,inB3Space:()=>inB3,
     ZONE:{street:1,dock:2,civicCourt:3,serviceYard:4,academicRoof:5},ACADEMIC_ROOF:{renderGroup:'academicRoof'},
     FP:{zoneAt:()=>zone,logicalToPhysical:()=>physical}};
   const sourceHere=vm.runInNewContext(source.slice(start,end)+'\nhypoxiaSourceHere',context);
@@ -97,5 +97,7 @@ test('an exposed roof hold has fresh air while the plant still contaminates encl
   zone=6;physical={spaceId:'academic',renderGroup:'academic',y:10};
   assert.equal(sourceHere(),.35,'ordinary indoor exposure is unchanged');
   physical={spaceId:'basement',renderGroup:'basement',y:-3};assert.equal(sourceHere(),.75);
+  inB3=true;assert.equal(sourceHere(),0,'the plant incident leaves Studio B3 air clear');
+  inB3=false;
   physical={spaceId:'plant',renderGroup:'plant',y:-3};assert.equal(sourceHere(),1);
 });

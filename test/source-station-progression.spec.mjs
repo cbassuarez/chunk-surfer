@@ -3,6 +3,7 @@ import test from 'node:test';
 import { buildChapelOutskirtsGodPreset } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { normalizeSourceStation } from '../src/game/chunk-surf-state.js';
+import { createStationRealm, stationRealmSeed } from '../src/game/station-realms.js';
 
 const relics = ['burning', 'flood', 'inverted', 'two-moons', 'glass-storm'];
 const create = (seed, onState) => {
@@ -37,86 +38,73 @@ function spendVisit(runtime) {
   assert.equal(runtime.stationRealmFrame(), null);
 }
 
+function finishField(runtime, meaningful = true) {
+  const field = runtime.stationFieldFrame();
+  const result = { fieldId: field.fieldId, connectionId: field.connectionId, meaningful,
+    receipt: meaningful ? { fieldId: field.fieldId, connectionId: field.connectionId, landmarkWitnessed: true, returned: true } : null,
+    checkpoint: { version: 1, fieldId: field.fieldId, connectionId: field.connectionId, stage: 'returning', returnReason: 'crossed-return',
+      witness: { landmarkId: field.visit.landmark.id, inspected: meaningful }, elapsed: 12 } };
+  return runtime.finishStationFieldReturn(result);
+}
+function earnHome(runtime) {
+  const field = runtime.doorFieldDoors().find((door) => door.fieldId && !door.shut);
+  cross(runtime, field); finishField(runtime);
+  return runtime.doorFieldDoors().find((door) => door.destination?.kind === 'home');
+}
+
 for (const seed of [5, 40, 4417]) {
-  test(`seed ${seed}: doors crossed in corridor order preserve the early whiteout and earn home`, () => {
-    const saves = [];
-    const onState = (state) => saves.push(JSON.parse(JSON.stringify(state)));
+  test(`seed ${seed}: one voluntary field return earns an optional, physically explored home`, () => {
+    const saves = [], onState = (state) => saves.push(JSON.parse(JSON.stringify(state)));
     let runtime = create(seed, onState);
-    const openDoors = runtime.doorFieldDoors().filter((door) => !door.route && !door.shut);
-    const whiteout = openDoors.find((door) => door.variant === 5);
-    assert.ok(whiteout, 'seed must have an ordinary whiteout visit');
-    let ordinaryWhiteout = false;
-    for (const door of openDoors) {
-      cross(runtime, door);
-      const crossing = runtime.doorCrossingFrame();
-      if (door.id === whiteout.id) {
-        assert.equal(crossing.home, false, 'home must not be injected ahead of the natural route');
-        ordinaryWhiteout = true;
-        assert.ok(runtime.stationRelicWorlds().length < 5);
-      }
-      assert.ok(saves.at(-1).routeDoorsErased.includes(door.id));
-      assert.equal(saves.at(-1).station.crossing.id, door.id, 'erasure saved without its crossing');
-      assert.ok(saves.at(-1).station.entries.some((entry) => entry.doorId === door.id), 'erasure saved without its relic receipt');
-      const returned = runtime.stationRealmFrame().returnPose;
-      assert.ok(runtime.geometry.cellAt(returned.x, returned.y), 'saved entry slab has no Source floor');
-      for (let i = 0; i < 3; i += 1) runtime.moveStationRealm({ dz: .085 });
-      runtime.advanceStationTime(.8);
-      const elapsed = runtime.doorCrossingFrame().elapsed;
-      const pose = runtime.stationRealmFrame().pose;
-      const stride = runtime.stationRealmFrame().strideM;
-      assert.ok(stride > 0, 'fixture must reload between footsteps');
-      runtime = restore(runtime, onState);
-      assert.equal(runtime.doorCrossingFrame().elapsed, elapsed, 'reload changed active visit time');
-      assert.deepEqual(runtime.stationRealmFrame().pose, pose, 'reload changed real realm position');
-      assert.equal(runtime.stationRealmFrame().strideM, stride, 'reload discarded the partial footstep');
-      spendVisit(runtime);
-      assert.equal(runtime.doorCrossingFrame(), null);
-    }
-    assert.ok(ordinaryWhiteout);
-    assert.deepEqual(runtime.stationRelicWorlds(), relics);
-    const awakened = runtime.doorFieldDoors().find((door) => door.id === whiteout.id);
-    assert.ok(awakened.reawakened && awakened.home && awakened.opened && !awakened.erased);
-    assert.ok(runtime.state().routeDoorsErased.includes(whiteout.id), 'the ordinary visit receipt was discarded');
-    const nearby = sideOf(awakened, 2);
-    assert.ok(runtime.outskirtPortals(nearby.x, nearby.y).some((portal) => portal.id === whiteout.id));
-    cross(runtime, awakened);
+    const home = runtime.doorFieldDoors().find((door) => door.destination?.kind === 'home');
+    assert.equal(home.home, false);
+    assert.equal(runtime.openDoorFieldDoor(home.id).opened, false);
+    const field = runtime.doorFieldDoors().find((door) => door.fieldId && !door.shut);
+    cross(runtime, field);
+    assert.ok(saves.at(-1).routeDoorsErased.includes(field.id));
+    assert.equal(saves.at(-1).station.crossing.id, field.id, 'erasure saved without its scene marker');
+    assert.equal(saves.at(-1).station.field.entryDoorId, field.id, 'erasure saved without its field owner');
+    const returnPose = runtime.stationFieldFrame().returnPose;
+    assert.ok(runtime.geometry.cellAt(returnPose.x, returnPose.y));
+    runtime = restore(runtime, onState);
+    assert.deepEqual(runtime.stationFieldFrame().returnPose, returnPose);
+    finishField(runtime);
+    assert.equal(runtime.state().station.entries.at(-1).meaningful, true);
+    assert.deepEqual(runtime.stationRelicWorlds(), [], 'new field occurrence is separate from legacy relics');
+    const openedHome = runtime.doorFieldDoors().find((door) => door.id === home.id);
+    assert.ok(openedHome.home && !openedHome.erased);
+    cross(runtime, openedHome);
     assert.equal(runtime.doorCrossingFrame().home, true);
     for (let step = 0; step < 400; step += 1) runtime.moveStationRealm({ dz: .085 });
     const homePose = runtime.stationRealmFrame().pose;
     runtime.advanceStationTime(25);
     runtime = restore(runtime);
-    assert.equal(runtime.doorCrossingFrame().home, true);
     assert.deepEqual(runtime.stationRealmFrame().pose, homePose);
-    const copy = runtime.stationRealmFrame();
-    copy.pose.x = 99;
-    assert.equal(runtime.stationRealmFrame().pose.x, 0, 'getter exposed live realm state');
+    const copy = runtime.stationRealmFrame(); copy.pose.x = 99;
+    assert.equal(runtime.stationRealmFrame().pose.x, 0, 'getter exposed live body');
     for (let step = 0; !runtime.stationRealmFrame().atWindow && step < 1000; step += 1) runtime.moveStationRealm({ dz: .085 });
     assert.ok(runtime.stationRealmFrame().atWindow);
     assert.equal(runtime.markHomeWindowReached(), true);
-    runtime.releaseHomeCrossing();
-    runtime.advanceStationTime(.7);
+    runtime.releaseHomeCrossing(); runtime.advanceStationTime(.7);
     assert.equal(runtime.doorCrossingFrame(), null);
     assert.equal(runtime.stationWalkState(), null);
     assert.equal(runtime.state().station.homeResolved, true);
     assert.equal(runtime.stationLastRealmReturn().reason, 'home');
-    assert.equal(runtime.doorFieldDoors().find((door) => door.id === whiteout.id).reawakened, false);
   });
 }
 
-test('active station clock freezes visits and preserves disappearance timing through reload', () => {
+test('active clock and reload retain an untimed field and its finite post-return disappearance', () => {
   let runtime = create(4417);
-  const door = runtime.doorFieldDoors().find((entry) => !entry.route && !entry.shut);
-  cross(runtime, door);
-  runtime.advanceStationTime(1);
+  const door = runtime.doorFieldDoors().find((entry) => entry.fieldId && !entry.shut);
+  cross(runtime, door); runtime.advanceStationTime(1);
   const paused = runtime.doorCrossingFrame();
-  runtime.tick(100); // World simulation is not the station's explicitly advanced clock.
-  runtime.advanceStationTime(0);
+  runtime.tick(100); runtime.advanceStationTime(0);
   assert.deepEqual(runtime.doorCrossingFrame(), paused);
   runtime = restore(runtime);
   assert.deepEqual(runtime.doorCrossingFrame(), paused);
-  runtime.advanceStationTime(5);
-  assert.ok(runtime.doorCrossingFrame(), 'standing still must not consume walking allowance');
-  spendVisit(runtime);
+  runtime.advanceStationTime(100);
+  assert.ok(runtime.stationFieldFrame(), 'standing still must never automatically erase a field visit');
+  finishField(runtime);
   assert.equal(runtime.doorCrossingFrame(), null);
   const taking = runtime.doorTakeBackFrame(door.id);
   assert.equal(taking.phase, 'taking');
@@ -128,19 +116,15 @@ test('active station clock freezes visits and preserves disappearance timing thr
 
 test('early home retreat preserves a retry and home helper decisions survive reload', () => {
   let runtime = create(4417);
-  const doors = runtime.doorFieldDoors().filter((door) => !door.route && !door.shut);
-  const whiteout = doors.find((door) => door.variant === 5);
-  for (const door of doors) { cross(runtime, door); spendVisit(runtime); }
-  const awakened = runtime.doorFieldDoors().find((door) => door.id === whiteout.id);
-  cross(runtime, awakened);
+  const home = earnHome(runtime);
+  cross(runtime, home);
   let retreated = false;
   for (let i = 0; !retreated && i < 30; i += 1) retreated = runtime.moveStationRealm({ dz: -.085 }).retreated;
-  assert.ok(retreated);
-  runtime.advanceStationTime(.5);
+  assert.ok(retreated); runtime.advanceStationTime(.5);
   assert.equal(runtime.stationLastRealmReturn().reason, 'retreat');
   assert.equal(runtime.state().station.homeResolved, false);
   runtime.advanceStationTime(15.1);
-  const retry = runtime.doorFieldDoors().find((door) => door.id === whiteout.id);
+  const retry = runtime.doorFieldDoors().find((door) => door.id === home.id);
   assert.ok(retry.home && retry.reawakened && !retry.erased);
   cross(runtime, retry);
   for (let i = 0; !runtime.stationRealmFrame().atWindow && i < 1000; i += 1) runtime.moveStationRealm({ dz: .085 });
@@ -154,13 +138,16 @@ test('early home retreat preserves a retry and home helper decisions survive rel
   assert.equal(runtime.state().station.homeDiscovered, true);
 });
 
-test('decoherence resumes its saved remainder and completes while the player stands still', () => {
-  let runtime = create(4417);
-  const door = runtime.doorFieldDoors().find((entry) => !entry.route && !entry.shut && entry.variant === 1);
-  cross(runtime, door);
+test('an already occupied legacy realm completes its saved decoherence without a reset or a fresh footfall', () => {
+  const state = create(4417).state();
+  const oldRealm = createStationRealm({ variant: 1, seed: stationRealmSeed(4417, 1), entryDoorId: 'source-chapel-door-0', returnPose: { x: 0, y: -4000 }, now: 0 });
+  state.station.realm = oldRealm;
+  state.station.crossing = { id: oldRealm.entryDoorId, variant: 1, world: 'flood', startedAt: 0 };
+  state.station.entries = [{ doorId: oldRealm.entryDoorId, world: 'flood', variant: 1, home: false, enteredAt: 0, returnedAt: null }];
+  state.routeDoorsErased = [oldRealm.entryDoorId];
+  let runtime = createSourceSpaceRuntime({ initialState: state });
   for (let i = 0; runtime.stationRealmFrame().stage === 'inside' && i < 1000; i += 1) {
-    runtime.moveStationRealm({ dx: Math.floor(i / 8) % 2 ? -.085 : .085 });
-    runtime.advanceStationTime(.045);
+    runtime.moveStationRealm({ dx: Math.floor(i / 8) % 2 ? -.085 : .085 }); runtime.advanceStationTime(.045);
   }
   runtime.advanceStationTime(.35);
   const halfway = runtime.stationRealmFrame();
@@ -171,7 +158,7 @@ test('decoherence resumes its saved remainder and completes while the player sta
   assert.deepEqual(runtime.stationRealmFrame(), halfway, 'pause consumed the remaining reassembly');
   assert.equal(runtime.moveStationRealm({ yaw: .7 }).footsteps, 0);
   runtime.advanceStationTime(.8);
-  assert.equal(runtime.stationRealmFrame(), null, 'return waited for another footstep');
+  assert.equal(runtime.stationRealmFrame(), null);
   assert.equal(runtime.stationLastRealmReturn().reason, 'budget');
   assert.deepEqual(runtime.stationRelicWorlds(), ['flood']);
 });
@@ -193,30 +180,28 @@ test('legacy timed visits and virtual home walks migrate into actual supported p
   assert.ok(restored.doorCrossingFrame().realm);
 });
 
-test('duplicate station doors preview and visit the same canonical realm and leave one residue', () => {
+test('duplicate doors preview and inhabit the same shared field template without duplicating canonical visits', () => {
   const runtime = create(4417);
-  const doors = runtime.doorFieldDoors().filter((door) => !door.route && !door.shut && door.variant === 4);
+  const doors = runtime.doorFieldDoors().filter((door) => !door.shut && door.fieldId === 'fourth');
   assert.ok(doors.length > 1);
   for (const door of doors) runtime.openDoorFieldDoor(door.id);
-  const previewSeeds = doors.map((door) => {
-    const nearby = sideOf(door, 2);
-    return runtime.outskirtPortals(nearby.x, nearby.y).find((portal) => portal.id === door.id).seed;
-  });
-  assert.equal(previewSeeds[0], previewSeeds[1]);
+  const previews = doors.map((door) => { const at = sideOf(door, 2); return runtime.outskirtPortals(at.x, at.y).find((portal) => portal.id === door.id); });
+  assert.equal(previews[0].seed, previews[1].seed);
+  assert.equal(previews[0].fieldId, previews[1].fieldId);
   for (const door of doors) {
     cross(runtime, door);
-    assert.equal(runtime.stationRealmFrame().seed, previewSeeds[0]);
-    assert.equal(runtime.stationRealmFrame().pose.z, 1);
+    assert.equal(runtime.stationFieldFrame().fieldId, 'fourth');
     assert.equal(runtime.state().station.entries.at(-1).returnedAt, null);
-    spendVisit(runtime);
+    finishField(runtime);
   }
-  assert.deepEqual(runtime.stationRelicWorlds(), ['glass-storm']);
+  assert.deepEqual(runtime.stationRelicWorlds(), []);
+  assert.equal(runtime.state().station.entries.filter((entry) => entry.meaningful).length, doors.length);
 });
 
 test('legacy erased-only saves recover receipts and the chapel checkpoint has actual floor', () => {
   const runtime = create(4417);
   const state = runtime.state();
-  state.routeDoorsErased = runtime.doorFieldDoors().filter((door) => !door.route && !door.shut).map((door) => door.id);
+  state.routeDoorsErased = runtime.doorFieldDoors().filter((door) => !door.route).map((door) => door.id);
   state.routeDoorsOpened = [...state.routeDoorsErased];
   delete state.station;
   const restored = createSourceSpaceRuntime({ initialState: state });

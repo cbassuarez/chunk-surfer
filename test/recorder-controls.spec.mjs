@@ -2,13 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { Group, Mesh, PerspectiveCamera, PlaneGeometry, Raycaster, Vector2, Vector3 } from 'three';
 import * as scenes from '../src/game/scenes.js';
 import { makeRecorderScene, recorderControlState, recorderKeys, RECORDER_KEY } from '../src/game/recorder-scene.js';
 import { drawRecorderFace, recorderButtons, recorderControlRegions, recorderHitRegions, recorderInstrumentLayout, recorderPanelRect, recorderTranscriptRect, recordingOverlayButtons, playbackOverlayButtons, TRANSPORT } from '../src/render/recorder-view.js';
 import { recorderFaceLayout } from '../src/render/recorder-instrument.js';
-import { uiInit } from '../src/render/ui.js';
+import { uiInit, uiPhysicalSize, uiPointFromClient, uiSetLayoutSize, uiSize } from '../src/render/ui.js';
 import { controlMechanicsSnapshot, cancelControlScope } from '../src/game/control-mechanics.js';
 import {nightDeadlineAllowsTransport} from '../src/game/night-deadline.js';
+import { createPointerModeController } from '../src/input/pointer-mode.js';
 
 const press = (scene, region, type = 'pointerdown', pointerId = 7) => scene.pointer({
   type, pointerId, cellX: region.x + region.w / 2, cellY: region.y + region.h / 2,
@@ -20,7 +22,8 @@ const takes = [{ roomId: 'main_b3', label: 'STUDIO B3', playable: true, ordinal:
 {
   const previous = new Map(['document', 'window', 'getComputedStyle'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   try {
-    globalThis.document = { createElement: () => ({ style: {}, getContext: () => null }) };
+    globalThis.document = { createElement: () => ({ style: {}, getContext: () => null,
+      getBoundingClientRect: () => ({ left: 17, top: 24, width: 1200, height: 800 }) }) };
     globalThis.window = { devicePixelRatio: 1, addEventListener() {} };
     globalThis.getComputedStyle = () => ({ position: 'relative' });
     uiInit({ clientWidth: 1200, clientHeight: 800, appendChild() {} });
@@ -109,6 +112,48 @@ test('pointer targets remain on the transport housings as the cap travels', () =
     kind: 'transport', id: key.id, index, controlId: `recorder:${key.id}`,
     ...slots[index], enabled: key.enabled !== false,
   })));
+});
+
+test('visible 3D keys pick correctly with navigator columns reserved', () => {
+  const source = readFileSync(new URL('../src/render/recorder-rig.js', import.meta.url), 'utf8');
+  const camera = new PerspectiveCamera(70, 1.5, .02, 2);
+  camera.updateMatrixWorld(true);
+  const recorder = new Group();
+  recorder.position.set(0, -.13, -.40);
+  recorder.rotation.x = -.31;
+  const geometry = new PlaneGeometry(.032, .017);
+  const caps = [.0341, .071, .108].map(x => {
+    const art = new Mesh(geometry);
+    art.position.set(x, -.0555, .0324);
+    recorder.add(art);
+    return { art };
+  });
+  recorder.updateMatrixWorld(true);
+  const physical = uiPhysicalSize();
+  uiSetLayoutSize({ cols: physical.cols - 32, rows: physical.rows });
+  try {
+    const rect = recorderPanelRect(uiSize());
+    const layout = recorderFaceLayout(rect);
+    // Run the frame's actual hit snapshot and picker without creating WebGL.
+    const saveHit = source.slice(source.indexOf("    if (frame.owner !== 'carry'"), source.indexOf('    rendered = true;'));
+    const pick = source.slice(source.indexOf('export function recorderRigPointer'), source.indexOf('export function clearRecorderRigPointer'));
+    const rig = { camera, caps };
+    const recorderRigPointer = runInNewContext(
+      `${saveHit}\n${pick.replace('export function', 'function')}\nrecorderRigPointer;`,
+      { r: rig, rig, frame: { owner: 'recorder' }, lastPress: null, view: { rect }, layout,
+        ...uiSize(), uiPhysicalSize, Raycaster, Vector2 });
+    for (const [index, { art }] of caps.entries()) {
+      const p = art.getWorldPosition(new Vector3()).project(camera);
+      const event = uiPointFromClient(17 + 600 * (1 + p.x), 24 + 400 * (1 - p.y));
+      const result = recorderRigPointer(event, 'recorder');
+      const slot = layout.buttonSlots[index];
+      assert.equal(result.cellX, slot.x + slot.w / 2, `key ${index + 1}`);
+      assert.equal(result.cellY, slot.y + slot.h / 2);
+    }
+  } finally {
+    uiSetLayoutSize(null);
+    geometry.dispose();
+  }
 });
 
 test('uniformly fitted recorder keeps all three bottom housings outside its uninterrupted display', () => {
@@ -376,6 +421,93 @@ function mainFunction(name, globals) {
   return runInNewContext(`(${extracted})`, globals);
 }
 
+test('lowering the live recorder returns camera look without touching the take, and raising it restores STOP', async () => {
+  const state = { recording: false, playing: false, scene: null, slating: false, stalled: false };
+  const shortcuts = [];
+  const documentRef = { visibilityState: 'visible', pointerLockElement: null,
+    exitPointerLock() { this.pointerLockElement = null; } };
+  const surface = { requestPointerLock() { documentRef.pointerLockElement = surface; } };
+  const globals = {
+    storyMode: true, inRogue: true, paused: false, RENDERER: '3d', lastExposureEvent: null,
+    REC: { isRecording: () => state.recording, isSlating: () => state.slating, isStalled: () => state.stalled },
+    PB: { isPlaying: () => state.playing }, TUT: { tutorialActive: () => false },
+    takeRoom: 'main_b3', LEVEL_CHECK_ROOM: 'level-check',
+    usingSourceSpace: () => false, towerWarningOwnsMoment: () => false,
+    scenes: { depth: () => Number(!!state.scene), blocksInput: () => !!state.scene, allowsLook: () => false },
+    startupPresentationHeld: () => false, gameplayInputLifecycleActive: () => true,
+    liveRecorderHadCursor: false, liveTakeRecorderIsLowered: false,
+    liveRecordingPointerControls: new Map(), R3: {}, cancelControlScope() {}, cancelRecorderRigPress() {},
+    recordAction: () => shortcuts.push('transport'), openRecorder: () => shortcuts.push('open'),
+  };
+  globals.canLowerLiveTakeRecorder = mainFunction('canLowerLiveTakeRecorder', globals);
+  globals.liveTakeRecorderLowered = mainFunction('liveTakeRecorderLowered', globals);
+  globals.liveRecorderTakesCursor = mainFunction('liveRecorderTakesCursor', globals);
+  globals.gameplayWantsPointerCapture = mainFunction('gameplayWantsPointerCapture', globals);
+  const pointer = createPointerModeController({ documentRef, getTargetElement: () => surface,
+    getState: () => ({ renderer: '3d', storyMode: true, inRogue: true,
+      blocksLook: globals.liveRecorderTakesCursor() || globals.scenes.blocksInput() }),
+    setTimeoutFn: () => 0,
+  });
+  globals.syncPointerMode = reason => pointer.sync(reason);
+  globals.resumeGameplayInput = reason => pointer.requestCaptureFromGesture(reason);
+  const syncRecorder = globals.syncLiveRecorderCursor = mainFunction('syncLiveRecorderCursor', globals);
+  globals.toggleLiveTakeRecorder = mainFunction('toggleLiveTakeRecorder', globals);
+  const source = readFileSync('src/main.js', 'utf8');
+  const rKey = source.slice(source.indexOf("    if(bare && is('KeyR','r')){"), source.indexOf('    // [space]/[enter] hurries'));
+  const pressR = runInNewContext(`(e => { const bare = true, is = () => true; ${rKey} })`, globals);
+
+  await pointer.requestCaptureFromGesture('walk');
+  assert.equal(pointer.isTrueLocked(), true);
+  state.recording = true;
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), false);
+  assert.equal(globals.gameplayWantsPointerCapture(), false);
+  await pointer.requestCaptureFromGesture('click-away-from-deck');
+  assert.equal(pointer.isTrueLocked(), false);
+
+  pressR({ preventDefault() {} });
+  assert.equal(globals.liveTakeRecorderLowered(), true);
+  assert.equal(pointer.isTrueLocked(), true);
+  assert.equal(state.recording, true);
+  state.stalled = true;
+  syncRecorder();
+  assert.equal(globals.liveTakeRecorderLowered(), false, 'an authored hold exposes its transport');
+  assert.equal(pointer.isTrueLocked(), false);
+  state.stalled = false;
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), true);
+  pressR({ repeat: true, preventDefault() {} });
+  assert.equal(globals.liveTakeRecorderLowered(), true);
+  pressR({ preventDefault() {} });
+  assert.equal(globals.liveTakeRecorderLowered(), false);
+  assert.equal(pointer.isTrueLocked(), false);
+  assert.equal(state.recording, true);
+  assert.deepEqual(shortcuts, []);
+  pressR({ controller: true, preventDefault() {} });
+  state.slating = true;
+  pressR({ preventDefault() {} });
+  state.slating = false;
+  assert.deepEqual(shortcuts, ['transport', 'transport']);
+
+  state.scene = 'short-take-confirmation';
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), false);
+  state.scene = null;
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), false, 'keep recording returns to the live controls');
+
+  state.recording = false;
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), true);
+  state.playing = true;
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), false);
+  state.playing = false;
+  syncRecorder();
+  assert.equal(pointer.isTrueLocked(), true);
+  pointer.dispose();
+});
+
 test('the actual playback entry refuses recording and switches an explicit chosen take after stopping the old one', () => {
   const log = [], state = { recording: true, playing: true, hasTake: true, lowerCalls: 0 };
   const play = mainFunction('playTakeFrom', {
@@ -411,6 +543,7 @@ test('the actual playback entry refuses recording and switches an explicit chose
 test('the real live-overlay TAKES route opens the list without invoking a record/stop verb', () => {
   const log = [], controls = new Map();
   const handle = mainFunction('onPointerEvent', {
+    startupPresentationHeld: () => false, noteRecorderRigPress: () => {},
     scenePointerPayload: event => event,
     pointerEventHitsGameplaySurface: () => true,
     liveRecordingControlHit: () => ({ id: 'takes', controlId: 'recording:takes' }),
@@ -436,6 +569,7 @@ test('the raised recorder uses the same actual noise reading and recorded event 
   const snapshot = { roomId: 'the_tub', progress: .3, elapsedSec: 27, durationSec: 90,
     signalLeft: .22, signalRight: .41, markers: [{ id: 'real-event', position: .73 }] };
   const machine = mainFunction('recorderMachineState', {
+    recordingStopConfirmation:{notice:()=>''},
     sourceContinuationScene:null,
     chapelTapeRetakeRoom:()=>null,
     HUNTER: { takeHunterTransport: () => ({phase:'normal'}) }, takeHunter: {},
@@ -468,7 +602,7 @@ test('the raised recorder uses the same actual noise reading and recorded event 
   assert.equal(face.meter.rms, .5, 'hypot(.3 player, .4 presence) is the physical .5 input, not a normalized/clipped fraction');
   assert.equal(face.locationMarks[0].id, 'stored');
   assert.equal(face.locationMarks[1].at, .2);
-  assert.equal(face.locationMarks[1].kind, 'spoil');
+  assert.equal(face.locationMarks[1].kind, 'event');
   assert.equal(face.meterMarks[0].db, 20 * Math.log10(.5));
   assert.equal(face.meterThresholdDb, 20 * Math.log10(.7));
   live.ambient = .75;
@@ -493,11 +627,11 @@ test('passive playback hit testing shares the exact drawn bottom housings and re
   const rect = recorderPanelRect({ ...size, progress: 0, rowsNeeded: 9, clearBottom });
   const targets = recorderControlRegions(rect, playbackOverlayButtons());
   const hit = mainFunction('liveRecordingControlHit', {
-    storyMode: true, inRogue: true, paused: false, usingSourceSpace: () => false,
+    liveRecorderTakesCursor: () => !state.modal,
     REC: { isRecording: () => false }, PB: { isPlaying: () => true },
-    scenes: { depth: () => Number(state.modal), blocksWorld: () => false, suppressesHud: () => false },
     pointerMode: { isTrueLocked: () => state.captured, isNativeCaptured: () => false },
     uiSize: () => size, recorderPanelRect, recorderControlRegions, playbackOverlayButtons,
+    recorderRigPointer: event => event,
     SPEECH: { speechPanelRows: () => clearBottom },
     takePanelRect: () => { throw new Error('playback cannot borrow the progressing recording geometry'); },
   });
@@ -514,13 +648,16 @@ test('passive playback hit testing shares the exact drawn bottom housings and re
 test('passive playback STOP reaches playback ownership rather than the recording verb', () => {
   const log = [], state = { playing: true };
   const globals = {
+    startupPresentationHeld: () => false, noteRecorderRigPress: () => {},
+    afterRecorderStopPress: action => action(), paused: false,
     scenePointerPayload: event => event, pointerEventHitsGameplaySurface: () => true,
     liveRecordingControlHit: () => ({ id: 'stop', controlId: 'recording:stop' }),
     liveRecordingPointerControls: new Map(), playbackRoom: 'the_tub', pendingTapeRoll:false, saveCommit:()=>{},
     BINDINGS: { setActiveInputDevice() {} }, recoverInteractionAudio() {}, ensureInteractionFocus() {},
-    gameplayWantsPointerCapture: () => false, scenes: { pointer: () => false },
+    gameplayWantsPointerCapture: () => false, scenes: { pointer: () => false, blocksInput: () => false },
     REC: { isRecording: () => false, saveRecState:()=>({}) },
-    PB: { isPlaying: () => state.playing, stopPlayback: () => { state.playing = false; log.push('stop-playback'); } },
+    PB: { isPlaying: () => state.playing, takeFor: () => ({id:'test-tape'}),
+      stopPlayback: () => { state.playing = false; log.push('stop-playback'); } },
     recordAction: () => log.push('record'), stopTake: () => log.push('stop-take'),
     pressControl: () => {}, cancelControlScope: () => {},
   };

@@ -5,18 +5,37 @@
 import {createAsciiObject} from './src/render/vendor/ascii-object/renderer.js';
 import {ITEM_PORTRAITS,ITEM_ASCII_OPTIONS} from './src/data/item-portraits.js';
 const grid=document.querySelector('#grid');
-for(const item of Object.values(ITEM_PORTRAITS)){const el=document.createElement('section');el.className='item';el.innerHTML=`<img src="/${item.large}" alt="${item.id}"><h2>${item.id}</h2>`;grid.appendChild(el);}
+const items=Object.values(ITEM_PORTRAITS).filter(item=>item.model);
+for(const item of items){const el=document.createElement('section');el.className='item';el.innerHTML=`<img src="/${item.large}" alt="${item.id}"><h2>${item.id}</h2>`;grid.appendChild(el);}
 let loaded=null,failed=null;
 const canvas=document.querySelector('#bake');
 const renderer=createAsciiObject({canvas},{...ITEM_ASCII_OPTIONS,onLoad:()=>loaded=true,onError:e=>failed=String(e)});
-window.__portraits={items:Object.values(ITEM_PORTRAITS),async bake(id,size=512,ascii=true){
+window.__portraits={items,async bake(id,size=512,ascii=false){
  const item=ITEM_PORTRAITS[id];loaded=false;failed=null;
  canvas.style.width=size+'px';canvas.style.height=Math.round(size*.75)+'px';
- renderer.setOptions({...ITEM_ASCII_OPTIONS,...item.lighting,src:`/${item.model}`,scale:item.scale,ascii,cellSize:item.id==='marble-eyes'?(size===192?2:3):(size===192?3:ITEM_ASCII_OPTIONS.cellSize),onLoad:()=>loaded=true,onError:e=>failed=String(e)});renderer.resetView();renderer.resize();
+ renderer.setOptions({...ITEM_ASCII_OPTIONS,...item.lighting,src:`/${item.model}`,
+  environmentIntensity:(item.lighting.environmentIntensity??ITEM_ASCII_OPTIONS.environmentIntensity)*.59,
+  // Back the capture up first. Transparent bounds are cropped after rendering,
+  // so long antennas, flashlight lenses and round rims can never hit the edge.
+  scale:item.scale*.69,ascii,cellSize:item.id==='marble-eyes'?(size===192?2:3):(size===192?3:ITEM_ASCII_OPTIONS.cellSize),
+  onLoad:()=>loaded=true,onError:e=>failed=String(e)});renderer.resetView();renderer.resize();
  // Same model can be rendered at two sizes without another load callback.
  if(window.__lastModel===id)loaded=true;window.__lastModel=id;
  for(let i=0;i<400&&!loaded&&!failed;i++)await new Promise(r=>setTimeout(r,20));
  if(failed||!loaded)throw new Error(failed||'Model load timed out');
- renderer.renderFrame();return canvas.toDataURL('image/webp',.94);
+ renderer.renderFrame();
+ const still=document.createElement('canvas');still.width=canvas.width;still.height=canvas.height;
+ const ctx=still.getContext('2d',{willReadFrequently:true});ctx.drawImage(canvas,0,0);
+ const {data}=ctx.getImageData(0,0,still.width,still.height);
+ let left=still.width,right=-1,top=still.height,bottom=-1;
+ for(let y=0;y<still.height;y++)for(let x=0;x<still.width;x++){
+  if(data[(y*still.width+x)*4+3]<12)continue;
+  left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+ }
+ if(right<=left||bottom<=top)throw Error('Empty item render: '+id);
+ const w=right-left+1,h=bottom-top+1,fit=Math.min(still.width*.9/w,still.height*.9/h);
+ ctx.clearRect(0,0,still.width,still.height);
+ ctx.drawImage(canvas,left,top,w,h,(still.width-w*fit)/2,(still.height-h*fit)/2,w*fit,h*fit);
+ return still.toDataURL('image/webp',.94);
 }};
 </script></html>

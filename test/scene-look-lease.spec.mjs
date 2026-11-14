@@ -107,12 +107,14 @@ test('actual hide/show and page lifecycle handlers release stale native ownershi
   const start = main.indexOf("  document.addEventListener('visibilitychange', ()=>{");
   const end = main.indexOf("  window.addEventListener('blur',onBlur);", start);
   assert.ok(start >= 0 && end > start);
-  const callbacks = new Map(), releases = [], attempts = [], recoveries = [], resets = [];
+  const callbacks = new Map(), releases = [], attempts = [], recoveries = [], resets = [], metronomeHolds = [];
   const document = { hidden: false, hasFocus: () => true,
     addEventListener: (name, fn) => callbacks.set(name, fn) };
   const context = {
     document, window: { addEventListener: (name, fn) => callbacks.set(name, fn) },
     runPlayDurationClock: { suspend() {} },
+    holdPracticeMetronomeClock:()=>metronomeHolds.push(true),
+    courtStorm:null,openingStorm:null,stormAt:0,
     firstStrikeScene:null,firstStrikeAudio:null,sourceRestBreath:null,sourceRestWeather:null,holdSourceRestEndingMusic(){},paused:false,
     openingArrivalAudio:null,openingCabRadio:null,STORY:{pauseOpeningOvertureScore(){},resumeOpeningOvertureScore(){}},pubPressureAudio:null,
     pointerMode: { release: reason => releases.push(reason), attemptCapture: reason => attempts.push(reason) },
@@ -136,6 +138,7 @@ test('actual hide/show and page lifecycle handlers release stale native ownershi
   assert.deepEqual(releases, ['visibility-hidden', 'pagehide']);
   assert.deepEqual(resets, ['visibility-hidden', 'pagehide']);
   assert.deepEqual(recoveries, ['visibility-visible', 'pageshow']);
+  assert.equal(metronomeHolds.length,2,'hidden and pagehide cancel future clicks at the hold boundary');
   assert.deepEqual(attempts, ['visibility-visible', 'pageshow']);
 });
 

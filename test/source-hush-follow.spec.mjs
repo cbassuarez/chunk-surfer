@@ -112,7 +112,7 @@ test('his state saves and restores, and nonsense does not', () => {
 });
 
 test('the real Source controller pace cannot leave him hundreds of metres behind', () => {
-  for (const pace of [2.1, 4.8, .5/.045, Math.SQRT2*.5/.045]) for (let seed=1;seed<=32;seed++) {
+  for (const pace of [2.1, 4.8,7.5,8.25,.5/.045, Math.SQRT2*.5/.045]) for (let seed=1;seed<=32;seed++) {
     const f=createSourceHushFollow(null,{seed,lineClear:()=>true});
     const p={x:0,z:-20,floor:15.2};f.begin({x:0,z:0,floor:15.2,player:p});
     let settledDistance=0,settledFrames=0;
@@ -254,8 +254,17 @@ test('walking out of the open door, the Scene Dock is taken back and HUSH stands
   assert.ok(hush.strength > .9);
   const portal = SOURCE_HANGING_SHORE.portal;
   assert.ok(Math.hypot((hush.x - o.x) * .5 - portal.x, (hush.y - o.y) * .5 - portal.z) < 1, 'he is not where the door was');
-  // The room and the hall behind it are gone: nothing stands, nothing is furnished.
-  assert.equal(runtime.propInstances(at().x, at().y).filter((p) => !String(p.id).startsWith('source-shore-piece:')).length, 0, 'the room\'s things are still there');
+  const remaining = runtime.propInstances(at().x, at().y);
+  const originalRoomIds = new Set(before.filter(p => !p.sourceAmbientFault && !String(p.id).startsWith('source-shore-piece:')).map(p => p.id));
+  assert.ok(originalRoomIds.size > 0);
+  assert.ok(remaining.every(p => !originalRoomIds.has(p.id)), 'an original room prop is still there');
+  for (const prop of remaining) {
+    if (String(prop.id).startsWith('source-shore-piece:')) continue;
+    assert.equal(prop.sourceAmbientFault, true, 'an unrecognized prop remains after the room disappears');
+    assert.equal(prop.faultProfile, 'shore');
+    assert.equal(prop.structural, false);
+    assert.equal(prop.collidable, false);
+  }
   const roomCell = runtime.geometry.cellAt(o.x, o.y);
   assert.ok(!roomCell?.sourceLanding, 'the room\'s floor is still the room');
   assert.equal(runtime.sourceVoidFrame().sceneDock, false);

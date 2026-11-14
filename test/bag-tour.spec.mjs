@@ -189,13 +189,14 @@ test('controller-only tours never advertise an Enter key for the map confirmatio
 
 test('live Bag registers module hits before the external guide and never resurrects an internal bottom band',()=>{
   const source=readFileSync(new URL('../src/game/bag.js',import.meta.url),'utf8');
-  assert.match(source,/const frame = bagGuideFrame\(\{size,outer:bagPanelBounds\(\{\.\.\.size,sectionId:nav\.sectionId\}\),guide:guided\}\)/);
+  assert.match(source,/const frame = bagGuideFrame\(\{size,outer:caseBounds,guide:guided,fullHeight:/);
   assert.match(source,/body:mapHardware\|\|journalHardware\?\{x:outer\.x\+3,y:outer\.y\+2\.6,w:outer\.w-6,h:outer\.h-3\.6\}:body/,
     'the map uses the approved larger exposed console body, not the inherited glass aperture');
-  assert.match(source,/sectionId:mapHardware\?'map':journalHardware\?'journal':null/,'the map body receives its own tab and content geometry');
-  assert.match(source,/glass: skills && !subview \|\| mapHardware \|\| journalHardware \? false : \{\}/,
-    'the exposed map and journal consoles cannot have a glass cover');
-  assert.match(source,/aperture: !\(mapHardware \|\| journalHardware\)/,
+  assert.match(source,/sectionId:mapHardware\?'map':journalHardware\?'journal':nav\.sectionId==='kit'\?'kit':null/,
+    'map and journal retain their console geometry while the root inventory receives its own spatial workspace');
+  assert.match(source,/glass: skills && !subview \|\| mapHardware \|\| journalHardware \|\| inventoryHardware \? false : \{\}/,
+    'the exposed map, journal and inventory workspaces cannot have a glass cover');
+  assert.match(source,/aperture: !\(mapHardware \|\| journalHardware \|\| exposedSkills\)/,
     'the exposed consoles do not inherit the inset glass aperture');
   assert.doesNotMatch(source,/guideRows:\s*bagGuideRows/);
   const render=source.slice(source.indexOf('const frame = bagGuideFrame'));

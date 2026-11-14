@@ -43,6 +43,7 @@ import {
   normalizeCombatBuild,
   techniqueAvailability,
 } from '../src/game/combat-progression.js';
+import { connectSkillPatch, skillPatchSource } from '../src/game/skill-patchbay.js';
 import { GRID, HIT_QUALITY } from '../src/game/combat-damage.js';
 
 const definition = (id = 'natatorium') => ({
@@ -168,13 +169,13 @@ test('the locked techniques preserve their tier and equipment contracts', () => 
   assert.equal(migrated.unspent, 2);
   assert.deepEqual(normalizeCombatBuild({ techniques: [TECHNIQUE.WHITEOUT] }, ['recording-2']).techniques, []);
   assert.equal(techniqueAvailability(migrated, TECHNIQUE.RUNAWAY_FEEDBACK, { hasRig: true }).reason, 'NO CONTINUITY');
-  assert.equal(techniqueAvailability(migrated, TECHNIQUE.OVERDUB, { hasRig: false }).reason, 'BENT RIG REQUIRED');
+  assert.equal(techniqueAvailability(migrated, TECHNIQUE.OVERDUB, { hasRig: false }).reason, 'SERVICE INTERFACE REQUIRED');
   // A player holding NOTHING is still told the real problem. This used to
   // answer NO SPARE LEAD for the rig, which is true and useless: the lead count
   // is the one thing on this screen they can fix, and the rig is not.
   const broke = normalizeCombatBuild(null, []);
   assert.equal(broke.unspent, 0);
-  assert.equal(techniqueAvailability(broke, TECHNIQUE.OVERDUB, { hasRig: false }).reason, 'BENT RIG REQUIRED');
+  assert.equal(techniqueAvailability(broke, TECHNIQUE.OVERDUB, { hasRig: false }).reason, 'SERVICE INTERFACE REQUIRED');
   assert.equal(techniqueAvailability(broke, TECHNIQUE.AFTERIMAGE, { hasRig: true }).reason, 'NO SPARE LEAD');
   const first = learnCombatTechnique(migrated, TECHNIQUE.OVERDUB, { hasRig: true });
   const second = learnCombatTechnique(first.build, TECHNIQUE.RUNAWAY_FEEDBACK, { hasRig: true });
@@ -1117,4 +1118,102 @@ test('enemy guard: on severe it arms when hurt and slips your committed swing; s
   cooled.phase = 'enemy';
   cooled.pendingEnemy = { prevention: 0, playerDealt: 2 * GRID, playerNotice: '' };
   assert.equal(advanceEnemy(cooled).enemyGuard, null, 'a guard just spent cannot be set again');
+});
+
+
+test('return bridge is a normal fitted lead with a rig prerequisite and a real cascade', () => {
+  const stock = normalizeCombatBuild(null, PIN_SOURCES.encounters);
+  const id = TECHNIQUE.RETURN_BRIDGE;
+  const source = skillPatchSource(id);
+  assert.equal(source.techniqueId, TECHNIQUE.OVERDUB);
+  assert.equal(source.id, 'terminal:feed:rig.return-bridge');
+  assert.equal(source.skillId, null);
+  assert.equal(connectSkillPatch(stock, source, id, { hasRig:true }).changed, false);
+  const parent = learnCombatTechnique(stock, TECHNIQUE.OVERDUB, { hasRig:true }).build;
+  assert.equal(connectSkillPatch(parent, source, id, { hasRig:false }).changed, false);
+  assert.equal(connectSkillPatch(parent, skillPatchSource(TECHNIQUE.ROOM_TONE), id, { hasRig:true }).changed, false);
+  assert.match(connectSkillPatch(parent, {id:'output:skill:rig.overdub',kind:'output',branch:'rig'}, id, { hasRig:true }).reason, /EXPOSED TERMINALS/);
+  const fitted = connectSkillPatch(parent, source, id, { hasRig:true });
+  assert.deepEqual(fitted.patched, [id]);
+  assert.equal(fitted.build.unspent, parent.unspent - 1);
+  const restored = normalizeCombatBuild(JSON.parse(JSON.stringify(fitted.build)));
+  assert.deepEqual(restored, fitted.build);
+  assert.deepEqual(pullCombatTechnique(restored, TECHNIQUE.OVERDUB).pulled, [TECHNIQUE.OVERDUB, id]);
+});
+
+function hallReturn({ seed = 0, bridge = true, load = 0, damage = GRID, snr = SNR_STATE.SIGNAL, loop = true, recorder = true } = {}) {
+  const state = createCombatState(definition('hall'), {
+    startingMovementIndex:1, seed, tools:{ rig:true, recorder },
+    techniques:bridge ? [TECHNIQUE.OVERDUB, TECHNIQUE.RETURN_BRIDGE] : [TECHNIQUE.OVERDUB],
+  });
+  state.apparitions.members[0].intentId = loop ? 'hall:loop' : 'hall:turn';
+  state.take = { id:'hall:turn', label:'THE TURN', damage };
+  state.returnBridgeLoad = load;
+  state.snr = snr;
+  return state;
+}
+
+const invertMove = state => availableCombatActions(state).find(move => move.id === COMBAT_ACTION.INVERT);
+
+test('cold bridge returns extra force, a wrong read retains the take, and removing either tool breaks the bend', () => {
+  const input = hallReturn();
+  const dry = hallReturn({ bridge:false });
+  const move = invertMove(input);
+  assert.equal(move.bridge.chance, 0);
+  assert.equal(move.damageBand.min, invertMove(dry).damageBand.min + GRID);
+  const returned = reduceCombat(input, { type:COMBAT_ACTION.INVERT });
+  assert.equal(returned.last.bridge.to, 'invert-out');
+  assert.equal(returned.last.dealt, reduceCombat(dry, { type:COMBAT_ACTION.INVERT }).last.dealt + GRID);
+  assert.equal(returned.take, null);
+  assert.equal(returned.returnBridgeLoad, 1);
+
+  const wrongRead = hallReturn({ load:2, damage:3 * GRID, loop:false, snr:SNR_STATE.NOISE });
+  const wrong = reduceCombat(wrongRead, { type:COMBAT_ACTION.INVERT });
+  assert.match(wrong.last.notice, /NOTHING TO TURN/);
+  assert.equal(wrong.last.bridge, undefined);
+  assert.deepEqual(wrong.take, wrongRead.take);
+  assert.equal(wrong.returnBridgeLoad, 2);
+  const missing = hallReturn({ recorder:false });
+  assert.equal(invertMove(missing).bridge, undefined);
+  assert.equal(reduceCombat(missing, { type:COMBAT_ACTION.INVERT }).last.bridge, undefined);
+  const missingRig = { ...input, tools:{ ...input.tools, rig:false } };
+  assert.equal(invertMove(missingRig).enabled, false);
+});
+
+test('hot bridge replaces the battle slot, redirects the stance, and leaves the enemy turn intact', () => {
+  const input = hallReturn({ load:2, damage:3 * GRID, snr:SNR_STATE.NOISE });
+  const move = invertMove(input);
+  assert.equal(move.bridge.chance, 100);
+  assert.equal(move.damage, 0);
+  assert.match(combatMoveSubtext(input, move).long, /INVERT RECORDS INSTEAD/);
+  const arc = reduceCombat(input, { type:COMBAT_ACTION.INVERT });
+  assert.deepEqual(arc, reduceCombat(JSON.parse(JSON.stringify(input)), { type:COMBAT_ACTION.INVERT }));
+  assert.equal(arc.last.bridge.to, 'rec-in');
+  assert.equal(arc.last.dealt, 0);
+  assert.equal(arc.last.perfect, false);
+  assert.equal(arc.snr, SNR_STATE.SIGNAL);
+  assert.equal(arc.phase, 'enemy');
+  assert.equal(arc.pendingEnemy.tempoAfter, undefined);
+  assert.equal(arc.take.label, 'CROSSED RETURN');
+  assert.equal(arc.take.damage, GRID);
+  assert.equal(arc.returnBridgeLoad, 0);
+  assert.ok(advanceEnemy(arc).composure < arc.composure);
+  const hold = reduceCombat(input, { type:COMBAT_ACTION.HOLD });
+  assert.equal(hold.returnBridgeLoad, 0);
+  assert.equal(invertMove(hold).bridge.chance, 20);
+});
+
+test('marginal bridge produces both routes across seeds, never by inspecting the hidden enemy commitment', () => {
+  const rates = [0, 0];
+  for (let seed = 0; seed < 2000; seed++) {
+    for (const [index,load,chance] of [[0,1,20],[1,2,45]]) {
+      const input = hallReturn({ seed, load, damage:2 * GRID });
+      const wrong = hallReturn({ seed, load, damage:2 * GRID, loop:false });
+      assert.equal(invertMove(input).bridge.chance, chance);
+      assert.equal(invertMove(wrong).bridge.chance, chance);
+      if (reduceCombat(input, { type:COMBAT_ACTION.INVERT }).last.bridge.route === 'rec') rates[index]++;
+    }
+  }
+  assert.ok(rates[0] > 300 && rates[0] < 500, String(rates[0]));
+  assert.ok(rates[1] > 780 && rates[1] < 1020, String(rates[1]));
 });

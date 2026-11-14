@@ -2,7 +2,7 @@
 // schematics and the dialogue image-card renderer so combat looks like the same
 // physical interface, under pressure.
 
-import { uiDraw, uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
+import { uiDraw, uiDrawHardware, uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
 import { drawLampButton } from './presentation.js';
 import { drawPrintedText } from './keycap.js';
 import { combatGaugeGeometry, combatGaugeState } from './meter.js';
@@ -12,6 +12,8 @@ import { loadStoryArtImage, resolveStoryArt } from '../game/story-art.js';
 import { SNR_TRIANGLE } from '../game/combat-state.js';
 import { fireballRayPoint } from '../game/window-channel.js';
 import { drawBattleHands3D } from './battle-hands.js';
+import { PATCH_COLORS } from './patchbay-material.js';
+import { drawInstrumentPlate } from './instrument-material.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 
@@ -20,12 +22,11 @@ export function combatBarCells(value, maxValue, width) {
   return clamp(value / max, 0, 1) * Math.max(0, Number(width) || 0);
 }
 
-export function combatInjuryStage({ composure = 0, maxComposure = 1, injuries = 0 } = {}) {
+export function combatInjuryStage({ composure = 0, maxComposure = 1 } = {}) {
   const ratio = clamp(composure / Math.max(1, maxComposure), 0, 1);
-  const burden = Math.max(0, Number(injuries) || 0);
-  if (ratio <= .25 || burden >= 4) return 'critical';
-  if (ratio <= .50 || burden >= 2) return 'wounded';
-  if (ratio <= .75 || burden >= 1) return 'hurt';
+  if (ratio <= .25) return 'critical';
+  if (ratio <= .50) return 'wounded';
+  if (ratio <= .75) return 'hurt';
   return 'steady';
 }
 
@@ -989,7 +990,7 @@ function pushCore(points, tick, seed) {
   points.push(...returns);
 }
 
-function beingPoints(figure, { tick, layers, seed }) {
+function beingPoints(figure, { tick, layers, seed, cageOnly }) {
   const points = [];
   const push = (u, v, a = 1) => points.push({ u, v, a });
   if (figure === 'drowned') {
@@ -1004,7 +1005,7 @@ function beingPoints(figure, { tick, layers, seed }) {
         push(Math.cos(angle) * radius, Math.sin(angle) * radius * .62, 1 - ring * .13);
       }
     }
-    pushCore(points, tick, seed);
+    if (!cageOnly) pushCore(points, tick, seed);
   } else if (figure === 'wire') {
     // Practice — the braided helix as a cage of piano-wire the hush strings
     // itself through, the core threaded down the centre and plucking it.
@@ -1015,7 +1016,7 @@ function beingPoints(figure, { tick, layers, seed }) {
         push(u, v, .9 - voice * .18);
       }
     }
-    pushCore(points, tick, seed);
+    if (!cageOnly) pushCore(points, tick, seed);
   } else if (figure === 'return') {
     // Hall — a monitor return worn as a shell: a standing wave that rises then
     // folds back on itself, the core knotted at the fold.
@@ -1027,7 +1028,7 @@ function beingPoints(figure, { tick, layers, seed }) {
       push(u, v, .95);
       push(-u * .6, v, .38 + .3 * fold);
     }
-    pushCore(points, tick, seed);
+    if (!cageOnly) pushCore(points, tick, seed);
   } else if (figure === 'ripples') {
     for (let ring = 0; ring < 2 + layers; ring++) {
       const radius = .10 + ring * .13;
@@ -1155,7 +1156,7 @@ export function drawAttackNotes({
 export function signalBeingGeometry(profileKey, {
   coherenceRatio = 1, movementIndex = 0,
   intentKind = null, now = 0, resolveProgress = 0, reducedMotion = false,
-  oblique = 0, hitFlash = 0, knock = 0,
+  oblique = 0, hitFlash = 0, knock = 0, cageOnly = false,
 } = {}) {
   const figure = BEING_FIGURE[String(profileKey)] || 'column';
   const seed = beingSeed(profileKey);
@@ -1164,7 +1165,7 @@ export function signalBeingGeometry(profileKey, {
     const s = Math.sin((i + 1 + seed) * 127.1) * 43758.5453;
     return s - Math.floor(s);
   };
-  let points = beingPoints(figure, { tick, layers: Math.max(0, movementIndex), seed });
+  let points = beingPoints(figure, { tick, layers: Math.max(0, movementIndex), seed, cageOnly });
 
   const pulse = .5 + .5 * Math.sin(tick * Math.PI);
   let alphaScale = 1;
@@ -1208,10 +1209,10 @@ export function signalBeingCellMaterial(point, { tint = '120,190,255', flash = 0
 export function drawSignalBeing(profileKey, {
   x, y, w, h, snr = 'signal', coherenceRatio = 1, movementIndex = 0,
   intentKind = null, now = 0, resolveProgress = 0, reducedMotion = false,
-  oblique = 0, hitFlash = 0, knock = 0,
+  oblique = 0, hitFlash = 0, knock = 0, cageOnly = false,
 } = {}) {
   const geometry = signalBeingGeometry(profileKey, { coherenceRatio, movementIndex, intentKind, now,
-    resolveProgress, reducedMotion, oblique, hitFlash, knock });
+    resolveProgress, reducedMotion, oblique, hitFlash, knock, cageOnly });
   const { points, alphaScale, keep, flash, strike, seed } = geometry;
   const rnd = i => { const s = Math.sin((i + 1 + seed) * 127.1) * 43758.5453; return s - Math.floor(s); };
   const tint = SNR_TINT[snr] || SNR_TINT.signal;
@@ -1441,6 +1442,12 @@ export function drawCombatActionIcon(actionId, x, y, {
 
 export function combatActionReadout(move = {}) {
   if (move.enabled === false) return 'UNAVAILABLE';
+  if (move.bridge) {
+    if (move.bridge.chance === 100) return 'HOT · RECORDS INSTEAD';
+    if (move.bridge.chance) return `${move.bridge.chance}% TO RECORD INSTEAD`;
+    return `BYPASS · +${move.bridge.boost} RETURN`;
+  }
+  if (move.dischargesBridge) return 'COOLS THE WIRE';
   if (move.coverRebuild != null) return move.coverRebuild ? 'REBUILD +1'
     : move.coverCapacity ? 'COVER FULL' : 'NO PLATES';
   if (move.coverCost) return `COVER -${move.coverCost} · +${move.coverDamage}`;
@@ -1456,14 +1463,68 @@ export function combatActionReadout(move = {}) {
   return bits.slice(0, 2).join(' · ') || 'POSITION';
 }
 
-export function drawCombatToolTile(tool, { x, y, w, h = 3, selected = false, focused = false } = {}) {
+export const COMBAT_TOOL_COLORS = Object.freeze({
+  self:'white', torch:'amber', recorder:'red', radio:'blue',
+  rig:PATCH_COLORS.rig, fork:PATCH_COLORS.fork, coffee:'white', spanner:'white',
+});
+
+export function combatToolColor(id) { return COMBAT_TOOL_COLORS[id] || 'amber'; }
+
+export function combatToolButtonState(tool, { selected = false, focused = false } = {}) {
   const ready = tool?.ready !== false;
-  // Tool selection really connects that tool. Focus is only the operator's
-  // cursor, and does not power a lamp or depress a switch by itself.
-  const lit = selected && ready;
+  return Object.freeze({ready, lit:selected && ready, latched:selected && ready, focused,
+    color:combatToolColor(tool?.id), illumination:'powered', active:selected && ready,
+    status:selected && ready ? 'CONNECTED' : ready ? 'READY' : String(tool?.reason || 'UNAVAILABLE')});
+}
+
+export function combatActionButtonState(move, { focused = false, executing = false } = {}) {
+  const enabled = move?.enabled !== false;
+  const counters = enabled && !!move?.perfect;
+  const detail = !enabled ? String(move?.reason || 'UNAVAILABLE')
+    : `${counters ? 'COUNTER · ' : ''}${combatActionReadout(move)}`;
+  return Object.freeze({enabled, counters, lit:enabled, focused, executing:enabled && executing,
+    color:counters || move?.id === 'playback' ? 'green' : combatToolColor(move?.tool),
+    illumination:'powered', active:enabled && executing, detail});
+}
+
+export function combatControlTabStates(phase = 'tool', { focusedMode = null } = {}) {
+  const enabled = phase === 'tool' || phase === 'move';
+  return Object.freeze([
+    Object.freeze({id:'tool', legend:'TOOLS', controlId:'combat:tab:tool', lit:phase === 'tool', enabled,
+      selected:phase === 'tool', focused:focusedMode === 'tool', active:phase === 'tool', color:'amber', illumination:'powered'}),
+    Object.freeze({id:'move', legend:'ACTIONS', controlId:'combat:tab:move', lit:phase === 'move', enabled,
+      selected:phase === 'move', focused:focusedMode === 'move', active:phase === 'move', color:'amber', illumination:'powered'}),
+  ]);
+}
+
+export function drawCombatControlTabs({ x, y, w, h = 1.65, phase = 'tool', focusedMode = null, toolLabel = '' } = {}) {
+  const gap = .65, width = Math.max(0, (w - gap) / 2), result = {};
+  uiDrawHardware(({ctx,dpr,cellW,cellH})=>drawInstrumentPlate(ctx,{
+    x:x*cellW*dpr,y:y*cellH*dpr,w:w*cellW*dpr,h:h*cellH*dpr,
+    finish:'aluminum',fasteners:false,seed:'combat-mode-selectors',dpr,
+  }));
+  combatControlTabStates(phase,{focusedMode}).forEach((state, index) => {
+    const left = x + index * (width + gap);
+    const capW=Math.min(4.4,Math.max(2.4,width*.18)),capH=Math.min(.82,h*.68);
+    const capX=left+width-capW-.55,capY=y+(h-capH)/2;
+    const labelH=Math.min(.72,h*.58);
+    const tool=String(toolLabel||'').trim().toUpperCase();
+    const legend=state.id==='tool'&&tool?`${state.legend} · ${tool}`:state.legend;
+    drawPrintedText(left+.65,y+(h-labelH)/2,legend,{
+      w:Math.max(1,capX-left-1.2),h:labelH,ink:'#293126',finish:'etched',darkPanel:false,align:'left',
+    });
+    drawLampButton(capX,capY,capW,capH,{...state,legend:'/'});
+    result[state.id === 'tool' ? 'tools' : 'actions'] = {x:left, y, w:width, h, id:state.id};
+  });
+  return result;
+}
+
+export function drawCombatToolTile(tool, { x, y, w, h = 3, selected = false, focused = false } = {}) {
+  const {ready, lit, latched, status, color, illumination, active} = combatToolButtonState(tool, {selected, focused});
+  // Connection powers the tool lamp; the cursor only indexes its surround.
   const cap = drawLampButton(x, y, w, Math.max(1.4, h - 1.1), {
     controlId: `combat:tool:${tool?.id || 'self'}`,
-    enabled: ready, selected: focused, lit, latched: selected && ready,
+    enabled: ready, selected: focused, focused, lit, latched, color, illumination, active,
   });
   const face = cap.content;
   const iconW = Math.min(3.7, Math.max(2.1, face.w * .27));
@@ -1480,20 +1541,17 @@ export function drawCombatToolTile(tool, { x, y, w, h = 3, selected = false, foc
     w: Math.max(1, face.w - iconW - .5), h: face.h, ink: cap.ink, alpha: .98,
   });
   // Electronic state changes belong on glass, not in the permanent cap ink.
-  uiText(x + .55, y + h - .92, selected && ready ? 'CONNECTED' : ready ? 'READY' : 'LOCKED',
-    selected && ready ? 'ui-primary' : ready ? 'ui-label' : 'ui-danger', selected && ready ? .88 : .62);
+  uiText(x + .55, y + h - .92, status.slice(0, Math.max(1, Math.floor(w - 1.1))),
+    selected && ready ? 'ui-primary' : ready ? 'ui-label' : 'ui-danger', selected && ready ? .94 : .78);
   return { x, y, w, h };
 }
 
 export function drawCombatActionTile(move, { x, y, w, h = 3.2, selected = false, focused = false, executing = false, readout = true } = {}) {
-  const enabled = move?.enabled !== false;
-  const counters = !!move?.perfect;
-  // A matching counter is an actual circuit indication. Browsing the row is
-  // not: the lamp only reports a match or the action currently being executed.
-  const lit = enabled && (counters || executing);
+  const {enabled, counters, lit, color, detail, illumination, active} = combatActionButtonState(move, {focused, executing});
+  // Power reports availability. Focus remains a separate mechanical index.
   const cap = drawLampButton(x, y, w, Math.max(1.4, h - (readout ? 1.1 : 0)), {
     controlId: `combat:action:${move?.id || 'unknown'}`,
-    enabled, selected: focused, lit, color: counters ? 'green' : 'amber',
+    enabled, selected: focused, focused, lit, color, illumination, active,
   });
   const face = cap.content;
   const iconW = Math.min(4.2, Math.max(2.4, face.w * .24));
@@ -1509,8 +1567,8 @@ export function drawCombatActionTile(move, { x, y, w, h = 3.2, selected = false,
   drawPrintedText(face.x + iconW + .35, face.y, String(move?.label || ''), {
     w: Math.max(1, face.w - iconW - .5), h: face.h, ink: cap.ink, alpha: .98,
   });
-  if (readout) uiText(x + .55, y + h - .92, combatActionReadout(move).slice(0, Math.max(1, Math.floor(w - 1.1))),
-    !enabled ? 'ui-danger' : counters ? 'ui-counter' : 'ui-label', selected || executing ? .9 : .65);
+  if (readout) uiText(x + .55, y + h - .92, detail.slice(0, Math.max(1, Math.floor(w - 1.1))),
+    !enabled ? 'ui-danger' : move.bridge?.chance ? 'ui-amber' : counters ? 'ui-counter' : 'ui-label', selected || executing ? .96 : .8);
   return { x, y, w, h };
 }
 
@@ -1823,69 +1881,5 @@ function drawFallbackFirstPersonHands(toolId, {
   });
 }
 
-// ── THE THREE HALL APPARITIONS ─────────────────────────────────────────────
-//
-// Three bodies, three fused chairs, three targetable health pools. The room is
-// backdrop only. These sprites deliberately echo the world apparition poses
-// without importing the emergency-light director or weakening its boundary.
-const HALL_APPARITION_SPRITES = Object.freeze({
-  'head-turn': ['..##...', '.####..', '..###..', '.#####.', '.##.##.', '###.###', '#.....#'],
-  stoop:       ['...##..', '..####.', '.#####.', '####...', '.##.##.', '###.###', '#.....#'],
-  'arm-out':   ['..##...', '.####..', '#######', '..###..', '.##.##.', '###.###', '#.....#'],
-});
-
-export function hallApparitionLayout(members = [], { x = 0, w = 40 } = {}) {
-  const gap = 2;
-  const slotW = Math.max(8, (w - gap * Math.max(0, members.length - 1)) / Math.max(1, members.length));
-  return members.map((member, index) => ({ ...member, index, x: x + index * (slotW + gap), w: slotW }));
-}
-
-export function drawHallApparitions(roster, {
-  x, y, w, h, now = 0, reducedMotion = false, dim = 1,
-} = {}) {
-  if (!roster?.members?.length || !(w > 0) || !(h > 0)) return;
-  const members = hallApparitionLayout(roster.members, { x, w });
-  uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    ctx.save();
-    const px = Math.max(1, Math.round(Math.min(cellW, cellH) * dpr * .72));
-    for (const member of members) {
-      const sprite = HALL_APPARITION_SPRITES[member.pose] || HALL_APPARITION_SPRITES['head-turn'];
-      const spriteW = sprite[0].length * px;
-      const spriteH = sprite.length * px;
-      const sway = reducedMotion || member.defeated ? 0 : Math.sin(now * 1.4 + member.index * 1.7) * px * .55;
-      const originX = Math.round((member.x + member.w / 2) * cellW * dpr - spriteW / 2 + sway);
-      const originY = Math.round((y + Math.max(.3, (h - 3) * .08)) * cellH * dpr + (member.defeated ? spriteH * .48 : 0));
-      ctx.globalAlpha = dim * (member.defeated ? .2 : member.acting ? 1 : .74);
-      ctx.fillStyle = member.acting ? UI_COLOR.danger
-        : member.parryReady ? UI_COLOR.blue
-          : member.targeted ? UI_COLOR.amber : UI_COLOR.primary;
-      for (let row = 0; row < sprite.length; row += 1) {
-        for (let col = 0; col < sprite[row].length; col += 1) {
-          if (sprite[row][col] !== '#') continue;
-          ctx.fillRect(originX + col * px, originY + row * px, px, px);
-        }
-      }
-    }
-    ctx.restore();
-  });
-
-  for (const member of members) {
-    const role = member.defeated ? 'ui-secondary'
-      : member.acting ? 'ui-danger'
-        : member.parryReady ? 'ui-blue'
-          : member.targeted ? 'ui-amber' : 'ui-primary';
-    const labelY = y + Math.max(2.8, h - 2.4);
-    const width = Math.max(1, Math.floor(member.w - .8));
-    const number = String(member.label || '').match(/\d+$/)?.[0] || String(member.index + 1).padStart(2, '0');
-    const identity = `${member.primary ? '▸ ' : ''}${number} ${member.seat}`;
-    const condition = member.defeated ? 'RELEASED'
-      : member.parryReady ? 'PARRY READY'
-        : member.acting ? 'ACTING'
-          : `${member.health}/${member.maxHealth}`;
-    // The stage box is intentionally narrow. Full APPARITION labels belong to
-    // the target cards below; these compact identifiers must never run into the
-    // adjacent body and make three entities read as one word.
-    uiText(member.x + .4, labelY, identity.slice(0, width), role, member.defeated ? .35 : .78);
-    uiText(member.x + .4, labelY + .82, condition.slice(0, width), role, member.defeated ? .3 : .58);
-  }
-}
+// Three bodies, three fused chairs, three targetable health pools.
+export { hallApparitionLayout, drawHallApparitions } from './hall-apparitions.js';

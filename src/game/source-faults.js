@@ -32,13 +32,8 @@ export function sourceFaultFrame({
   const now=Math.max(0,Number(timeMs)||0);
   const slot=reducedMotion?0:Math.floor(now/(transition>.01?170:420));
 
-  // Constant random sector replacement reads as texture. A bad-sector RUN is
-  // a scored event: one coherent train of failed blocks crosses a lane, holds
-  // pieces of the previous frame behind its head, and reassembles. It begins
-  // only in Source proper—not on the page, Scene Dock, or white approach—and
-  // recurs quickly enough that a player cannot finish the space without seeing
-  // one. Seeded phase/lane/direction keep capture and tests reproducible. Each
-  // run lands on the practice wing's bar: the same wound keeps the same time.
+  // The object faults and terminal read errors share the practice wing's bar.
+  // Seeded phase and lane keep each run repeatable.
   const runPeriodMs=SOURCE_FAULT_RUN_PERIOD_MS;
   const runDurationMs=SOURCE_FAULT_RUN_MS;
   const offset=sourceRiftBarsMs(Math.floor(hash(`overflow:${seed}`)*4));
@@ -59,6 +54,137 @@ export function sourceFaultFrame({
     overflow:envelope*.96,overflowActive,overflowHead,overflowLane,overflowDirection,overflowRun,
     reduceMotion:!!reducedMotion,flashMode:['full','reduced','off'].includes(flashMode)?flashMode:'full',
   });
+}
+
+function objectGlitchCandidate(instance){
+  if(!instance?.id||!instance.mesh||instance.matrix?.length!==16||instance.sourceGlitchEligible===false
+    ||instance.sourceFaultExempt||instance.character||instance.apparitionVariant||instance.paperIndex>=0
+    ||instance.sourceMemoryFixture||instance.sourceDoorId||instance.sourceConnector||instance.sourceCodeOnly
+    ||instance.portalClipPlanes||instance.reflectionOnly||instance.shadowOnly)return false;
+  return instance.sourceGlitchEligible===true||(!instance.structural&&instance.roomMemory?.role==='survivor');
+}
+
+function objectGlitchTarget(instances,run,seed,eye,centre,previousTarget){
+  let target=null,best=Infinity;
+  for(const instance of instances){
+    if(!objectGlitchCandidate(instance))continue;
+    const x=instance.matrix[12],y=instance.matrix[13],z=instance.matrix[14];
+    const rank=hash(`object:${seed}:${run}:${instance.id}`);
+    let score=rank;
+    if(centre){
+      score=Math.hypot(x-centre.x,y-centre.y,z-centre.z)+rank*.001;
+    }else if(eye){
+      const dx=x-eye.x,dz=z-eye.z;
+      const distance=Math.hypot(dx,y-eye.y,dz);
+      if(distance>28)continue;
+      const ahead=(dx*eye.forwardX+dz*eye.forwardZ)/Math.max(1,Math.hypot(dx,dz));
+      if(ahead<.35)continue;
+      score=distance+rank*5+(1-ahead)*8;
+    }
+    if(instance.id===previousTarget)score+=6;
+    if(score<best||(score===best&&target&&instance.id<target.id)){
+      best=score;
+      target=instance;
+    }
+  }
+  return target;
+}
+
+function objectGlitchDonor(instances,target,run,seed){
+  let donor=null,best=Infinity;
+  for(const instance of instances){
+    if(instance.mesh===target.mesh||!objectGlitchCandidate(instance))continue;
+    const distance=Math.hypot(instance.matrix[12]-target.matrix[12],
+      instance.matrix[13]-target.matrix[13],instance.matrix[14]-target.matrix[14]);
+    const score=distance+hash(`donor:${seed}:${run}:${target.id}:${instance.id}`)*.001;
+    if(score<best||(score===best&&donor&&instance.id<donor.id)){
+      best=score;
+      donor=instance;
+    }
+  }
+  return donor?.mesh??null;
+}
+
+const OBJECT_MIX_PERIOD=8;
+const OBJECT_ACQUIRE_UNTIL=.45;
+const MAX_COMMON_GLITCH_STREAK=2;
+
+function naturalObjectGlitch(target,run,seed){
+  const mixPhase=Math.floor(hash(`mix-phase:${seed}`)*OBJECT_MIX_PERIOD)%OBJECT_MIX_PERIOD;
+  if((run+mixPhase)%OBJECT_MIX_PERIOD===0)return 3;
+  return ordinaryObjectGlitch(target,run,seed);
+}
+
+function ordinaryObjectGlitch(target,run,seed){
+  const objectPhase=hash(`object-mode:${seed}:${target.id}`)<.5?0:1;
+  return 1+(run+objectPhase)%2;
+}
+
+// The camera can discover a target near the start of a scored read. Once a
+// read has a target, both it and its donor stay fixed through culling and look.
+export function applySourceObjectGlitch(instances,frame,{mode,eye=null,centre=null,selection={},objectSeed=frame?.seed}={}){
+  const natural=mode===undefined;
+  if(!frame?.active||(!natural&&![1,2,3].includes(mode))||frame.flashMode==='off'){
+    selection.run=null;
+    selection.targetId=null;
+    selection.donorMesh=null;
+    selection.mode=null;
+    selection.previousTarget=null;
+    selection.lastCommonMode=null;
+    selection.commonStreak=0;
+    return instances;
+  }
+  if(!frame.overflowActive)return instances;
+  const run=frame.overflowRun;
+  if(selection.run!==run||selection.seed!==objectSeed){
+    if(selection.seed!==objectSeed){
+      selection.previousTarget=null;
+      selection.lastCommonMode=null;
+      selection.commonStreak=0;
+    }
+    selection.run=run;
+    selection.seed=objectSeed;
+    selection.targetId=null;
+    selection.donorMesh=null;
+    selection.mode=null;
+    selection.countedCommon=false;
+  }
+
+  if(!selection.targetId){
+    if(natural&&frame.overflowHead>OBJECT_ACQUIRE_UNTIL)return instances;
+    const previous=natural?selection.previousTarget:null;
+    const target=objectGlitchTarget(instances,run,objectSeed,eye,centre,previous);
+    if(!target)return instances;
+    selection.targetId=target.id;
+    if(natural)selection.previousTarget=target.id;
+    selection.mode=mode??naturalObjectGlitch(target,run,objectSeed);
+    if(selection.mode===3){
+      selection.donorMesh=objectGlitchDonor(instances,target,run,objectSeed);
+      if(natural&&!selection.donorMesh)selection.mode=ordinaryObjectGlitch(target,run,objectSeed);
+    }
+    if(natural&&selection.mode===selection.lastCommonMode&&selection.commonStreak>=MAX_COMMON_GLITCH_STREAK){
+      selection.mode=3-selection.mode;
+    }
+  }
+
+  const index=instances.findIndex(instance=>instance.id===selection.targetId&&objectGlitchCandidate(instance));
+  if(index<0)return instances;
+  if(!natural&&selection.mode!==mode){
+    selection.mode=mode;
+    if(mode===3)selection.donorMesh=objectGlitchDonor(instances,instances[index],run,objectSeed);
+  }
+  const strength=clamp(frame.overflow)*(frame.reduceMotion||frame.flashMode==='reduced'?.58:1);
+  if(natural&&strength>0&&selection.mode!==3&&!selection.countedCommon){
+    selection.commonStreak=selection.mode===selection.lastCommonMode?selection.commonStreak+1:1;
+    selection.lastCommonMode=selection.mode;
+    selection.countedCommon=true;
+  }
+  const seed=hash(`pattern:${objectSeed}:${run}:${selection.targetId}`);
+  const result=instances.slice();
+  result[index]={...instances[index],sourceFaultExempt:true,
+    sourceObjectGlitch:[selection.mode,clamp(frame.overflowHead),strength,seed],
+    ...(selection.mode===3&&selection.donorMesh?{sourceObjectGlitchDonor:selection.donorMesh}:{})};
+  return result;
 }
 
 export function applySourcePs2GeometryFault(instances=[],frame={}){

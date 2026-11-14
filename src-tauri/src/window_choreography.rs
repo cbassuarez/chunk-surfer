@@ -976,13 +976,6 @@ fn logical_size(_index: u8) -> f64 {
     240.0
 }
 
-fn contains(rect: &PhysicalRect<i32, u32>, x: f64, y: f64) -> bool {
-    x >= rect.position.x as f64
-        && y >= rect.position.y as f64
-        && x < (rect.position.x as f64 + rect.size.width as f64)
-        && y < (rect.position.y as f64 + rect.size.height as f64)
-}
-
 fn clamped_square(
     center: (f64, f64),
     logical: f64,
@@ -1037,128 +1030,168 @@ pub struct Choreography {
     formation_progress: f64,
 }
 
-fn carrier_height(count:u8, work:&PhysicalRect<i32,u32>, scale:f64)->f64 {
-    let desired:f64=if count<=2 {560.0}else{240.0};
-    desired.min(work.size.height as f64/scale.max(0.1))
+const CARRIER_GAP_LOGICAL: f64 = 16.0;
+const CARRIER_MIN_THICKNESS: f64 = 76.0;
+const CARRIER_MIN_LENGTH: f64 = 116.0;
+
+#[derive(Clone, Debug, PartialEq)]
+struct CarrierPlacement {
+    position: PhysicalPosition<i32>,
+    size: PhysicalSize<u32>,
+    scale: f64,
 }
 
-const CARRIER_GAP_LOGICAL: f64 = 16.0;
+struct DesktopBand {
+    left: i32,
+    top: i32,
+    width: i32,
+    height: i32,
+    vertical: bool,
+}
 
-// The visible tile moves inside this fixed transparent input carrier. Previous
-// target positions remain game-owned, so a near miss cannot reach the desktop
-// while the visible fireball still has room to feint and commit elsewhere.
+impl DesktopBand {
+    fn capacity(&self, scale: f64) -> usize {
+        let (thickness, length) = if self.vertical {
+            (self.width, self.height)
+        } else {
+            (self.height, self.width)
+        };
+        if thickness < ((CARRIER_MIN_THICKNESS + 4.0) * scale).round() as i32 {
+            return 0;
+        }
+        let gap = (CARRIER_GAP_LOGICAL * scale).round() as i32;
+        let minimum = (CARRIER_MIN_LENGTH * scale).round() as i32;
+        (length + gap).max(0) as usize / (minimum + gap).max(1) as usize
+    }
+}
+
+// Reserve nonoverlapping input carriers for the whole cast, including rays
+// that have not yet left the game. A narrow strip still gets a readable tile
+// with room to feint. If a complete cast cannot live outside main, the canvas
+// retains the whole cast instead of putting a floating tile over the command deck.
 fn peripheral_carrier_slot(
-    client: &PhysicalRect<i32, u32>,
+    main: &PhysicalRect<i32, u32>,
     work: &PhysicalRect<i32, u32>,
     scale: f64,
     index: u8,
     count: u8,
     seed: u32,
-) -> Option<PhysicalPosition<i32>> {
-    if count == 0 || count > 4 || index >= count || !scale.is_finite() || scale <= 0.0 {
+) -> Option<CarrierPlacement> {
+    if !allowed(FIREBALL_LABELS.get(index as usize)?, index, count)
+        || !scale.is_finite()
+        || scale <= 0.0
+    {
         return None;
     }
-    let side = (logical_size(index) * scale).round();
-    let tile_height=(carrier_height(count,work,scale)*scale).round();
-    let gap = (CARRIER_GAP_LOGICAL * scale).round();
-    let left = work.position.x as f64;
-    let top = work.position.y as f64;
-    let right = left + work.size.width as f64;
-    let bottom = top + work.size.height as f64;
-    if side > work.size.width as f64 || side > work.size.height as f64 {
-        return None;
+    let left = work.position.x;
+    let top = work.position.y;
+    let right = left + work.size.width as i32;
+    let bottom = top + work.size.height as i32;
+    let main_left = main.position.x.clamp(left, right);
+    let main_top = main.position.y.clamp(top, bottom);
+    let main_right = (main.position.x + main.size.width as i32).clamp(left, right);
+    let main_bottom = (main.position.y + main.size.height as i32).clamp(top, bottom);
+    let bands = [
+        DesktopBand {
+            left: main_right,
+            top,
+            width: right - main_right,
+            height: bottom - top,
+            vertical: true,
+        },
+        DesktopBand {
+            left,
+            top,
+            width: main_left - left,
+            height: bottom - top,
+            vertical: true,
+        },
+        DesktopBand {
+            left: main_left,
+            top,
+            width: main_right - main_left,
+            height: main_top - top,
+            vertical: false,
+        },
+        DesktopBand {
+            left: main_left,
+            top: main_bottom,
+            width: main_right - main_left,
+            height: bottom - main_bottom,
+            vertical: false,
+        },
+    ];
+    let mut occupancy = [0; 4];
+    let mut selected = None;
+    for ray in 0..count {
+        let launch_side = ray as usize % 2;
+        let band = [launch_side, 1 - launch_side, 2, 3]
+            .into_iter()
+            .find(|&band| occupancy[band] < bands[band].capacity(scale))?;
+        if ray == index {
+            selected = Some((band, occupancy[band]));
+        }
+        occupancy[band] += 1;
     }
-    let client_left = client.position.x as f64;
-    let client_right = client_left + client.size.width as f64;
-    let outside_left = client_left - gap - side;
-    let outside_right = client_right + gap;
-    let mut left_column = if outside_left >= left && outside_left + side <= right {
-        outside_left
+    let (band_index, rank) = selected?;
+    let band = &bands[band_index];
+    let slots = occupancy[band_index] as i32;
+    let pixels = |logical: f64| (logical * scale).round() as i32;
+    let gap = pixels(CARRIER_GAP_LOGICAL);
+    let total_gaps = slots.saturating_sub(1) * gap;
+    let preferred_side = pixels(logical_size(index));
+    let preferred_height = if count <= 2 {
+        pixels(560.0)
     } else {
-        client_left + gap
-    }
-    .clamp(left, right - side);
-    let mut right_column = if outside_right >= left && outside_right + side <= right {
-        outside_right
-    } else {
-        client_right - gap - side
-    }
-    .clamp(left, right - side);
+        preferred_side
+    };
     let variation = if seed == 0 {
-        0.0
+        0
     } else {
         let mixed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-        ((mixed >> 8) % 121) as f64 - 60.0
-    } * scale;
-    let anchor_y = client.position.y as f64 + client.size.height as f64 * 0.5 + variation;
-    let max_side_count = count.div_ceil(2) as f64;
-    let column_height = max_side_count * tile_height + (max_side_count - 1.0) * gap;
-    if count > 1
-        && right_column - left_column < side + gap
-        && side * 2.0 + gap <= work.size.width as f64
-    {
-        // A mostly offscreen main window can collapse both preferred columns
-        // onto one edge. Recover the reserved pair as one formation.
-        let width = side * 2.0 + gap;
-        let pair_left =
-            (client_left + client.size.width as f64 * 0.5 - width * 0.5).clamp(left, right - width);
-        left_column = pair_left;
-        right_column = pair_left + side + gap;
-    }
-    if (count == 1 || right_column - left_column >= side + gap)
-        && column_height <= work.size.height as f64
-    {
-        // Original right/left membership and rank are immutable for this cast;
-        // arriving, caught, and absent siblings all keep their reserved slot.
-        let right_side = index % 2 == 0;
-        let side_count = if right_side {
-            count.div_ceil(2)
-        } else {
-            count / 2
-        } as f64;
-        let height = side_count * tile_height + (side_count - 1.0) * gap;
-        let column_top = (anchor_y - height * 0.5).clamp(top, bottom - height);
-        return Some(PhysicalPosition::new(
-            if right_side {
-                right_column
-            } else {
-                left_column
-            }
-            .round() as i32,
-            (column_top + (index / 2) as f64 * (tile_height + gap)).round() as i32,
-        ));
-    }
-    // A shallow or obstructed desktop uses a complete reserved row. If that
-    // cannot fit either, decline the native cast rather than overlap carriers.
-    let width = count as f64 * side + count.saturating_sub(1) as f64 * gap;
-    if width > work.size.width as f64 {
-        return None;
-    }
-    let anchor_x = client_left + client.size.width as f64 * 0.5;
-    let row_left = (anchor_x - width * 0.5).clamp(left, right - width);
-    let rank = if index % 2 == 0 {
-        count - 1 - index / 2
-    } else {
-        index / 2
+        pixels(((mixed >> 8) % 121) as f64 - 60.0)
     };
-    Some(PhysicalPosition::new(
-        (row_left + rank as f64 * (tile_height + gap)).round() as i32,
-        (anchor_y - tile_height * 0.5).clamp(top, bottom - tile_height).round() as i32,
-    ))
+    let (x, y, width, height) = if band.vertical {
+        let inset = gap.min(band.width - pixels(CARRIER_MIN_THICKNESS));
+        let width = preferred_side.min(band.width - inset);
+        let height = preferred_height.min((band.height - total_gaps) / slots);
+        let extent = slots * height + total_gaps;
+        let anchor = main.position.y + main.size.height as i32 / 2 + variation;
+        let stack_top = (anchor - extent / 2).clamp(band.top, band.top + band.height - extent);
+        let x = if band_index == 0 {
+            band.left + inset
+        } else {
+            main_left - inset - width
+        };
+        (x, stack_top + rank as i32 * (height + gap), width, height)
+    } else {
+        let inset = gap.min(band.height - pixels(CARRIER_MIN_THICKNESS));
+        let height = preferred_height.min(band.height - inset);
+        let width = preferred_side.min((band.width - total_gaps) / slots);
+        let extent = slots * width + total_gaps;
+        let anchor = main.position.x + main.size.width as i32 / 2 + variation;
+        let row_left = (anchor - extent / 2).clamp(band.left, band.left + band.width - extent);
+        let y = if band_index == 2 {
+            main_top - inset - height
+        } else {
+            band.top + inset
+        };
+        (row_left + rank as i32 * (width + gap), y, width, height)
+    };
+    Some(CarrierPlacement {
+        position: PhysicalPosition::new(x, y),
+        size: PhysicalSize::new(width as u32, height as u32),
+        scale,
+    })
 }
 
 fn carrier_slot_for_cast(
-    client: &PhysicalRect<i32, u32>,
+    main: &PhysicalRect<i32, u32>,
     work: &PhysicalRect<i32, u32>,
     scale: f64,
     cast: &CastStep,
-) -> Option<PhysicalPosition<i32>> {
-    peripheral_carrier_slot(client, work, scale, cast.index, cast.count, cast.seed)
-}
-
-struct CarrierPlacement {
-    position: PhysicalPosition<i32>,
-    size: PhysicalSize<u32>,
+) -> Option<CarrierPlacement> {
+    peripheral_carrier_slot(main, work, scale, cast.index, cast.count, cast.seed)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1175,16 +1208,17 @@ struct CarrierPointer {
 fn carrier_pointer_sample(
     placement: &CarrierPlacement,
     cursor: PhysicalPosition<f64>,
+    cursor_scale: f64,
     seed: u32,
     index: u8,
     active: bool,
 ) -> Option<CarrierPointer> {
-    let scale = placement.size.width as f64 / logical_size(index);
-    if scale <= 0.0 || !cursor.x.is_finite() || !cursor.y.is_finite() {
+    let scale = placement.scale;
+    if scale <= 0.0 || cursor_scale <= 0.0 || placement.size.width == 0 {
         return None;
     }
-    let x = (cursor.x - placement.position.x as f64) / scale;
-    let y = (cursor.y - placement.position.y as f64) / scale;
+    let x = cursor.x / cursor_scale - placement.position.x as f64 / scale;
+    let y = cursor.y / cursor_scale - placement.position.y as f64 / scale;
     if !x.is_finite() || !y.is_finite() {
         return None;
     }
@@ -1214,6 +1248,10 @@ pub fn chunk_fireball_cast_step(
     // One desktop sample serves the batch. The child also uses local pointer
     // events to acquire immediately when the hand reaches its painted tile.
     let cursor = app.cursor_position().ok();
+    // On macOS Tao derives the global cursor's physical coordinates using
+    // the primary monitor scale; each window's frame uses its own monitor.
+    #[cfg(target_os = "macos")]
+    let primary_scale = app.primary_monitor().ok().flatten().map(|monitor| monitor.scale_factor());
     let active = game_owns_keyboard(&app);
     let mut moved = 0u8;
     for cast in &casts {
@@ -1222,8 +1260,12 @@ pub fn chunk_fireball_cast_step(
         };
         if apply_placement(&app, &cast.label, &placement).unwrap_or(false) {
             moved = moved.saturating_add(1);
+            #[cfg(target_os = "macos")]
+            let cursor_scale = primary_scale.unwrap_or(placement.scale);
+            #[cfg(not(target_os = "macos"))]
+            let cursor_scale = placement.scale;
             if let Some(pointer) = cursor.and_then(|cursor| {
-                carrier_pointer_sample(&placement, cursor, cast.seed, cast.index, active)
+                carrier_pointer_sample(&placement, cursor, cursor_scale, cast.seed, cast.index, active)
             }) {
                 let _ = app.emit_to(&cast.label, "fireball-cast-pointer", pointer);
             }
@@ -1257,41 +1299,22 @@ fn base_center(app: &AppHandle, cast: &CastStep) -> Result<Option<CarrierPlaceme
         return Ok(None);
     }
     let main = main_window(app)?;
-    if main.is_fullscreen().unwrap_or(false) {
+    if main.is_fullscreen().unwrap_or(true) || crate::display_policy::simple_fullscreen_active()
+    {
         return Ok(None);
     }
     if app.get_webview_window(&cast.label).is_none() {
         return Ok(None);
     }
     let client = PhysicalRect {
-        position: main.inner_position().map_err(|error| error.to_string())?,
-        size: main.inner_size().map_err(|error| error.to_string())?,
+        position: main.outer_position().map_err(|error| error.to_string())?,
+        size: main.outer_size().map_err(|error| error.to_string())?,
     };
-    let anchor = (
-        client.position.x as f64 + client.size.width as f64 * 0.5,
-        client.position.y as f64 + client.size.height as f64 * 0.5,
-    );
-    let monitors = app
-        .available_monitors()
-        .map_err(|error| error.to_string())?;
-    let Some(monitor) = monitors
-        .iter()
-        .find(|monitor| contains(monitor.work_area(), anchor.0, anchor.1))
-    else {
+    let Some(monitor) = main.current_monitor().map_err(|error| error.to_string())? else {
         return Ok(None);
     };
     let scale = monitor.scale_factor().max(0.1);
-    Ok(
-        carrier_slot_for_cast(&client, monitor.work_area(), scale, cast).map(|position| {
-            CarrierPlacement {
-                position,
-                size: PhysicalSize::new(
-                    (logical_size(cast.index) * scale).round() as u32,
-                    (carrier_height(cast.count, monitor.work_area(), scale) * scale).round() as u32,
-                ),
-            }
-        }),
-    )
+    Ok(carrier_slot_for_cast(&client, monitor.work_area(), scale, cast))
 }
 
 fn apply_placement(
@@ -1305,14 +1328,18 @@ fn apply_placement(
     let main = main_window(app)?;
     let owned_keyboard = game_owns_keyboard(app);
     if surface.inner_size().ok() != Some(placement.size) {
-        surface
-            .set_size(placement.size)
-            .map_err(|error| error.to_string())?;
+        #[cfg(target_os = "macos")]
+        let size = placement.size.to_logical::<f64>(placement.scale);
+        #[cfg(not(target_os = "macos"))]
+        let size = placement.size;
+        surface.set_size(size).map_err(|error| error.to_string())?;
     }
     if surface.outer_position().ok() != Some(placement.position) {
-        surface
-            .set_position(placement.position)
-            .map_err(|error| error.to_string())?;
+        #[cfg(target_os = "macos")]
+        let position = placement.position.to_logical::<f64>(placement.scale);
+        #[cfg(not(target_os = "macos"))]
+        let position = placement.position;
+        surface.set_position(position).map_err(|error| error.to_string())?;
     }
     let _ = surface.set_always_on_top(owned_keyboard);
     // The target receives clicks, but revealing or repositioning it must never
@@ -1433,7 +1460,7 @@ pub fn restore_on_exit(app: &AppHandle) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        allowed, carrier_height, carrier_pointer_sample, carrier_slot_for_cast, clamped_square, eased, logical_size,
+        allowed, carrier_pointer_sample, carrier_slot_for_cast, clamped_square, eased, logical_size,
         peripheral_carrier_slot, valid_media_label, CarrierPlacement, CastStep, Choreography,
         FireballRay, RayPoint,
     };
@@ -1461,15 +1488,21 @@ mod tests {
         for scale in [1.0, 2.0] {
             let placement = CarrierPlacement {
                 position: PhysicalPosition::new(-3000, -160),
-                size: PhysicalSize::new((240.0 * scale) as u32, (240.0 * scale) as u32),
+                size: PhysicalSize::new((80.0 * scale) as u32, (232.0 * scale) as u32),
+                scale,
             };
             let cursor = PhysicalPosition::new(-3000.0 + 123.5 * scale, -160.0 + 72.25 * scale);
-            let sample = carrier_pointer_sample(&placement, cursor, 0x12345678, 2, true).unwrap();
+            let sample = carrier_pointer_sample(&placement, cursor, scale, 0x12345678, 2, true).unwrap();
             assert_eq!(sample.x, 123.5);
             assert_eq!(sample.y, 72.25);
             assert_eq!(sample.seed, 0x12345678);
             assert_eq!(sample.index, 2);
+            assert_eq!((sample.width, sample.height), (80.0, 232.0));
             assert!(sample.active);
+            let primary_scale = if scale == 2.0 { 1.0 } else { 2.0 };
+            let cursor = PhysicalPosition::new(cursor.x / scale * primary_scale, cursor.y / scale * primary_scale);
+            let mixed = carrier_pointer_sample(&placement, cursor, primary_scale, 0x12345678, 2, true).unwrap();
+            assert_eq!((mixed.x, mixed.y), (sample.x, sample.y));
         }
     }
 
@@ -1478,10 +1511,12 @@ mod tests {
         let placement = CarrierPlacement {
             position: PhysicalPosition::new(-3000, -160),
             size: PhysicalSize::new(480, 480),
+            scale: 2.0,
         };
         let outside = carrier_pointer_sample(
             &placement,
             PhysicalPosition::new(-3050.0, 360.0),
+            2.0,
             77,
             1,
             false,
@@ -1496,14 +1531,15 @@ mod tests {
             PhysicalPosition::new(f64::NAN, 0.0),
             PhysicalPosition::new(0.0, f64::INFINITY),
         ] {
-            assert!(carrier_pointer_sample(&placement, cursor, 77, 1, true).is_none());
+            assert!(carrier_pointer_sample(&placement, cursor, 2.0, 77, 1, true).is_none());
         }
         let invalid = CarrierPlacement {
             position: placement.position,
             size: PhysicalSize::new(0, 0),
+            scale: 2.0,
         };
         assert!(
-            carrier_pointer_sample(&invalid, PhysicalPosition::new(0.0, 0.0), 77, 1, true)
+            carrier_pointer_sample(&invalid, PhysicalPosition::new(0.0, 0.0), 2.0, 77, 1, true)
                 .is_none()
         );
     }
@@ -1540,28 +1576,43 @@ mod tests {
         }
     }
 
+    fn outside(carrier: &CarrierPlacement, rect: &PhysicalRect<i32, u32>) -> bool {
+        let right = carrier.position.x + carrier.size.width as i32;
+        let bottom = carrier.position.y + carrier.size.height as i32;
+        right <= rect.position.x
+            || bottom <= rect.position.y
+            || carrier.position.x >= rect.position.x + rect.size.width as i32
+            || carrier.position.y >= rect.position.y + rect.size.height as i32
+    }
+
     fn assert_carriers_fit(
         client: &PhysicalRect<i32, u32>,
         work: &PhysicalRect<i32, u32>,
         scale: f64,
         count: u8,
     ) {
-        let side = (logical_size(0) * scale).round() as i32;
-        let height=(carrier_height(count,work,scale)*scale).round() as i32;
-        let positions: Vec<_> = (0..count)
+        let carriers: Vec<_> = (0..count)
             .map(|index| peripheral_carrier_slot(client, work, scale, index, count, 1543).unwrap())
             .collect();
-        for (index, position) in positions.iter().enumerate() {
-            assert!(position.x >= work.position.x && position.y >= work.position.y);
-            assert!(position.x + side <= work.position.x + work.size.width as i32);
-            assert!(position.y + height <= work.position.y + work.size.height as i32);
-            for other in positions.iter().skip(index + 1) {
-                assert!(
-                    position.x + side <= other.x
-                        || other.x + side <= position.x
-                        || position.y + height <= other.y
-                        || other.y + height <= position.y
-                );
+        for (index, carrier) in carriers.iter().enumerate() {
+            assert!(carrier.position.x >= work.position.x && carrier.position.y >= work.position.y);
+            assert!(
+                carrier.position.x + carrier.size.width as i32
+                    <= work.position.x + work.size.width as i32
+            );
+            assert!(
+                carrier.position.y + carrier.size.height as i32
+                    <= work.position.y + work.size.height as i32
+            );
+            assert!(outside(carrier, client));
+            for other in carriers.iter().skip(index + 1) {
+                assert!(outside(
+                    carrier,
+                    &PhysicalRect {
+                        position: other.position,
+                        size: other.size
+                    }
+                ));
             }
         }
     }
@@ -1608,49 +1659,56 @@ mod tests {
         let work = rect(0.0, 24.0, 1920.0, 1080.0, 1.0);
         for count in 1..=4 {
             for index in 0..count {
-                let position =
+                let carrier =
                     peripheral_carrier_slot(&client, &work, 1.0, index, count, 0).unwrap();
                 if index % 2 == 0 {
-                    assert_eq!(position.x, 1296);
+                    assert_eq!(carrier.position.x, 1296);
                 } else {
-                    assert_eq!(position.x + 240, 304);
+                    assert_eq!(carrier.position.x + carrier.size.width as i32, 304);
                 }
             }
         }
     }
 
     #[test]
-    fn unavailable_outer_space_uses_edge_hugging_carriers_away_from_the_command_deck() {
-        let client = rect(0.0, 24.0, 1280.0, 760.0, 1.0);
-        let work = rect(0.0, 24.0, 1280.0, 800.0, 1.0);
-        assert_carriers_fit(&client, &work, 1.0, 4);
-        for index in 0..4 {
-            let position = peripheral_carrier_slot(&client, &work, 1.0, index, 4, 0).unwrap();
-            if index % 2 == 0 {
-                assert_eq!(position.x + 240, 1264);
-                assert!(position.x > 800);
-            } else {
-                assert_eq!(position.x, 16);
-                assert!(position.x + 240 < 480);
+    fn eighty_point_gutters_keep_every_fireball_outside_the_main_window() {
+        for scale in [1.0, 1.25, 2.0] {
+            let work = rect(-1440.0, 24.0, 1440.0, 824.0, scale);
+            let main = rect(-1360.0, 24.0, 1280.0, 824.0, scale);
+            for count in 1..=4 {
+                assert_carriers_fit(&main, &work, scale, count);
+                for index in 0..count {
+                    let carrier =
+                        peripheral_carrier_slot(&main, &work, scale, index, count, 0).unwrap();
+                    assert_eq!(carrier.size.width, (76.0 * scale).round() as u32);
+                }
             }
         }
     }
 
     #[test]
-    fn shallow_desktops_use_a_complete_reserved_row_and_impossible_layouts_are_declined() {
-        let client = rect(320.0, 0.0, 960.0, 300.0, 1.0);
-        let work = rect(0.0, 0.0, 1920.0, 320.0, 1.0);
+    fn reserves_behind_the_authored_launch_side_when_only_one_side_is_open() {
+        let work = rect(0.0, 24.0, 1440.0, 824.0, 1.0);
+        let main = rect(0.0, 24.0, 1280.0, 824.0, 1.0);
+        assert_carriers_fit(&main, &work, 1.0, 4);
+        for index in 0..4 {
+            let carrier = peripheral_carrier_slot(&main, &work, 1.0, index, 4, 0).unwrap();
+            assert!(carrier.position.x >= 1280);
+        }
+    }
+
+    #[test]
+    fn uses_exposed_horizontal_band_but_declines_fullscreen_or_incomplete_casts() {
+        let work = rect(0.0, 24.0, 1440.0, 824.0, 1.0);
+        let client = rect(0.0, 24.0, 1440.0, 704.0, 1.0);
         assert_carriers_fit(&client, &work, 1.0, 4);
-        let positions: Vec<_> = (0..4)
-            .map(|index| peripheral_carrier_slot(&client, &work, 1.0, index, 4, 0).unwrap())
-            .collect();
-        assert!(positions
-            .iter()
-            .all(|position| position.y == positions[0].y));
-        let narrow = rect(0.0, 0.0, 500.0, 800.0, 1.0);
-        assert_carriers_fit(&client, &narrow, 1.0, 4);
-        let impossible = rect(0.0, 0.0, 500.0, 300.0, 1.0);
-        assert!(peripheral_carrier_slot(&client, &impossible, 1.0, 0, 4, 0).is_none());
+        let client = rect(0.0, 24.0, 1440.0, 790.0, 1.0);
+        assert!(peripheral_carrier_slot(&client, &work, 1.0, 0, 4, 0).is_none());
+        assert!(peripheral_carrier_slot(&work, &work, 1.0, 0, 1, 0).is_none());
+        let work = rect(0.0, 0.0, 260.0, 320.0, 1.0);
+        let client = rect(0.0, 0.0, 180.0, 320.0, 1.0);
+        assert!(peripheral_carrier_slot(&client, &work, 1.0, 0, 2, 0).is_some());
+        assert!(peripheral_carrier_slot(&client, &work, 1.0, 0, 3, 0).is_none());
     }
 
     #[test]
@@ -1686,13 +1744,13 @@ mod tests {
         let mut positions = std::collections::HashSet::new();
         for seed in 1..=32 {
             let position = peripheral_carrier_slot(&client, &work, 1.0, 0, 1, seed).unwrap();
-            assert_eq!(position.x, baseline.x);
-            assert!((position.y - baseline.y).abs() <= 60);
+            assert_eq!(position.position.x, baseline.position.x);
+            assert!((position.position.y - baseline.position.y).abs() <= 60);
             assert_eq!(
-                Some(position),
+                Some(position.clone()),
                 peripheral_carrier_slot(&client, &work, 1.0, 0, 1, seed)
             );
-            positions.insert(position.y);
+            positions.insert(position.position.y);
         }
         assert!(positions.len() > 8);
     }

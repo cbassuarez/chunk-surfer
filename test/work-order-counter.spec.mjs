@@ -14,7 +14,7 @@ function telemetry(flags,takes=[]){
  let depth=0,b=a;for(;b<main.length;b++){if(main[b]==='{')depth++;else if(main[b]==='}'&&--depth===0){b++;break;}}
  assert.equal(depth,0,'the complete actual telemetry object is extracted independently of its caller closing brace');
  return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,nightClockReadout,getSave:()=>({flags}),save:{flags},rec:{takes,injuries:0},paused:false,
-  monitorDisplaySnapshot:()=>({db:-96,segments:0}),performance:{now:()=>1000},dockCommandUntil:0});
+  playerConditionTelemetry:()=>({}),monitorDisplaySnapshot:()=>({db:-96,segments:0}),performance:{now:()=>1000},dockCommandUntil:0});
 }
 test('the actual navigator submission hides takes before signing even with a packed case, plan or previewed work order',()=>{
  for(const flags of [{},{'bag.taken':true,'map.taken':true},{'radio.work-order-read':true},{'cold.exit.prepared':true}]){

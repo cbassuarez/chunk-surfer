@@ -6,6 +6,8 @@ import {
   sampleOutcomeExposure, outcomeExposureActor,
 } from '../src/render/outcome-exposure.js';
 import { pressureInstances, HUSH_DENSITY_RENDER } from '../src/render/pressure-volume.js';
+import {freshHushDensityPose,stepHushDensityPose} from '../src/game/hush-density-performance.js';
+import { parseCharacterAsset, sampleCharacterFrame } from '../src/render/character-asset.js';
 
 const anchor = () => ({ id:'hunter',x:31,y:14,floorH:4.8,heightM:2.18,widthM:.68,strength:.98,
   performance:{version:1,role:'live-pressure',heading:1.2,clip:'pressure_arrest',time:.42,
@@ -73,6 +75,25 @@ test('sampling is deterministic and render calls never advance the scene clock',
   assert.equal(c.set(event(.25,{kind:'hard'})),false,'one event cannot change outcome kind');
 });
 
+test('Last Exposure holds the actual captured travel pose instead of changing its deformation',()=>{
+  for(const reducedMotion of [false,true]){
+    const body=anchor();let density=freshHushDensityPose(928);
+    for(let i=0;i<20;i++)density=stepHushDensityPose(density,{dt:1/60,acceptedMetres:.012,
+      acceptedDelta:{x:0,z:-.012},reducedMotion});
+    body.performance={...body.performance,density,reducedMotion};
+    const live=pressureInstances(body)[0],controller=createOutcomeExposureController();
+    controller.set(event(.12,{anchor:body}));
+    const captured=pressureInstances(controller.resolve(null))[0];
+    assert.deepEqual(captured.character,live.character,'freezing a sampled body must retain its joints and foot support');
+    for(const elapsed of [.25,.42,.55]){
+      controller.set(event(elapsed,{anchor:{...body,x:900}}));
+      const later=pressureInstances(controller.resolve(null))[0];
+      assert.deepEqual(later.character,captured.character);
+      for(const key of ['x','y','z','yaw','scale','scaleX'])assert.equal(later[key],captured[key]);
+    }
+  }
+});
+
 test('body-off policy and existing hard/taken bounds stay authoritative',()=>{
   assert.equal(normalizeOutcomeExposure(event(0,{kind:'hard',duration:undefined})).duration,.62);
   assert.equal(normalizeOutcomeExposure(event(0,{duration:6})).duration,.72);
@@ -80,6 +101,22 @@ test('body-off policy and existing hard/taken bounds stay authoritative',()=>{
   assert.equal(normalizeOutcomeExposure(event(NaN)),null);
   assert.equal(pressureInstances(outcomeExposureActor(normalizeOutcomeExposure(event(.2))),null,{mode:'off'}).length,0);
   assert.equal(pressureInstances(outcomeExposureActor(normalizeOutcomeExposure(event(.2))),null,{mode:'core'})[0].pressure.mode,'core');
+});
+
+test('a staged catch reaches toward the booth occupant with the shipped hand and planted feet',async()=>{
+  const bytes=await readFile(new URL('../public/'+HUSH_DENSITY_RENDER.asset,import.meta.url));
+  const asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
+  const base=event(.18),render=(message,options)=>pressureInstances(outcomeExposureActor(normalizeOutcomeExposure(message)),null,options)[0];
+  const held=render(base),reach=render({...base,grab:true}),soft=render({...base,grab:true},{reducedMotion:true});
+  const position=(frame,id)=>Array.from(frame.world[asset.nodes.findIndex(node=>node.name===id)].slice(12,15));
+  const heldFrame=sampleCharacterFrame(asset,held.character);
+  const reachFrame=sampleCharacterFrame(asset,reach.character);
+  const tip=position(reachFrame,'index_R_02');
+  assert.ok(tip[0]<.2&&tip[1]>1.35&&tip[2]<-.6,'right fingers move up and forward into the occupied booth');
+  assert.deepEqual(position(reachFrame,'foot_R'),position(heldFrame,'foot_R'));
+  assert.equal(reach.x,held.x);
+  assert.equal(reach.z,held.z);
+  assert.equal(soft.character.joints.forearm_R,undefined);
 });
 
 test('the real canonical mesh enters shared pressure acquisition before final dither, without a bitmap overlay',async()=>{
@@ -94,7 +131,7 @@ test('the real canonical mesh enters shared pressure acquisition before final di
   assert.match(submission,/P3\.setPressureInstances\(resolvedPressureDraws\)/);
   assert.ok(source.includes('const exposureHush=outcomeExposure.resolve(state.hush'));
   const pass=source.slice(source.indexOf('function runPixelMeshPass('));
-  const finish=pass.indexOf('const pressureSourceTex = finishPressure(sourceTexture);');
+  const finish=pass.indexOf('const pressureSourceTex = occupiedHome?sourceTexture:finishPressure(sourceTexture);');
   assert.ok(finish>=0&&finish<pass.indexOf('gl.drawArrays('));
   assert.match(pass.slice(finish,finish+900),/runBurstPass\(pressureSourceTex, now\)/,'the physical pressure output enters the shared acquisition before the final dither draw');
   const policy=await readFile(new URL('../src/render/outcome-exposure.js',import.meta.url),'utf8');

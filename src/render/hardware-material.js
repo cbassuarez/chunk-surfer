@@ -12,8 +12,13 @@ export const CAP_PIGMENTS = Object.freeze({
 const fields = new Map();
 const CACHE_ENTRIES = 48, CACHE_PIXELS = 4 * 1024 * 1024;
 let fieldPixels = 0;
-let reducedByGame = false, motionQuery = null;
+let reducedByGame = false, reducedEffects = false, motionQuery = null;
 export function setHardwareReducedMotion(value) { reducedByGame = !!value; }
+export function setHardwareReducedEffects(value) { reducedEffects = !!value; }
+export function hardwareEffectsReduced() { return reducedEffects; }
+export const ANNUNCIATOR_LIGHTING = Object.freeze({
+  innerDiffusion:.38, edgeBloom:.86, outerSpill:.78, transitionMs:160,
+});
 export function hardwareMotionReduced() {
   if (!motionQuery && typeof globalThis.matchMedia === 'function') motionQuery = globalThis.matchMedia('(prefers-reduced-motion: reduce)');
   return reducedByGame || !!motionQuery?.matches;
@@ -78,9 +83,10 @@ export function hardwarePigment(color = 'amber') {
   return CAP_PIGMENTS.amber;
 }
 
-function pigmentFields(ctx, w, h, color, finish) {
+function pigmentFields(ctx, w, h, color, finish, illumination = 'standard', dpr = 1) {
   w = Math.max(1, Math.ceil(w)); h = Math.max(1, Math.ceil(h));
-  const key = [w,h,color,finish].join(':');
+  const powered = illumination === 'powered' && finish === 'lens';
+  const key = [w,h,color,finish,powered,dpr].join(':');
   const existing = fields.get(key);
   if (existing) { fields.delete(key); fields.set(key, existing); return existing; }
   const owner = ctx.canvas?.ownerDocument || (typeof document !== 'undefined' ? document : null);
@@ -91,8 +97,8 @@ function pigmentFields(ctx, w, h, color, finish) {
   if (!a?.createImageData || !b?.createImageData) return null;
   const dark = a.createImageData(w,h), bright = b.createImageData(w,h);
   const pigment = hardwarePigment(color), lens = finish === 'lens';
-  const xLight = Array.from({length:w}, (_,x) => Math.exp(-(((x/w-.43)/.48)**2)*1.6));
-  const yLight = Array.from({length:h}, (_,y) => Math.exp(-(((y/h-.62)/.57)**2)*1.8));
+  const xLight = Array.from({length:w}, (_,x) => Math.exp(-(((x/w-.43)/(powered?.62:.48))**2)*(powered?1.25:1.6)));
+  const yLight = Array.from({length:h}, (_,y) => Math.exp(-(((y/h-.62)/(powered?.72:.57))**2)*(powered?1.35:1.8)));
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const u = x / w, v = y / h, edge = Math.min(u, 1-u, v, 1-v);
     // Lens thickness absorbs at the perimeter. Opaque caps have a broad satin
@@ -104,7 +110,9 @@ function pigmentFields(ctx, w, h, color, finish) {
     const i = (y*w+x)*4;
     for (let k=0;k<3;k++) {
       const ambient = pigment.off[k] * dish * absorption;
-      const radiance = pigment.on[k] * (.53 + .47 * bulb) * absorption + bulb * [12,9,3][k];
+      const diffuse = powered ? (255 - pigment.on[k]) * bulb * ANNUNCIATOR_LIGHTING.innerDiffusion
+        + pigment.on[k] * .10 * bulb : 0;
+      const radiance = pigment.on[k] * (.53 + .47 * bulb) * absorption + bulb * [12,9,3][k] + diffuse;
       // Removing circuit permission does not change the physical pigment or
       // erase its legend. Disabled is reported by the readout, not dark ink.
       dark.data[i+k] = clamp(ambient + grain, 0, 255);
@@ -114,6 +122,24 @@ function pigmentFields(ctx, w, h, color, finish) {
   }
   a.putImageData(dark,0,0); b.putImageData(bright,0,0);
   const entry = { off, on, pixels: w*h*2 };
+  if (powered) {
+    const pad = Math.ceil(Math.min(26*dpr, Math.max(8*dpr, h*.54)));
+    const width = w+pad*2, height = h+pad*2;
+    if (entry.pixels+width*height*2<=CACHE_PIXELS) {
+      const spill = owner.createElement('canvas'), bloom = owner.createElement('canvas');
+      spill.width=bloom.width=width;spill.height=bloom.height=height;
+      const s=spill.getContext('2d'),e=bloom.getContext('2d');
+      const tone=`rgb(${pigment.on.join(',')})`,radius=Math.min(3*dpr,h*.15);
+      for (const [brush,blur,strength] of [[s,pad*.62,.82],[e,Math.max(1.5*dpr,pad*.18),.95]]) {
+        brush.save();brush.fillStyle=tone;brush.strokeStyle=tone;brush.shadowColor=tone;
+        brush.shadowBlur=blur;brush.globalAlpha=strength;brush.lineWidth=Math.max(1.2*dpr,h*.035);
+        round(brush,pad,pad,w,h,radius);
+        if(brush===s)brush.fill();else brush.stroke();
+        brush.restore();
+      }
+      entry.spill=spill;entry.bloom=bloom;entry.pad=pad;entry.pixels+=width*height*2;
+    }
+  }
   while (fields.size && (fields.size >= CACHE_ENTRIES || fieldPixels + entry.pixels > CACHE_PIXELS)) {
     const oldest = fields.keys().next().value; fieldPixels -= fields.get(oldest).pixels; fields.delete(oldest);
   }
@@ -125,7 +151,7 @@ function pigmentFields(ctx, w, h, color, finish) {
 export function drawHardwareCap(ctx, x, y, w, h, {
   color = 'amber', finish = 'lens', travel = 0, lampHeat = 0,
   lateral = 0,
-  enabled = true, focused = false, alpha = 1, dpr = 1,
+  enabled = true, focused = false, active = false, alpha = 1, dpr = 1, illumination = 'standard',
 } = {}) {
   const shape=hardwareCapGeometry(w,h,travel,{dpr,finish});
   // Only the captive cap rattles; its retainer and hit housing remain fixed.
@@ -133,7 +159,18 @@ export function drawHardwareCap(ctx, x, y, w, h, {
   const g=dx?{...shape,face:{...shape.face,x:shape.face.x+dx},content:{...shape.content,x:shape.content.x+dx}}:shape;
   const { rim, face: f, radius, shoulder } = g, keyboard = finish === 'keycap';
   const heat = enabled && finish === 'lens' ? clamp(lampHeat,0,1) : 0;
+  const powered = illumination === 'powered' && finish === 'lens';
   ctx.save(); ctx.translate(x,y); const opacity = ctx.globalAlpha * clamp(alpha,0,1); ctx.globalAlpha = opacity;
+  const field = pigmentFields(ctx,f.w,f.h,color,finish,illumination,dpr);
+  const external = powered && !hardwareEffectsReduced() && heat>0;
+  const lightImage=(image,strength)=>{
+    if(!image)return;
+    ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=opacity*heat*strength;
+    ctx.drawImage(image,f.x-field.pad,f.y-field.pad,f.w+field.pad*2,f.h+field.pad*2);
+    ctx.restore();
+  };
+  // The wide spill lands on the surrounding panel before its captive socket.
+  if(external)lightImage(field?.spill,ANNUNCIATOR_LIGHTING.outerSpill);
   // A stationary machined retainer with distinct facets, not a luminous border.
   round(ctx,0,0,g.w,g.h,keyboard ? radius * 1.25 : Math.max(.5,rim*.5));
   ctx.fillStyle = keyboard ? '#22261e' : vertical(ctx,0,g.h,[[0,'#393d34'],[.025,'#c0c2b0'],[.05,'#828a75'],[.10,'#30382a'],[.83,'#292f24'],[.94,'#9fa68b'],[.975,'#565f47'],[1,'#181e15']]); ctx.fill();
@@ -145,6 +182,7 @@ export function drawHardwareCap(ctx, x, y, w, h, {
     round(ctx,.6*dpr,rim,g.w-1.2*dpr,g.h-2*rim,.5*dpr); ctx.fillStyle=sides;ctx.fill();
   }
   round(ctx,rim,rim,g.w-2*rim,g.h-2*rim,radius*.7);ctx.fillStyle='#0a100a';ctx.fill();
+  if(external)lightImage(field?.bloom,ANNUNCIATOR_LIGHTING.edgeBloom);
   const sideH = g.distance * (1-g.depth) + shoulder;
   capPath(ctx,f.x-.4*dpr,f.y+shoulder*.5,f.w+.8*dpr,f.h+sideH,radius,shoulder*.25);
   ctx.fillStyle = vertical(ctx,f.y,f.h+sideH,[[0,'#6f775b'],[.76,'#4c533a'],[.88,'#3b432c'],[1,'#151d10']]);ctx.fill();
@@ -153,7 +191,6 @@ export function drawHardwareCap(ctx, x, y, w, h, {
   ctx.fillStyle=`rgba(0,0,0,${.24+.32*g.depth})`;
   ctx.fillRect(f.x,rim,f.w,Math.max(.25*dpr,f.y-rim));
   ctx.save();capPath(ctx,f.x,f.y,f.w,f.h,radius,shoulder*.28);ctx.clip();
-  const field = pigmentFields(ctx,f.w,f.h,color,finish);
   if (field) {
     ctx.drawImage(field.off,f.x,f.y,f.w,f.h);
     if (heat > 0) {ctx.globalAlpha=opacity*heat;ctx.drawImage(field.on,f.x,f.y,f.w,f.h);ctx.globalAlpha=opacity;}
@@ -167,9 +204,15 @@ export function drawHardwareCap(ctx, x, y, w, h, {
   ctx.moveTo(f.x+radius,f.y+f.h-1.2*dpr);ctx.quadraticCurveTo(f.x+f.w*.5,f.y+f.h-.6*dpr,f.x+f.w-radius,f.y+f.h-1.2*dpr);ctx.stroke();
   ctx.restore();
   if (heat > 0 && !keyboard) {ctx.globalAlpha=opacity*heat*.2;ctx.fillStyle=color==='red'?'#ff9754':'#ffe4a2';ctx.fillRect(rim*2,g.h-rim*.9,g.w-rim*4,Math.max(.5,dpr*.5));ctx.globalAlpha=opacity;}
+  if (powered && active && enabled) {
+    ctx.fillStyle='#f2e6be';
+    const mark=Math.min(5*dpr,g.h*.16),width=Math.max(.8,dpr);
+    ctx.fillRect(.4*dpr,g.h*.5-mark*.5,width,mark);
+    ctx.fillRect(g.w-1.3*dpr,g.h*.5-mark*.5,width,mark);
+  }
   // Focus is two small mechanical index marks on the surround. It never
   // changes the bulb's electrical state or floods the cap under a cursor.
-  if (focused) {
+  if (focused && (!powered || enabled)) {
     ctx.fillStyle='#f2e6be';const mark=Math.min(5*dpr,g.w*.12);
     ctx.fillRect(g.w*.5-mark*.5,.3*dpr,mark,Math.max(.65,dpr*.7));
     ctx.fillRect(g.w*.5-mark*.5,g.h-1.1*dpr,mark,Math.max(.65,dpr*.7));

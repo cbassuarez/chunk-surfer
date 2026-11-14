@@ -1,4 +1,5 @@
 import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './torch-optics.js';
+import { graphicsStartupError } from './graphics-startup.js';
 // The first nothingness is finite architecture in an unlit, horizonless field.
 // Its geometry is fixed in world metres. Only the receiving deck moves. The
 // existing prop pack lends its real grating, rails and lift hardware;
@@ -6,6 +7,7 @@ import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './to
 import { sourceViewCamera } from './source-view-camera.js';
 import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
 import { sourcePrintTexture } from './physical-source-print.js';
+import { ensureWorldLetteringFonts, worldLetteringFontsStatus } from './world-lettering-fonts.js';
 import { PRINTED_SURFACE_GLSL, printedSurfaceDescriptor } from './printed-surface.js';
 import {SOURCE_CODE_SCREEN_GLSL,SOURCE_CODE_LIFT_METRES} from './source-code-screen.js';
 import {sourceReceiptExecutionEvent,sourceExecutionEnvelope,sourceExecutionParameters} from './source-execution-trails.js';
@@ -106,6 +108,7 @@ export function sourceShoreGeometry(frame) {
   // This is the opening vehicle's real exterior, when its shared optional
   // pack has finished loading. The lights remain even if that pack fails.
   mesh('coastal-echo-wreck-body','opening_drive_vehicle_body',ox+18,r.floor-.7,oz-298.2,1,1,1,false,Math.PI);
+  mesh('coastal-echo-wreck-brand','van_brand_drive',ox+18,r.floor-.7,oz-298.2,1,1,1,false,Math.PI);
   for(const side of[-1,1])mesh(`coastal-echo-wreck-headlamp-${side}`,'tower_bulkhead',ox+18+side*.65,r.floor+.60,oz-296,.22,.22,.22,false,Math.PI,.55);
 
   // The exposed source bank is the same finite geometry used by collision.
@@ -184,7 +187,7 @@ uniform vec4 uTorch; // power, range multiplier, penumbra cosine, hotspot cosine
 uniform float uTorchSpill,uShoulder,uGlow,uMetallic,uRoughness,uUseTex,uClipTop,uRecordingExposure;
 uniform float uPrintedPolarity,uPrintedCoverage;
 uniform vec4 uLights[3];
-uniform sampler2D uTex,uSourceTex;
+uniform sampler2D uTex;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 ${PRINTED_SURFACE_GLSL}
@@ -318,19 +321,44 @@ let gl=null,materialProgram=null,compositeProgram=null,codeProgram=null,pack=nul
 let hullFbo=null,hullColour=null,hullDepth=null,hullMarks=null,finalFbo=null,finalColour=null,width=0,height=0;
 let geometryKey='',geometry=null,vao=null,vertexBuffer=null,vertexCount=0;
 let sourceMaterialTexture=null;
+let fontOwner=null,fontPreparation=null;
 let importedAttributeState=new WeakMap();
 let lastMedium=null,lastCompositeTarget=null;
 const materialUniforms=new Map(),compositeUniforms=new Map(),codeUniforms=new Map();
 const IDENTITY=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
-export const sourceShoreStats={ready:false,active:false,facade:'exposed-strata',boxCount:0,pieceCount:0,hardwareCount:0,hardwareDraws:0,triangles:0,far:SOURCE_SHORE_RANGE.far};
+export const sourceShoreStats={ready:false,active:false,facade:'exposed-strata',boxCount:0,pieceCount:0,hardwareCount:0,hardwareDraws:0,triangles:0,far:SOURCE_SHORE_RANGE.far,fontsReady:false,fontsPending:false,fontError:'',printReady:false};
+export function sourceShorePrepareFonts(){
+  const owner=globalThis.document;
+  if(owner!==fontOwner){
+    fontOwner=owner;fontPreparation=null;
+    sourceShoreStats.fontsReady=false;sourceShoreStats.fontsPending=false;sourceShoreStats.fontError='';
+  }
+  if(fontPreparation)return fontPreparation;
+  const status=worldLetteringFontsStatus(owner);
+  sourceShoreStats.fontsReady=status.ready;sourceShoreStats.fontsPending=!status.ready;
+  // Share the exact physical-font promise used by prop-pack preparation. Font
+  // failure is diagnostic once, not an exception rethrown by every live frame.
+  fontPreparation=ensureWorldLetteringFonts().then(()=>{
+    if(owner===fontOwner){sourceShoreStats.fontsReady=true;sourceShoreStats.fontsPending=false;}
+    return true;
+  },error=>{
+    if(owner===fontOwner){
+      sourceShoreStats.fontsPending=false;sourceShoreStats.fontError=String(error?.message||error);
+      console.warn('Source shore lettering unavailable; retaining physical substrate',error);
+    }
+    return false;
+  });
+  return fontPreparation;
+}
 const uniform=(program,cache,name)=>{if(!cache.has(name))cache.set(name,gl.getUniformLocation(program,name));return cache.get(name);};
 const mu=name=>uniform(materialProgram,materialUniforms,name),cu=name=>uniform(compositeProgram,compositeUniforms,name);
 const codeU=name=>uniform(codeProgram,codeUniforms,name);
-function compile(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(`Source shore shader: ${gl.getShaderInfoLog(s)}`);return s;}
-function program(vertex,fragment){const p=gl.createProgram(),v=compile(gl.VERTEX_SHADER,vertex),f=compile(gl.FRAGMENT_SHADER,fragment);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);gl.deleteShader(v);gl.deleteShader(f);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(`Source shore program: ${gl.getProgramInfoLog(p)}`);return p;}
+function compile(type,source){const s=gl.createShader(type);if(!s)throw graphicsStartupError('Source shore shader allocation failed');gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw graphicsStartupError(`Source shore shader: ${gl.getShaderInfoLog(s)}`);return s;}
+function program(vertex,fragment){const p=gl.createProgram();if(!p)throw graphicsStartupError('Source shore program allocation failed');const v=compile(gl.VERTEX_SHADER,vertex),f=compile(gl.FRAGMENT_SHADER,fragment);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);gl.deleteShader(v);gl.deleteShader(f);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw graphicsStartupError(`Source shore program: ${gl.getProgramInfoLog(p)}`);return p;}
 export function sourceShoreInit(context){
+  void sourceShorePrepareFonts();
   if(gl===context&&materialProgram)return true;
-  gl=context;sourceMaterialTexture=null;importedAttributeState=new WeakMap();materialProgram=program(VERT,SOURCE_SHORE_MATERIAL_FRAG);compositeProgram=program(QUAD_VERT,SOURCE_SHORE_COMPOSITE_FRAG);
+  gl=context;sourceMaterialTexture=null;sourceShoreStats.printReady=false;importedAttributeState=new WeakMap();materialProgram=program(VERT,SOURCE_SHORE_MATERIAL_FRAG);compositeProgram=program(QUAD_VERT,SOURCE_SHORE_COMPOSITE_FRAG);
   codeProgram=program(SOURCE_SHORE_CODE_VERT,SOURCE_SHORE_CODE_FRAG);codeUniforms.clear();
   materialUniforms.clear();compositeUniforms.clear();sourceShoreStats.ready=true;return true;
 }
@@ -338,7 +366,7 @@ export function sourceShoreSetHardwarePack(next){pack=next;return !!pack?.catalo
 function texture(depth=false,nearest=false){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,depth?gl.DEPTH_COMPONENT24:gl.RGBA8,width,height,0,depth?gl.DEPTH_COMPONENT:gl.RGBA,depth?gl.UNSIGNED_INT:gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,depth||nearest?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,depth||nearest?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
 function sourceTexture(){
   if(sourceMaterialTexture)return sourceMaterialTexture;
-  sourceMaterialTexture=sourcePrintTexture(gl,'divide');return sourceMaterialTexture;
+  sourceMaterialTexture=sourcePrintTexture(gl,'divide');sourceShoreStats.printReady=true;return sourceMaterialTexture;
 }
 function resize(w,h){
   if(width===w&&height===h&&hullFbo)return;
@@ -346,9 +374,9 @@ function resize(w,h){
   for(const f of [hullFbo,finalFbo])if(f)gl.deleteFramebuffer(f);
   width=w;height=h;hullColour=texture();hullDepth=texture(true);hullMarks=texture(false,true);finalColour=texture();
   hullFbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,hullColour,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT1,gl.TEXTURE_2D,hullMarks,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,hullDepth,0);
-  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('Source shore hull framebuffer incomplete');
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw graphicsStartupError('Source shore hull framebuffer incomplete');
   finalFbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,finalFbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,finalColour,0);
-  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('Source shore composite framebuffer incomplete');
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw graphicsStartupError('Source shore composite framebuffer incomplete');
 }
 const FACES=[[[1,0,0],[1,0,0],[1,1,0],[1,1,1],[1,0,1]],[[-1,0,0],[0,0,1],[0,1,1],[0,1,0],[0,0,0]],[[0,1,0],[0,1,0],[0,1,1],[1,1,1],[1,1,0]],[[0,-1,0],[0,0,1],[0,0,0],[1,0,0],[1,0,1]],[[0,0,1],[1,0,1],[1,1,1],[0,1,1],[0,0,1]],[[0,0,-1],[0,0,0],[0,1,0],[1,1,0],[1,0,0]]];
 function uploadGeometry(frame,boundaryOnly=false){
@@ -400,7 +428,7 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   if(!(boundaryOnly?sourceShoreBoundaryVisible(frame):sourceShoreRenderActive(frame))||!materialProgram)return false;
   resize(w,h);uploadGeometry(frame,boundaryOnly);
   const camera=sourceViewCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
-  const lamp=resolveTorchFrame({eye:[camX,camY,camZ],yaw,pitch,yawOffset:Number(torch.yawOffset)||0}),forward=lamp.forward;
+  const lamp=torch.lampFrame||resolveTorchFrame({eye:[camX,camY,camZ],yaw,pitch,yawOffset:Number(torch.yawOffset)||0}),forward=lamp.forward;
   torch={...torch,...normalizeTorchOptics(torch)};
   gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.useProgram(materialProgram);gl.uniformMatrix4fv(mu('uView'),false,camera.view);gl.uniformMatrix4fv(mu('uProjection'),false,camera.projection);gl.uniformMatrix4fv(mu('uModel'),false,IDENTITY);gl.uniform3f(mu('uEye'),camX,camY,camZ);gl.uniform3fv(mu('uForward'),forward);gl.uniform3fv(mu('uTorchOrigin'),lamp.origin);gl.uniform3fv(mu('uTorchRight'),lamp.right);gl.uniform3fv(mu('uTorchUp'),lamp.up);gl.uniform3fv(mu('uTorchColour'),torch.color||[1,.95,.86]);gl.uniform4f(mu('uTorch'),clamp(torch.power),torch.reach,torch.coneInner,torch.coneOuter);gl.uniform1f(mu('uTorchSpill'),clamp(torch.spill??.08,0,.12));gl.uniform1f(mu('uShoulder'),clamp(torch.shoulder??.75,0,2));gl.uniform1f(mu('uLiftFloor'),Number(frame.lift.floor)||0);gl.uniform1f(mu('uImported'),0);gl.uniform1f(mu('uMoving'),0);gl.uniform1f(mu('uGlow'),0);gl.uniform1f(mu('uUseTex'),0);gl.uniform1f(mu('uMetallic'),.1);gl.uniform1f(mu('uRoughness'),.8);gl.uniform3f(mu('uEmissive'),0,0,0);
@@ -410,7 +438,9 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   gl.uniform1f(mu('uRoomTaken'),clamp(frame.roomTaken));
   gl.uniform1f(mu('uRecordingExposure'),boundaryOnly?clamp(recordingExposure,1,12):1);
   gl.uniform1f(mu('uPrintedPolarity'),0);gl.uniform1f(mu('uPrintedCoverage'),0);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,sourceTexture());gl.uniform1i(mu('uSourceTex'),1);gl.activeTexture(gl.TEXTURE0);
+  // The material shader prints only substrate; its old uSourceTex binding was
+  // unused, yet eagerly baked lettering before the shared font load finished.
+  gl.activeTexture(gl.TEXTURE0);
   const gate=clamp(((Number(frame.lift.floor)||0)-3.9)/.3);
   gl.uniform1f(mu('uGateOpen'),gate*gate*(3-2*gate));gl.uniform1f(mu('uGateTravel'),(frame.lift.maxX-frame.lift.minX)/2);
   gl.uniform1f(mu('uClipTop'),0);gl.bindVertexArray(vao);gl.drawArrays(gl.TRIANGLES,0,vertexCount);sourceShoreStats.triangles=vertexCount/3;sourceShoreStats.hardwareDraws=0;
@@ -427,6 +457,9 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
 // bound. The same fixed cut-bank meshes and physical UVs own these clauses.
 export function sourceShoreCodeDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,height:h,boundaryOnly=false,bindCommon,camera:codeCamera=null}={}){
   if(!(boundaryOnly?sourceShoreBoundaryVisible(frame):sourceShoreRenderActive(frame))||!codeProgram||!bindCommon)return false;
+  // Geometry, collision and acquisition continue while fonts load. Only the
+  // incidental raised glyphs wait; never bake or cache a browser fallback face.
+  if(!worldLetteringFontsStatus().ready){void sourceShorePrepareFonts();return false;}
   uploadGeometry(frame,boundaryOnly);
   const camera=sourceViewCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
   gl.useProgram(codeProgram);bindCommon(codeU,{glyphLinear:1,view:camera.view});

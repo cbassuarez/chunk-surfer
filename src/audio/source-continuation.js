@@ -331,11 +331,12 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       const supported=!!support&&Math.abs(support.y-number(state.feet))<.16;
       const travel=hadBody?Math.hypot(here.x-lastBody.x,here.z-lastBody.z):0;
       if(!hadBody)footClock.reset(footOwner);
+      const maximumWalk=Math.max(1.3,LAYOUT.bodySpeedLimit*Math.min(.25,Math.max(0,number(dt)))+.06);
       if(Number(dt)>0)for(const plant of footClock.update({dt:Number(dt),distance:travel,scene:footOwner,
-        supported,teleported:travel>=1.3})){
+        supported,teleported:travel>maximumWalk})){
         footIndex++;
         onFootContact({...plant,owner:footOwner,surface:support.surface?.material||'cold-stone',profile:'physical',
-          construction:support.surface?.construction,position:{x:here.x,z:here.z},distanceM:plant.distance,strideM:plant.stride,level:.09,condition:'walk',
+          construction:support.surface?.construction,position:{x:here.x,z:here.z},distanceM:plant.distance,strideM:plant.stride,level:.09,condition:state.breath?.sprinting?'sprint':'run',
           id:`${footOwner}:${state.runId}:${footIndex}`,time:number(state.elapsed,clock)});
       }
       if(!supported&&lastBody)clearFootContacts?.(footOwner);
@@ -356,7 +357,8 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       const travel = Math.hypot(actor.x - lastHush.x, actor.y - lastHush.y, actor.z - lastHush.z);
       // Accept physical stairs; discard relocations and vertical correction.
       // Falling has its own explicit drop/landing events, never airborne steps.
-      if (travel < 1.3 && Math.abs(actor.y - lastHush.y) < .65) hushTravel += travel; else hushTravel = 0;
+      const maximumWalk=Math.max(1.3,Math.max(LAYOUT.hush.speed,LAYOUT.hush.chaseSpeed)*delta+.06);
+      if (travel <= maximumWalk && Math.abs(actor.y - lastHush.y) < .65) hushTravel += travel; else hushTravel = 0;
       if (hushTravel >= SOURCE_CONTINUATION_AUDIO.hushStrideMetres) {
         hushTravel %= SOURCE_CONTINUATION_AUDIO.hushStrideMetres; hushStepIndex++;
         const side = hushStepIndex % 2 ? -.15 : .15, heading = number(hush.heading);

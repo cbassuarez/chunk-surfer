@@ -12,7 +12,7 @@
 // right x up = normal, and positive local Z protrudes into traversable space.
 // host.min/max delimit the EXACT rectangular base-plane footprint (no padding
 // outside that wall), independent of the proposed relief depthM.
-import {CELL,F,MATERIAL} from '../data/floorplan/legend.js';
+import {BORROWED_INTERIOR_ZONE_BIT,CELL,F,MATERIAL} from '../data/floorplan/legend.js';
 import {decodeH} from '../world/floorplan.js';
 import {SOURCE_REST_ALCOVE_SOLIDS} from '../data/source-rest-alcove.js';
 import {CONTINUATION_CATCH_STAGES,continuationSurfaces,continuationSurfaceContains} from '../data/source-continuation.js';
@@ -44,7 +44,7 @@ function planReader(plan){
     const encodedCeil=decodeH(plan.rgba[at+1]);
     return{x,z,i,flags,solid:!!(flags&F.SOLID),floor:decodeH(plan.rgba[at]),
       ceil:(flags&F.SKY)&&!(flags&F.WALLED)?90:encodedCeil,
-      floorByte:plan.rgba[at],ceilByte:plan.rgba[at+1],zone:plan.rgba[at+3],
+      floorByte:plan.rgba[at],ceilByte:plan.rgba[at+1],zone:plan.rgba[at+3]&~BORROWED_INTERIOR_ZONE_BIT,
       material:plan.material?.[i]||MATERIAL.serviceConcrete};
   }};
 }

@@ -10,7 +10,7 @@ const actor = (extra = {}) => ({ id: 'density:one', role: 'live-pressure', x: 0,
   heading: 0, motion: 'idle', strength: .96, ...extra });
 const json = value => JSON.parse(JSON.stringify(value));
 
-test('Source-speed density spends accepted travel at <=2 cycles/s and declares the remaining drag', () => {
+test('Source-speed posture caps anatomical gathering and explicitly releases support for the remaining travel', () => {
   const driver = createPressurePerformance();
   driver.tick(.02, { primary: actor({ role: 'court-trace', motion: 'hunt' }) });
   let old = driver.snapshot(), total = 0;
@@ -22,11 +22,15 @@ test('Source-speed density spends accepted travel at <=2 cycles/s and declares t
     assert.equal(next.primary.performance.heading, incoming.heading);
     const d = next.primary.performance.density, before = old.primary.performance.density;
     assert.ok(d.phase - before.phase <= HUSH_DENSITY_LIMITS.maxCyclesPerSecond * .02 + 1e-10);
-    assert.ok(Math.abs(d.residualDragMps - 18.7) < 1e-8);
-    assert.ok(d.rate <= 2);
+    assert.ok(Math.abs(d.residualDragMps - (19.7 - HUSH_DENSITY_LIMITS.cycleMetres * HUSH_DENSITY_LIMITS.maxCyclesPerSecond)) < 1e-8);
+    assert.ok(d.rate <= HUSH_DENSITY_LIMITS.maxCyclesPerSecond);
     total += d.phase - before.phase; old = next;
   }
-  assert.ok(Math.abs(total - 8) < 1e-8);
+  assert.ok(Math.abs(total - 4 * HUSH_DENSITY_LIMITS.maxCyclesPerSecond) < 1e-8);
+  assert.equal(old.primary.performance.density.release, 1);
+  const support = hushDensityCharacter(old.primary.performance).support;
+  assert.equal(support.mode, 'released');
+  assert.ok(support.contacts.every(c => !c.planted && c.offset[1] > .05));
   assert.ok(old.primary.performance.time > old.primary.performance.density.phase * 2.4,
     'the compatibility human clip must not dictate the density travel frequency');
 });
@@ -41,14 +45,16 @@ test('blocked recovery retains visible density and compression across the obsole
     const next = driver.tick(.02, { primary: actor({ motion: 'hunt', gait: { ...gait, elapsed: n * .02,
       recoveryReset: n >= 20, blocked: n < 20 } }) }).primary.performance;
     assert.equal(next.density.phase, before.density.phase);
-    assert.ok(next.manifestation >= before.manifestation, 'a leg-support reset hides the new nonhuman body');
+    assert.ok(next.manifestation >= before.manifestation, 'a legacy leg-support reset hides the terminal body');
   }
   const p = driver.snapshot().primary.performance;
   assert.ok(p.density.compression > .9);
   assert.ok(p.density.retained >= .86);
   const c = hushDensityCharacter(p);
-  assert.equal(c.support, undefined); assert.equal(c.morphs, undefined);
-  assert.ok(Object.keys(c.joints).every(name => /^fold_[ABC]_[1-5]$/.test(name)));
+  assert.equal(c.support.clip, 'pressure_hold'); assert.equal(c.morphs, undefined);
+  assert.deepEqual(c.support.contacts.map(c => c.side), ['L', 'R']);
+  assert.ok(Object.keys(c.joints).every(name => !name.startsWith('fold_')));
+  assert.ok(c.joints.chest && c.joints.head);
 });
 
 test('zero time and suspension do not consume roots, queued cues, role switches or material phase', () => {
@@ -122,7 +128,7 @@ test('interpolation retains density phase and measured clearance without blendin
 test('captured fallback and comfort need no new clock, and old snapshots remain readable', () => {
   const legacy = { version: 1, role: 'source-rear', clip: 'pressure_approach', time: 32, seed: 9 };
   const a = hushDensityCharacter(legacy), b = hushDensityCharacter(json(legacy));
-  assert.deepEqual(a, b); assert.equal(a.time, 0); assert.equal(a.blend.clip, 'density_idle');
+  assert.deepEqual(a, b); assert.equal(a.time, 0); assert.equal(a.clip, 'pressure_hold'); assert.equal(a.blend, undefined);
   assert.equal(hushDensityFromCaptured(legacy).eventTime, 2);
   const old = normalizePressurePresentation({ version: 1, primary: { x: 4, y: 2, performance: legacy } });
   assert.ok(old.primary); assert.equal(old.primary.performance.density, undefined);
@@ -141,11 +147,26 @@ test('one finite stop packet finishes in exact material stillness instead of per
   assert.deepEqual(hushDensityCharacter({ density: d }), c);
 });
 
+test('support resets do not claim an instant plant and interrupted pivots reground finitely without snapping', () => {
+  const reset = stepHushDensityPose(freshHushDensityPose(4), { dt: .02, resetSupport: true });
+  assert.ok(hushDensityCharacter({ density: reset }).support.contacts.every(c => !c.planted && c.weight === 0));
+  const pivot = stepHushDensityPose(freshHushDensityPose(4), {
+    dt: .02, pivot: { progress: .2, turn: -.5, startHeadingDelta: 0 } });
+  assert.ok(pivot.feet.L.height > .04);
+  let stopped = stepHushDensityPose(pivot, { dt: .02 });
+  assert.deepEqual(stopped.feet.L, pivot.feet.L, 'cancelling a pivot teleports the raised sole onto the floor');
+  assert.equal(stopped.settlingFeet, true);
+  assert.equal(hushDensityCharacter({ density: stopped }).support.contacts.find(c => c.side === 'L').planted, false);
+  for (let n = 0; n < 500; n++) stopped = stepHushDensityPose(stopped, { dt: .02 });
+  assert.equal(stopped.settlingFeet, false); assert.equal(stopped.feet.L.height, 0);
+  assert.ok(hushDensityCharacter({ density: stopped }).support.contacts.every(c => c.planted));
+});
+
 test('density normalization bounds untrusted snapshots and strips undeclared state', () => {
   assert.equal(freshHushDensityPose(7).attention, 0, 'a fresh mass invents a leftward sound bearing');
   const d = normalizeHushDensityPose({ version: 1, phase: 1e99, rate: 500, compression: -4, attention: 100,
     seed: 10, event: 'omniscient', privateTarget: [1, 2], residualDragMps: Infinity });
-  assert.equal(d.phase, HUSH_DENSITY_LIMITS.maxPhase); assert.equal(d.rate, 2); assert.equal(d.compression, 0);
+  assert.equal(d.phase, HUSH_DENSITY_LIMITS.maxPhase); assert.equal(d.rate, HUSH_DENSITY_LIMITS.maxCyclesPerSecond); assert.equal(d.compression, 0);
   assert.equal(d.attention, .65); assert.equal(d.event, 'still'); assert.equal(d.privateTarget, undefined);
   assert.equal(normalizeHushDensityPose({ version: 99 }), null);
 });

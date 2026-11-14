@@ -7,7 +7,7 @@ import { VAN_BRAND_COPY, VAN_BRAND_FITS, VAN_BRAND_PAINT, VAN_BRAND_VIEWBOX } fr
 import { VAN_BRAND_ART, VAN_BRAND_PIGMENTS } from '../../src/data/van-brand-art.js';
 
 const root = new URL('../../', import.meta.url), sha = b => createHash('sha256').update(b).digest('hex');
-const doc = new Document(), buffer = doc.createBuffer(), scene = doc.createScene('FIELD RECORDING SERVICES / owner-applied paint');
+const doc = new Document(), buffer = doc.createBuffer(), scene = doc.createScene(`${VAN_BRAND_COPY} / owner-applied paint`);
 doc.getRoot().setDefaultScene(scene);
 if (!Array.isArray(VAN_BRAND_ART) || !VAN_BRAND_ART.length) throw Error('Original filled polygon artwork is required');
 const pigmentIds = [...new Set(VAN_BRAND_ART.map(a => a.pigment))];
@@ -35,7 +35,7 @@ function ring(values, hole = false) {
   if ((area(out) > 0) !== hole) out.reverse();
   return out;
 }
-const artwork = VAN_BRAND_ART.map(a => ({ id: a.id, pigment: a.pigment, rings: [ring(a.outer), ...(a.holes || []).map(h => ring(h, true))] }));
+const artwork = VAN_BRAND_ART.map(a => ({ id: a.id, pigment: a.pigment, layer: a.layer || 0, rings: [ring(a.outer), ...(a.holes || []).map(h => ring(h, true))] }));
 if (new Set(artwork.map(a => a.id)).size !== artwork.length) throw Error('Artwork pieces need unique ids');
 const accessor = (name, values, type, integer = false) => doc.createAccessor(name).setBuffer(buffer).setType(type)
   .setArray(integer ? new Uint32Array(values) : new Float32Array(values));
@@ -45,19 +45,23 @@ const unit = a => { const d = Math.hypot(...a); if (d < 1e-10) throw Error('Dege
 const result = [];
 for (const [fitId, fit] of Object.entries(VAN_BRAND_FITS)) {
   const mesh = doc.createMesh(fit.mesh), buckets = new Map(pigmentIds.map(id => [id, { positions: [], normals: [], indices: [] }]));
-  const project = ([x, y], side, depth) => [side * (fit.surfaceX + depth), fit.centerY + (.5 - y / 540) * fit.heightM,
-    fit.centerZ - side * (x / 1800 - .5) * fit.widthM];
-  for (const side of [-1, 1]) for (const art of artwork) {
-    const bucket = buckets.get(art.pigment), normal = [side, 0, 0], depth = VAN_BRAND_PAINT.frontOffsetM + pigmentIds.indexOf(art.pigment) * VAN_BRAND_PAINT.pigmentLayerStepM;
+  for (const surface of fit.surfaces) for (const side of surface.kind === 'side' ? [-1, 1] : [surface.normal]) for (const art of artwork) {
+    const project = ([x, y], depth) => surface.kind === 'side'
+      ? [side * (surface.surfaceX + depth), surface.centerY + (.5 - y / 540) * surface.heightM,
+        surface.centerZ - side * (x / 1800 - .5) * surface.widthM]
+      : [surface.centerX + side * (x / 1800 - .5) * surface.widthM,
+        surface.centerY + (.5 - y / 540) * surface.heightM, surface.surfaceZ + side * depth];
+    const bucket = buckets.get(art.pigment), normal = surface.kind === 'side' ? [side, 0, 0] : [0, 0, side],
+      depth = VAN_BRAND_PAINT.frontOffsetM + art.layer * VAN_BRAND_PAINT.pigmentLayerStepM;
     const points = art.rings.flat(), triangles = ShapeUtils.triangulateShape(art.rings[0].map(p => new Vector2(...p)), art.rings.slice(1).map(r => r.map(p => new Vector2(...p))));
     if (!triangles.length) throw Error(`Artwork failed triangulation: ${art.id}`);
-    const front = points.map(p => project(p, side, depth)), back = points.map(p => project(p, side, depth - VAN_BRAND_PAINT.thicknessM));
+    const front = points.map(p => project(p, depth)), back = points.map(p => project(p, depth - VAN_BRAND_PAINT.thicknessM));
     const start = bucket.positions.length / 3;
     for (const p of front) { bucket.positions.push(...p); bucket.normals.push(...normal); }
     for (const p of back) { bucket.positions.push(...p); bucket.normals.push(...normal.map(n => -n)); }
     for (const triangle of triangles) {
       const t = [...triangle], n = cross(sub(front[t[1]], front[t[0]]), sub(front[t[2]], front[t[0]]));
-      if (n[0] * side < 0) [t[1], t[2]] = [t[2], t[1]];
+      if (n.reduce((sum, v, k) => sum + v * normal[k], 0) < 0) [t[1], t[2]] = [t[2], t[1]];
       bucket.indices.push(...t.map(i => start + i), start + points.length + t[0], start + points.length + t[2], start + points.length + t[1]);
     }
     let at = 0;
@@ -77,22 +81,22 @@ for (const [fitId, fit] of Object.entries(VAN_BRAND_FITS)) {
       .setAttribute('NORMAL', accessor(`${fitId}/${id}/normal`, b.normals, 'VEC3')).setIndices(accessor(`${fitId}/${id}/indices`, b.indices, 'SCALAR', true)).setMaterial(materials.get(id)));
     vertices += b.positions.length / 3; triangles += b.indices.length / 3;
   }
-  mesh.setExtras({ bounds: { min, max }, purpose: 'Opaque owner-applied FIELD RECORDING SERVICES pigment; not a rectangular sign carrier',
+  mesh.setExtras({ bounds: { min, max }, purpose: `Opaque owner-applied ${VAN_BRAND_COPY} pigment; no sign carrier`,
     fit, pigmentThicknessM: VAN_BRAND_PAINT.thicknessM, paintOnly: true, hostGeometryUnchanged: true });
   scene.addChild(doc.createNode(fit.mesh).setMesh(mesh));
-  result.push({ fit: fitId, mesh: fit.mesh, vertices, triangles, bounds: { min, max }, sourcePolygons: artwork.length, pigments: pigmentIds });
+  result.push({ fit: fitId, mesh: fit.mesh, vertices, triangles, bounds: { min, max }, sourcePolygons: artwork.length, surfaces: fit.surfaces, pigments: pigmentIds });
 }
 const bytes = await new NodeIO().writeBinary(doc), digest = sha(bytes);
 await fs.writeFile(new URL('public/assets/van-brand.glb', root), bytes);
 const inputs = {};
 for (const path of ['src/data/van-brand-art.js', 'src/data/van-brand.js', 'tools/chunk_surfer/build-van-brand.mjs']) inputs[path] = sha(await fs.readFile(new URL(path, root)));
-const stats = { version: 1, copy: VAN_BRAND_COPY, asset: 'assets/van-brand.glb', sha256: digest, bytes: bytes.length,
+const stats = { version: 2, copy: VAN_BRAND_COPY, asset: 'assets/van-brand.glb', sha256: digest, bytes: bytes.length,
   sourceViewBox: VAN_BRAND_VIEWBOX, inputs, meshes: result, materials: pigmentIds.map(id => ({ id, linearRGB: colour(VAN_BRAND_PIGMENTS[id]), ...VAN_BRAND_PAINT })),
   rendering: { textures: 0, alpha: 'OPAQUE', printedCoverage: 'solid polygon geometry', emissive: false, shader: 'Existing P3 material, world depth and solid-lettering marks → acquisition → final dither/VFD' },
   unchangedHosts: ['public/assets/conservatory-props.glb', 'public/assets/source-vehicle-interior.glb', 'public/assets/source-drive/drive.glb'],
-  validation: { method: 'Actual host flank planes verified by 70 ray/triangle samples per vehicle', pending: ['Final-shader ordinary-distance and moving native inspection'] } };
+  validation: { method: 'Host side and rear skin coordinates read from production source geometry; focused tests cover normals, pigment area, attachment and flag construction', pending: ['Final-shader ordinary-distance and moving native inspection'] } };
 await fs.writeFile(new URL('public/assets/van-brand.stats.json', root), JSON.stringify(stats, null, 2) + '\n');
 await fs.writeFile(new URL('public/assets/van-brand.credits.json', root), JSON.stringify({ asset: stats.asset, copy: VAN_BRAND_COPY,
-  artwork: 'Original project-authored filled-polygon brush/graffiti mark, src/data/van-brand-art.js', geometry: 'Original task-authored thin pigment extrusion; no font or third-party graffiti copied',
+  artwork: 'Original ALBION LOCATION SOUND lettering and constructed Union Flag; src/data/van-brand-art.js', flagConstructionReference: 'https://www.flaginstitute.org/wp/uk-flags/union-flag-specification/', geometry: 'Original thin pigment extrusion; no font or third-party company logo copied',
   license: 'Project-authored original assets; project licensing applies.', sourceSha256: inputs['src/data/van-brand-art.js'], sha256: digest }, null, 2) + '\n');
 console.log(JSON.stringify({ bytes: bytes.length, sha256: digest, meshes: result.map(({ mesh, vertices, triangles }) => ({ mesh, vertices, triangles })) }, null, 2));

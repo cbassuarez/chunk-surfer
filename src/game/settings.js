@@ -66,8 +66,31 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
   let armed = null; // { key, until }
   let eraseState = '';
   let pendingChallenge = null; // { key, change, until }
+  let iconDiscoveries = 0,iconSwitchPending=false,iconSwitchError=false;
   const hits = createHitRegions();
   const now = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+
+  const iconStatus=()=>hooks.appIconStatus?.()||{supported:false,choice:'van',pending:false};
+  function discoverAppIcon(){
+    if(setting('appIconUnlocked',false)===true)return;
+    if(++iconDiscoveries>=7)set('appIconUnlocked',true);
+  }
+  async function changeAppIcon(){
+    const current=iconStatus();
+    if(current.supported!==true||current.pending||iconSwitchPending||typeof hooks.setAppIcon!=='function')return;
+    iconSwitchPending=true;iconSwitchError=false;
+    const next=current.choice==='ear'?'van':'ear';
+    try{
+      const result=await hooks.setAppIcon(next);
+      if(result?.supported!==true||result.choice!==next)throw new Error('The selected icon was not confirmed.');
+    }catch(_){iconSwitchError=true;}
+    finally{iconSwitchPending=false;}
+  }
+  function appIconLabel(){
+    const current=iconStatus(),name=current.choice==='ear'?'EAR':'VAN';
+    if(iconSwitchPending||current.pending)return `${name} · CHANGING`;
+    return iconSwitchError||current.error?`${name} · RETRY`:name;
+  }
 
   function clearExpiredArm() {
     const t = now();
@@ -492,6 +515,13 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
               ? 'AUTHORED FRAME MOTION · FOUR GAME-OWNED PANES'
               : ''),
           },
+          { id: 'desktopFightEffects', label: 'DESKTOP FIGHT EFFECTS',
+            value: () => setting('desktopFightEffects', false) === true ? 'ON' : 'OFF',
+            adjust: () => {
+              const enabled = setting('desktopFightEffects', false) !== true;
+              set('desktopFightEffects', enabled);
+              hooks.onDesktopFightEffectsChange?.(enabled);
+            } },
           { id: 'profileFiles', label: 'INTERFERENCE FILES',
             value: () => psychProfile().modules.fieldReturnFiles ? 'ON' : 'OFF',
             adjust: () => setPsychModule('fieldReturnFiles', !psychProfile().modules.fieldReturnFiles) },
@@ -643,7 +673,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         id: 'system', name: 'ABOUT',
         rows: [
           section('Chunk Surfer'),
-          { id: 'about:version', label: 'VERSION', value: () => hooks.version?.() || '0.1.0' },
+          { id: 'about:version', label: 'VERSION', value: () => hooks.version?.() || '0.1.0',activate:discoverAppIcon },
+          { id: 'about:appIcon',label:'APP ICON',value:appIconLabel,activate:changeAppIcon,
+            visible:()=>setting('appIconUnlocked',false)===true&&iconStatus().supported===true },
           { id: 'about:build', label: 'BUILD', value: () => hooks.build?.() || 'LOCAL' },
           { id: 'about:website', label: 'WEBSITE', value: () => 'cbassuarez.com', activate: () => hooks.openWebsite?.() },
           { id: 'about:report', label: 'REPORT A PROBLEM', value: () => inputPrompt('confirm'), activate: () => hooks.reportProblem?.() },
@@ -669,7 +701,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
   let tab = Math.max(0, tabs.findIndex((t) => t.id === rememberedTab));
   if (tab < 0) tab = 0;
   let sel = 0;
-  const rowsOf = () => tabs[tab].rows;
+  const rowsOf = () => tabs[tab].rows.filter(row=>!row.visible||row.visible());
   const clampSel = () => {
     const rows = rowsOf();
     sel = Math.max(0, Math.min(rows.length - 1, sel));
@@ -732,6 +764,12 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
     pointer,
 
+    debugState(){
+      clampSel();
+      return{tab:tabs[tab].id,selectedId:rowsOf()[sel]?.id||null,
+        rows:rowsOf().map(row=>({id:row.id||null,label:row.label,value:row.value?.()||''}))};
+    },
+
     key(e) {
       const raw=e.key||'', k=raw.toLowerCase(), code=e.code||'';
 
@@ -752,6 +790,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { if(isSelectable(row) && row.adjust){ row.adjust(1); armed = null; AUDIO.menuMove(); } return true; }
 
       if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') {
+        if(['about:version','about:appIcon'].includes(row?.id)&&e.repeat)return true;
         return activateRow(row);
       }
 

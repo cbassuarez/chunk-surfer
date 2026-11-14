@@ -83,11 +83,11 @@ function solveCrash(){
 export const VAN_WRECK_CRASH=freeze(solveCrash());
 
 export const VAN_WRECK=freeze({
-  revision:'van-wreck-4',
+  revision:'van-wreck-5',
   front:-2.272,
-  // The FIELD lettering is bent with the panels it is painted on (brand), so
+  // The ALBION lettering is bent with the panels it is painted on (brand), so
   // it creases, racks and dents with the metal instead of riding a frame.
-  meshes:{hull:'van_wreck_hull',cabDoor:'van_wreck_cab_door',rearDoor:'van_wreck_rear_door',cabDoorNear:'van_wreck_cab_door_near',rearDoorFar:'van_wreck_rear_door_far',brand:'van_wreck_brand'},
+  meshes:{hull:'van_wreck_hull',cabDoor:'van_wreck_cab_door',rearDoor:'van_wreck_rear_door',cabDoorNear:'van_wreck_cab_door_near',rearDoorFar:'van_wreck_rear_door_far',brand:'van_wreck_brand',brandRearDoor:'van_wreck_brand_rear_door',brandRearDoorFar:'van_wreck_brand_rear_door_far'},
   brandSource:'van_brand_drive',
   twist:{axisY:1.0,angle:VAN_WRECK_CRASH.twist,from:.8,span:3.0},
   fold:{hingeY:.25,hingeZ:.05,angle:VAN_WRECK_CRASH.fold,span:.3},

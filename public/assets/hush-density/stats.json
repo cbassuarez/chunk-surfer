@@ -1,37 +1,79 @@
 {
-  "kind": "production-hush-density",
-  "identity": "The Thick Part",
-  "source": "tools/chunk_surfer/build-hush-density-study.py",
-  "concept": "artifacts/hush-mythology-directions/density.png",
+  "kind": "production-hush-last-posture",
+  "identity": "The Last Posture",
+  "modelRevision": "last-posture-anatomy-3",
+  "source": "tools/chunk_surfer/build-hush-last-posture.py",
+  "editableSource": "assets/source/hush-last-posture.blend",
+  "concept": "artifacts/route-completion-and-hush/hush-directions/last-posture-v2.png",
   "blender": "4.5.3 LTS",
+  "globalReplacement": true,
+  "asset": "public/assets/hush-density.glb",
+  "sha256": "ee79a62f65255fad8d107a85cffcbf2050b3aed2b6b02c638c033f38c1a8bca5",
+  "bytes": 2079880,
   "units": "metres",
   "forward": "-Z",
-  "mesh": "hush_density_core / hush_density_return / hush_density_volume",
-  "globalReplacement": true,
-  "bytes": 4683904,
-  "sha256": "bcb293cf38e1e5492920fe4eeca46037b66f82bd0b8fc449b7b16093c21a21e8",
-  "vertices": 22002,
-  "triangles": 44000,
+  "vertices": 11833,
+  "triangles": 23662,
+  "visibleTriangleBudget": 44000,
+  "meshes": {
+    "hush_density_core": {
+      "vertices": 11506,
+      "triangles": 22361
+    },
+    "hush_density_return": {
+      "vertices": 1034,
+      "triangles": 1301
+    },
+    "hush_density_volume": {
+      "vertices": 11833,
+      "triangles": 23662
+    }
+  },
+  "combinedExportedVertices": 24373,
   "joints": [
-    "density_root",
-    "fold_A_0",
-    "fold_A_1",
-    "fold_A_2",
-    "fold_A_3",
-    "fold_A_4",
-    "fold_A_5",
-    "fold_B_0",
-    "fold_B_1",
-    "fold_B_2",
-    "fold_B_3",
-    "fold_B_4",
-    "fold_B_5",
-    "fold_C_0",
-    "fold_C_1",
-    "fold_C_2",
-    "fold_C_3",
-    "fold_C_4",
-    "fold_C_5"
+    "posture_root",
+    "pelvis",
+    "spine_low",
+    "spine_mid",
+    "chest",
+    "neck",
+    "head",
+    "thigh_L",
+    "shin_L",
+    "foot_L",
+    "toe_L",
+    "thigh_R",
+    "shin_R",
+    "foot_R",
+    "toe_R",
+    "clavicle_L",
+    "upper_arm_L",
+    "forearm_L",
+    "hand_L",
+    "thumb_L_01",
+    "thumb_L_02",
+    "index_L_01",
+    "index_L_02",
+    "middle_L_01",
+    "middle_L_02",
+    "ring_L_01",
+    "ring_L_02",
+    "little_L_01",
+    "little_L_02",
+    "clavicle_R",
+    "upper_arm_R",
+    "forearm_R",
+    "hand_R",
+    "thumb_R_01",
+    "thumb_R_02",
+    "index_R_01",
+    "index_R_02",
+    "middle_R_01",
+    "middle_R_02",
+    "ring_R_01",
+    "ring_R_02",
+    "little_R_01",
+    "little_R_02"
   ],
   "jointBindPositions": [
     [
@@ -40,1547 +82,644 @@
       0.0
     ],
     [
-      -0.29744251129117655,
-      0.11929133486960082,
-      0.08452239399192238
+      -8.881765698781506e-18,
+      1.2031974940780472,
+      0.038399920023767464
     ],
     [
-      -0.32014287183308093,
-      0.346070990984568,
-      0.10880001097008338
+      -0.009193617221084471,
+      1.3255491303589524,
+      0.08330651623970177
     ],
     [
-      -0.33716814223950914,
-      0.6767913228188952,
-      0.12498508895552402
+      0.0004743244038784126,
+      1.4219060668397845,
+      0.0717548677475221
     ],
     [
-      -0.3144677816976048,
-      0.9886133499769751,
-      0.13307762794824435
+      0.10187506147606513,
+      1.6757806472568766,
+      0.1202144179939402
     ],
     [
-      -0.24636670007189188,
-      1.1775963967394478,
-      0.11689254996280371
+      0.25281522574226983,
+      1.9219703076851407,
+      0.029376900099167293
     ],
     [
-      -0.19529088885260726,
-      1.2909862247969317,
-      0.10070747197736302
+      0.36021643738849485,
+      1.926925735326534,
+      -0.05148216022186873
     ],
     [
-      -0.053413635465705225,
-      0.12874048720772446,
-      -0.06923584686976388
+      -0.155603319972748,
+      1.1720303631444224,
+      0.05323304831172681
     ],
     [
-      0.014687446160007724,
-      0.4216642096895571,
-      -0.08542092485520456
+      -0.19208844428130561,
+      0.663983533389758,
+      -0.2241641477250131
     ],
     [
-      0.003337265889055565,
-      0.8090794555526262,
-      -0.10969854183336554
+      -0.19839958678946523,
+      0.09899783748073845,
+      0.038399920023767464
     ],
     [
-      -0.02503818478832483,
-      1.196494701415695,
-      -0.14206869780424683
+      -0.173392780532226,
+      0.011898687720048897,
+      -0.13951629660870743
     ],
     [
-      0.06576325737929244,
-      1.5933590996168878,
-      -0.19871647075328916
+      0.15851362026116197,
+      1.1956334059720526,
+      0.05323304831172681
     ],
     [
-      0.20196542063071835,
-      1.8862828220987198,
-      -0.2634567826950518
+      0.10727577954633377,
+      0.6874813235270772,
+      -0.221627088256562
     ],
     [
-      0.2984419529338117,
-      0.11929133486960082,
-      0.27065079082448995
+      0.19839958678946523,
+      0.09899783748073845,
+      -0.038399920023767464
     ],
     [
-      0.3495177641530964,
-      0.2988252292939499,
-      0.27065079082448995
+      0.16629803536253615,
+      0.011898687720048897,
+      -0.2151738144351492
     ],
     [
-      0.3608679444240485,
-      0.5634014947614117,
-      0.27065079082448995
+      0.10187506147606513,
+      1.6757806472568766,
+      0.1202144179939402
     ],
     [
-      0.3154672233402399,
-      0.8090794555526262,
-      0.2625582518317696
+      -0.05082999535974301,
+      1.9291595653440297,
+      0.023931322860243347
     ],
     [
-      0.24736614171452695,
-      0.9886133499769751,
-      0.24637317384632895
+      -0.1134387656908685,
+      1.5872460025142703,
+      0.029148723476679024
     ],
     [
-      0.19061524035976626,
-      1.1114523303725823,
-      0.21400301787544762
+      -0.12748394993609508,
+      1.2375207185367296,
+      0.051972168861628525
+    ],
+    [
+      -0.13120377760608187,
+      1.1792387703874712,
+      0.08368082048493534
+    ],
+    [
+      -0.16176378818463563,
+      1.1570352442871834,
+      0.10941997575416211
+    ],
+    [
+      -0.12980836288582126,
+      1.0825038061347712,
+      0.07878889187566496
+    ],
+    [
+      -0.1362075462309377,
+      1.0444681832870741,
+      0.08090690384827275
+    ],
+    [
+      -0.12153977547691575,
+      1.0864798518571317,
+      0.04088080767523646
+    ],
+    [
+      -0.13289181259283614,
+      1.0383169690810368,
+      0.02963457143727177
+    ],
+    [
+      -0.12115613829306955,
+      1.0978270820098894,
+      0.012941300734891534
+    ],
+    [
+      -0.12964820838816257,
+      1.057631503993149,
+      -0.0041585347379416715
+    ],
+    [
+      -0.1291403657724183,
+      1.113576579135713,
+      -0.013615748035221696
+    ],
+    [
+      -0.13669518481461793,
+      1.0870455169079636,
+      -0.028659073897228615
+    ],
+    [
+      0.10187506147606513,
+      1.6757806472568766,
+      0.1202144179939402
+    ],
+    [
+      0.3964724504055654,
+      1.6487235049435345,
+      0.023931322860243347
+    ],
+    [
+      0.45908122073669094,
+      1.3068099421137753,
+      0.029148723476679014
+    ],
+    [
+      0.47312640498191755,
+      0.9570846581362348,
+      0.051972168861628525
+    ],
+    [
+      0.47177252364616123,
+      0.8971881207763067,
+      0.02322095640475371
+    ],
+    [
+      0.4399696716556285,
+      0.8782920781034069,
+      -0.0036292193845649592
+    ],
+    [
+      0.47703120845738606,
+      0.8009520634298274,
+      0.03294200321654581
+    ],
+    [
+      0.4651894595618442,
+      0.7641939825035722,
+      0.03206990123432196
+    ],
+    [
+      0.48509617029095975,
+      0.8071460442900892,
+      0.07059557073993729
+    ],
+    [
+      0.465998033384625,
+      0.761835987275566,
+      0.08313628571340885
+    ],
+    [
+      0.48499764328660744,
+      0.8198822775191261,
+      0.09793237582496157
+    ],
+    [
+      0.46953079952256244,
+      0.7823469564823566,
+      0.11615544421930962
+    ],
+    [
+      0.47636325439211685,
+      0.8366079177868596,
+      0.12367671663901461
+    ],
+    [
+      0.46398851909227734,
+      0.8123220542341663,
+      0.13930799064755967
     ]
   ],
-  "jointAxes": "Every node has explicit game X=lateral,Y=up,Z=depth axes; star-parented to density_root. No humanoid joints.",
+  "jointParents": {
+    "posture_root": null,
+    "pelvis": "posture_root",
+    "spine_low": "pelvis",
+    "spine_mid": "spine_low",
+    "chest": "spine_mid",
+    "neck": "chest",
+    "head": "neck",
+    "thigh_L": "pelvis",
+    "shin_L": "thigh_L",
+    "foot_L": "shin_L",
+    "toe_L": "foot_L",
+    "thigh_R": "pelvis",
+    "shin_R": "thigh_R",
+    "foot_R": "shin_R",
+    "toe_R": "foot_R",
+    "clavicle_L": "chest",
+    "upper_arm_L": "clavicle_L",
+    "forearm_L": "upper_arm_L",
+    "hand_L": "forearm_L",
+    "thumb_L_01": "hand_L",
+    "thumb_L_02": "thumb_L_01",
+    "index_L_01": "hand_L",
+    "index_L_02": "index_L_01",
+    "middle_L_01": "hand_L",
+    "middle_L_02": "middle_L_01",
+    "ring_L_01": "hand_L",
+    "ring_L_02": "ring_L_01",
+    "little_L_01": "hand_L",
+    "little_L_02": "little_L_01",
+    "clavicle_R": "chest",
+    "upper_arm_R": "clavicle_R",
+    "forearm_R": "upper_arm_R",
+    "hand_R": "forearm_R",
+    "thumb_R_01": "hand_R",
+    "thumb_R_02": "thumb_R_01",
+    "index_R_01": "hand_R",
+    "index_R_02": "index_R_01",
+    "middle_R_01": "hand_R",
+    "middle_R_02": "middle_R_01",
+    "ring_R_01": "hand_R",
+    "ring_R_02": "ring_R_01",
+    "little_R_01": "hand_R",
+    "little_R_02": "little_R_01"
+  },
+  "jointAxes": "glTF nodes identity rotation in game X=lateral,Y=up,Z=depth; full anatomical parent hierarchy",
   "morphs": 0,
   "restBounds": {
     "min": [
-      -0.45,
-      0.0,
-      -0.35
+      -0.28906927367924073,
+      3.3273348022408245e-19,
+      -0.31379557285562815
     ],
     "max": [
-      0.45,
-      2.05,
-      0.35
+      0.5646982950623558,
+      2.025376431237335,
+      0.18292083997350841
     ]
+  },
+  "nativeDimensionsM": {
+    "width": 0.8537675687415965,
+    "height": 2.025376431237335,
+    "depth": 0.4967164128291366
   },
   "sampledAnimatedBounds": {
     "min": [
-      -0.4507186477086314,
-      0.0,
-      -0.44252097086368974
+      -0.28906927367924073,
+      -0.027257236162759782,
+      -0.3158563530553349
     ],
     "max": [
-      0.44999999999999996,
-      2.0596217642371695,
-      0.3691757819537079
+      0.5796632263492605,
+      2.028099580581275,
+      0.18669981185174084
+    ],
+    "dimensions": [
+      0.8687325000285012,
+      2.055356816744035,
+      0.5025561649070758
     ]
   },
-  "topology": {
-    "connectedComponents": 1,
-    "euler": 2,
-    "genus": 0,
-    "throughOpenings": 0,
-    "openChannels": 2,
-    "negativeSpaceType": "Open-ended spaces between independent rounded fold crowns; no closed ring rhythm",
-    "boundaryEdges": 0,
-    "nonManifoldEdges": 0
-  },
-  "maximumSampledEdgeExtensionRatio": 3.128036762942993,
-  "baseContact": {
-    "pinnedBelowHeightM": 0.085,
-    "maximumRootRelativeBaseDriftM": 0,
-    "plantedSupportClaim": false,
-    "meaning": "Base remains fixed relative to the accepted collider root and drags with it. No world-planted feet, no additional reach or contact rules."
+  "clipBounds": {
+    "pressure_hold": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "pressure_idle": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "pressure_approach": {
+      "min": [
+        -0.28906927367924073,
+        -0.027257236162759782,
+        -0.3158563530553349
+      ],
+      "max": [
+        0.5796457626799144,
+        2.025376431237335,
+        0.18428221610046414
+      ],
+      "dimensions": [
+        0.8687150363591551,
+        2.0526336674000945,
+        0.500138569155799
+      ]
+    },
+    "pressure_limp": {
+      "min": [
+        -0.28906927367924073,
+        -0.027257236162759782,
+        -0.3158563530553349
+      ],
+      "max": [
+        0.5796457626799144,
+        2.025376431237335,
+        0.18428221610046414
+      ],
+      "dimensions": [
+        0.8687150363591551,
+        2.0526336674000945,
+        0.500138569155799
+      ]
+    },
+    "pressure_listen": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.025784429366327,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.025784429366327,
+        0.4967164128291366
+      ]
+    },
+    "pressure_load": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.028099580581275,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.028099580581275,
+        0.4967164128291366
+      ]
+    },
+    "pressure_advance": {
+      "min": [
+        -0.28906927367924073,
+        -0.027257236162759782,
+        -0.3158563530553349
+      ],
+      "max": [
+        0.5796457626799144,
+        2.025376431237335,
+        0.18428221610046414
+      ],
+      "dimensions": [
+        0.8687150363591551,
+        2.0526336674000945,
+        0.500138569155799
+      ]
+    },
+    "pressure_arrest": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "pressure_pivot": {
+      "min": [
+        -0.28906927367924073,
+        -0.027257236162759782,
+        -0.3158563530553349
+      ],
+      "max": [
+        0.5796457626799144,
+        2.025376431237335,
+        0.18428221610046414
+      ],
+      "dimensions": [
+        0.8687150363591551,
+        2.0526336674000945,
+        0.500138569155799
+      ]
+    },
+    "density_clamp": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5695681298105555,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8586374034897962,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "density_retained": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "density_release": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5695681298105555,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8586374034897962,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "density_reload": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.028099580581275,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.028099580581275,
+        0.4967164128291366
+      ]
+    },
+    "density_listen": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5646982950623558,
+        2.025784429366327,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8537675687415965,
+        2.025784429366327,
+        0.4967164128291366
+      ]
+    },
+    "density_idle": {
+      "min": [
+        -0.28906927367924073,
+        -2.7582276567079784e-17,
+        -0.31379557285562815
+      ],
+      "max": [
+        0.5695681298105555,
+        2.025376431237335,
+        0.18292083997350841
+      ],
+      "dimensions": [
+        0.8586374034897962,
+        2.025376431237335,
+        0.4967164128291366
+      ]
+    },
+    "density_chase": {
+      "min": [
+        -0.28906927367924073,
+        -0.027257236162759782,
+        -0.3158563530553349
+      ],
+      "max": [
+        0.5796632263492605,
+        2.025376431237335,
+        0.18669981185174084
+      ],
+      "dimensions": [
+        0.8687325000285012,
+        2.0526336674000945,
+        0.5025561649070758
+      ]
+    }
   },
   "clips": {
-    "pressure_hold": 1,
+    "pressure_hold": 1.0,
     "pressure_idle": 9.6,
     "pressure_approach": 2.4,
     "pressure_limp": 3.4,
     "pressure_listen": 4.8,
     "pressure_load": 0.5,
     "pressure_advance": 0.72,
-    "pressure_arrest": 1,
+    "pressure_arrest": 1.0,
     "pressure_pivot": 0.72,
     "density_clamp": 2.2,
-    "density_retained": 1,
+    "density_retained": 1.0,
     "density_release": 1.5,
     "density_reload": 0.5,
     "density_listen": 4.8,
     "density_idle": 6.4,
     "density_chase": 2.4
   },
-  "poseStates": {
-    "N": "Neutral fixed density",
-    "L": "Loaded inward stack",
-    "R": "Retained wrong correction"
+  "topology": {
+    "boundaryEdges": 0,
+    "nonManifoldEdges": 0,
+    "connectedComponents": 1
   },
-  "clipEndpoints": {
-    "pressure_hold": "N\u2192N",
-    "pressure_idle": "N\u2192N",
-    "pressure_arrest": "R\u2192R",
-    "density_retained": "R\u2192R",
-    "pressure_load": "N\u2192L",
-    "density_reload": "R\u2192L",
-    "pressure_advance": "L\u2192R",
-    "pressure_pivot": "L\u2192R",
-    "pressure_listen": "N\u2192R",
-    "density_listen": "R\u2192R",
-    "density_clamp": "N\u2192R",
-    "density_release": "R\u2192N",
-    "pressure_approach": "R\u2192R, exact finite correction repeated only while clock advances",
-    "pressure_limp": "Retimed approach, not an injury",
-    "density_chase": "R\u2192R, finite accepted-displacement launch/carry/reach phrase; no root travel",
-    "density_idle": "R\u2192R, finite asynchronous curl packet; do not auto-loop"
+  "construction": "Retained CC0 MakeHuman hm08 anatomical quad topology and authored envelopes; exact-length asymmetric skeletal retarget, retained skull and mandible with a shallow anonymized facial plane, terminal lateral head/shoulder collapse, actual hands/phalanges and uneven bent-knee support. No voxel remesh, capsule union, old pressure sculpt or costume.",
+  "sourceHashes": {
+    "base.obj": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+    "default_weights.mhw": "0f3641d651ae3d00ad6b4ccee43142edb109d3bd909d27d9e4139ef1beed8625",
+    "default.mhskel": "99f179bce0aa850b45d4191a1d0d234c5851f881c057439470ded3bddf729a24",
+    "LICENSE.ASSETS.md": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+    "caucasian-male-old.target.gz": "123cb7758c86aa2aa71d80ea0c8f5f4b3e96f394180edc1682e34720c4949df6",
+    "universal-male-old-averagemuscle-averageweight.target.gz": "3721ecc3f7a6af1d7c22ef20c709b1d37402445b3d203fe31e762b12356b59a6",
+    "caucasian-male-young.target.gz": "ffe69537e53148edff2776204ba48cf3bf1f3cbc72966592c8a562ab80b07333",
+    "universal-male-young-averagemuscle-averageweight.target.gz": "e814651195c53971503d9823d6841216718a561951ef064f81d132297f4fa494"
   },
-  "exactCorrectionReference": {
-    "pulseSeconds": 0.6,
-    "pressureListenStarts": [
-      0.28,
-      1.18
+  "retainedEditableQuads": 11880,
+  "rootPolicy": "No root clip channels, root displacement or root yaw; simulation owns accepted movement/knowledge/contact.",
+  "supportContract": {
+    "referenceClip": "pressure_hold",
+    "referenceTime": 0,
+    "chains": {
+      "L": [
+        "thigh_L",
+        "shin_L",
+        "foot_L"
+      ],
+      "R": [
+        "thigh_R",
+        "shin_R",
+        "foot_R"
+      ]
+    },
+    "rightGatherPhase": [
+      0.08,
+      0.43
     ],
-    "densityClampStarts": [
-      0.2,
-      1.08
+    "leftGatherPhase": [
+      0.58,
+      0.93
     ],
-    "description": "Identical piecewise capture/hold/recoil/correction curves, not noise, generic sine breathing or perpetual idle."
+    "cycleMetres": 1.1,
+    "soleBelowAnkleM": {
+      "L": 0.09899783748073845,
+      "R": 0.09899783748073845
+    },
+    "worldPlantingClaim": false,
+    "meaning": "Embedded weight transfer is not sufficient for world planting. Runtime must retain accepted-world support offsets and release each foot during its finite gather."
   },
-  "transitionSeams": [
-    {
-      "id": "hold-load",
-      "maximumVertexDifferenceM": 0.0
-    },
-    {
-      "id": "load-advance",
-      "maximumVertexDifferenceM": 0.0
-    },
-    {
-      "id": "advance-retained",
-      "maximumVertexDifferenceM": 4.47545209131181e-16
-    },
-    {
-      "id": "retained-reload",
-      "maximumVertexDifferenceM": 0.0
-    },
-    {
-      "id": "reload-advance",
-      "maximumVertexDifferenceM": 1.1102230246251565e-16
-    },
-    {
-      "id": "retained-listen",
-      "maximumVertexDifferenceM": 0.0
-    },
-    {
-      "id": "approach-loop",
-      "maximumVertexDifferenceM": 0.0
-    }
-  ],
-  "windowDepthProbes": [
-    {
-      "pose": "neutral",
-      "heightM": 0.5,
-      "clearRunsM": [
-        [
-          -0.23249999999999998,
-          -0.14250000000000002
-        ],
-        [
-          0.18000000000000005,
-          0.26249999999999996
-        ]
-      ],
-      "widthsM": [
-        0.08999999999999997,
-        0.0824999999999999
-      ]
-    },
-    {
-      "pose": "neutral",
-      "heightM": 0.78,
-      "clearRunsM": [
-        [
-          -0.255,
-          -0.09750000000000003
-        ],
-        [
-          0.16500000000000004,
-          0.24
-        ]
-      ],
-      "widthsM": [
-        0.15749999999999997,
-        0.07499999999999996
-      ]
-    },
-    {
-      "pose": "neutral",
-      "heightM": 1.04,
-      "clearRunsM": [
-        [
-          -0.23249999999999998,
-          -0.16499999999999998
-        ],
-        [
-          0.08250000000000002,
-          0.12749999999999995
-        ]
-      ],
-      "widthsM": [
-        0.0675,
-        0.04499999999999993
-      ]
-    },
-    {
-      "pose": "loaded",
-      "heightM": 0.5,
-      "clearRunsM": [
-        [
-          -0.22499999999999998,
-          -0.14250000000000002
-        ],
-        [
-          0.1725,
-          0.24749999999999994
-        ]
-      ],
-      "widthsM": [
-        0.08249999999999996,
-        0.07499999999999996
-      ]
-    },
-    {
-      "pose": "loaded",
-      "heightM": 0.78,
-      "clearRunsM": [
-        [
-          -0.23249999999999998,
-          -0.1275
-        ],
-        [
-          0.15000000000000002,
-          0.21750000000000003
-        ]
-      ],
-      "widthsM": [
-        0.10499999999999998,
-        0.0675
-      ]
-    },
-    {
-      "pose": "loaded",
-      "heightM": 1.04,
-      "clearRunsM": [
-        [
-          -0.20999999999999996,
-          -0.18
-        ],
-        [
-          0.05999999999999994,
-          0.11250000000000004
-        ]
-      ],
-      "widthsM": [
-        0.02999999999999997,
-        0.0525000000000001
-      ]
-    },
-    {
-      "pose": "retained",
-      "heightM": 0.5,
-      "clearRunsM": [
-        [
-          -0.23249999999999998,
-          -0.14250000000000002
-        ],
-        [
-          0.1725,
-          0.255
-        ]
-      ],
-      "widthsM": [
-        0.08999999999999997,
-        0.08250000000000002
-      ]
-    },
-    {
-      "pose": "retained",
-      "heightM": 0.78,
-      "clearRunsM": [
-        [
-          -0.2475,
-          -0.11249999999999999
-        ],
-        [
-          0.15749999999999997,
-          0.22499999999999998
-        ]
-      ],
-      "widthsM": [
-        0.135,
-        0.0675
-      ]
-    },
-    {
-      "pose": "retained",
-      "heightM": 1.04,
-      "clearRunsM": [
-        [
-          -0.22499999999999998,
-          -0.1725
-        ],
-        [
-          0.0675,
-          0.12
-        ]
-      ],
-      "widthsM": [
-        0.05249999999999999,
-        0.05249999999999999
-      ]
-    },
-    {
-      "pose": "peak-clamp",
-      "heightM": 0.5,
-      "clearRunsM": [
-        [
-          -0.22499999999999998,
-          -0.135
-        ],
-        [
-          0.1725,
-          0.24749999999999994
-        ]
-      ],
-      "widthsM": [
-        0.08999999999999997,
-        0.07499999999999996
-      ]
-    },
-    {
-      "pose": "peak-clamp",
-      "heightM": 0.78,
-      "clearRunsM": [
-        [
-          -0.23249999999999998,
-          -0.135
-        ],
-        [
-          0.14249999999999996,
-          0.20999999999999996
-        ]
-      ],
-      "widthsM": [
-        0.09749999999999998,
-        0.0675
-      ]
-    },
-    {
-      "pose": "peak-clamp",
-      "heightM": 1.04,
-      "clearRunsM": [
-        [
-          -0.20999999999999996,
-          -0.18
-        ],
-        [
-          0.05999999999999994,
-          0.11250000000000004
-        ]
-      ],
-      "widthsM": [
-        0.02999999999999997,
-        0.0525000000000001
-      ]
-    }
-  ],
-  "renderContract": {
-    "submit": "Direct props3d pressure instance, character.clip/time/loop only unless deliberate fold-joint override",
-    "omit": [
-      "legacy humanoid support descriptor",
-      "old chest/head/clavicle override map",
-      "cue-zero morph overrides"
-    ],
-    "material": "Current pressure negative mass and radiance through actual acquisition and final dither. Grey material is diagnostic only."
-  },
+  "idlePolicy": "pressure_hold/idle/arrest/density_retained are the identical still terminal pose. Other responses finite, bounded and return to the same collapsed endpoint. No breathing loop.",
+  "returnSurfaceFraction": 0.05498267263967543,
   "limits": [
-    "Existing gameplay root/contact/hearing/audio contracts remain authoritative.",
-    "Global integration is authorized; native render, collision-clearance and human fear acceptance remain separate validation.",
-    "The base is root-relative traction, not world-planted feet.",
-    "Strong folds can intentionally overlap in depth; sampled strain is not proof of all-time self-collision absence."
+    "CPU geometry, rig, sampled deformation and loader checks do not establish final-dither appearance or human fear.",
+    "Runtime support anchoring and swept-world door clearance require separate integrated verification.",
+    "No proof of complete self-collision avoidance follows from manifold topology."
   ],
-  "asset": "public/assets/hush-density.glb",
-  "meshes": {
-    "hush_density_core": {
-      "vertices": 20399,
-      "triangles": 40328
-    },
-    "hush_density_return": {
-      "vertices": 2081,
-      "triangles": 3672
-    },
-    "hush_density_volume": {
-      "vertices": 22002,
-      "triangles": 44000
-    },
-    "combinedExportedVertices": 44482,
-    "uniqueSculptVertices": 22002,
-    "returnTriangleFraction": 0.08345454545454545,
-    "surfaceSelection": "Deterministic inward-face normal zones,~8.35% of original triangles. Complementary core/return partitions share exact geometric positions, normals and skin values. Fullvolume is a separate render route, not another creature."
-  },
-  "geometryVertexBudgetMeaning": "Unique sculpt vertices and compact core/return/fullvolume exported entry vertices are both reported. Combined exported vertices<=50000.",
-  "rigControls": [
-    {
-      "name": "fold_A_0",
-      "fold": "A",
-      "station": 0,
-      "normalizedStation": 0.0,
-      "pivotM": [
-        -0.29744251129117655,
-        0.11929133486960082,
-        0.08452239399192238
-      ],
-      "tangentAxis": [
-        -0.09904069319745205,
-        0.9894298508274658,
-        0.10592219494755126
-      ],
-      "curlAxis": [
-        -0.9950274566530036,
-        -0.099601006554426,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": true,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.0,
-        "translationM": 0.0
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_A_1",
-      "fold": "A",
-      "station": 1,
-      "normalizedStation": 0.2,
-      "pivotM": [
-        -0.32014287183308093,
-        0.346070990984568,
-        0.10880001097008338
-      ],
-      "tangentAxis": [
-        -0.07089099111180533,
-        0.9948671864254897,
-        0.07220629302918023
-      ],
-      "curlAxis": [
-        -0.9974708658346018,
-        -0.07107652081503389,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.017,
-        "translationM": 0.008
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_A_2",
-      "fold": "A",
-      "station": 2,
-      "normalizedStation": 0.4,
-      "pivotM": [
-        -0.33716814223950914,
-        0.6767913228188952,
-        0.12498508895552402
-      ],
-      "tangentAxis": [
-        0.008825601337032578,
-        0.9992480413965598,
-        0.0377552715018589
-      ],
-      "curlAxis": [
-        -0.9999609980252516,
-        0.008831898343095891,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.034,
-        "translationM": 0.016
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_A_3",
-      "fold": "A",
-      "station": 3,
-      "normalizedStation": 0.6,
-      "pivotM": [
-        -0.3144677816976048,
-        0.9886133499769751,
-        0.13307762794824435
-      ],
-      "tangentAxis": [
-        0.17837974390990563,
-        0.9838332817426192,
-        -0.015897820548242226
-      ],
-      "curlAxis": [
-        -0.9839576326697833,
-        0.17840229009425834,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.051000000000000004,
-        "translationM": 0.024
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_A_4",
-      "fold": "A",
-      "station": 4,
-      "normalizedStation": 0.8,
-      "pivotM": [
-        -0.24636670007189188,
-        1.1775963967394478,
-        0.11689254996280371
-      ],
-      "tangentAxis": [
-        0.36487987908360225,
-        0.9257648472675217,
-        -0.09910661634662933
-      ],
-      "curlAxis": [
-        -0.9303451032545688,
-        0.3666851358457903,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.068,
-        "translationM": 0.032
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_A_5",
-      "fold": "A",
-      "station": 5,
-      "normalizedStation": 1.0,
-      "pivotM": [
-        -0.19529088885260726,
-        1.2909862247969317,
-        0.10070747197736302
-      ],
-      "tangentAxis": [
-        0.4072670135619121,
-        0.9041449472629046,
-        -0.12905616608020276
-      ],
-      "curlAxis": [
-        -0.9117698179387234,
-        0.4107015937344135,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.085,
-        "translationM": 0.04
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_B_0",
-      "fold": "B",
-      "station": 0,
-      "normalizedStation": 0.0,
-      "pivotM": [
-        -0.053413635465705225,
-        0.12874048720772446,
-        -0.06923584686976388
-      ],
-      "tangentAxis": [
-        0.22612091751268806,
-        0.9726156957808904,
-        -0.05374047807634864
-      ],
-      "curlAxis": [
-        -0.974023221279948,
-        0.22644814948997372,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": true,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.0,
-        "translationM": 0.0
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_B_1",
-      "fold": "B",
-      "station": 1,
-      "normalizedStation": 0.2,
-      "pivotM": [
-        0.014687446160007724,
-        0.4216642096895571,
-        -0.08542092485520456
-      ],
-      "tangentAxis": [
-        0.08298130386099942,
-        0.9947932687058749,
-        -0.0591646494708562
-      ],
-      "curlAxis": [
-        -0.9965389680097536,
-        0.08312692246231297,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.017,
-        "translationM": 0.008
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_B_2",
-      "fold": "B",
-      "station": 2,
-      "normalizedStation": 0.4,
-      "pivotM": [
-        0.003337265889055565,
-        0.8090794555526262,
-        -0.10969854183336554
-      ],
-      "tangentAxis": [
-        -0.051066901169237795,
-        0.9960368457168947,
-        -0.07282014542219846
-      ],
-      "curlAxis": [
-        -0.998688274267772,
-        -0.05120284015618109,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.034,
-        "translationM": 0.016
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_B_3",
-      "fold": "B",
-      "station": 3,
-      "normalizedStation": 0.6,
-      "pivotM": [
-        -0.02503818478832483,
-        1.196494701415695,
-        -0.14206869780424683
-      ],
-      "tangentAxis": [
-        0.07884258523983398,
-        0.9905270739460156,
-        -0.11242758795173009
-      ],
-      "curlAxis": [
-        -0.996847164287529,
-        0.07934564292960428,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.051000000000000004,
-        "translationM": 0.024
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_B_4",
-      "fold": "B",
-      "station": 4,
-      "normalizedStation": 0.8,
-      "pivotM": [
-        0.06576325737929244,
-        1.5933590996168878,
-        -0.19871647075328916
-      ],
-      "tangentAxis": [
-        0.30832143919554295,
-        0.9368858512902623,
-        -0.16487204670443548
-      ],
-      "curlAxis": [
-        -0.9498850625648353,
-        0.3125993728659721,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.068,
-        "translationM": 0.032
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_B_5",
-      "fold": "B",
-      "station": 5,
-      "normalizedStation": 1.0,
-      "pivotM": [
-        0.20196542063071835,
-        1.8862828220987198,
-        -0.2634567826950518
-      ],
-      "tangentAxis": [
-        0.4134050753514093,
-        0.889091264587894,
-        -0.19650182418286907
-      ],
-      "curlAxis": [
-        -0.9067701459238718,
-        0.42162531050827606,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.085,
-        "translationM": 0.04
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_C_0",
-      "fold": "C",
-      "station": 0,
-      "normalizedStation": 0.0,
-      "pivotM": [
-        0.2984419529338117,
-        0.11929133486960082,
-        0.27065079082448995
-      ],
-      "tangentAxis": [
-        0.2736333227952087,
-        0.9618340837462838,
-        0.0
-      ],
-      "curlAxis": [
-        -0.9618340837462838,
-        0.2736333227952087,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": true,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.0,
-        "translationM": 0.0
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_C_1",
-      "fold": "C",
-      "station": 1,
-      "normalizedStation": 0.2,
-      "pivotM": [
-        0.3495177641530964,
-        0.2988252292939499,
-        0.27065079082448995
-      ],
-      "tangentAxis": [
-        0.13919579530500292,
-        0.990264878994205,
-        0.0
-      ],
-      "curlAxis": [
-        -0.9902648789942051,
-        0.13919579530500295,
-        0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.017,
-        "translationM": 0.008
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_C_2",
-      "fold": "C",
-      "station": 2,
-      "normalizedStation": 0.4,
-      "pivotM": [
-        0.3608679444240485,
-        0.5634014947614117,
-        0.27065079082448995
-      ],
-      "tangentAxis": [
-        -0.06657607282499295,
-        0.9976558878569037,
-        -0.015822640476682845
-      ],
-      "curlAxis": [
-        -0.9977807958556028,
-        -0.06658440824817746,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.034,
-        "translationM": 0.016
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_C_3",
-      "fold": "C",
-      "station": 3,
-      "normalizedStation": 0.6,
-      "pivotM": [
-        0.3154672233402399,
-        0.8090794555526262,
-        0.2625582518317696
-      ],
-      "tangentAxis": [
-        -0.25750867233182667,
-        0.9647048565082144,
-        -0.05508015525908826
-      ],
-      "curlAxis": [
-        -0.9661715667920712,
-        -0.2579001813154742,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.051000000000000004,
-        "translationM": 0.024
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_C_4",
-      "fold": "C",
-      "station": 4,
-      "normalizedStation": 0.8,
-      "pivotM": [
-        0.24736614171452695,
-        0.9886133499769751,
-        0.24637317384632895
-      ],
-      "tangentAxis": [
-        -0.37751693952463,
-        0.9142897018715885,
-        -0.14681723816881528
-      ],
-      "curlAxis": [
-        -0.9243058162409951,
-        -0.381652666783645,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.068,
-        "translationM": 0.032
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    },
-    {
-      "name": "fold_C_5",
-      "fold": "C",
-      "station": 5,
-      "normalizedStation": 1.0,
-      "pivotM": [
-        0.19061524035976626,
-        1.1114523303725823,
-        0.21400301787544762
-      ],
-      "tangentAxis": [
-        -0.4078904762432454,
-        0.8828908267303798,
-        -0.23265671592585754
-      ],
-      "curlAxis": [
-        -0.9078018912084493,
-        -0.41939924453718647,
-        -0.0
-      ],
-      "splayAxis": [
-        0,
-        0,
-        1
-      ],
-      "rootPin": false,
-      "suggestedSecondaryAdditive": {
-        "rotationRadians": 0.085,
-        "translationM": 0.04
-      },
-      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
-    }
-  ],
-  "nativeWidthM": 0.9,
-  "recommendedDefaultScale": [
-    1,
-    1,
-    1
-  ],
-  "runtimeWidthPolicy": "Do not reinterpret legacy actor.widthM=.68 as mandatory default squeeze. Door squeezing requires an observed clearance rule; ordinary default native width is .90m.",
-  "sourceHumanReferencePreserved": "public/assets/pressure-character.glb",
-  "idlePolicy": "density_idle is one finite6.4s asynchronous travelling packet,R\u2192R. pressure_idle remains a static compatibility alias. Do not loop idle continuously or synchronize all folds.",
-  "locomotionPolicy": "pressure_approach/limp are closedR\u2192R tip-capture\u2192travellingcontraction\u2192drag/release cycles, phase owned by accepted displacement and capped at2cycles/s. pressure_advance adds the same finite wave toL\u2192R. No biped gait, foot IK or root translation.",
-  "productionCredit": "Entirely original procedural nonhuman geometry and authored spatial rig/curves. No MakeHuman geometry or human textures used.",
-  "modelRevision": "density-raked-load-2",
-  "modelConstruction": "Three unequal solid cupped folds: low resisting brace, high forward-raked leading mass and shorter rear return; one continuous low load bridge and two open-ended channels. Same native rest envelope and root.",
-  "chasePhrase": "density_chase: finite distal commitment, broad lower loading, delayed rear carry and retained return; no baked root travel or additional contact reach.",
-  "maximumSampledRadialEnvelopeM": 0.5615985705125993,
-  "nativeDimensionsM": {
-    "width": 0.9,
-    "height": 2.05,
-    "depth": 0.7
-  },
-  "authoredScaleRange": [
-    0.9,
-    1.16
-  ],
-  "poseJointDeltas": {
-    "columns": [
-      "dx",
-      "dy",
-      "dz",
-      "eulerX",
-      "eulerY",
-      "eulerZ"
-    ],
-    "N": [
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ]
-    ],
-    "L": [
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.005000000000000001,
-        -0.0016,
-        -0.0032,
-        0.007000000000000001,
-        -0.009,
-        -0.011000000000000001
-      ],
-      [
-        0.025,
-        -0.008,
-        -0.016,
-        0.035,
-        -0.045,
-        -0.055
-      ],
-      [
-        0.02125,
-        -0.0068,
-        -0.0136,
-        0.029750000000000002,
-        -0.03825,
-        -0.04675
-      ],
-      [
-        0.015,
-        -0.0048,
-        -0.0096,
-        0.021,
-        -0.027,
-        -0.033
-      ],
-      [
-        0.0075,
-        -0.0024,
-        -0.0048,
-        0.0105,
-        -0.0135,
-        -0.0165
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        -0.004,
-        -0.009,
-        0.016,
-        -0.020000000000000004,
-        0.010000000000000002,
-        0.014000000000000002
-      ],
-      [
-        -0.02,
-        -0.045,
-        0.08,
-        -0.1,
-        0.05,
-        0.07
-      ],
-      [
-        -0.02,
-        -0.045,
-        0.08,
-        -0.1,
-        0.05,
-        0.07
-      ],
-      [
-        -0.115,
-        -0.19,
-        0.14,
-        -0.18,
-        0.1,
-        0.2
-      ],
-      [
-        -0.145,
-        -0.23,
-        0.175,
-        -0.22,
-        0.12,
-        0.25
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        -0.004,
-        -0.0044,
-        0.005000000000000001,
-        -0.007000000000000001,
-        0.011000000000000001,
-        0.011000000000000001
-      ],
-      [
-        -0.02,
-        -0.022,
-        0.025,
-        -0.035,
-        0.055,
-        0.055
-      ],
-      [
-        -0.017,
-        -0.018699999999999998,
-        0.02125,
-        -0.029750000000000002,
-        0.04675,
-        0.04675
-      ],
-      [
-        -0.012,
-        -0.013199999999999998,
-        0.015,
-        -0.021,
-        0.033,
-        0.033
-      ],
-      [
-        -0.006,
-        -0.006599999999999999,
-        0.0075,
-        -0.0105,
-        0.0165,
-        0.0165
-      ]
-    ],
-    "R": [
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0024000000000000002,
-        0.0016,
-        -0.0024000000000000002,
-        0.005000000000000001,
-        -0.005000000000000001,
-        -0.005000000000000001
-      ],
-      [
-        0.012,
-        0.008,
-        -0.012,
-        0.025,
-        -0.025,
-        -0.025
-      ],
-      [
-        0.0102,
-        0.0068,
-        -0.0102,
-        0.02125,
-        -0.02125,
-        -0.02125
-      ],
-      [
-        0.0072,
-        0.0048,
-        -0.0072,
-        0.015,
-        -0.015,
-        -0.015
-      ],
-      [
-        0.0036,
-        0.0024,
-        -0.0036,
-        0.0075,
-        -0.0075,
-        -0.0075
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        -0.0024000000000000002,
-        -0.0036,
-        0.007000000000000001,
-        -0.009,
-        0.007000000000000001,
-        0.005000000000000001
-      ],
-      [
-        -0.012,
-        -0.018,
-        0.035,
-        -0.045,
-        0.035,
-        0.025
-      ],
-      [
-        -0.012,
-        -0.018,
-        0.035,
-        -0.045,
-        0.035,
-        0.025
-      ],
-      [
-        -0.018,
-        -0.025,
-        0.035,
-        -0.045,
-        0.035,
-        0.025
-      ],
-      [
-        -0.025,
-        -0.035,
-        0.05,
-        -0.055,
-        0.045,
-        0.05
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        -0.002,
-        -0.0028000000000000004,
-        0.0024000000000000002,
-        -0.003,
-        0.007000000000000001,
-        0.005000000000000001
-      ],
-      [
-        -0.01,
-        -0.014,
-        0.012,
-        -0.015,
-        0.035,
-        0.025
-      ],
-      [
-        -0.0085,
-        -0.011899999999999999,
-        0.0102,
-        -0.01275,
-        0.029750000000000002,
-        0.02125
-      ],
-      [
-        -0.006,
-        -0.0084,
-        0.0072,
-        -0.009,
-        0.021,
-        0.015
-      ],
-      [
-        -0.003,
-        -0.0042,
-        0.0036,
-        -0.0045,
-        0.0105,
-        0.0075
-      ]
-    ]
-  }
+  "license": "Base anatomical topology and authored source envelopes CC0-1.0, MakeHuman Community. Bespoke pose/sculpt/rig/clips authored for Chunk Surfer."
 }

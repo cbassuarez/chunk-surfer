@@ -8,9 +8,9 @@
   "totalTriangles": 20986,
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
+    "sha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
     "unchangedDuringBuild": true,
-    "meshCount": 625
+    "meshCount": 626
   },
   "sourceHero": {
     "name": "conservatory_west_elevation",
@@ -817,7 +817,8 @@
       "building_dressing_batch_ground",
       "building_dressing_batch_academic",
       "building_dressing_batch_upper",
-      "building_dressing_batch_hall"
+      "building_dressing_batch_hall",
+      "hall_stage_service_steps"
     ],
     "allUnmodifiedInSourcePack": true
   },
@@ -841,7 +842,7 @@
   },
   "sourceHashes": {
     "src/data/ellery-public-front.js": "696471d8780f7a17d9dd8810227e9875d69b5fa475f47920d46535e8974fca25",
-    "src/data/glass-court-sightlines.js": "526461e1c6e47d90178a6d7915401d80b8aca9b0fe18e743e58a0e5b9450534d",
+    "src/data/glass-court-sightlines.js": "4776440b6ef702dc9c40e2e64e8aa511de25ffd86c307383653310218d86328a",
     "tools/chunk_surfer/ellery-public-front-geometry.mjs": "8bca13953cf613d1206c649b33f1852cc3db0e72561cf80b897b9f645f6c4a65",
     "tools/chunk_surfer/ellery-yard-repair.mjs": "5bd17acd5383c92bae94f9947d744ee4b71435b061b6fc7e5a8ffc9bae5489e3",
     "tools/chunk_surfer/build-ellery-public-front.mjs": "c4e40feaec6c1f5fc79e5ccfe6504224aaaf29d480e8c570a281d9a8a84ba61f"

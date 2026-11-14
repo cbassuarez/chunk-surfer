@@ -1,6 +1,7 @@
 import * as scenes from './scenes.js';
 import { flashMode, shakeMode } from './access.js';
 import { drawEncounterSplash } from '../render/encounter-view.js';
+import { createHushBattleBody } from '../render/hush-battle-body.js';
 
 export const ENCOUNTER_PHASE = Object.freeze({ HOLD:'hold', IMPACT:'impact', VERSUS:'versus', DONE:'done' });
 export const ENCOUNTER_TIMING = Object.freeze({ hold:.48, impact:.20, versus:.94 });
@@ -8,11 +9,12 @@ export const ENCOUNTER_TIMING = Object.freeze({ hold:.48, impact:.20, versus:.94
 // The splash ends automatically. Equipment belongs to the revealed battle.
 export function makeEncounterStartScene({ battle = {}, onConfirm = () => {}, fx = {}, audio = {} } = {}) {
   let phase=ENCOUNTER_PHASE.HOLD,elapsed=0,entered=false,finished=false,cancelled=false;
+  const hushBody=createHushBattleBody(battle);
   const scene={
     id:'encounter-start',blocksInput:true,blocksWorld:true,freezesBelow:true,suppressesHud:true,
     lookProfile:'battle',
-    enter(){if(entered)return;entered=true;fx.hold?.(180);},
-    exit(){cancelled=!finished;},
+    enter(){if(entered)return;entered=true;hushBody?.warm();fx.hold?.(180);},
+    exit(){cancelled=!finished;if(cancelled)hushBody?.dispose();},
     update(dt){
       if(cancelled||finished)return;
       elapsed+=Math.max(0,Math.min(.08,Number(dt)||0));
@@ -23,11 +25,15 @@ export function makeEncounterStartScene({ battle = {}, onConfirm = () => {}, fx 
         if(shakeMode()==='full')fx.shake?.(110,3);
         audio.menuConfirm?.();
       }else if(phase===ENCOUNTER_PHASE.IMPACT)phase=ENCOUNTER_PHASE.VERSUS;
-      else {phase=ENCOUNTER_PHASE.DONE;finished=true;scenes.remove(scene);onConfirm();}
+      else {
+        phase=ENCOUNTER_PHASE.DONE;finished=true;scenes.remove(scene);
+        try { if (!onConfirm(hushBody)) hushBody?.dispose(); }
+        catch (error) { hushBody?.dispose(); throw error; }
+      }
     },
     key(e){return e.key!=='Escape';},keyup(){return true;},pointer(){return true;},
     view(){return {id:scene.id,phase,elapsed,started:finished};},
-    render(){if(!finished)drawEncounterSplash(battle,{phase,progress:elapsed/(ENCOUNTER_TIMING[phase]||1),reducedMotion:shakeMode()!=='full'||flashMode()!=='full'});},
+    render(){if(!finished)drawEncounterSplash(battle,{phase,hushBody,progress:elapsed/(ENCOUNTER_TIMING[phase]||1),reducedMotion:shakeMode()!=='full'||flashMode()!=='full'});},
   };
   return scene;
 }

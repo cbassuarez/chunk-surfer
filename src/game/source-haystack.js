@@ -44,7 +44,6 @@ export const SOURCE_HAYSTACK = Object.freeze({
   // The terminal hall tops out around .62. HAYSTACK must begin ABOVE it.
   entryPressure: 0.64,
   maxPressure: 0.985,
-  riseSeconds: 48,
   movement: Object.freeze({ entry: 2.20, max: 2.48 }),
   fear: Object.freeze({
     // Hall stage 4 was ~.27 every ~560ms. Crossing into the search may never
@@ -141,23 +140,14 @@ export function sourceBracketFrame({
   });
 }
 
-export function haystackPressureFloor({ elapsed = 0, noProgressSeconds = 0 } = {}) {
-  const timeRise = smoothstep(0, SOURCE_HAYSTACK.riseSeconds, Math.max(0, elapsed));
-  const stalled = smoothstep(7, 28, Math.max(0, noProgressSeconds));
-  return clamp(
-    SOURCE_HAYSTACK.entryPressure + timeRise * 0.27 + stalled * 0.05,
-    SOURCE_HAYSTACK.entryPressure,
-    SOURCE_HAYSTACK.maxPressure,
-  );
+// One semantic search owns both the late physical hall and legacy HAYSTACK
+// saves. The real sheet can be recognized before the old phase boundary.
+export function sourceSearchSpanActive({phase='hall',hallMaxDistance=0}={}) {
+  return phase==='haystack'||phase==='hall'&&Number(hallMaxDistance)>=SOURCE_SEARCH_START_METRES;
 }
 
-export function haystackPressure({ elapsed = 0, noProgressSeconds = 0, wrongReadImpulse = 0 } = {}) {
-  const floor = haystackPressureFloor({ elapsed, noProgressSeconds });
-  return clamp(
-    floor + clamp01(wrongReadImpulse) * 0.08,
-    SOURCE_HAYSTACK.entryPressure,
-    SOURCE_HAYSTACK.maxPressure,
-  );
+export function haystackPaperOpportunityEligible({phase='hall',hallMaxDistance=0,delivered=false,claimed=false}={}) {
+  return !delivered&&!claimed&&sourceSearchSpanActive({phase,hallMaxDistance});
 }
 
 export function haystackMovementMultiplier(pressure = SOURCE_HAYSTACK.entryPressure) {

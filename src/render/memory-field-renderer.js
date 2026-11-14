@@ -37,18 +37,18 @@ export function installMemoryMeshes(rows){
       for(let col=0;col<4;col++){gl.enableVertexAttribArray(3+col);gl.vertexAttribPointer(3+col,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,col*16);gl.vertexAttribDivisor(3+col,1);}
       for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}
       gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-      pack.catalog.set(row.name,{name:row.name,nodeMatrix:identity(),instanceBuffer,extras:{memoryField:true,triangles:d.indices.length/3,bounds:memoryGeometryBounds(row)},primitives:[{vao,count:d.indices.length,indexType:gl.UNSIGNED_INT,base:row.base,emissive:row.emissive||[0,0,0],materialFactors:'gltf',metallic:row.metallic||0,roughness:row.roughness,aoStrength:1,portrait:false,alphaCut:0,materialName:row.name,materialRole:row.materialRole,nativeReceiverGeometry:d}]});
+      pack.catalog.set(row.name,{name:row.name,nodeMatrix:identity(),instanceBuffer,extras:{memoryField:true,triangles:d.indices.length/3,bounds:memoryGeometryBounds(row)},primitives:[{vao,count:d.indices.length,indexType:gl.UNSIGNED_INT,base:row.base,emissive:row.emissive||[0,0,0],materialFactors:'gltf',metallic:row.metallic||0,roughness:row.roughness,aoStrength:1,portrait:false,alphaCut:0,materialName:row.name,materialRole:row.materialRole,vegetationClass:row.vegetationClass,vegetationTransmission:row.vegetationTransmission,vegetationWetness:row.vegetationWetness,nativeReceiverGeometry:d}]});
     }
     gl.bindVertexArray(null);return true;
   };
 }
 export const installTheBag=()=>P3.installAuthoredPropMeshes?.(installMemoryMeshes(theBagGeometry()));
 
-export function createMemoryFieldRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{}}={}){
+export function createMemoryFieldRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},transformFrame=null}={}){
   let preparing=null,initialized=false,released=false,error=null,releaseRange=null,last=null,hasWheel=false,visit=null;
   function clearSource(){
-    for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
-    for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);
+    for(const name of['r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
+    for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetIndoorRain'])renderer[name]?.(0);
     for(const name of['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);
     props.setPressureInstances?.([]);props.setDriveStudyFrame?.(null);
   }
@@ -78,13 +78,14 @@ export function createMemoryFieldRenderer({renderer=R3,props=P3,resolveAsset=ass
     renderer.r3dSetPlan(rgba,size,size,material);
     renderer.r3dSetSourceScene({key:'source:memory-field',look:{roomMemoryActive:true},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});
     renderer.r3dSetLookProfile?.('explore',{transitionMs:0});
-    renderer.r3dSetLightingContext?.({ambientColor:[1,.97,.9],ambientIntensity:.3,captureExposure:1.8,whitePointScale:1,screen:'stochastic'});
+    renderer.r3dSetLightingContext?.({ambientColor:[.96,.97,1],ambientIntensity:.36,captureExposure:1.15,whitePointScale:1,screen:'stochastic'});
     renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();
     initialized=true;return true;
   }
   function render(state,look={}){
     if(!initialized||released||!visit)return false;if(error)throw Error(error);
     last=memoryFieldRenderFrame(state,visit,{...look,hasWheel});
+    if(transformFrame)last=transformFrame(last,{state,visit,look})||last;
     const sun=memoryFieldSunDirection(visit);
     renderer.r3dSetMemorySky?.({sun,day:visit.day,sunScale:look.sunScale??visit.sunScale,fault:look.skyFault||0,cloud:visit.cloud,edge:look.edge??1});
     // The closing field closes on the sun, wherever that is on the screen.

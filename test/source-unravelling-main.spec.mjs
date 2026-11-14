@@ -50,41 +50,43 @@ test('the earlier telephone passage retains its authored flurry cost',()=>{
   h.advance(5000);h.api.syncPayphoneRoad({along:100});assert.equal(h.composure,10);
 });
 
-test('speech and an embodied choice allow world decay, while pause, a world block, and hiding freeze it',()=>{
-  const elapsed=[],mixed=[],order=[];
-  let generation=0,blocksWorld=false;
+test('the retained street updates people and the phone, then crosses only at the far edge',()=>{
+  const characters=[],order=[];
+  let due=false,blocksWorld=false,blocksInput=true,focused=true;
   const sandbox={
-    usingSourceSpace:()=>true,paused:false,document:{hidden:false},px:12,py:-2200,
-    scenes:{blocksInput:()=>true,blocksWorld:()=>blocksWorld},SPEECH:{isSpeaking:()=>true},
+    usingSourceSpace:()=>true,paused:false,hushRunActive:false,
+    document:{hidden:false,hasFocus:()=>focused},px:12,py:-2200,
+    scenes:{blocksInput:()=>blocksInput,blocksWorld:()=>blocksWorld},
+    firstStrikeScene:null,horizonApproachPending:false,
+    beginHorizonInterruption(){order.push('crossing');},
     chunkSurfRuntime:{
-      bellsFrame:()=>({active:false}),setPlayerPosition(){},
-      horizonFrame:()=>({active:true,generation,unravelling:{active:true}}),
-      tickHorizon(dt){elapsed.push(dt);generation++;order.push('world');},
+      bellsFrame:()=>({active:false}),setPlayerPosition(){order.push('position');},
+      horizonFrame:()=>({active:true,preTape:true}),horizonApproachDue:()=>due,
+      tickOutskirtsCharacters(dt,options){characters.push({dt,...options});order.push('characters');},
     },
-    R3:{r3dFacing:()=>0},endSourceHaystackMosh(){},endSourceBracketPresence(){},tickTowerPersonal:()=>false,
-    PRES:{isActive:()=>false},sourceFearFloor:0,
-    tickHorizonScore(frame){mixed.push(frame.generation);order.push('score');},
-    speakHorizonMarker(){},syncOutskirtsNight(){order.push('street');},tickPayphone(){},syncSourceRender(){order.push('render');},
-    preparePayphoneRoadLoop(){},payphoneIncomingForPass:()=>null,
+    R3:{r3dFacing:()=>0,r3dLookAngles:()=>({yaw:.4,pitch:-.2})},
+    endSourceHaystackMosh(){},endSourceBracketPresence(){},tickTowerPersonal:()=>false,
+    PRES:{isActive:()=>false},sourceFearFloor:0,shakeMode:()=> 'full',
+    preparePayphoneRoadLoop(){order.push('prepare');},syncOutskirtsNight(){order.push('street');},
+    tickPayphone(dt){assert.equal(dt,.2);order.push('phone');},syncSourceRender(){order.push('render');},
   };
   const api=execute(productionSection('function tickSourceSpace(dt){','\nlet stairAnomalyEnteredAt='),sandbox,'{tickSourceSpace}');
   api.tickSourceSpace(.2);
-  assert.equal(elapsed[0],.2,'listening or an input-only choice does not stop cumulative loss');
-  assert.deepEqual(mixed,[1],'the score receives the frame recomputed after decay');
-  assert.deepEqual(order,['world','score','street','render']);
-  sandbox.paused=true;api.tickSourceSpace(.2);sandbox.paused=false;
-  blocksWorld=true;api.tickSourceSpace(.2);blocksWorld=false;
-  sandbox.document.hidden=true;api.tickSourceSpace(.2);
-  assert.deepEqual(elapsed,[.2,0,0,0]);
-});
-
-test('both portrait conversations are presented with the embodied street visible',()=>{
-  const shown=[];
-  const sandbox={chunkSurfRuntime:{},horizonBustRefusalTree:()=>({refusal:true}),
-    horizonBustProposition:()=>({accepted:{lines:[]},declined:{lines:[]},questions:{choices:[]},decision:{choices:[]}}),
-    presentFinale:(tree,options)=>shown.push({tree,options})};
-  const api=execute(productionSection('function openHorizonBustRefusal(){','\n// THREADING THE TRANSPORT.'),sandbox,'{openHorizonBustRefusal,openHorizonBustChoice}');
-  assert.equal(api.openHorizonBustRefusal(),true);assert.equal(api.openHorizonBustChoice(),true);
-  assert.equal(shown.length,2);
-  for(const {options} of shown)assert.equal(options.embodied,true,'the conversation must not obscure the changing world');
+  assert.deepEqual(order,['position','prepare','characters','street','phone','render']);
+  assert.deepEqual(characters[0],{dt:.2,viewYaw:.4,pitch:-.2,reducedMotion:false,suspended:false});
+  for(const change of ['paused','world','hidden','focus']){
+    sandbox.paused=change==='paused';blocksWorld=change==='world';
+    sandbox.document.hidden=change==='hidden';focused=change!=='focus';
+    api.tickSourceSpace(.2);
+    assert.equal(characters.at(-1).suspended,true,change);
+  }
+  sandbox.paused=false;blocksWorld=false;sandbox.document.hidden=false;focused=true;
+  due=true;order.length=0;api.tickSourceSpace(.2);
+  assert.deepEqual(order,[],'an input scene delays the crossing without advancing the street');
+  blocksInput=false;api.tickSourceSpace(.2);
+  assert.deepEqual(order,['crossing'],'walking to the far edge starts the approach without an interaction');
+  for(const flag of ['firstStrikeScene','horizonApproachPending']){
+    sandbox[flag]=true;order.length=0;api.tickSourceSpace(.2);
+    assert.deepEqual(order,[],'an existing crossing cannot be opened twice');sandbox[flag]=null;
+  }
 });

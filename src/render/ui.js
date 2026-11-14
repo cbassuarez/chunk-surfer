@@ -114,6 +114,14 @@ export function uiCellMetrics() {
 // device-pixel metrics; authored modules still express all geometry in cells.
 let uiAlphaScope=1;
 export function uiWithAlpha(alpha,draw){const prev=uiAlphaScope;uiAlphaScope=prev*Math.max(0,Math.min(1,Number(alpha)||0));try{return typeof draw==='function'?draw():undefined;}finally{uiAlphaScope=prev;}}
+// Paint an existing cell-based surface into a texture while retaining its layout.
+export function uiWithCanvas(target, draw) {
+  const previous = ctx;
+  ctx = target;
+  try { return draw(); }
+  finally { ctx = previous; }
+}
+
 export function uiDraw(draw) {
   if (!ctx || typeof draw !== 'function') return;
   const size=uiSize();

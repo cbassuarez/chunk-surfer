@@ -100,12 +100,8 @@ export const WORLD_INSCRIPTIONS = Object.freeze([
     {...FRONT,center:[-.89,.48,.2406],widthM:.30,heightM:.067},
     {category:'record',process:'removal-tag ink on paper',font:'NimbusMonoPS-Bold.otf',
       ground:STOCK.paper,capHeightM:.018}),
-  job('box-office-returns-tray','open_score','RETURNS',
-    {readerRight:[Math.cos(-.08),0,Math.sin(-.08)],
-      up:[Math.sin(-.08),0,-Math.cos(-.08)],
-      center:[-.155,.0216,0],widthM:.26,heightM:.12},
-    {category:'maintenance',process:'existing returns-tray stencil',
-      ground:STOCK.paper,capHeightM:.032}),
+  // RETURNS is physically baked into the private box-office tray pack.
+  // It has one ink owner; no stale main-pack overlay is attached here.
   job('plant-header-card','notice_board',
     'HEADER 3 — ISOLATION\nBack nut, then gland, then handwheel, in that order, all three home before the line is dead. Clockwise to close.\nthe bypass cock feeds the return and is NOT part of this header.',
     {...REAR,center:[0,.45,-.0456],widthM:1.03,heightM:.73},

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { locomotionSandbox } from './helpers/locomotion-sandbox.mjs';
+import vm from 'node:vm';
+import { locomotionSandbox,mainSource } from './helpers/locomotion-sandbox.mjs';
 import {
   GAIT_ORDER, GAIT_SPEED, GAIT_NOISE, PLACE_GAITS, BREATH,
   chooseGait, gaitsForPlace, gaitSpeed, gaitNoise, applySpeedFactors,
@@ -16,8 +17,10 @@ import { FIRST_STRIKE } from '../src/data/first-strike.js';
 import { packFirstStrikeConstruction, restoreFirstStrikeConstruction } from '../src/game/first-strike-entry.js';
 import { walkCoastalMemoryPose } from '../src/game/coastal-memory-scene.js';
 import { COASTAL_MEMORY_LAYOUT } from '../src/data/coastal-memory.js';
-import { freshSourceContinuation, resumeSourceContinuation, stepSourceContinuation } from '../src/game/source-continuation.js';
+import { freshSourceContinuation, resumeSourceContinuation, stepSourceContinuation,sourceContinuationGait } from '../src/game/source-continuation.js';
 import { sourceTideField } from '../src/game/source-continuation-tides.js';
+import {SOURCE_CHASE_GAIT,sourceChaseGait} from '../src/game/source-chase-gait.js';
+import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
 import { freshFirstStrike, stepFirstStrike } from '../src/game/first-strike-scene.js';
 
 test('the faster exploration ladder is ordered and priced', () => {
@@ -176,8 +179,8 @@ test('self-contained scenes use their actual place pair unless their pursuit opt
   assert.equal(SOURCE_IV.place, 'exterior');
   assert.equal(SOURCE_PUB.place, 'interior');
   assert.equal(SOURCE_CONTINUATION.place, 'interior');
-  assert.equal(SOURCE_CONTINUATION.hush.speed, GAIT_SPEED.jog);
-  assert.equal(SOURCE_CONTINUATION.hush.teachingSpeed, GAIT_SPEED.walk * .9);
+  assert.equal(SOURCE_CONTINUATION.hush.speed, SOURCE_CHASE_GAIT.pursuer);
+  assert.equal(SOURCE_CONTINUATION.hush.teachingSpeed, SOURCE_CHASE_GAIT.teachingPursuer);
   assert.equal(FIRST_STRIKE.clearanceSpeed, GAIT_SPEED.run);
   assert.ok(Math.abs(SOURCE_PUB.barrelSpeed / SOURCE_PUB.walkSpeed - 1.30 / 2.35) < 1e-12);
 });
@@ -287,4 +290,57 @@ test('walking can oppose the combined moving tide and gust in either Source', ()
     }
     assert.ok(strongest < sceneWalkSpeed('interior', false), `${phase}: ${strongest}`);
   }
+});
+
+test('Source proper sustains a fast flee, with only the small extra sprint spending breath',()=>{
+ for(const phase of ['wrong-return','catch']){
+  const fresh={...resumeSourceContinuation(freshSourceContinuation()),phase};
+  assert.equal(sourceContinuationGait(fresh).speed,7.5);
+  assert.equal(sourceContinuationGait(fresh).gait,'run');
+  assert.equal(sourceContinuationGait(fresh,{run:true}).speed,8.25);
+  assert.equal(sourceContinuationGait({...fresh,breath:{reserve:0,winded:true}},{run:true}).speed,7.5);
+ }
+ let breath=freshBreath();
+ for(let i=0;i<600;i++)breath=stepBreath(breath,1/60,{gait:sourceChaseGait({winded:breath.winded}).gait});
+ assert.equal(breath.reserve,1,'the baseline does not use up the run key before a decision');
+ for(let i=0;i<600;i++)breath=stepBreath(breath,1/60,{gait:sourceChaseGait({run:true,winded:breath.winded}).gait});
+ assert.equal(breath.winded,true);assert.equal(sourceChaseGait({run:true,winded:breath.winded}).speed,7.5);
+ assert.ok(SOURCE_CONTINUATION.hush.speed>SOURCE_CHASE_GAIT.baseline&&SOURCE_CONTINUATION.hush.speed<SOURCE_CHASE_GAIT.burst,'the Hush takes back hesitation, while deliberate effort can make a lead');
+});
+
+test('Source II accepts physical movement at15,30,60FPS without changing collision or speed',()=>{
+ const run=fps=>{const base=resumeSourceContinuation(freshSourceContinuation()),hush={...base.hush,active:false,arrival:null};let state={...base,x:16,z:-7,yaw:0,hush,grace:5};let travel=0;
+  for(let i=0;i<fps;i++){const r=stepSourceContinuation(state,{dt:1/fps,forward:1});state=r.state;travel+=r.acceptedTravelMetres;assert.equal(state.fall,null);assert.equal(state.recovery,null);}
+  return{state,travel};};
+ const reference=run(60);
+ assert.ok(Math.abs(reference.travel-7.5)<1e-8);
+ for(const fps of [15,30]){const r=run(fps);assert.ok(Math.abs(r.state.z-reference.state.z)<1e-8);assert.ok(Math.abs(r.state.elapsed-1)<1e-8);assert.ok(Math.abs(r.travel-reference.travel)<1e-8);}
+});
+
+test('the actual Source I host selects fast flight, preserving human rooms and authored approaches',()=>{
+ for(const phase of ['landscape','final']){
+  const runtime={pressureFrame:()=>({phase,approach:false}),hushMode:()=>({colliding:false})};
+  const sandbox=locomotionSandbox({usingSourceSpace:()=>true,chunkSurfRuntime:runtime},{extra:'\nglobalThis.windPlayer=()=>{playerBreath={reserve:0,winded:true,sprinting:false};};'});
+  assert.equal(sandbox.locomotion().reason,'source-proper');assert.equal(sandbox.locomotion().speed,7.5);
+  sandbox.setRun(true);assert.equal(sandbox.locomotion().speed,8.25);sandbox.windPlayer();assert.equal(sandbox.locomotion().speed,7.5);
+  runtime.lastReceptionFrame=()=>({active:true,inside:true});
+  sandbox.setRun(false);assert.equal(sandbox.locomotion().speed,2.6);sandbox.setRun(true);assert.equal(sandbox.locomotion().speed,3.6);
+ }
+ const authored=locomotionSandbox({usingSourceSpace:()=>true,chunkSurfRuntime:{pressureFrame:()=>({phase:'hall',cellIntervalMs:225})}});
+ assert.equal(authored.locomotion().authored,true);const pace=authored.locomotion().speed;authored.setRun(true);assert.equal(authored.locomotion().speed,pace);
+ const world=locomotionSandbox();assert.equal(world.locomotion().speed,2.6);world.setRun(true);assert.equal(world.locomotion().speed,3.6);
+});
+
+test('the actual frame host gives Source II its elapsed time without sending a hitch into one physics step',async()=>{
+ const call=mainSource.match(/\bscenes\.update\(([^\n]+)\);/);assert.ok(call,'the actual frame host update exists');
+ for(const fps of [15,30,60]){
+  const base=resumeSourceContinuation(freshSourceContinuation());let travel=0;
+  const scene=createSourceContinuationScene({checkpoint:{...base,x:16,z:-7,yaw:0,grace:5,hush:{...base.hush,active:false,arrival:null}},renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onAcceptedTravel:value=>{travel+=value;}});
+  await scene.initialize();scene.key({key:'w'});
+  const host={sourceContinuationScene:scene,firstStrikeScene:null,rawGapMs:1000/fps,dt:Math.min(.05,1/fps),scenes:{update:seconds=>scene.update(seconds)},Math};
+  const frame=vm.runInNewContext(`()=>scenes.update(${call[1]})`,host);
+  for(let i=0;i<fps;i++)frame();assert.ok(Math.abs(scene.view().elapsed-1)<1e-8);assert.ok(Math.abs(travel-7.5)<1e-8);
+  const before=scene.serialize();scene.pause();host.rawGapMs=8000;frame();assert.deepEqual(scene.serialize(),before,'a paused renderer hitch cannot spend scene time');
+  scene.resume();scene.key({key:'w'});frame();assert.ok(scene.view().elapsed<=1.25+1e-8,'a foreground hitch stays bounded to fixed substeps, not an8-second lunge');scene.exit();
+ }
 });

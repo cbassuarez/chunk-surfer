@@ -1,5 +1,6 @@
 // Optical units are millimetres at the lens and metres in the world. This is
 // frame-owned: ordinary play has no lens owner and uses its established view.
+import { graphicsStartupError } from './graphics-startup.js';
 export const ORDINARY_CAMERA_TAN_HALF_FOV = .95;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 export function cinematicLens(value) {
@@ -71,17 +72,17 @@ export function createCinematicLensPass(gl) {
   let program = null, target = null, texture = null, width = 0, height = 0, floatingTarget = false;
   const locations = new Map(), status = { active: false, frames: 0, error: null, lens: null, stage: null };
   function shader(type, source) {
-    const s = gl.createShader(type); gl.shaderSource(s, source); gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw Error(gl.getShaderInfoLog(s));
+    const s = gl.createShader(type); if(!s)throw graphicsStartupError('Cinematic lens shader allocation failed');gl.shaderSource(s, source); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw graphicsStartupError(`Cinematic lens shader: ${gl.getShaderInfoLog(s)}`);
     return s;
   }
   function prepare(w, h, floating) {
     if (!program) {
       const vertex = shader(gl.VERTEX_SHADER, '#version 300 es\nvoid main(){vec2 p=vec2((gl_VertexID<<1&2),(gl_VertexID&2));gl_Position=vec4(p*2.0-1.0,0,1);}');
       const fragment = shader(gl.FRAGMENT_SHADER, CINEMATIC_LENS_FRAGMENT);
-      program = gl.createProgram();gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);
+      program = gl.createProgram();if(!program)throw graphicsStartupError('Cinematic lens program allocation failed');gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);
       gl.deleteShader(vertex);gl.deleteShader(fragment);
-      if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
+      if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw graphicsStartupError(`Cinematic lens program: ${gl.getProgramInfoLog(program)}`);
     }
     if (width === w && height === h && floatingTarget === floating && texture) return;
     if (texture) gl.deleteTexture(texture);if(target)gl.deleteFramebuffer(target);
@@ -93,7 +94,7 @@ export function createCinematicLensPass(gl) {
     for (const pname of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,pname,gl.LINEAR);
     for (const pname of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,pname,gl.CLAMP_TO_EDGE);
     target=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,target);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
-    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Cinematic lens framebuffer incomplete');
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw graphicsStartupError('Cinematic lens framebuffer incomplete');
   }
   const u = name => {if(!locations.has(name))locations.set(name,gl.getUniformLocation(program,name));return locations.get(name);};
   return {

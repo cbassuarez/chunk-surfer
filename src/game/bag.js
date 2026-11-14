@@ -8,7 +8,7 @@ import { roomHistory } from '../data/room-history.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { uiDraw, uiFill, uiScrim, uiSize, uiCellMetrics, uiStrokeRect, uiText, uiWrap } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
-import { withMachinePanel, drawLampButton, machinePanelBezelRail } from '../render/presentation.js';
+import { withMachinePanel, drawLampButton, drawVfdText, machinePanelBezelRail } from '../render/presentation.js';
 import { drawInstrumentPlate } from '../render/instrument-material.js';
 import { drawPrintedText } from '../render/keycap.js';
 import { bagTabRegions, bagTabButtonState, BAG_TABS_HEIGHT, BAG_TAB_CAP_HEIGHT } from '../render/bag-tabs.js';
@@ -23,11 +23,14 @@ import {
 import { initialMapNav, reduceMapNav, selectedMapSpace, moveMapConsoleFocus, MAP_VIEW_DEFAULTS } from './map-navigation.js';
 import { resolveMapAction } from './map-actions.js';
 import { pointInMapPolygon, mapArchitecturalHeight, createMapAxonometricProjection } from './map-axonometric.js';
-import { bagLayout, bagPanelBounds } from '../render/bag-layout.js';
-import { bagInventoryGeometry, bagInventoryListLayout, bagInventoryActionLayout, bagListCapacity, drawBagView } from '../render/bag-view.js';
+import { bagLayout, bagPanelBounds, bagInventoryGridLayout, bagInventoryMoveIndex } from '../render/bag-layout.js';
+import { bagInventoryGeometry, bagInventoryActionLayout, bagListCapacity, drawBagView } from '../render/bag-view.js';
 import { bagGuideFrame, drawBagGuideCallouts } from '../render/bag-tour.js';
-import { drawSkillsSection, patchBayLayout } from '../render/bag-skills.js';
-import { normalizeCombatBuild, pullCombatTechnique } from './combat-progression.js';
+import { hardwareMotionReduced } from '../render/hardware-material.js';
+import { drawServiceLockoutTag } from '../render/service-lockout-tag.js';
+import { serviceTagBounds } from '../render/patch-channel-strip.js';
+import { drawSkillsSection, nextPatchBayNode, patchBayLayout } from '../render/bag-skills.js';
+import { normalizeCombatBuild, pullCombatTechnique, techniquePullPreview } from './combat-progression.js';
 import { skillPatchSource, skillPatchAvailability, compatibleSkillInputs, connectSkillPatch } from './skill-patchbay.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { makeEmbeddedDocumentReader } from './document.js';
@@ -39,7 +42,9 @@ import {drawItemInspectionView,itemInspectionLayout} from '../render/item-inspec
 import {preloadItemPortraits} from '../render/item-portraits.js';
 import { drawJournalView, journalListCapacity } from '../render/journal-view.js';
 import { isMapShortcut } from './map-shortcut.js';
+import { inputPromptLabel, activeInputPromptDevice } from './bindings.js';
 import { createJournalReview, journalTrackingKey } from './journal-review.js';
+import {projectInventoryStacks,inventoryStackForEntry,nextInventoryStackMember} from './inventory-stacks.js';
 
 let rememberedNav = null;
 let rememberedSheetPages = {};
@@ -52,6 +57,18 @@ function cloneMapNav(value) {
   if (!value) return null;
   return { ...value, selectedByFloor: { ...(value.selectedByFloor || {}) } };
 }
+
+const SERVICE_TAG = {
+  title: 'DO NOT LINK',
+  prompt: 'A warning in pencil. Someone answered underneath.',
+  choices: [
+    { id:'why', label:'Why did you cut the seal?', text:'“I needed one clean hit. With those two contacts tied together, it hits harder. I could have stopped there.”' },
+    { id:'arc', label:'What happens when it sparks?', text:'“I pressed INVERT. Heard the deck start recording. The thing still hit me. What I had loaded was gone. It had put a little piece of the attack in its place.”' },
+    { id:'cool', label:'How do I keep it from doing that?', text:'“When it says HOT, give it a beat. HOLD will cool the wire. A strong take can still push it. Pull the lead if you need to know what will happen.”' },
+    { id:'filed', label:'Can it wipe the tapes in my case?', text:'“Only the one you have loaded for the fight. I played the filed tapes back twice to make sure.”' },
+    { id:'back', label:'Fold the tag back', done:true },
+  ],
+};
 
 export function makeBagScene({
   sectionIds = null,
@@ -67,6 +84,10 @@ export function makeBagScene({
   moveEquipment = null,
   assignEquipmentSlot = null,
   reorderEquipment = null,
+  selectHeldEquipmentSlot = null,
+  renderInventoryEmbodiment = null,
+  renderItemInspection = null,
+  getLoadoutLocked = null,
   getJob = null,
   journal = [],
   getJournal = null,
@@ -108,6 +129,7 @@ export function makeBagScene({
   const readOnlyMap=readOnly===true||mapReadOnly===true;
   const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
   const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
+  const loadoutLockedSource = typeof getLoadoutLocked === 'function' ? getLoadoutLocked : () => '';
   const jobSource = typeof getJob === 'function' ? getJob : () => job;
   const journalSource = typeof getJournal === 'function' ? getJournal : () => journal;
   const liveMapSource = typeof getMap === 'function' ? getMap : () => map;
@@ -144,18 +166,24 @@ export function makeBagScene({
   const journalReview = createJournalReview(sourceMemory?.journalReview);
   let model = buildBagModel({
     equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
-    mapUnavailableReason: mapUnavailableSource(),
+    mapUnavailableReason: mapUnavailableSource(), loadoutLocked:loadoutLockedSource(),
     build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),sectionIds,
   });
   let nav = sourceMemory ? repairBagSelection(sourceMemory, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
-  if (nav.map) mapNav = reduceMapNav({ ...nav.map, ...MAP_VIEW_DEFAULTS, focusedControlId:null }, { type: 'MODEL_REFRESH' }, model.map);
+  if (nav.map) mapNav = reduceMapNav({ ...nav.map, ...MAP_VIEW_DEFAULTS, focusedControlId:null, roomFile:null }, { type: 'MODEL_REFRESH' }, model.map);
   let t = 0;
   let notice = '';
   let noticeUntil = 0;
   const hits=createHitRegions();
+  function debugHitRegions(){
+    const stackData=new Map(hits.list().filter(hit=>hit.kind==='bag-item'&&hit.data).map(hit=>[hit.id,hit.data]));
+    return hits.view().map(hit=>stackData.has(hit.id)?{...hit,data:stackData.get(hit.id)}:hit);
+  }
+  let inventoryGeometry=null,inventoryFocus='grid',inventorySlot=0,lastInventoryClick=null;
+  const inventoryMembers={};
   const heldControls = new Map();
-  let patchDrag = null, patchLayout = null, patchLayoutKey = '';
+  let patchDrag = null, patchSeat = null, patchReturn = null, patchLayout = null, patchLayoutKey = '';
   let mapPresentation = null, mapDrag = null, locatePending = false, mapViewportKey = '';
   let journalPresentation = null, journalPage = 0;
   const controlInput = (e = {}) => e.type?.startsWith('pointer') || e.type === 'lostpointercapture'
@@ -175,6 +203,8 @@ export function makeBagScene({
   }
   function resetBagControls() {
     cancelPatchDrag();
+    patchSeat = null;
+    patchReturn = null;
     mapDrag = null;
     mapNav=reduceMapNav(mapNav,{type:'FOCUS_CONTROL',controlId:null},model.map);
     heldControls.clear();
@@ -204,7 +234,7 @@ export function makeBagScene({
   function remember() {
     // Room/floor selection persists; viewing transforms do not become an old
     // zoom trap on the next opening or pretend to be progression data.
-    const { viewMode, rotation, zoom, panX, panY, focusedControlId, ...savedMap } = cloneMapNav(mapNav);
+    const { viewMode, rotation, zoom, panX, panY, focusedControlId, roomFile, ...savedMap } = cloneMapNav(mapNav);
     nav = reduceBagNav({ ...nav, journalReview: journalReview.memory() }, { type: 'SET_MAP_NAV', map: savedMap }, model);
     const nextMemory = {
       ...nav,
@@ -236,6 +266,16 @@ export function makeBagScene({
     motion.sectionChangedAt = t;
     motion.selectionChangedAt = t;
     remember();
+  }
+
+  function openMapSurvey() {
+    if (!setSection('map')) return false;
+    if (!lockedGuide()) {
+      mapNav = reduceMapNav({ ...mapNav, ...MAP_VIEW_DEFAULTS, roomFile: null }, { type: 'CENTER_PLAYER' }, model.map);
+      syncBagSelectionFromMap();
+      remember();
+    }
+    return true;
   }
 
   // ── guided steps ──────────────────────────────────────────────────────────
@@ -324,7 +364,7 @@ export function makeBagScene({
   function refresh() {
     model = buildBagModel({
       equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
-      mapUnavailableReason: mapUnavailableSource(),
+      mapUnavailableReason: mapUnavailableSource(), loadoutLocked:loadoutLockedSource(),
       build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),sectionIds,
     });
     nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
@@ -415,8 +455,33 @@ export function makeBagScene({
   function openItemInspection(entry){
     if(!entry)return false;
     if(onInspectEquipment(entry)===true)return true;
-    pushRoute({type:'item-inspect',entryId:entry.id,tree:getItemInspection(entry.sourceId)||null,page:0,inspection:createItemInspection(entry)});
+    const actions=entry.inspectionActions||[],first=Math.max(0,actions.findIndex(action=>action.enabled!==false));
+    const drawer=entry.readyCapable&&entry.present!==false&&typeof renderItemInspection==='function'
+      ?(rect,view)=>renderItemInspection(rect,entry,view):null;
+    const inspection=entry.present===false?null:createItemInspection(entry,{draw:drawer});
+    inspection?.setView(actions[first]?.view||{yaw:0,pitch:0});
+    pushRoute({type:'item-inspect',entryId:entry.id,tree:getItemInspection(entry.sourceId)||null,page:0,
+      facetIndex:first,activeFacetIndex:first,detailScroll:0,presentation:null,inspection});
     return true;
+  }
+
+  function moveInspectionFacet(route,direction){
+    const actions=bagEntry(model,'kit',route.entryId)?.inspectionActions||[];
+    for(let offset=1;offset<=actions.length;offset++){
+      const index=((route.facetIndex||0)+direction*offset+actions.length)%actions.length;
+      if(actions[index].enabled!==false){route.facetIndex=index;AUDIO.menuMove?.();return;}
+    }
+  }
+
+  function activateInspectionFacet(route,index=route.facetIndex||0){
+    const action=bagEntry(model,'kit',route.entryId)?.inspectionActions?.[index];
+    if(!action||action.enabled===false){AUDIO.menuDenied?.();return false;}
+    route.facetIndex=index;route.activeFacetIndex=index;route.detailScroll=0;
+    route.inspection?.setView(action.view||{yaw:0,pitch:0});AUDIO.menuConfirm?.();return true;
+  }
+
+  function scrollInspection(route,delta){
+    route.detailScroll=Math.max(0,Math.min(route.presentation?.maxScroll??0,(route.detailScroll||0)+delta));
   }
 
   function applyChosenSkills() {
@@ -478,8 +543,28 @@ export function makeBagScene({
     return bagSection(model, 'kit')?.entries || [];
   }
 
+  function kitStacks(){return projectInventoryStacks(kitEntries(),{selectedId:nav.selected?.kit,preferredMembers:inventoryMembers});}
+
+  function stackMemberInput(e){
+    return e.key==='['||e.code==='BracketLeft'||e.controllerAction==='mapFloorPrev'?-1
+      :e.key===']'||e.code==='BracketRight'||e.controllerAction==='mapFloorNext'?1:0;
+  }
+
+  function selectStackMember(direction){
+    const stack=inventoryStackForEntry(kitStacks(),nav.selected?.kit);
+    if(!stack||stack.memberCount<2)return false;
+    const entry=nextInventoryStackMember(stack,nav.selected.kit,direction),route=currentRoute();
+    inventoryFocus='grid';selectKitEntry(entry);
+    if(route.type==='item-actions'){
+      route.entryId=entry.id;route.index=Math.min(route.index||0,Math.max(0,entry.actionList.length-1));syncActionPresentation();
+    }
+    lastInventoryClick=null;return true;
+  }
+
   function selectKitEntry(entry) {
     if (!entry) return;
+    const stack=inventoryStackForEntry(kitStacks(),entry.id);
+    if(stack)inventoryMembers[stack.id]=entry.id;
     const before = currentBagEntry(nav, model)?.id;
     nav = reduceBagNav(nav, { type: 'SELECT_ENTRY', sectionId: 'kit', entryId: entry.id }, model);
     if (currentBagEntry(nav, model)?.id !== before) {
@@ -490,40 +575,45 @@ export function makeBagScene({
   }
 
   function moveKitSpatial(dx, dy) {
+    if(currentRoute().type==='item-actions'){routes.pop();syncActionPresentation();}
     const entries = kitEntries();
+    const stacks=kitStacks();
     const current = currentBagEntry(nav, model);
     if (!entries.length || !current) return;
-
-    const ready = entries
-      .filter((entry) => entry.compartment === 'top')
-      .sort((a, b) => a.topIndex - b.topIndex);
-    const storage = entries.filter((entry) => entry.compartment !== 'top');
-
-    if (current.compartment === 'top') {
-      const readyAt = Math.max(0, ready.findIndex((entry) => entry.id === current.id));
-      if (dy > 0 && storage.length) {
-        selectKitEntry(storage[Math.min(storage.length - 1, readyAt)]);
-        return;
-      }
-      if (dx && ready.length > 1) {
-        selectKitEntry(ready[(readyAt + dx + ready.length) % ready.length]);
-      }
+    const geo=inventoryGeometry||bagInventoryGeometry(model,nav,bagLayout({body:{x:0,y:0,w:100,h:22},sectionId:'kit'}));
+    const at=Math.max(0,stacks.findIndex(stack=>stack.memberIds.includes(current.id)));
+    const grid=bagInventoryGridLayout(geo.grid,stacks.length,at,nav.scroll?.kit||0);
+    if(inventoryFocus==='equipment'){
+      if(dx>0&&inventorySlot%geo.equipmentColumns===geo.equipmentColumns-1){inventoryFocus='grid';selectKitEntry(stacks[Math.min(stacks.length-1,Math.floor(inventorySlot/geo.equipmentColumns)*grid.columns)]?.entry);return;}
+      inventorySlot=bagInventoryMoveIndex(inventorySlot,4,geo.equipmentColumns,dx,dy);
+      const entry=entries.find(item=>item.sourceId===model.loadout.top[inventorySlot]);
+      if(entry)selectKitEntry(entry);
       return;
     }
+    if(dx<0&&at%grid.columns===0){
+      inventoryFocus='equipment';inventorySlot=Math.min(3,Math.floor(at/grid.columns)%4);
+      const entry=entries.find(item=>item.sourceId===model.loadout.top[inventorySlot]);
+      if(entry)selectKitEntry(entry);
+      return;
+    }
+    const next=bagInventoryMoveIndex(at,stacks.length,grid.columns,dx,dy);
+    selectKitEntry(stacks[next]?.entry);
+    const nextGrid=bagInventoryGridLayout(geo.grid,stacks.length,next,nav.scroll?.kit||0);
+    nav={...nav,scroll:{...nav.scroll,kit:nextGrid.offset}};
+  }
 
-    const storageAt = Math.max(0, storage.findIndex((entry) => entry.id === current.id));
-    const cols = 3;
-    if (dy < 0 && ready.length) {
-      selectKitEntry(ready[Math.min(ready.length - 1, storageAt % cols)]);
-      return;
+  function holdInventorySlot(index){
+    if(model.loadoutLocked){notice=String(model.loadoutLocked);noticeUntil=t+2.2;return false;}
+    const entry=index==null?null:kitEntries().find(item=>item.sourceId===model.loadout.top[index]);
+    if(index!=null&&(!entry||entry.present===false||entry.source?.deployed)){
+      notice=entry&&(entry.present===false||entry.source?.deployed)?'RECOVER THE ITEM FIRST':'EMPTY SLOT · EQUIP AN ITEM FIRST';noticeUntil=t+2.2;return false;
     }
-    if (dy > 0) {
-      selectKitEntry(storage[Math.min(storage.length - 1, storageAt + cols)]);
-      return;
-    }
-    if (dx && storage.length > 1) {
-      selectKitEntry(storage[(storageAt + dx + storage.length) % storage.length]);
-    }
+    const action=entry?.actionList?.find(candidate=>candidate.id==='hold-item'||candidate.id==='lower-item');
+    if(action?.enabled===false){notice=action.reason;noticeUntil=t+2.2;return false;}
+    if(typeof selectHeldEquipmentSlot!=='function')return false;
+    const result=selectHeldEquipmentSlot(index);
+    if(result===false||(result?.changed===false&&result.reason&&!String(result.reason).startsWith('already'))){notice='HANDS UNCHANGED';noticeUntil=t+2.2;return false;}
+    refresh();return true;
   }
 
   function readyOrClearKitEntry(direction) {
@@ -547,6 +637,12 @@ export function makeBagScene({
     const all = tree.branches.flatMap((b) => b.entries);
     return all.find((e) => e.id === id) || all[0] || null;
   }
+  function openServiceTag() {
+    if (!selectedSkill()?.circuitBend || lockedGuide()) return false;
+    pushRoute({type:'sheet-dialog',tree:SERVICE_TAG,index:0,answer:null,review:true});
+    AUDIO.menuPage?.();
+    return true;
+  }
   function selectSkill(entry) {
     if (!entry) return;
     nav = reduceBagNav(nav, { type: 'SELECT_ENTRY', sectionId: 'skills', entryId: entry.id }, model);
@@ -554,20 +650,9 @@ export function makeBagScene({
     AUDIO.menuMove();
     remember();
   }
-  function moveSkill(dBranch, dTier) {
-    const tree = skillsTree();
+  function moveSkill(dx, dy) {
     const current = selectedSkill();
-    if (!tree || !current) return;
-    const index = tree.branches.findIndex((b) => b.id === current.branch);
-    if (dBranch) {
-      const next = tree.branches[(index + dBranch + tree.branches.length) % tree.branches.length];
-      const deepest = next.entries[next.entries.length - 1];
-      selectSkill(next.entries.find((e) => e.tier === current.tier) || deepest);
-      return;
-    }
-    const branch = tree.branches[index];
-    const tier = Math.max(1, Math.min(branch.entries.length, current.tier + dTier));
-    selectSkill(branch.entries.find((e) => e.tier === tier) || current);
+    if (patchLayout && current) selectSkill(nextPatchBayNode(patchLayout, current.id, dx, dy));
   }
 
   function moveMap(vector) {
@@ -631,6 +716,11 @@ export function makeBagScene({
     }
   }
 
+  function returnHeldPatch(gesture) {
+    if (!gesture?.rerouteId || !gesture.moved || hardwareMotionReduced()) return;
+    patchReturn = {id:gesture.rerouteId,from:gesture.displayTo,time:t};
+  }
+
   function patchRefusal(message) {
     notice = message || 'PATCH UNCHANGED'; noticeUntil = t + 2.5;
     AUDIO.menuDenied?.();
@@ -649,23 +739,28 @@ export function makeBagScene({
       rerouteId = entry.techniqueId;
       const source = skillPatchSource(rerouteId);
       from = patchLayout?.outputs?.find(item => item.id === source?.id)
-        || patchLayout?.sources?.find(item => item.id === source?.id);
+        || patchLayout?.sources?.find(item => item.id === source?.id)
+        || patchLayout?.terminals?.find(item => item.id === source?.id);
       if (!from) { patchRefusal('SOURCE OUTPUT IS NOT AVAILABLE'); return; }
     }
     const compatibleIds = compatibleSkillInputs(workingBuild, from, { hasRig: rigSource(), rerouteId });
     if (!rerouteId && !compatibleIds.length) {
-      patchRefusal(workingBuild.unspent <= 0 ? 'NO SPARE CABLE · RETURN A PATCH TO SPARES' : 'NO COMPATIBLE INPUT · CHECK THE COLUMN AND PREREQUISITES');
+      const reason=entry?.circuitBend && skillPatchAvailability(workingBuild,from,entry.techniqueId,{hasRig:rigSource()}).reason;
+      patchRefusal(reason || (workingBuild.unspent <= 0 ? 'NO SPARE CABLE · RETURN A PATCH TO SPARES' : 'NO COMPATIBLE INPUT · CHECK THE CHANNEL AND PREREQUISITES'));
       return;
     }
+    patchReturn = null;
     patchDrag = {
       from: { ...from }, to: { x: event.cellX, y: event.cellY },
       start: { x: event.cellX, y: event.cellY }, moved: false,
-      rerouteId, returnable: !!rerouteId, compatibleIds, valid: false,
+      displayTo: { x: event.cellX, y: event.cellY },
+      rerouteId, returnable: !!rerouteId, compatibleIds, valid: false, targetId: null, returnHover: false,
+      returnCount: rerouteId ? techniquePullPreview(workingBuild, rerouteId).returns : 0,
       pointerId: event.pointerId ?? 'primary', captureTarget: event.originalEvent?.target || null,
     };
     AUDIO.menuMove?.({scope:'bag:patch',profile:'patch'});
     try { patchDrag.captureTarget?.setPointerCapture?.(event.pointerId); } catch (_) { /* global pointerup is also routed */ }
-    notice = rerouteId ? 'MOVE THIS PLUG · DROP ON SPARES TO RETURN ITS RUN' : 'MATCH COLOR AND COLUMN · DROP INTO AN INPUT';
+    notice = rerouteId ? 'MOVE THIS PLUG · DROP ON SPARES TO RETURN ITS RUN' : 'DROP INTO A MARKED INPUT';
     noticeUntil = t + 5;
   }
 
@@ -675,10 +770,15 @@ export function makeBagScene({
     const metrics = uiCellMetrics();
     patchDrag.moved ||= Math.hypot((event.cellX-patchDrag.start.x)*metrics.cellW, (event.cellY-patchDrag.start.y)*metrics.cellH) >= 6;
     const hit = hits.hit(event.cellX, event.cellY);
-    patchDrag.valid = hit?.kind === 'bag-patch-return' ? !!patchDrag.rerouteId
-      : hit?.kind === 'bag-patch-input' && skillPatchAvailability(workingBuild, patchDrag.from, hit.data?.socket?.techniqueId, {
-        hasRig: rigSource(), rerouteId: patchDrag.rerouteId,
-      }).enabled;
+    const target = hit?.kind === 'bag-patch-input' ? hit.data?.socket : null;
+    const returnHover = hit?.kind === 'bag-patch-return' && !!patchDrag.rerouteId && patchDrag.moved;
+    const candidate = target && skillPatchAvailability(workingBuild, patchDrag.from, target.techniqueId, {
+      hasRig: rigSource(), rerouteId: patchDrag.rerouteId,
+    });
+    patchDrag.targetId = target?.id ?? null;
+    patchDrag.returnHover = returnHover;
+    patchDrag.valid = returnHover || !!candidate?.enabled;
+    patchDrag.reason = returnHover ? '' : candidate?.reason || '';
     return true;
   }
 
@@ -690,12 +790,12 @@ export function makeBagScene({
       if (pullCable(gesture.rerouteId)) { refresh(); emitGuideEvent('skills-changed'); AUDIO.menuUnpatch?.(); }
       return;
     }
-    if (hit?.kind !== 'bag-patch-input') { notice = 'PATCH UNCHANGED'; noticeUntil = t + 1.2; AUDIO.menuBack?.({scope:'bag:patch'}); return; }
+    if (hit?.kind !== 'bag-patch-input') { returnHeldPatch(gesture); notice = 'PATCH UNCHANGED'; noticeUntil = t + 1.2; AUDIO.menuBack?.({scope:'bag:patch'}); return; }
     const result = connectSkillPatch(workingBuild, gesture.from, hit.data?.socket?.techniqueId, {
       hasRig: rigSource(), rerouteId: gesture.rerouteId,
     });
     if (!result.changed) {
-      if (result.reason) patchRefusal(result.reason);
+      if (result.reason) { returnHeldPatch(gesture); patchRefusal(result.reason); }
       else { notice = ''; noticeUntil = 0; }
       return;
     }
@@ -708,6 +808,7 @@ export function makeBagScene({
     if (target) selectSkill(target);
     notice = `${target?.label || 'INPUT'} PATCHED · TAKES EFFECT WHEN THE CASE CLOSES`;
     noticeUntil = t + 3; motion.actionAt = t;
+    patchSeat = {id:target?.techniqueId,time:t};
     refresh(); emitGuideEvent('skills-changed'); AUDIO.menuPatch?.();
   }
 
@@ -823,12 +924,16 @@ export function makeBagScene({
       ok=selected&&typeof markSpace==='function'?!!markSpace(selected):markRoom(entry.roomId);
     } else if (entry.kind === 'room' && actionId === 'read-attached') {
       if (entry.attached) ok=openSheet(entry.attached);
+    } else if(entry.kind==='gear'&&actionId==='hold-item'){
+      ok=holdInventorySlot(entry.topIndex);
+    } else if(entry.kind==='gear'&&actionId==='lower-item'){
+      ok=holdInventorySlot(null);
     } else if(entry.kind==='gear'&&actionId==='set-slot'){
       pushRoute({type:'slot-picker',entryId:entry.id,index:Math.max(0,entry.topIndex)});ok=true;
     } else if(entry.kind==='gear'&&(actionId==='unset-slot'||actionId==='move-storage')){
       const result=typeof moveEquipment==='function'?moveEquipment(entry.sourceId,'storage'):{changed:false,reason:'unavailable'};
       ok=!!result?.changed;
-      if(!ok){notice='QUICK SLOT UNCHANGED';noticeUntil=t+2.0;}
+      if(!ok){notice='REACHABLE EQUIPMENT UNCHANGED';noticeUntil=t+2.0;}
     } else if(entry.kind==='gear'&&actionId==='inspect-item'){
       ok=openItemInspection(entry);
     } else if (entry.kind === 'gear' && actionId === 'move-top') {
@@ -952,8 +1057,8 @@ export function makeBagScene({
   const confirmInput=(e)=>e.key==='Enter'||e.code==='Enter'||e.key===' '||e.code==='Space'||e.controllerAction==='confirm';
   const backInput=(e)=>e.key==='Escape'||e.code==='Escape'||e.controllerAction==='back'||e.controllerAction==='menu';
   const bagCloseInput=(e)=>String(e.key||'').toLowerCase()==='b'||e.code==='KeyB'||e.controllerAction==='bag';
-  const upInput=(e)=>e.key==='ArrowUp'||String(e.key||'').toLowerCase()==='w'||e.code==='KeyW';
-  const downInput=(e)=>e.key==='ArrowDown'||String(e.key||'').toLowerCase()==='s'||e.code==='KeyS';
+  const upInput=(e)=>e.key==='ArrowUp'||String(e.key||'').toLowerCase()==='w'||e.code==='KeyW'||e.controllerAction==='move_up';
+  const downInput=(e)=>e.key==='ArrowDown'||String(e.key||'').toLowerCase()==='s'||e.code==='KeyS'||e.controllerAction==='move_down';
 
   function handleRouteKey(e){
     const route=currentRoute();
@@ -968,6 +1073,8 @@ export function makeBagScene({
       return true;
     }
     if(route.type==='item-actions'){
+      const memberDirection=stackMemberInput(e);
+      if(memberDirection&&selectStackMember(memberDirection))return true;
       const entry=bagEntry(model,'kit',route.entryId);
       const actions=entry?.actionList||[];
       if(upInput(e)||downInput(e)){
@@ -985,13 +1092,13 @@ export function makeBagScene({
     }
     if(route.type==='slot-picker'){
       const capacity=Math.max(1,model.loadout?.capacity||4);
-      if(upInput(e)||e.key==='ArrowLeft'){route.index=(route.index-1+capacity)%capacity;AUDIO.menuMove?.();return true;}
-      if(downInput(e)||e.key==='ArrowRight'){route.index=(route.index+1)%capacity;AUDIO.menuMove?.();return true;}
+      if(upInput(e)||e.key==='ArrowLeft'||e.controllerAction==='move_left'){route.index=(route.index-1+capacity)%capacity;AUDIO.menuMove?.();return true;}
+      if(downInput(e)||e.key==='ArrowRight'||e.controllerAction==='move_right'){route.index=(route.index+1)%capacity;AUDIO.menuMove?.();return true;}
       if(confirmInput(e)){
         const entry=bagEntry(model,'kit',route.entryId);
         const result=typeof assignEquipmentSlot==='function'?assignEquipmentSlot(entry?.sourceId,route.index):{changed:false,reason:'unavailable'};
         if(result?.changed){popRoute();refresh();AUDIO.menuFit?.();}
-        else{notice=result?.reason==='already-in-slot'?'ALREADY SET IN THAT SLOT':'QUICK SLOT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuDenied?.();}
+        else{notice=result?.reason==='already-in-slot'?'ALREADY EQUIPPED HERE':'REACHABLE EQUIPMENT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuDenied?.();}
         return true;
       }
       if(backInput(e)){popRoute();return true;}
@@ -1019,8 +1126,22 @@ export function makeBagScene({
       return true;
     }
     if(route.type==='item-inspect'){
+      const actions=bagEntry(model,'kit',route.entryId)?.inspectionActions||[];
+      if(backInput(e)){popRoute();return true;}
+      if(actions.length&&(e.key==='Tab'||e.controllerAction==='tabNext'||e.controllerAction==='tabPrev')){
+        e.preventDefault?.();moveInspectionFacet(route,e.shiftKey||e.controllerAction==='tabPrev'?-1:1);return true;
+      }
+      if(actions.length&&confirmInput(e)){activateInspectionFacet(route);return true;}
+      if(e.controllerAction==='mapLocate'){route.inspection?.reset();return true;}
+      if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(e.key)||['move_up','move_down','mapFloorPrev','mapFloorNext'].includes(e.controllerAction)){
+        if(e.key==='Home')route.detailScroll=0;
+        else if(e.key==='End')route.detailScroll=route.presentation?.maxScroll||0;
+        else scrollInspection(route,(e.key==='PageUp'||e.controllerAction==='mapFloorPrev'?-1:e.key==='PageDown'||e.controllerAction==='mapFloorNext'?1:e.key==='ArrowUp'||e.controllerAction==='move_up'?-1:1)*
+          (e.key==='PageUp'||e.key==='PageDown'||['mapFloorPrev','mapFloorNext'].includes(e.controllerAction)?route.presentation?.rows||1:1));
+        return true;
+      }
       if(route.inspection?.key(e))return true;
-      if(backInput(e)||confirmInput(e)){popRoute();return true;}
+      if(confirmInput(e)){popRoute();return true;}
       return true;
     }
     if(backInput(e)){popRoute();return true;}
@@ -1056,7 +1177,7 @@ export function makeBagScene({
     }
     if(route.type==='slot-picker'){
       const entry=bagEntry(model,'kit',route.entryId),slots=Array.from({length:model.loadout.capacity},(_,index)=>model.loadout.top[index]||null);
-      uiText(x,y,`SET ${entry?.title||'ITEM'} · CHOOSE A QUICK SLOT`,'ui-amber',.95);
+      uiText(x,y,`EQUIP ${entry?.title||'ITEM'} · CHOOSE A REACHABLE SLOT`,'ui-amber',.95);
       uiText(x,y+1,'IF THE SLOT IS FULL, ITS OLD ITEM STAYS IN THE BAG.','ui-secondary',.68);
       const rowY=y+3,rowW=Math.max(10,Math.floor((w-Math.max(0,slots.length-1))/slots.length));
       slots.forEach((itemId,index)=>{
@@ -1067,30 +1188,35 @@ export function makeBagScene({
         const occupant=model.sections.find((section)=>section.id==='kit')?.entries.find((candidate)=>candidate.sourceId===itemId);
         uiText(bx+1,rowY+2,fit(occupant?.title||'EMPTY',rowW-2),occupant?'ui-primary':'ui-secondary',on ? .9 : .55);
       });
-      uiText(x,y+h-2,'[← / →] SLOT   [ENTER] SET   [ESC] BACK   [B] CLOSE BAG','ui-label',.75);
+      const slotHint=activeInputPromptDevice()==='controller'?'← / → SLOT':'[← / →] SLOT';
+      uiText(x,y+h-2,`${slotHint}   [${inputPromptLabel('confirm')}] SET   [${inputPromptLabel('back')}] BACK   [${inputPromptLabel('bag')}] CLOSE BAG`,'ui-label',.75,w);
       return;
     }
     if(route.type==='item-inspect'){
       const entry=bagEntry(model,'kit',route.entryId);
-      if(route.inspection){drawItemInspectionView({entry,inspection:route.inspection,lines:route.tree?.start?.lines||[],rect,active:scenes.top()===scene||embeddedHost});return;}
-      uiText(x,y,fit(`INVENTORY / ${entry?.title||'ITEM'}`,w),'ui-amber',1);
-      let cy=y+2;
-      cy+=wrapped(entry?.description||'',x,cy,w,3,'ui-primary',.82)+1;
-      for(const [label,value] of entry?.facts||[]){
-        if(cy>=y+h-3)break;
-        uiText(x,cy,fit(label,14),'ui-label',.62);uiText(x+16,cy,fit(value,w-16),'ui-primary',.78);cy++;
-      }
-      const lines=route.tree?.start?.lines||[];
-      if(lines.length&&cy<y+h-2){cy++;for(const line of lines){if(cy>=y+h-2)break;cy+=wrapped(line?.text||line,x,cy,w,2,line?.who==='you'?'ui-amber':'ui-secondary',.78);}}
-      uiText(x,y+h-1,'[ESC / ENTER] BACK   [B] CLOSE BAG','ui-label',.72);
+      route.presentation=drawItemInspectionView({entry,inspection:route.inspection,lines:route.tree?.start?.lines||[],rect,
+        active:scenes.top()===scene||embeddedHost,focusIndex:route.facetIndex,activeIndex:route.activeFacetIndex,scroll:route.detailScroll});
+      route.detailScroll=route.presentation.scroll;
       return;
     }
     if(route.type==='sheet-dialog'){
-      uiText(x,y,fit(`SHEETS / IMPORTANT / ${route.tree?.title||route.document?.title||''}`,w),'ui-amber',1);
+      const service=route.tree===SERVICE_TAG;
+      const hasTagSpace=service&&w>=42&&h>=9;
+      const textWidth=hasTagSpace?Math.floor(w*.64):w;
+      if (hasTagSpace) uiDraw(({ctx,dpr,cellW,cellH})=>{
+        const tagWidth=Math.min(w*.32*cellW,280);
+        const tagHeight=tagWidth*.48;
+        const tagX=(x+w)*cellW-tagWidth-5;
+        const tagY=(y+2.7)*cellH;
+        ctx.scale(dpr,dpr);
+        drawServiceLockoutTag(ctx,{x:tagX,y:tagY,w:tagWidth,h:tagHeight});
+      });
+      const heading=service?'SERVICE INTERFACE / DO NOT LINK':`SHEETS / IMPORTANT / ${route.tree?.title||route.document?.title||''}`;
+      uiText(x,y,fit(heading,w),'ui-amber',1);
       if(route.answer){
         uiText(x,y+2,route.answer.label,'ui-blue',.86);
-        wrapped(route.answer.text,x,y+4,w,Math.max(1,h-7),'ui-primary',.9);
-        uiText(x,y+h-1,'[ENTER / ESC] QUESTIONS   [B] CLOSE BAG','ui-label',.72);
+        wrapped(route.answer.text,x,y+4,textWidth,Math.max(1,h-7),'ui-primary',.9);
+        uiText(x,y+h-1,`[${inputPromptLabel('confirm')}] QUESTIONS   [${inputPromptLabel('back')}] BACK`,'ui-label',.72);
         return;
       }
       uiText(x,y+2,route.tree?.prompt||'WHAT MATTERS HERE?','ui-primary',.9);
@@ -1099,7 +1225,7 @@ export function makeBagScene({
         uiText(x,row,on?'▸':' ',on?'ui-amber':'ui-secondary',on?1:.5);
         uiText(x+2,row,choice.label,on?'ui-amber':'ui-primary',on?1:.76);
       });
-      uiText(x,y+h-1,'[↑ / ↓] CHOOSE   [ENTER] OPEN   [ESC] BACK   [B] CLOSE BAG','ui-label',.72);
+      uiText(x,y+h-1,`[↑ / ↓] CHOOSE   [${inputPromptLabel('confirm')}] OPEN   [${inputPromptLabel('back')}] BACK`,'ui-label',.72);
     }
   }
 
@@ -1138,10 +1264,36 @@ export function makeBagScene({
       });
     }else if(nav.sectionId==='kit'){
       const geo=bagInventoryGeometry(model,nav,layout),entries=model.sections.find((section)=>section.id==='kit')?.entries||[];
-      const list=bagInventoryListLayout(geo.list),cap=list.capacity,selected=bagEntry(model,'kit',nav.selected?.kit),at=Math.max(0,entries.findIndex((entry)=>entry.id===selected?.id));
-      const scroll=Math.max(0,Math.min(at>=cap?at-cap+1:0,Math.max(0,entries.length-cap)));
-      entries.slice(scroll,scroll+cap).forEach((entry,index)=>addHit({id:`bag:item:${entry.id}`,kind:'bag-item',x:geo.list.x,y:list.startY+index*list.rowH,w:geo.list.w,h:list.rowH,label:entry.title,onHover:()=>selectEntry('kit',entry.id),onClick:()=>{selectEntry('kit',entry.id);pushRoute({type:'item-actions',entryId:entry.id,index:0});}}));
-      bagInventoryActionLayout(geo.detail,selected,nav).rows.forEach(({action,index,...rect})=>addHit({id:`bag:action:${action.id}`,kind:'bag-action',...rect,label:action.label,disabled:!action.enabled,onHover:()=>{const route=currentRoute();if(route.type==='item-actions'){route.index=index;syncActionPresentation();}},onClick:()=>{
+      inventoryGeometry=geo;
+      const selected=bagEntry(model,'kit',nav.selected?.kit),stacks=kitStacks(),at=Math.max(0,stacks.findIndex(stack=>stack.memberIds.includes(selected?.id)));
+      const grid=bagInventoryGridLayout(geo.grid,stacks.length,at,nav.scroll?.kit||0);
+      grid.cells.forEach(cell=>{
+        const stack=stacks[cell.index],entry=stack?.entry;if(!entry)return;
+        addHit({id:`bag:item:${entry.id}`,kind:'bag-item',...cell,label:stack.key?`${stack.label} · ${stack.availableQuantity}`:entry.title,data:{stackId:stack.id,memberIds:stack.memberIds,quantity:stack.quantity,availableQuantity:stack.availableQuantity},onClick:(_hit,event)=>{
+          inventoryFocus='grid';
+          const twice=lastInventoryClick?.id===entry.id&&t-lastInventoryClick.at<.4;
+          if(currentRoute().type==='item-actions'){routes.pop();syncActionPresentation();}
+          selectKitEntry(entry);lastInventoryClick={id:entry.id,at:t};
+          if(twice||(event?.originalEvent?.detail||0)>=2)activatePrimary();
+        }});
+      });
+      geo.slots.forEach(slot=>addHit({id:`bag:equipment:${slot.index}`,kind:'bag-equipment',...slot,label:`REACHABLE SLOT ${slot.index+1}`,onClick:()=>{
+        if(currentRoute().type==='item-actions'){routes.pop();syncActionPresentation();}
+        inventoryFocus='equipment';inventorySlot=slot.index;
+        const entry=entries.find(item=>item.sourceId===model.loadout.top[slot.index]);if(entry)selectKitEntry(entry);
+        if(holdInventorySlot(slot.index))AUDIO.menuConfirm?.();else AUDIO.menuDenied?.();
+      }}));
+      addHit({id:'bag:lower-hands',kind:'bag-held-action',...geo.lower,label:'LOWER HANDS',disabled:model.heldSlot==null,onClick:()=>{
+        if(holdInventorySlot(null))AUDIO.menuRemove?.();else AUDIO.menuDenied?.();
+      }});
+      addHit({id:'bag:inventory-prev',kind:'bag-grid-page',...grid.previous,label:'PREVIOUS ITEMS',disabled:grid.offset<=0,onClick:()=>{inventoryFocus='grid';moveKitSpatial(0,-grid.rows);}});
+      addHit({id:'bag:inventory-next',kind:'bag-grid-page',...grid.next,label:'NEXT ITEMS',disabled:grid.offset+grid.capacity>=stacks.length,onClick:()=>{inventoryFocus='grid';moveKitSpatial(0,grid.rows);}});
+      const actionGeometry=bagInventoryActionLayout(geo.detail,selected,{...nav,inventoryStack:inventoryStackForEntry(stacks,selected?.id)});
+      if(actionGeometry.stack){
+        addHit({id:'bag:stack-member-prev',kind:'bag-stack-member',...actionGeometry.stack.previous,label:'PREVIOUS ITEM IN STACK',onClick:()=>selectStackMember(-1)});
+        addHit({id:'bag:stack-member-next',kind:'bag-stack-member',...actionGeometry.stack.next,label:'NEXT ITEM IN STACK',onClick:()=>selectStackMember(1)});
+      }
+      actionGeometry.rows.forEach(({action,index,...rect})=>addHit({id:`bag:action:${action.id}`,kind:'bag-action',...rect,label:action.label,disabled:!action.enabled,onHover:()=>{const route=currentRoute();if(route.type==='item-actions'){route.index=index;syncActionPresentation();}},onClick:()=>{
         if(!action.enabled){notice=action.reason;noticeUntil=t+2.2;return;}
         if(currentRoute().type==='item-actions'){routes.pop();syncActionPresentation();}
         execute(selected,action.id);
@@ -1167,6 +1319,10 @@ export function makeBagScene({
         ...socket.hit, label:socket.skillId || socket.branch, data:{socket},
         onHover:()=>{ const entry=bagEntry(model,'skills',socket.skillId); if(entry)selectSkill(entry); },
       });
+      if (selectedSkill()?.circuitBend && !lockedGuide() && !patchDrag) {
+        const tag=serviceTagBounds(patchLayout.detail,patchLayout.returnZone,patchLayout.strip.side,uiCellMetrics());
+        addHit({id:'bag:service-tag',kind:'bag-service-tag',...tag,label:'READ WARNING TAG',onClick:openServiceTag});
+      }
       if (patchLayout.returnZone) addHit({ id:'bag:patch:return', kind:'bag-patch-return', ...patchLayout.returnZone, label:'SPARES · RETURN CABLE' });
     }
   }
@@ -1179,12 +1335,27 @@ export function makeBagScene({
     }else if(route.type==='slot-picker'){
       const capacity=Math.max(1,model.loadout.capacity),rowW=Math.max(10,Math.floor((w-Math.max(0,capacity-1))/capacity));
       for(let index=0;index<capacity;index++)addHit({id:`bag:slot:${index}`,kind:'bag-slot',x:x+index*(rowW+1),y:y+3,w:rowW,h:4,label:`SLOT ${index+1}`,onHover:()=>{route.index=index;},onClick:()=>{route.index=index;handleRouteKey({key:'Enter',code:'Enter'});}});
-    }else if(route.type==='sheet-dialog'&&!route.answer){
-      (route.tree?.choices||[]).forEach((choice,index)=>addHit({id:`bag:sheet-choice:${choice.id}`,kind:'sheet-choice',x,y:y+4+index,w,h:1,label:choice.label,onHover:()=>{route.index=index;},onClick:()=>{route.index=index;handleRouteKey({key:'Enter',code:'Enter'});}}));
-    }else if(route.type==='item-inspect'&&route.inspection){
-      const {back,reset}=itemInspectionLayout(rect);
+    }else if(route.type==='sheet-dialog'){
+      if(route.answer) addHit({id:'bag:sheet-questions',kind:'bag-sheet-choice',x,y:y+h-1,w,h:1,label:'QUESTIONS',onClick:()=>handleRouteKey({key:'Enter',code:'Enter'})});
+      else for (const [index,choice] of (route.tree?.choices||[]).entries()) {
+        const choiceWidth=route.tree===SERVICE_TAG&&w>=42&&h>=9?Math.floor(w*.64):w;
+        addHit({id:`bag:sheet-choice:${choice.id}`,kind:'bag-sheet-choice',x,y:y+4+index,w:choiceWidth,h:1,label:choice.label,
+          onHover:()=>{route.index=index;},onClick:()=>{route.index=index;handleRouteKey({key:'Enter',code:'Enter'});}});
+      }
+    }else if(route.type==='item-inspect'){
+      const entry=bagEntry(model,'kit',route.entryId),actions=entry?.inspectionActions||[];
+      const presentation=route.presentation||itemInspectionLayout(rect,{actions,focusIndex:route.facetIndex});
+      const {back,reset}=presentation;
       addHit({id:'bag:subview-back',kind:'bag-back',...back,label:'BACK',onClick:popRoute});
-      addHit({id:'bag:inspection-reset',kind:'bag-reset',...reset,label:'RESET VIEW',onClick:()=>route.inspection.reset()});
+      addHit({id:'bag:inspection-reset',kind:'bag-reset',...reset,label:'RESET VIEW',disabled:!route.inspection,onClick:()=>route.inspection?.reset()});
+      for(const facet of presentation.facets)addHit({id:`bag:inspection-facet:${actions[facet.index].id}`,kind:'bag-inspection-facet',...facet,
+        label:actions[facet.index].label,disabled:actions[facet.index].enabled===false,onClick:()=>activateInspectionFacet(route,facet.index)});
+      if(presentation.facetPrev)addHit({id:'bag:inspection-facet-prev',kind:'bag-inspection-page',...presentation.facetPrev,label:'PREVIOUS DETAIL',onClick:()=>moveInspectionFacet(route,-1)});
+      if(presentation.facetNext)addHit({id:'bag:inspection-facet-next',kind:'bag-inspection-page',...presentation.facetNext,label:'NEXT DETAIL',onClick:()=>moveInspectionFacet(route,1)});
+      if(presentation.maxScroll){
+        addHit({id:'bag:inspection-scroll-up',kind:'bag-inspection-scroll',...presentation.scrollUp,label:'PREVIOUS TEXT',onClick:()=>scrollInspection(route,-presentation.rows)});
+        addHit({id:'bag:inspection-scroll-down',kind:'bag-inspection-scroll',...presentation.scrollDown,label:'NEXT TEXT',onClick:()=>scrollInspection(route,presentation.rows)});
+      }
     }else addHit({id:'bag:subview-back',kind:'bag-back',x,y,w,h,label:'BACK',onClick:popRoute});
   }
 
@@ -1194,6 +1365,12 @@ export function makeBagScene({
     blocksWorld: true,
     allowsLook: false,
     lensPreset: 'calm',
+    // Inventory browsing and its action drawer share the navigator. An item
+    // inspection uses the full workspace to show the object and its controls.
+    get faceplate() {
+      const route = currentRoute().type;
+      return nav.sectionId === 'kit' && route !== 'root' && route !== 'item-actions' ? false : undefined;
+    },
 
     // ESCAPE BACKS OUT OF WHAT YOU ARE IN, not out of the game.
     //
@@ -1208,6 +1385,20 @@ export function makeBagScene({
     // meaning and opens the menu; a controller's `back` still closes the bag
     // there, which is what backInput is for.
     get handlesEscape() { return mapOnly||currentRoute().type !== 'root'||nav.sectionId==='map'&&!!(mapNav.focusedControlId||mapNav.roomFile); },
+    get inventoryModalActions() {
+      const route=currentRoute();
+      if(route.type==='item-inspect'){
+        return route.inspection
+          ? ['mapFloorPrev','mapFloorNext','mapLocate']
+          : ['mapFloorPrev','mapFloorNext'];
+      }
+      if(route.type==='root'&&nav.sectionId==='skills'&&selectedSkill()?.circuitBend&&!lockedGuide())return ['mapFile'];
+      if(nav.sectionId==='kit'&&['root','item-actions'].includes(route.type)){
+        const stack=inventoryStackForEntry(kitStacks(),nav.selected?.kit);
+        return stack?.memberCount>1?['mapFloorPrev','mapFloorNext']:[];
+      }
+      return [];
+    },
     get modalActions() { return currentRoute().type!=='root' ? [] : nav.sectionId==='map'
       ? ['mapFloorPrev','mapFloorNext','mapLocate','mapFile','mapConsole']
       : nav.sectionId==='journal' ? ['mapFile','mapFloorPrev','mapFloorNext'] : []; },
@@ -1226,12 +1417,21 @@ export function makeBagScene({
     update(dt) {
       t += dt;
       currentRoute()?.reader?.update?.(dt);
+      if (patchSeat && t-patchSeat.time>=.11) patchSeat=null;
+      if (patchReturn && t-patchReturn.time>=.17) patchReturn=null;
+      if (patchDrag) {
+        const tracking = hardwareMotionReduced() ? 1 : 1-Math.exp(-Math.max(0,dt)*33);
+        const {displayTo,to} = patchDrag;
+        displayTo.x += (to.x-displayTo.x)*tracking;
+        displayTo.y += (to.y-displayTo.y)*tracking;
+      }
       guideNudge += dt;
       if (notice && t >= noticeUntil) notice = '';
       pinGuide(activeGuide());
     },
     refresh,
     selectSection: setSection,
+    openMapSurvey,
     selectRoom(roomId) {
       if(!setSection('map'))return;
       const g=lockedGuide();if(g?.kind==='action'&&guideRoomId(g)&&guideRoomId(g)!==roomId){refuseGuided();return;}
@@ -1250,8 +1450,9 @@ export function makeBagScene({
       return {
         viewport:uiSize(),portraitRenderer:itemInspectionStats(),
         model, nav, mapNav, selected: currentBagEntry(nav, model), mapSelected: selectedMapSpace(mapNav, model.map),
+        inventory:{focus:inventoryFocus,slot:inventorySlot,geometry:inventoryGeometry,stacks:kitStacks()},
         chosenTechniqueIds: [...chosenTechniqueIds], workingBuild: structuredClone(workingBuild),
-        route:{...currentRoute(),reader:currentRoute()?.reader?.view?.()||null,inspection:currentRoute()?.inspection?.view()||null},hitRegions:hits.view(),sheetPages:{...sheetPages},guidePresentation,
+        route:{...currentRoute(),reader:currentRoute()?.reader?.view?.()||null,inspection:currentRoute()?.inspection?.view()||null},hitRegions:debugHitRegions(),sheetPages:{...sheetPages},guidePresentation,
         mapPresentation:mapPresentation?{hits:mapPresentation.hits,layout:mapPresentation.layout,projectedPoints:mapPresentation.projectedPoints}:null,
         journalPresentation, journalPage,
         mapDrag:mapDrag?{...mapDrag}:null,
@@ -1272,6 +1473,7 @@ export function makeBagScene({
       const code = e.code || '';
       mapDrag=null;
       if (patchDrag) {
+        if (backInput(e)) returnHeldPatch(patchDrag);
         cancelPatchDrag();
         if (backInput(e)) { notice='PATCH UNCHANGED'; noticeUntil=t+1.2; return true; }
       }
@@ -1284,7 +1486,7 @@ export function makeBagScene({
       if (isMapShortcut(e)) {
         e.preventDefault?.();
         if (nav.sectionId === 'map') close({suppressReopen:true});
-        else momentarySection('map');
+        else { pressBagControl('bag:tab:map', e); openMapSurvey(); }
         return true;
       }
       if(nav.sectionId==='map'&&mapNav.roomFile){
@@ -1362,6 +1564,10 @@ export function makeBagScene({
       }
 
       if (nav.sectionId === 'skills') {
+        if ((k==='r'||code==='KeyR'||e.controllerAction==='mapFile') && selectedSkill()?.circuitBend && !guided) {
+          if (!e.repeat) openServiceTag();
+          return true;
+        }
         const entry = currentBagEntry(nav, model);
         const primary = raw === 'Enter' || code === 'Enter' || k === 'e' || code === 'KeyE' || e.controllerAction === 'confirm';
         const secondary = raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ';
@@ -1373,11 +1579,24 @@ export function makeBagScene({
         if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveSkill(-1, 0); return true; }
         if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { moveSkill(1, 0); return true; }
       } else if (nav.sectionId === 'kit') {
+        const memberDirection=stackMemberInput(e);
+        if(memberDirection&&selectStackMember(memberDirection))return true;
         if (k === 't' || code === 'KeyT') { execute(currentBagEntry(nav,model),'set-slot'); return true; }
         if (k === 'r' || code === 'KeyR') { readyOrClearKitEntry('clear'); return true; }
-        if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveList(-1); return true; }
-        if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveList(1); return true; }
-        if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { activatePrimary(); return true; }
+        if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW'||e.controllerAction==='move_up') { moveKitSpatial(0,-1); return true; }
+        if (raw === 'ArrowDown' || k === 's' || code === 'KeyS'||e.controllerAction==='move_down') { moveKitSpatial(0,1); return true; }
+        if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA'||e.controllerAction==='move_left') { moveKitSpatial(-1,0); return true; }
+        if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD'||e.controllerAction==='move_right') { moveKitSpatial(1,0); return true; }
+        if(raw==='PageUp'||raw==='PageDown'){
+          const geo=inventoryGeometry||bagInventoryGeometry(model,nav,bagLayout({body:{x:0,y:0,w:100,h:22},sectionId:'kit'}));
+          const grid=bagInventoryGridLayout(geo.grid,kitStacks().length,0,0);inventoryFocus='grid';moveKitSpatial(0,grid.rows*(raw==='PageDown'?1:-1));return true;
+        }
+        if(inventoryFocus==='equipment'&&(raw===' '||code==='Space')){
+          if(!e.repeat){if(holdInventorySlot(null))AUDIO.menuRemove?.();else AUDIO.menuDenied?.();}return true;
+        }
+        if(inventoryFocus==='equipment'&&confirmInput(e)){
+          if(!e.repeat){if(holdInventorySlot(inventorySlot))AUDIO.menuConfirm?.();else AUDIO.menuDenied?.();}return true;
+        }
       } else if (nav.sectionId === 'map') {
         const action = e.controllerAction==='mapFloorPrev'||raw==='PageUp'||code==='PageUp'||raw==='['||code==='BracketLeft'?'floor-prev'
           :e.controllerAction==='mapFloorNext'||raw==='PageDown'||code==='PageDown'||raw===']'||code==='BracketRight'?'floor-next'
@@ -1413,6 +1632,24 @@ export function makeBagScene({
       // any simultaneously held screen-selector key, even without a keyup.
       if(e.type==='pointercancel'&&e.pointerId==null){resetBagControls();return true;}
       if(e.type==='wheel'){
+        if(currentRoute().type==='item-inspect'){
+          const route=currentRoute(),rect=route.presentation?.text;
+          if(rect&&e.cellX>=rect.x&&e.cellX<rect.x+rect.w&&e.cellY>=rect.y&&e.cellY<rect.y+rect.h){
+            scrollInspection(route,Math.sign(Number(e.deltaY)||0)*3);e.preventDefault?.();return true;
+          }
+          return false;
+        }
+        if(nav.sectionId==='kit'&&inventoryGeometry&&['root','item-actions'].includes(currentRoute().type)){
+          const contains=rect=>e.cellX>=rect.x&&e.cellX<rect.x+rect.w&&e.cellY>=rect.y&&e.cellY<rect.y+rect.h;
+          const direction=Math.sign(Number(e.deltaY)||0);
+          if(contains(inventoryGeometry.grid)){inventoryFocus='grid';if(direction)moveKitSpatial(0,direction);e.preventDefault?.();return true;}
+          if(contains(inventoryGeometry.detail)){
+            if(direction){if(currentRoute().type==='root')pushRoute({type:'item-actions',entryId:currentBagEntry(nav,model)?.id,index:0});
+              const route=currentRoute(),count=bagEntry(model,'kit',route.entryId)?.actionList?.length||1;
+              route.index=Math.max(0,Math.min(count-1,(route.index||0)+direction));syncActionPresentation();}
+            e.preventDefault?.();return true;
+          }
+        }
         if(!mapViewportContains(e))return false;
         e.preventDefault?.();
         mapAction('zoom',{factor:Math.exp(-Math.max(-240,Math.min(240,Number(e.deltaY)||0))*.0015)});return true;
@@ -1467,7 +1704,7 @@ export function makeBagScene({
         const closeW=Math.min(14,Math.max(8,size.cols)),closeX=Math.max(0,size.cols-closeW);
         const readerTabs={tabs:{x:1,y:.65,w:Math.max(1,size.cols-2),h:BAG_TABS_HEIGHT}};
         for(const tab of bagTabRegions(model,readerTabs)){
-          drawLampButton(tab.x,tab.y,tab.w,tab.h,bagTabButtonState(tab,'sheets'));
+          drawLampButton(tab.x,tab.y,tab.w,tab.h,bagTabButtonState(tab,'sheets',{hovered:hits.hoveredId()===tab.id}));
           addHit({...tab,kind:'bag-tab',onClick:()=>setSection(tab.sectionId)});
         }
         drawPrintedText(2,3.5,fit(`FIELD CASE / SHEETS / ${route.document?.title||route.document?.id||'DOCUMENT'}`,Math.max(8,closeX-3)),
@@ -1483,15 +1720,22 @@ export function makeBagScene({
       applyFocus(focusSource());
       const size = uiSize();
       const guided = lockedGuide();
-      const frame = bagGuideFrame({size,outer:bagPanelBounds({...size,sectionId:nav.sectionId}),guide:guided});
-      const outer = frame.outer;
-      uiScrim(0.74);
       const skills = nav.sectionId === 'skills';
       const subview=!['root','item-actions'].includes(route.type);
+      const exposedSkills=skills&&!subview;
+      const shallowSkills=exposedSkills&&size.rows>0&&size.rows<30;
+      const standardOuter=bagPanelBounds({...size,sectionId:nav.sectionId});
+      const caseBounds=shallowSkills&&!guided
+        ? {...standardOuter,y:.3,h:Math.max(5,size.rows-.6)} : standardOuter;
+      const frame = bagGuideFrame({size,outer:caseBounds,guide:guided,fullHeight:shallowSkills});
+      const outer = frame.outer;
+      uiScrim(0.74);
       const mapHardware=nav.sectionId==='map'&&!subview;
       const journalHardware=nav.sectionId==='journal'&&!subview;
+      const inventoryHardware=nav.sectionId==='kit';
+      const compactInventory=nav.sectionId==='kit'&&outer.h-5<26;
       const selectorRail=mapHardware||journalHardware?null:machinePanelBezelRail(
-        outer.x,outer.y,outer.w,outer.h,{edge:'top',controlHeight:BAG_TAB_CAP_HEIGHT});
+        outer.x,outer.y,outer.w,outer.h,{edge:'top',controlHeight:compactInventory||exposedSkills?1.7:BAG_TAB_CAP_HEIGHT});
       let layout;
       withMachinePanel(outer.x, outer.y, outer.w, outer.h, {
         label: mapOnly?'SURVEY INDICATOR / SI-1':'FIELD CASE / 4417-C',
@@ -1499,13 +1743,19 @@ export function makeBagScene({
         footer: '', meter: true, theme: 'amber',
         // Sockets, plugs, cables, and switches are exposed hardware. The case
         // still has its metal faceplate, but never puts a cover over that bay.
-        glass: skills && !subview || mapHardware || journalHardware ? false : {},
-        aperture: !(mapHardware || journalHardware),
+        glass: skills && !subview || mapHardware || journalHardware || inventoryHardware ? false : {},
+        aperture: !(mapHardware || journalHardware || exposedSkills),
         apertureBounds:selectorRail?.apertureBounds,
       }, (body) => {
+      if(compactInventory)body={x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-4};
+      if(exposedSkills){
+        const y=selectorRail.apertureBounds.y;
+        body={x:outer.x+3,y,w:outer.w-6,h:outer.y+outer.h-y-1.85};
+      }
       layout = bagLayout({
         body:mapHardware||journalHardware?{x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-3.6}:body,
-        sectionId:mapHardware?'map':journalHardware?'journal':null,
+        sectionId:mapHardware?'map':journalHardware?'journal':nav.sectionId==='kit'?'kit':null,
+        compactSkills:exposedSkills,
         forceMode: typeof forceLayout === 'function' ? forceLayout() : forceLayout,
       });
       if(selectorRail)layout.tabs.capY=selectorRail.controlY;
@@ -1516,29 +1766,42 @@ export function makeBagScene({
         }
         mapViewportKey=key;
       }
-      if (nav.sectionId !== 'map') {
+      if (nav.sectionId !== 'map'&&nav.sectionId!=='kit') {
         nav = ensureBagSelectionVisible(nav, model, journalHardware ? journalListCapacity(contentRegion(layout)) : bagListCapacity(layout, nav.sectionId));
       }
-      if (skills && !subview) {
+      if(nav.sectionId==='kit'){
+        inventoryGeometry=bagInventoryGeometry(model,nav,layout);
+        const stacks=kitStacks(),at=Math.max(0,stacks.findIndex(stack=>stack.memberIds.includes(nav.selected.kit)));
+        const grid=bagInventoryGridLayout(inventoryGeometry.grid,stacks.length,at,nav.scroll?.kit||0);
+        nav={...nav,scroll:{...nav.scroll,kit:grid.offset}};
+      }
+      if (exposedSkills) {
         const region=contentRegion(layout),section=skillsTree();
         const key=JSON.stringify(region);
-        if(patchLayoutKey && key!==patchLayoutKey)cancelPatchDrag();
+        if(patchLayoutKey && key!==patchLayoutKey){cancelPatchDrag();patchReturn=null;}
         patchLayoutKey=key;
-        patchLayout=patchBayLayout({region,branches:section?.branches||[],maxTier:section?.maxTier||1});
-      } else { patchLayout=null; patchLayoutKey=''; cancelPatchDrag(); }
+        patchLayout=patchBayLayout({region,branches:section?.branches||[]});
+        if (patchSeat && !hardwareMotionReduced()) {
+          const remaining = 1-Math.min(1,(t-patchSeat.time)/.11);
+          patchLayout.seating={id:patchSeat.id,progress:1-remaining*remaining};
+        }
+        if (patchReturn && !hardwareMotionReduced()) {
+          const remaining = 1-Math.min(1,(t-patchReturn.time)/.17);
+          patchLayout.reseating={...patchReturn,progress:1-remaining*remaining};
+        }
+      } else { patchLayout=null; patchLayoutKey=''; patchReturn=null; cancelPatchDrag(); }
       const selected=currentBagEntry(nav,model);
       const sectionLabel=model.sections.find((section)=>section.id===nav.sectionId)?.label||nav.sectionId;
       const breadcrumb=`${mapOnly?'SURVEY INDICATOR':'FIELD CASE'} / ${sectionLabel}${route.type==='item-actions'&&selected?` / ${selected.title} / ACTIONS`:''}`;
-      const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
+      const selectedStack=nav.sectionId==='kit'?inventoryStackForEntry(kitStacks(),selected?.id):null;
+      const liveHint = guided || (skills && patchDrag) ? '' : (notice || (nav.sectionId === 'kit'
         // Short enough to survive the hint row. The long version ran to 97
         // characters and was cut at "INSPE…", which hid the very verbs it was
         // trying to advertise. What each verb does is on the item itself.
-        ? 'PICK AN ITEM · [ENTER] FOR ITS ACTIONS'
+        ? selectedStack?.memberCount>1?`${activeInputPromptDevice()==='controller'?`${inputPromptLabel('mapFloorPrev')} / ${inputPromptLabel('mapFloorNext')}`:'[ / ]'} CHOOSE STACK ITEM`:'EQUIP TO KEEP WITHIN REACH · HOLD TO CARRY'
         : journalHardware
           ? nav.journalPinnedId ? `FOLLOWING: ${bagEntry(model,'journal',nav.journalPinnedId)?.title || 'NONE'}` : ''
-        : skills
-          ? 'DRAG OUTPUT TO MATCHING INPUT · RETURN PLUG TO SPARES · ENTER PATCH / SPACE PULL'
-          : hintSource()));
+        : skills ? '' : hintSource()));
       if(locatePending&&mapHardware){
         const player=model.map?.player,policy=model.map?.policy||{},metrics=uiCellMetrics();
         const anchor=player?.resolved&&policy.showExactPlayer!==false?player:selectedMapSpace(mapNav,model.map);
@@ -1556,7 +1819,8 @@ export function makeBagScene({
         }
         locatePending=false;
       }
-      mapPresentation=drawBagView({ model, nav, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,
+      mapPresentation=drawBagView({ model, nav:{...nav,inventoryFocus,inventorySlot,inventoryMembers,hoveredControlId:hits.hoveredId()}, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,renderInventoryEmbodiment,patchStrip:exposedSkills,
+        sheetPage: selected?.kind === 'file' ? sheetPages[selected.source?.id] : 0,
         // The tree owns the content area for its own section; the tabs, task line
         // and action rail around it stay exactly as they are everywhere else.
         drawContent: subview
@@ -1565,13 +1829,20 @@ export function makeBagScene({
           ? (region) => { journalPresentation = drawJournalView({ entries: bagSection(model,'journal')?.entries || [],
             selectedId: nav.selected.journal, pinnedId: nav.journalPinnedId, hoveredId: hits.hoveredId(), region, scroll: nav.scroll.journal || 0, now: t, detailPage: journalPage }); return journalPresentation; }
           : skills
-          ? (region) => drawSkillsSection({ model, layout: region, selectedId: selectedSkill()?.id || null, now: t, patchDrag })
+          ? (region) => drawSkillsSection({ model, layout: region, selectedId: selectedSkill()?.id || null, patchDrag, patchLayout,
+            notePrompt: guided ? '' : `[${inputPromptLabel('mapFile')}] READ TAG` })
           : null,
-        overrideActions:subview?[['ESC','BACK'],['B','CLOSE BAG']]:null,breadcrumb });
+        overrideActions:route.type==='item-inspect'&&selected?.inspectionActions?.length
+          ?[[activeInputPromptDevice()==='controller'?`${inputPromptLabel('tabPrev')} / ${inputPromptLabel('tabNext')}`:'TAB','DETAIL'],[inputPromptLabel('confirm'),'EXAMINE'],['↑↓','READ'],[inputPromptLabel('back'),'BACK']]
+          :subview?[['ESC','BACK'],['B','CLOSE BAG']]:nav.sectionId==='kit'&&inventoryFocus==='equipment'
+          ?[[inputPromptLabel('confirm'),'HOLD'],['SPACE','LOWER'],['→','BACKPACK'],[inputPromptLabel('bag'),'CLOSE']]:null,breadcrumb });
       });
-      drawPrintedText(Math.max(outer.x+2,outer.x+outer.w-18),outer.y,
-        guided?.allowClose===false&&guided.kind!=='close'?'SETUP IN PROGRESS':mapHardware?'[M] CLOSE MAP':'[B] CLOSE BAG',
-        {w:16,ink:'#333830',finish:'etched',darkPanel:false});
+      const closeLabel=guided?.allowClose===false&&guided.kind!=='close'?'SETUP IN PROGRESS':mapHardware?'[M] CLOSE MAP':`[${inputPromptLabel('bag')}] CLOSE BAG`;
+      const closeX=Math.max(outer.x+2,outer.x+outer.w-18);
+      if(nav.sectionId==='kit'){
+        uiFill(closeX-.3,outer.y-.05,16.6,1,'#0a130e');
+        drawVfdText(closeX,outer.y,closeLabel,{scale:1,role:'ui-primary',max:16});
+      }else drawPrintedText(closeX,outer.y,closeLabel,{w:16,ink:'#333830',finish:'etched',darkPanel:false});
       registerCommonHits(outer,layout);
       if(subview)registerSubviewHits(route,layout);else registerRootHits(layout);
       // Callout leaders resolve against the exact same registered rectangles

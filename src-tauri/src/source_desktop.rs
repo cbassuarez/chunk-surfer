@@ -76,6 +76,23 @@ pub(crate) fn active() -> bool {
     lease().lock().map(|value| value.is_some()).unwrap_or(true)
 }
 
+// A fight reaction can share the desktop only after the Source underlay has
+// finished positioning its command window. Its token scopes the smaller cue.
+pub(crate) fn fight_reaction_owner() -> Result<Option<String>, ()> {
+    let slot = lease().lock().map_err(|_| ())?;
+    match slot.as_ref() {
+        None => Ok(None),
+        Some(owner) if owner.committed && !owner.paused && !owner.suspended => {
+            Ok(Some(owner.token.clone()))
+        }
+        Some(_) => Err(()),
+    }
+}
+
+pub(crate) fn lose_fight_handoff_focus(app: &AppHandle) {
+    let _ = reconcile_main_event(app, &WindowEvent::Focused(false));
+}
+
 fn probe_enabled() -> bool {
     cfg!(debug_assertions) && std::env::var("CHUNK_SOURCE_DESKTOP_PROBE").as_deref() == Ok("1")
 }
@@ -191,7 +208,7 @@ pub fn chunk_source_desktop_probe(
     if action != "metrics" {
         return Err("unknown probe action".into());
     }
-    let windows: Vec<Value> = ["main",LABEL,"source-desktop-probe-backdrop"].iter().filter_map(|label| {
+    let windows: Vec<Value> = ["main",LABEL,"source-desktop-probe-backdrop", "chapel-desktop-backdrop", "chapel-desktop-target"].iter().filter_map(|label| {
         let window = app.get_webview_window(label)?;
         let position = window.outer_position().ok(); let outer = window.outer_size().ok(); let inner = window.inner_size().ok();
         Some(json!({"label":label,"visible":window.is_visible().unwrap_or(false),"focused":window.is_focused().unwrap_or(false),
@@ -550,7 +567,8 @@ pub fn chunk_source_desktop_update(
 fn set_suspended(app: &AppHandle, token: &str, suspended: bool) -> Result<bool, String> {
     let focused = app
         .get_webview_window("main")
-        .is_some_and(|main| main.is_focused().unwrap_or(false));
+        .is_some_and(|main| main.is_focused().unwrap_or(false))
+        || crate::chapel_desktop::source_handoff_target_focused(app);
     let visible = !suspended && focused;
     let (committed, changed) = {
         let mut slot = lease().lock().map_err(|_| "desktop lease poisoned")?;
@@ -643,6 +661,15 @@ pub async fn chunk_source_desktop_end(app: AppHandle, token: String) -> Result<b
 }
 
 pub(crate) fn note_main_event(app: &AppHandle, event: &WindowEvent) -> bool {
+    if matches!(event, WindowEvent::Focused(false))
+        && crate::chapel_desktop::source_handoff_active()
+    {
+        return true;
+    }
+    reconcile_main_event(app, event)
+}
+
+fn reconcile_main_event(app: &AppHandle, event: &WindowEvent) -> bool {
     let Ok(mut slot) = lease().lock() else {
         return false;
     };

@@ -85,7 +85,7 @@ export function cancelControlScope(prefix) {
   return removed;
 }
 
-export function sampleControl(id, { lit = false, latched = false, enabled = true, reducedMotion = false, now } = {}) {
+export function sampleControl(id, { lit = false, latched = false, enabled = true, reducedMotion = false, lampMs = null, now } = {}) {
   const at = instant(now);
   const entry = entryFor(id, at);
   if (!entry) return { travel: enabled && latched ? CONTROL_LATCH_TRAVEL : 0, lampHeat: enabled && lit ? 1 : 0 };
@@ -109,7 +109,7 @@ export function sampleControl(id, { lit = false, latched = false, enabled = true
   const heatTarget = enabled && lit ? 1 : 0;
   if (entry.heat.to !== heatTarget) {
     entry.heat = { from: curve(entry.heat, time), to: heatTarget, at: time,
-      duration: heatTarget ? CONTROL_TIMING.warm : CONTROL_TIMING.cool };
+      duration: Number.isFinite(lampMs) ? Math.max(1,lampMs) : heatTarget ? CONTROL_TIMING.warm : CONTROL_TIMING.cool };
   }
   const travel = travelAt(entry, time);
   const result = {

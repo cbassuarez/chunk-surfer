@@ -79,7 +79,9 @@ test('ordinary held forward walking from entry crosses and lands without surrend
   assert.ok(drop&&crossing&&landing);
   assert.equal(drop.fall.vz,-C.walkSpeed);assert.equal(crossing.fall.vz,-C.walkSpeed);
   // The walk's fall drift selects the z tile the crossing wraps through.
-  assert.ok(crossing.lastSpaceWrap.translation.every((v,i)=>Math.abs(v-[0,29.75,7.8][i])<1e-9),JSON.stringify(crossing.lastSpaceWrap.translation));
+  const domain=continuationVoidDomain(crossing.lastSpaceWrap.domainId),translation=crossing.lastSpaceWrap.translation;
+  close(translation[0],0);close(translation[1],domain.translationY);
+  assert.ok(translation[2]>0);close(translation[2]/domain.periodZ,Math.round(translation[2]/domain.periodZ));
   assert.equal(landing.feet,C.spawn.feet);assert.equal(landing.recovery,null);assert.equal(landing.grace,0);
   assert.equal(events.some(e=>e.type==='capture'||e.type==='recovered'||e.type==='return'),false);
   const next=tick(landing,{forward:1}).state;

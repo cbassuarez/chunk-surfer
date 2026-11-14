@@ -149,6 +149,31 @@ test('each scheduled pulse emits one semantic acoustic event at the physical rad
   recordist.setAcousticEmitter(null);
 });
 
+test('only a saved, deliberate radio deployment is marked as a decoy sound',()=>{
+  resetRadioState();
+  const acoustics=[];
+  recordist.setAcousticEmitter(event=>acoustics.push(event));
+  try {
+    dropRadio(14,27,{now:1000});
+    const saved=saveRadioState(1200);
+    loadRadioState(saved,5000);
+    tickRadio(0,{px:90,py:90,now:7300,random:()=>.5});
+    assert.equal(acoustics.length,1);
+    assert.equal(acoustics[0].radioDeployment,true);
+    assert.deepEqual([acoustics[0].x,acoustics[0].y],[14,27]);
+    pickUpRadio(14,27);
+    tickRadio(0,{px:90,py:90,now:8700,random:()=>.5});
+    assert.equal(acoustics.at(-1).radioDeployment,false);
+    assert.deepEqual([acoustics.at(-1).x,acoustics.at(-1).y],[90,90]);
+
+    loadRadioState({...saved,scheduler:{...saved.scheduler,pulseKinds:undefined}},10000);
+    tickRadio(0,{px:90,py:90,now:12300,random:()=>.5});
+    assert.equal(acoustics.at(-1).radioDeployment,false,'unclassified legacy pulses cannot become a deliberate decoy');
+  } finally {
+    recordist.setAcousticEmitter(null);
+  }
+});
+
 test('a legacy warning alone cannot manufacture a terminal outcome on load', () => {
   resetRadioState();
   loadRadioState({dead:false,milestones:{[RADIO_CUES.POST_SECOND]:true}});

@@ -26,5 +26,5 @@ export const SCENE_DOCK_MESHES=Object.freeze({
 });
 
 export const SCENE_DOCK_COLLIDERS=Object.freeze([
- {id:'scene-dock-maintenance-ledge',kind:'obb',x:70.8,y:4.25,width:2.2,depth:.62,yaw:0,minElevation:0,maxElevation:.83,spaceId:'ground'},
+ {id:'scene-dock-maintenance-ledge',kind:'obb',x:68.8,y:4.25,width:2.2,depth:.62,yaw:0,minElevation:0,maxElevation:.83,spaceId:'ground'},
 ]);

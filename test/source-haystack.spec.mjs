@@ -8,8 +8,7 @@ import {
   haystackMovementMultiplier,
   haystackMoshFrame,
   haystackPageGuidance,
-  haystackPressure,
-  haystackPressureFloor,
+  sourceStandingPressure,
   haystackRainFrame,
   sourceFocusActionLabel,
 } from '../src/game/source-haystack.js';
@@ -27,11 +26,10 @@ function haystackState(slot = 0) {
 // The floor only rises. Temporary wrong-read impulses may decay, but the
 // underlying authored pressure cannot ever reset during the search.
 {
-  const values = Array.from({ length: 121 }, (_, second) => haystackPressureFloor({
-    elapsed: second,
-    noProgressSeconds: second,
+  const values = Array.from({ length: 121 }, (_, second) => sourceStandingPressure({
+    hallMaxDistance: 112, searchElapsed: second,
   }));
-  assert.equal(values[0], SOURCE_HAYSTACK.entryPressure);
+  assert.equal(values[0], 0.62);
   for (let i = 1; i < values.length; i += 1) assert.ok(values[i] >= values[i - 1] - 1e-12);
   assert.ok(values.at(-1) > values[10]);
 
@@ -43,8 +41,9 @@ function haystackState(slot = 0) {
   assert.ok(haystackFearFrame(values.at(-1)).intervalMs < haystackFearFrame(values[0]).intervalMs);
 }
 
-// Rain is layered: there are real dry intervals and real hard fronts, including
-// late in the haystack. Dry is not relief because pressure is tested separately.
+// The raw weather envelope has dry intervals and hard fronts. Runtime latches a
+// nonzero rain floor after the first front; its save/reload contract is tested
+// independently in source-hall-runtime.spec.mjs.
 {
   for (const seed of [1, 4417, 99173]) {
     const rain = [];
@@ -66,7 +65,7 @@ function haystackState(slot = 0) {
   const reduced = [];
   for (let i = 0; i <= 90 * 60; i += 1) {
     const elapsed = i / 60;
-    const pressure = haystackPressure({ elapsed, noProgressSeconds: elapsed });
+    const pressure = sourceStandingPressure({ hallMaxDistance: 112, searchElapsed: elapsed });
     full.push(haystackMoshFrame({ elapsed, pressure, seed: 4417 }));
     reduced.push(haystackMoshFrame({ elapsed, pressure, seed: 4417, reducedMotion: true }));
   }

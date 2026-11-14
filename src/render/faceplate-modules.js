@@ -35,8 +35,8 @@ function paintCompact(frame){
     radius:context.radius,navigationVisible:context.map?context.navigationVisible:false,mapStatus:context.mapStatus||'NO FIX',
     mischief:context.mischief,apparitions:context.apparitions});
   uiDrawHardware(metrics=>drawInstrumentGlass(metrics.ctx,{...physical(layout.map,metrics),depth:.8}));
-  drawNavigatorTelemetry(layout.lcd,context.telemetry,{nowMs:context.now,paused:context.held});
-  if(context.nightClock)drawNavigatorClock(layout.clockHousing,context.nightClock,{identity:false});
+  drawNavigatorTelemetry(layout.lcd,context.telemetry,{nowMs:context.now,paused:context.held,view:context.view});
+  if(context.nightClock)drawNavigatorClock(layout.clockHousing,context.nightClock,{identity:false,view:context.view});
 }
 
 export function endFaceplateModuleFrame(){
@@ -45,7 +45,7 @@ export function endFaceplateModuleFrame(){
   uiWithLayoutSize(frame.layout.physicalSize,()=>{
     const {context,layout}=frame;
     if(layout.mode==='bottom')paintCompact(frame);
-    else drawMinimap(context.map||unresolvedMap(),{module:true,bounds:layout.navigator,now:context.now,
+    else drawMinimap(context.map||unresolvedMap(),{module:true,bounds:layout.navigator,now:context.now,view:context.view,
       radius:context.radius,navigationVisible:context.map?context.navigationVisible:false,mapStatus:context.mapStatus||'NO FIX',
       source:context.source,telemetry:context.telemetry,mischief:context.mischief,apparitions:context.apparitions});
   });

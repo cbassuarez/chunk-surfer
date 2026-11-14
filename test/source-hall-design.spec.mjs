@@ -8,7 +8,6 @@ import {
   sourceHallCellIntervalMs,
   sourceHallDocumentStage,
   sourceHallLightPlacements,
-  sourceHallPaceMultiplier,
   sourceHallPropPlacements,
   sourceHallRegime,
   sourceHallSheet,
@@ -72,7 +71,6 @@ assert.equal(sourceHallRegime(112).id, 'stillness');
 for (const cellMetres of [0.25, 0.5, 1]) {
   const cells = SOURCE_HALL.lengthMetres / cellMetres;
   assert.ok(Math.abs(cells * sourceHallCellIntervalMs(cellMetres) / 1000 - 50) < 1e-9);
-  assert.ok(Math.abs(sourceHallPaceMultiplier(45, cellMetres) * 45 - sourceHallCellIntervalMs(cellMetres)) < 1e-9);
 }
 
 // One form at 12m. Other documents have stable physical addresses and a stage

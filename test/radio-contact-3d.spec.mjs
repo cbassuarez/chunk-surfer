@@ -42,7 +42,7 @@ test('knob picking is centred on visible hardware, separately from the top finge
 });
 
 test('operating hands clear the chassis core through the actual approach and withdrawal poses',async()=>{
-  const bytes=await readFile(new URL('../public/assets/battle-hands/right.glb',import.meta.url));
+  const bytes=await readFile(new URL('../public/assets/battle-hands/recordist.glb',import.meta.url));
   const template=await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
   const model=buildRadioContactModel(),hands=createRadioContactHands(template,model);
   const actions=['channel','volume','confirm','back','select','previous','next','key:1','key:#','battery'];
@@ -68,7 +68,7 @@ test('operating hands clear the chassis core through the actual approach and wit
 });
 
 test('released radio drops beneath a fixed opposed cloth pinch instead of remaining glued to both palms',async()=>{
-  const bytes=await readFile(new URL('../public/assets/battle-hands/right.glb',import.meta.url));
+  const bytes=await readFile(new URL('../public/assets/battle-hands/recordist.glb',import.meta.url));
   const template=await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
   const model=buildRadioContactModel(),hands=createRadioContactHands(template,model),anchor=[.072,-.020,.015];
   const frame={release:1,raise:1,batteryGap:.75,dead:true},size={width:736,height:460};
@@ -106,7 +106,7 @@ test('reduced motion removes raising travel while preserving physical inspection
 });
 
 test('the anatomical support grip reaches PTT and rear pads without skin inside the chassis core',async()=>{
-  const bytes=await readFile(new URL('../public/assets/battle-hands/right.glb',import.meta.url));
+  const bytes=await readFile(new URL('../public/assets/battle-hands/recordist.glb',import.meta.url));
   const template=await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
   const hand=createBattleHandRig(template,{side:'left'});hand.setRootPose(RADIO_CONTACT_LEFT_GRIP.wrist);hand.setFingerPose(RADIO_CONTACT_LEFT_GRIP.pose);
   const targets={index:[-.0354,-.0042,-.049],middle:[-.035,-.0266,-.049],ring:[-.033,-.0364,-.049],pinky:[-.0354,-.0594,-.049],thumb:[-.058,.027,.001]};

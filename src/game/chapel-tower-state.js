@@ -55,7 +55,12 @@ export function normalizeChapelTowerState(value) {
     ? Math.min(TOWER_STEDMAN_ROWS,Math.max(0,Math.floor(Number(source.relayInterruptions)||0))*28)
     : Math.max(0,Math.min(TOWER_STEDMAN_ROWS,Math.floor(Number(source.tenorRowsCompleted)||0)));
   const cleared=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase);
-  const migratedComplete=cleared||!!source.pealCompleted||(legacy&&(!!source.shuttersReleased||Number(source.relayInterruptions)>=3));
+  // A cleared route can also be the explicit, unrung Chapel bypass. Older
+  // saves only carried the phase; retain that migration without turning an
+  // authored false/zero result into a completed performance on every read.
+  const explicitBypass=source.pealCompleted===false&&source.bellsStanding===false&&Number(source.tenorRowsCompleted)===0;
+  const phaseImpliesCompletion=cleared&&(typeof source.pealCompleted!=='boolean'||legacy&&!explicitBypass);
+  const migratedComplete=phaseImpliesCompletion||!!source.pealCompleted||(legacy&&(!!source.shuttersReleased||Number(source.relayInterruptions)>=3));
   return {
     ...freshChapelTowerState(),
     schema:4,
@@ -67,7 +72,7 @@ export function normalizeChapelTowerState(value) {
     tenorRowsCompleted:migratedComplete?TOWER_STEDMAN_ROWS:migratedRows,
     tenorMisses:Math.max(0,Math.floor(Number(source.tenorMisses)||0)),
     pealCompleted:migratedComplete,
-    bellsStanding:cleared||!!source.bellsStanding,
+    bellsStanding:cleared&&migratedComplete||!!source.bellsStanding,
     transportElapsedMs:Math.max(0,Number(source.transportElapsedMs)||0),
     transportMode:typeof source.transportMode==='string'?source.transportMode:(phase===CHAPEL_TOWER_PHASE.FORESHADOW?'dormant':'world'),
     transportWashMs:Math.max(0,Number(source.transportWashMs)||0),

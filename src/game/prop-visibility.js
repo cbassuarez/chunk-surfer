@@ -4,7 +4,8 @@ import { isStationersMeshEnvelopeZone } from '../data/exterior-stationers.js';
 import { EXTERIOR_ROOF_ARCHITECTURE_IDS, EXTERIOR_ROOFLINE_MESH } from '../data/exterior-roofline.js';
 import {GLASS_COURT as C} from '../data/glass-court.js';
 import {GLASS_COURT_SIGHTLINES as S} from '../data/glass-court-sightlines.js';
-import {buildingWindowInteriorPlane,buildingWindowPortal} from '../world/building-window-views.js';
+import {buildingWindowInteriorPlane,buildingWindowPortal,isBuildingWindowScenery} from '../world/building-window-views.js';
+import {ELLERY_GARDEN_APPROACHES,ELLERY_GARDEN_MESHES} from '../data/ellery-garden-approaches.js';
 import {EXTERIOR_STREET_FABRIC} from '../data/exterior-street-fabric.js';
 
 // Cross-envelope visibility for the authored Ellery prop pack.
@@ -15,7 +16,7 @@ import {EXTERIOR_STREET_FABRIC} from '../data/exterior-street-fabric.js';
 // the depth-tested mesh pass while the player approaches from the yard.
 
 const EXTERIOR_ELLERY_MESHES=new Set([
-  ...EXTERIOR_STREET_FABRIC.meshNames,
+  ...EXTERIOR_STREET_FABRIC.meshNames,...Object.keys(ELLERY_GARDEN_MESHES),
   ...C.meshNames,C.entranceFixtures.mesh,
   'natatorium_roof_structure','natatorium_perimeter_relief',
   'ellery_public_front','ellery_public_forecourt',
@@ -27,6 +28,7 @@ const EXTERIOR_ELLERY_MESHES=new Set([
 ]);
 
 const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
+  'ellery_garden_elevation','ellery_garden_getin_sightline',
   'conservatory_west_elevation',
   'conservatory_stair_window',
   // Exterior mode cannot draw the ray-marched Get-In walls, so this aligned
@@ -59,11 +61,15 @@ export function isExteriorObserver({zone=null}={}){
 // A pub/shop uses the civic mesh envelope while remaining indoors; a street
 // observer also receives the existing roof architecture. Height-band changes
 // within either context do not change this selection and need no prop rebuild.
-export function worldPropVisibilityKey({group=null,zone=null,exteriorWindowId=null}={}){
+export function worldPropVisibilityKey({group=null,zone=null,exteriorWindowId=null,interiorWindowIds=null}={}){
   const key=[group,isExteriorObserver({zone}),isOutdoorZone(zone)];
   if(exteriorWindowId)key.push(exteriorWindowId);
+  const outlooks=[...new Set((Array.isArray(interiorWindowIds)?interiorWindowIds:interiorWindowIds?[interiorWindowIds]:[]).filter(Boolean))].sort();
+  if(outlooks.length)key.push(outlooks.join('|'));
   return JSON.stringify(key);
 }
+
+export function shouldPortalOwnScenery(instance,{spaceId=null}={}){return spaceId==='greenhouse'&&isBuildingWindowScenery(instance);}
 
 const FRAMED_INTERIOR_MESHES=new Set([
   ...C.meshNames,C.entranceFixtures.mesh,
@@ -73,6 +79,11 @@ const FRAMED_INTERIOR_MESHES=new Set([
 
 export function isBuildingWindowInterior(instance,window){
   if(window?.id===S.windowId&&instance?.id==='ellery-baths-high-fanlight')return true;
+  if(window?.id?.startsWith('GH-')){
+    if(String(instance?.id||'').startsWith('glass-court-planted-'))return false;
+    return [...C.meshNames,C.entranceFixtures.mesh].includes(instance?.mesh)
+      ||(instance?.zone===ZONE.glasshouse&&instance.x>=82&&instance.x<86&&instance.z>=15&&instance.z<27&&instance.y<4);
+  }
   if(window?.id!==S.windowId)return false;
   // The ordinary-looking public view does not expose the hostile planted
   // bodies; their expressions live only on the visitor's side of the glass.

@@ -50,6 +50,24 @@ test('the loop incoming call has no speech requirement and holds only until answ
   assert.equal(story.nodes['loop-answer'].choices,undefined);assert.equal(story.nodes['loop-answer'].listen,undefined);
 });
 
+test('the ringing receiver retains cadence at the doorway and responds to normal interaction',()=>{
+  for(const key of [{code:'KeyE'},{key:'Enter',controllerAction:'confirm'},{controllerAction:'interact'}]){
+    let time=9,stops=0;
+    const bells=[],calls=[];
+    const scene=makePayphoneScene({startOnHook:true,firstBellAt:10,clock:()=>time,
+      incoming:payphoneIncoming({pass:PAYPHONE_PASS.loop}),
+      line:{bell:options=>{bells.push(options);return {stop:()=>stops++};}},onCall:outcome=>calls.push(outcome.id),
+    });
+    scene.enter();scene.update();assert.equal(bells.length,0);
+    time=10;scene.update();assert.equal(bells.length,1);assert.equal(scene.view().loopBellStartedAt,10);
+    scene.key({...key,repeat:true});assert.equal(scene.view().phase,'onhook');
+    scene.key(key);assert.equal(scene.view().phase,'connected');assert.deepEqual(calls,['loop']);assert.equal(scene.view().loopAnswered,true);
+    assert.equal(stops,1);assert.equal(scene.view().loopBellStartedAt,null);
+  }
+  const optional=makePayphoneScene({startOnHook:true,incoming:payphoneIncoming({pass:0})});
+  optional.key({code:'KeyE'});assert.equal(optional.view().phase,'onhook');assert.equal(optional.view().loopAnswered,false);
+});
+
 test('the personal loop call has a quiet aftermath while practical calls remain at the next kiosk',()=>{
  const flags={'phone.loop.broken':true};
  for(const hasChapelKey of[false,true]){

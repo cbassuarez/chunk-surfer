@@ -6,6 +6,7 @@ import { SOURCE_PRE_TAPE } from '../src/data/source-level.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+import { RAIN_FIELD_GLSL } from '../src/render/rain-field.js';
 import { OUTSKIRTS_BUS_RAIN_GLSL, outskirtsBusRainUniforms, trimOutskirtsBusRain, outskirtsBusInteriorLightMix } from '../src/render/outskirts-bus-weather.js';
 import { busPassageLampPower } from '../src/game/outskirts-bus-passage.js';
 
@@ -112,13 +113,15 @@ test('Source submits the actual roof pose, applies the array-to-offset adapter o
   const main = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /sourceRainShelter:usingSourceSpace\(\)\?chunkSurfRuntime\.outskirtsBusPassageFrame\?\.\(\)\?\.rainShelter\?\?null:null/);
   const renderer = fs.readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
-  assert.match(renderer, /const RAIN_GLSL\s*=\s*GLASS_COURT_RAIN_GLSL\+OUTSKIRTS_BUS_RAIN_GLSL/);
+  assert.match(renderer, /const RAIN_GLSL\s*=\s*GLASS_COURT_RAIN_GLSL\s*\+\s*OUTSKIRTS_BUS_RAIN_GLSL\s*\+\s*RAIN_FIELD_GLSL/);
   assert.match(renderer, /centreXCells:\(sourceRainShelter\?\.x\|\|0\)\/CELL[\s\S]*?baseYCells:\(sourceRainShelter\?\.y\|\|0\)\/CELL/);
   assert.match(renderer, /patternOriginOffsetMetres:\{x:patternOriginOffsetMetres\[0\],z:patternOriginOffsetMetres\[2\]\}/);
   assert.match(renderer, /uniform4fv\(sourceVoidPhysicalU\('uBusRainRoof'\),busRain\.uBusRainRoof\)/);
-  const trim = renderer.indexOf('int pieces=outskirtsBusTrimRain(a,b,a0,b0,a1,b1)');
-  assert.ok(trim > renderer.indexOf('if(!glassCourtTrimRain(a,b))return 0.0;'));
-  assert.match(renderer.slice(trim, trim + 350), /if\(pieces==0\)return 0\.0;[\s\S]*rayToSegment\(ro, rd, a0, b0\)[\s\S]*if\(pieces>1\)d=min\(d,rayToSegment\(ro,rd,a1,b1\)\)/);
+  const trim = RAIN_FIELD_GLSL.search(/outskirtsBusTrimRain\(\s*a\s*,\s*b\s*,\s*a0\s*,\s*b0\s*,\s*a1\s*,\s*b1\s*\)/);
+  assert.ok(trim >= 0, 'the field applies shelter to each world-space drop');
+  const shelter = RAIN_FIELD_GLSL.slice(trim, RAIN_FIELD_GLSL.indexOf('vec4 traceRainField(', trim));
+  assert.match(shelter, /if\s*\(pieces\s*>\s*0\)\s*accumulateRainSegment\([^\n]+\ba0\s*,\s*b0\s*,/, 'the segment before the shelter can still draw');
+  assert.match(shelter, /if\s*\(pieces\s*>\s*1\)\s*accumulateRainSegment\([^\n]+\ba1\s*,\s*b1\s*,/, 'the segment past the shelter can still draw');
   assert.match(OUTSKIRTS_BUS_RAIN_GLSL, /uniform vec4 uBusRainRoof/);
   assert.match(OUTSKIRTS_BUS_RAIN_GLSL, /pa=\(a\.xz-uBusRainRoof\.xy\)\*\.5/);
 });

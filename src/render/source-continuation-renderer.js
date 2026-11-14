@@ -112,13 +112,27 @@ const chartOf=value=>Math.max(0,Math.round(finite(value?.chartId)));
 const archipelagoOwned=value=>value?.archipelago===true||String(value?.id||'').startsWith('iii-');
 const dot3=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0);
 const basisMatrix=b=>[...b.right,0,...b.up,0,...b.forward.map(v=>-v),0,0,0,0,1];
-// Retain the complete canonical construction for portal and void images. Only
-// the newly expanded islands and exit use this draw selection; an exact AABB
-// outside the camera cone cannot hide a nearby tread or a visible broad slab.
+const detailVisibilityBounds=new Map();
+function continuationDetailBounds(prop,origin){
+  // These reusable details retain their authored local anchor in the actual
+  // uploaded mesh. Transform that entire box, including scale and rotation:
+  // a half-metre fallback sphere cannot describe a long bearing or a cable.
+  if(prop.practical||prop.journeyPractical||prop.onwardPreview||prop.surroundings||prop.horizonTide||prop.restAffliction||prop.restDrift||prop.restDetached||prop.restFracture||prop.restPainRattle||prop.restRebuilt)return null;
+  const key=String(prop.mesh||'').startsWith(PREFIX)?prop.mesh.slice(PREFIX.length):null,geometry=key&&canonical[key],m=prop.matrix;
+  if(!geometry?.p||!m)return null;
+  if(!detailVisibilityBounds.has(key))detailVisibilityBounds.set(key,boundsOf(geometry.p));
+  const b=detailVisibilityBounds.get(key),center=transform(m,b.center).map((v,k)=>v-[origin.x,origin.y,origin.z][k]),half=b.max.map((v,k)=>(v-b.min[k])/2),
+    extent=[0,1,2].map(axis=>Math.abs(m[axis])*half[0]+Math.abs(m[axis+4])*half[1]+Math.abs(m[axis+8])*half[2]);
+  return{min:center.map((v,k)=>v-extent[k]),max:center.map((v,k)=>v+extent[k])};
+}
+// Retain the complete canonical construction for portal and void images. Draw
+// selection may reject only an exact whole box outside the current aperture
+// and camera cone. Imported models and moving recollections remain retained.
 function archipelagoVisible(prop,view,origin,toCurrent=null){
-  if(!prop.archipelago&&!prop.exitPassage)return true;
+  const nativeDetail=view.cullNativeDetails&&!prop.archipelago&&!prop.exitPassage?continuationDetailBounds(prop,origin):null;
+  if(!prop.archipelago&&!prop.exitPassage&&!nativeDetail)return true;
   const at=[prop.x-origin.x,prop.y-origin.y,prop.z-origin.z],radius=Math.max(.1,finite(prop.cullRadius,.6)),
-    source=prop.physicalBounds||{min:at.map(v=>v-radius),max:at.map(v=>v+radius)};
+    source=nativeDetail||prop.physicalBounds||{min:at.map(v=>v-radius),max:at.map(v=>v+radius)};
   let min=source.min,max=source.max;
   if(toCurrent){
     const points=[];
@@ -129,7 +143,7 @@ function archipelagoVisible(prop,view,origin,toCurrent=null){
   // Fine metal bearing strips and lantern fittings are subpixel dressing at
   // this range. Broad supported decks, roots and architectural silhouettes
   // retain the full scene range.
-  if(distance>(prop.architecturalJoint||prop.archipelagoPractical?80:SOURCE_CONTINUATION_ARCHITECTURE.far))return false;
+  if(distance>(!nativeDetail&&(prop.architecturalJoint||prop.archipelagoPractical)?80:SOURCE_CONTINUATION_ARCHITECTURE.far))return false;
   if(distance<10)return true;
   const {forward,right,up}=view.basis,tan=finite(view.tanHalfFov,.95),aspect=finite(view.aspect,16/9),planes=[];
   for(const [axis,width]of[[right,tan*aspect],[up,tan]])for(const side of[-1,1]){
@@ -480,6 +494,9 @@ export function prewarmSourceContinuationAssets({renderer=R3,props=P3,resolveAss
     const vehicleMemory=['opening_drive_cabin','opening_drive_vehicle_body','opening_drive_tyre','opening_drive_cabin_door_r'];
     if(vehicleMemory.some(mesh=>!(props.propMeshCatalog?.()||[]).includes(mesh))){
       try{await props.addPropPack(resolveAsset('assets/source-vehicle-interior.glb'));await props.addPropPack(resolveAsset('assets/source-drive/cab-radio/cab-radio.glb'));}catch{/* Leave these images absent. */}
+    }
+    if(!(props.propMeshCatalog?.()||[]).includes('van_brand_drive')){
+      try{await props.addPropPack(resolveAsset('assets/van-brand.glb'));}catch{/* Paint is optional; the route retains agency. */}
     }
     if(SOURCE_REST_FLOOD_MESHES.some(mesh=>!(props.propMeshCatalog?.()||[]).includes(mesh))){
       try{await props.addPropPack(resolveAsset('assets/source-return/fauna.glb'));}catch{/* Missing fauna must not block the existing route. */}
@@ -965,7 +982,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     voidViews=sourceContinuationVoidViews(state,{...presentation,aspect:viewportAspect}),
     originMatrix=matrix(origin.x,origin.y,origin.z),unanchor=matrix(-origin.x,-origin.y,-origin.z),
     sourceExcludes=[...portalViews.map(v=>v.planes),...voidViews.excludes].map(p=>transformPortalPlanes(p,originMatrix)),allProps=[...props],allLights=[...lights],chartId=chartOf(state);
-  const islandView={...presentation,aspect:viewportAspect,tanHalfFov:viewportTanHalfFov};
+  const islandView={...presentation,aspect:viewportAspect,tanHalfFov:viewportTanHalfFov,
+    cullNativeDetails:phaseOf(state)==='wrong-return'&&!state.sourceRestView};
   props.splice(0,props.length,...allProps.filter(p=>chartOf(p)===chartId&&archipelagoVisible(p,islandView,origin)).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
   if(!state.sourceRestView)batchDistantArchipelagoFlights(props,islandView,origin);
   if(!state.sourceRestView)batchDistantExit(props,islandView,origin);
@@ -1143,7 +1161,7 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
     renderer.r3dSetSourceRestFaculties?.(null);renderer.r3dSetSourceRestHorizon?.(null);
     renderer.r3dSetStormFlash?.(0);
     renderer.r3dSetSourceWeather?.({rain:0,moon:0,clouds:0});props.setPressureSurfaceInstances?.([]);
-    renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);props.setSourceSurroundingsPressure?.(null);
+    renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);props.setSourceSurroundingsPressure?.(null);
   }
   async function install(){
     if(released)return false;void noteAsset.load();await prewarmSourceContinuationAssets({renderer,props,resolveAsset,installMeshes});return!released;
@@ -1182,9 +1200,6 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
       horizon:(cue?.horizon||0)*weatherPresence,clock:cue?.clock||0,sunset:cue?.sunset?{...cue.sunset,amount:cue.sunset.amount*weatherPresence}:null});
     const flashMode=getFlashMode(),flash=cue?.judgment?.flash||0;
     renderer.r3dSetStormFlash?.(flashMode==='off'?0:flash*Math.min(flashMode==='reduced'?.12:1,getReducedMotion()?.20:1)*weatherPresence);
-    // The body's decline loses acquired colour/form; it is not an NVMe/PS2
-    // transmission fault layered over an otherwise intact world.
-    renderer.r3dSetSourceFault?.(0);
     last.faculties=sourceRestFacultyFrame(state.sourceRestView?.degradation||0,{
       affliction:last.affliction,reducedMotion:!!getReducedMotion(),
       reducedDread:state.sourceRestView?.reducedDread===true,effectsMode:state.sourceRestView?.effectsMode||'full',

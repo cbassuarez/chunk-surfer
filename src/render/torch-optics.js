@@ -9,6 +9,18 @@ export function resolveTorchFrame({eye=[0,0,0],yaw=0,pitch=0,yawOffset=0}={}){
   return {origin:[finite(eye[0],0)+Math.cos(cameraYaw)*.12,finite(eye[1],0)-.08,finite(eye[2],0)+Math.sin(cameraYaw)*.12],
     forward:[sy*cp,sp,-cy*cp],right:[cy,0,sy],up:[-sy*sp,cp,cy*sp],yaw:lampYaw,pitch:lampPitch};
 }
+// Local model axes use +X right, +Y up and -Z forward. Convert the
+// shared lens pose using the final view, including eased aim and lean.
+export function resolveRecorderLamp({eye,yaw,pitch,yawOffset=0,lamp}) {
+  if(!lamp)return resolveTorchFrame({eye,yaw,pitch,yawOffset});
+  const view=resolveTorchFrame({eye,yaw,pitch});
+  const world=([x,y,z])=>view.right.map((value,i)=>value*x+view.up[i]*y-view.forward[i]*z);
+  const rotateYaw=([x,y,z])=>[x*Math.cos(yawOffset)-z*Math.sin(yawOffset),y,x*Math.sin(yawOffset)+z*Math.cos(yawOffset)];
+  const forward=rotateYaw(world(lamp.forward));
+  return {origin:world(lamp.origin).map((value,i)=>value+eye[i]),forward,
+    right:rotateYaw(world(lamp.right)),up:rotateYaw(world(lamp.up)),
+    yaw:Math.atan2(forward[0],-forward[2]),pitch:Math.asin(clamp(forward[1],-1,1))};
+}
 export function normalizeTorchOptics(torch={}){
   const coneInner=clamp(finite(torch.coneInner,.88),-.99,.9997);
   return {reach:clamp(finite(torch.reach,1),.01,4),coneInner,

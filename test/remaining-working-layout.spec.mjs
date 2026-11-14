@@ -2,10 +2,19 @@ import test from'node:test';import assert from'node:assert/strict';
 import*as FP from'../src/world/floorplan.js';import*as P from'../src/game/props.js';
 import{conservatory as C}from'../src/data/floorplan/conservatory.js';import{CONSERVATORY_PROPS}from'../src/data/conservatory-props.js';import{CELL}from'../src/data/floorplan/legend.js';
 import{packedPropMeshes,placedMesh,segmentHitsTriangle as hit}from'./helpers/packed-prop-mesh.mjs';
+import{BOX_OFFICE_HATCH as H}from'../src/data/box-office.js';
 FP.compile(C.levels,{width:C.width,height:C.height,widenCorridors:C.widenCorridors,connectors:C.connectors,edgePortals:C.edgePortals,doors:C.doors});P.propsInit(FP);
 const rendered=P.renderInstances({inscriptions:false}),byId=new Map(rendered.map(p=>[p.id,p])),pack=packedPropMeshes(),model=id=>{const p=byId.get(id);assert.ok(p,'retained visible instance '+id);return placedMesh(p,pack.mesh(p.mesh));};
 const disjoint=(a,b)=>a.min.some((v,i)=>v>=b.max[i]-1e-7||a.max[i]<=b.min[i]+1e-7);
-const crosses=(a,b)=>a.triangles.some(t=>b.triangles.some(q=>[0,1,2].some(i=>hit(t[i],t[(i+1)%3],q)||hit(q[i],q[(i+1)%3],t))));
+const triangleBounds=t=>({min:[0,1,2].map(i=>Math.min(...t.map(v=>v[i]))),max:[0,1,2].map(i=>Math.max(...t.map(v=>v[i])))});
+const separated=(a,b)=>a.min.some((v,i)=>v>b.max[i]||a.max[i]<b.min[i]);
+const crosses=(a,b)=>{
+ if(separated(a.bounds,b.bounds))return false;
+ // Exact segment/triangle tests retain their old meaning; reject only pairs
+ // whose bounding volumes cannot meet, avoiding a whole-hero quadratic scan.
+ const candidates=b.triangles.map(t=>({t,bounds:triangleBounds(t)})).filter(q=>!separated(a.bounds,q.bounds));
+ return a.triangles.some(t=>{const bounds=triangleBounds(t);return candidates.some(q=>!separated(bounds,q.bounds)&&[0,1,2].some(i=>hit(t[i],t[(i+1)%3],q.t)||hit(q.t[i],q.t[(i+1)%3],t)));});
+};
 const probe=(x,z,{floor=-4,group='basement'}={})=>{const l=FP.logicalAtPhysical((x-.25)/CELL,(z-.25)/CELL,{group,floor});assert.ok(l,'physical approach exists');assert.equal(l.renderGroup,group);for(const[dx,dz]of[[0,0],[-.2,0],[.2,0],[0,-.2],[0,.2]]){const rx=l.x+dx/CELL,ry=l.y+dz/CELL;assert.equal(FP.isSolid(rx,ry),false);assert.equal(FP.isCollisionOnly(rx,ry),false);assert.equal(P.propCanOccupy(rx,ry),true);assert.ok(Math.abs(FP.floorAt(rx,ry)-floor)<1e-5);}};
 
 test('the actual old stairs pierce the switchgear body; a full-width forward shift also pierces a tape rack',()=>{
@@ -60,7 +69,11 @@ function horizontalSupport(mesh,x,z,maxY){
 
 test('box-office papers sit wholly on the actual counter and all four grounded queue posts clear its grille',()=>{
  const counter=model('box-office-counter');for(const id of['box-office-program-stack','box-office-unsold-roll','box-office-cash-terminal']){
-  const m=model(id);assert.equal(crosses(m,counter),false,id+' clears actual grille bars');
+  const m=model(id);
+  // Float32 support planes differ by nanometres after independent scales.
+  // Only construction above the contact plane can penetrate the resting item.
+  const obstruction={...counter,triangles:counter.triangles.filter(t=>Math.max(...t.map(p=>p[1]))>m.bounds.min[1]+1e-5)};
+  assert.equal(crosses(m,obstruction),false,id+' clears actual grille bars above its contact plane');
   for(const x of[m.bounds.min[0],m.bounds.max[0]])for(const z of[m.bounds.min[2],m.bounds.max[2]])assert.ok(Math.abs(horizontalSupport(counter,x,z,m.bounds.min[1])-m.bounds.min[1])<1e-5,'every paper corner has actual counter support');
  }
  const facade=model('bay-west-elevation');assert.equal(crosses(counter,facade),false,'the complete counter clears the retained low plinth');
@@ -69,12 +82,19 @@ test('box-office papers sit wholly on the actual counter and all four grounded q
   const joint=[88.42,.78,byId.get(a.id).z];for(const p of[a,b])assert.ok(Math.min(...p.vertices.map(v=>Math.hypot(...v.map((v,i)=>v-joint[i]))))<.04,'both actual rope caps meet at the same joint');}
  assert.ok(q[1].bounds.min[2]-q[0].bounds.max[2]>=.9,'parallel rows retain the clear queue aisle');
  for(const x of[87.75,88,88.5,88.75,88.9])probe(x,10.5,{floor:0,group:'ground'});probe(90.65,10.5,{floor:0,group:'ground'});
- assert.ok(91-counter.bounds.max[0]>=.9,'actual staff lane before the retained physical office wall');
+ assert.deepEqual([byId.get(counter.id).x,byId.get(counter.id).z],[H.anchor.x,H.anchor.z],'the deep fitted assembly shares the real wall aperture origin');
+ assert.equal(byId.get(counter.id).mesh,H.mesh,'the actual hatch is a private variant, leaving copied furniture alone');
+ assert.ok(counter.bounds.min[0]<H.aperture.x0-.3&&counter.bounds.max[0]>H.aperture.x1+.3,'public ledge and staff shelf reach their respective sides of the one-metre wall');
+ assert.ok(Math.abs(horizontalSupport(counter,90.84,10,.86)-H.publicLedge.height)<1e-6,'public ledge retains its real working level');
+ assert.ok(Math.abs(horizontalSupport(counter,92.15,10,.76)-H.officeShelf.height)<1e-6,'office-side shelf is physically supported at its own working level');
+ for(let x=H.aperture.x0*2;x<H.aperture.x1*2;x++)for(let z=H.aperture.z0*2;z<H.aperture.z1*2;z++)assert.ok(FP.isSolid(x,z)||FP.isCollisionOnly(x,z),'the glazed view remains a full-body barrier');
+ assert.equal(FP.doorState().find(d=>d.id==='foh-office')?.keyId,'master','staff access remains at the keyed leaf');
 });
 
 test('the retained waiting pew clears the façade plinth and keeps a usable public front',()=>{
  const p=model('atrium-public-bench-west'),facade=model('bay-west-elevation'),old=placedMesh({...byId.get(p.id),x:75.8,z:9.5,yaw:Math.PI/2},pack.mesh('pew'));
- assert.ok(crosses(old,facade));assert.equal(crosses(p,facade),false);assert.ok(Math.abs(p.bounds.min[1])<1e-8);
+ const oldFacade=placedMesh(byId.get('bay-west-elevation'),pack.mesh('conservatory_west_elevation'));
+ assert.ok(crosses(old,oldFacade),'the rejected pew pose crossed the canonical old plinth retained for Source');assert.equal(crosses(p,facade),false);assert.ok(Math.abs(p.bounds.min[1])<1e-8);
  for(const[x,z]of[[87.25,7.0],[87.75,7.0],[88.25,7.0],[88.25,7.5]])probe(x,z,{floor:0,group:'ground'});
 });
 

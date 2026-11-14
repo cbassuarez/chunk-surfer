@@ -8,6 +8,7 @@ import {
   BAG_ITEM_REGISTRY,
   COLLECTED_ITEM_AUDIT,
   bagInspectionDialogue,
+  cassetteBagItems,
   bagKeyFacts,
   resolveBagItemAction,
   resolveBagOwnership,
@@ -47,10 +48,10 @@ test('every collected-object family has exactly one audited destination', () => 
 
 test('the action resolver exposes the full semantic descriptor contract', () => {
   assert.deepEqual(Object.keys(BAG_ITEM_REGISTRY).sort(), [
-    'coffee', 'interface', 'keyring', 'light', 'lyle-jumper', 'map', 'marble-eyes',
+    'b3-session-card', 'coffee', 'interface', 'keyring', 'light', 'lyle-jumper', 'lyle-music-box', 'map', 'marble-eyes',
     'plant-spanner', 'pub-opener', 'pub-orderbook', 'pub-service-tray',
     'radio', 'recorder', 'ren-home-cassette', 'ren-service-key',
-    'sheet-music', 'station-relics', 'tuning-fork',
+    'sheet-music', 'station-relics', 'tuning-fork', 'vale-guarantor-slip',
   ]);
   const cases = [
     ['light', {}, 'light-toggle', 'TURN ON', BAG_ACTION_MODE.COMMAND],
@@ -241,7 +242,11 @@ test('the bag emits one semantic item intent instead of invoking entry callbacks
   });
   scene.enter();
   scene.key({ key: 'Enter', code: 'Enter' });
-  scene.key({ key: 'ArrowDown', code: 'ArrowDown' });
+  for(let attempt=0;attempt<12;attempt++){
+    const view=scene.debugState(),action=view.selected.actionList[view.route.index];
+    if(action?.id==='light-toggle')break;
+    scene.key({ key: 'ArrowDown', code: 'ArrowDown' });
+  }
   scene.key({ key: 'Enter', code: 'Enter' });
   assert.deepEqual(intents, [{
     itemId: 'light',
@@ -271,4 +276,37 @@ test('main integrates ownership, one dispatcher, automatic world use, and extern
   const bustBody = source.slice(source.indexOf('function talkToBust('), source.indexOf('function inspectAcademicBust'));
   assert.match(bustBody, /HEAD\.carryingMarbleHead\(\)/, 'bust interaction tests the carried eyes automatically');
   assert.match(bustBody, /HEAD\.marbleHeadFits\(propId\)/, 'wrong and matching busts stay target-specific');
+});
+
+
+test('numbered cassette projection follows actual recording, loss and recovery without a second owner',async()=>{
+  const {createCassetteLedger,recordLevelCheck,recordOnCassette,loseCassetteOnContact,recoverCassette,takeB3Store}=await import('../src/game/cassette-ledger.js');
+  assert.deepEqual(cassetteBagItems(null),[],'opening a bag must not issue fresh stock');
+  let ledger=recordLevelCheck(createCassetteLedger('contract'));
+  const source=structuredClone(ledger);
+  let items=cassetteBagItems(ledger);
+  assert.equal(items.length,8);assert.equal(items[0].id,'recording-cassette:1');assert.equal(items[0].value,'LEVEL CHECK');
+  assert.ok(items.every(item=>item.readyCapable&&!item.battleCapable));
+  assert.deepEqual(ledger,source,'presentation changed cassette custody');
+  ledger=recordOnCassette(ledger,1,{roomId:'main_b3',outcome:'clean',takeId:'native-take'}).ledger;
+  items=cassetteBagItems(ledger);assert.equal(items[0].id,'recording-cassette:1');assert.equal(items[0].value,'CLEAN TAKE');
+  assert.equal(items[0].content.takeId,'native-take');assert.equal(items[0].source,'issued');
+  assert.deepEqual(items[0].history,ledger.cassettes[0].history);items[0].history[0].kind='presenter mutation';
+  assert.equal(ledger.cassettes[0].history[0].kind,'tutorial');items[0].content.takeId='presenter mutation';
+  assert.equal(ledger.cassettes[0].content.takeId,'native-take');
+  const lost=loseCassetteOnContact(ledger,{random:()=>0});ledger=lost.ledger;
+  items=cassetteBagItems(ledger);assert.equal(items[0].id,'recording-cassette:1');assert.equal(items[0].present,false);
+  assert.equal(items[0].primaryAction.enabled,false);assert.equal(items.length,8,'lost stock retains its reservation without being shown as held');
+  assert.match(bagInspectionDialogue('recording-cassette:1',{cassetteLedger:ledger}).start.lines.map(line=>line.text).join(' '),/not in my hand/);
+  ledger=recoverCassette(ledger,1).ledger;assert.equal(cassetteBagItems(ledger)[0].present,true);
+  ledger=takeB3Store(ledger).ledger;assert.equal(cassetteBagItems(ledger).length,10);
+  assert.equal(cassetteBagItems(ledger)[9].id,'recording-cassette:10');
+  assert.deepEqual(cassetteBagItems(JSON.parse(JSON.stringify(ledger))),cassetteBagItems(ledger));
+});
+
+test('invalid and duplicate numbered records never create ghost cassette entries',()=>{
+  const ledger={cassettes:[{n:2,content:null},{n:2,lost:true},{n:0},{n:'3'},{n:1,content:null}]};
+  assert.deepEqual(cassetteBagItems(ledger).map(item=>item.id),['recording-cassette:1','recording-cassette:2']);
+  assert.equal(resolveBagItemAction('recording-cassette:2').id,'inspect-recording-cassette');
+  assert.equal(resolveBagItemAction('recording-cassette:02').enabled,false);
 });

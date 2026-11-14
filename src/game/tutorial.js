@@ -6,8 +6,9 @@
 // order and the tutorial simply agrees with you and moves on.
 //
 // A real take counts only after an honest six-second calibration. Navigation
-// then leads to Studio B3. Combat and the dream are taught when a real encounter
-// first needs them; neither is a hidden prerequisite of the recording job.
+// then leads to Studio B3. The first recorder press in Get In owns setup and
+// the existing imagined fight before handing into navigation. These passive
+// prompts stand aside while that protected sequence holds the real world.
 // The check uses the real recorder, never counts as a commissioned room and
 // never changes the player's light. Spoiling it is safe and recoverable.
 //

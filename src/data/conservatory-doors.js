@@ -126,7 +126,7 @@ export const CONSERVATORY_DOORS = Object.freeze([
   // entrance—not an open portal into an unbuilt outside—and the closure key is
   // deliberately absent from the recordist's ring.
   D('front-main', DOOR_ARCHETYPE.PUBLIC_GLAZED_PAIR, '159,7', { key:'closure-order', swing: 'outward', activeLeaves: [0, 1] }),
-  D('hall-stage-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,23', { open: true, hinge: 'right', swing: 'stage-out', widthAxis:'y' }),
+  D('hall-stage-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,23', { at:{x:101.5,y:11.5}, key:'master', open:false, hinge: 'right', swing: 'stage-out', widthAxis:'y' }),
   // ── the sub-basement dance wing ───────────────────────────────────────────
   // Studio to studio through the old service wall: this used to be the way to
   // the plant room, before the plant room ended up on the other side.
@@ -171,8 +171,9 @@ export const CONSERVATORY_DOORS = Object.freeze([
   // ids and old addresses remain save aliases; only the live portal centres
   // move to the direct, one-wall-deep thresholds.
   D('dock-foyer-service', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '149,27', {
-    at:{x:74,y:13.5},open:true,key:'master',hinge:'right',swing:'escape',widthAxis:'y',
+    at:{x:74,y:13.5},open:false,key:'master',hinge:'right',swing:'escape',widthAxis:'y',
   }),
+  D('dock-garden-service', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, null, {at:{x:70.5,y:13.5},key:'master',hinge:'left',swing:'escape',widthAxis:'y'}),
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_WIRED_PAIR, '131,33', {
     at:{x:65,y:15.5},open:true,key:'master',hinge:'left',swing:'escape',widthAxis:'x',activeLeaves:[0,1],
   }),
@@ -180,7 +181,7 @@ export const CONSERVATORY_DOORS = Object.freeze([
   // The east end of the ground spine, out to the west baths court.
   D('spine-west-court', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, null, { at:{x:74,y:23.5}, hinge:'left', swing:'escape', widthAxis:'y' }),
   D('hall-vestibule', DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR, '197,51', {
-    hinge:'right',swing:'hall-out',activeLeaves:[0,1],widthAxis:'y',renderGroups:['ground','hall'],
+    key:'master',hinge:'right',swing:'hall-out',activeLeaves:[0,1],widthAxis:'y',renderGroups:['ground','hall'],
   }),
   D('pool-lobby', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, '168,55', {
     at:{x:84,y:15},legacyIds:['169,55'],hinge:'right',swing:'dry-out',activeLeaves:[0,1],
@@ -204,7 +205,9 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('chapel-c17', DOOR_ARCHETYPE.CHAPEL_OAK_PAIR, '186,116', { key: 'chapel', hinge: 'right', swing: 'chapel-in', activeLeaves: [1] }),
   D('practice-west-2', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '119,133', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
   D('practice-east-2', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '127,133', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
-  D('practice-side', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '153,137', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
+  // False Ellery remembers this leaf open. In the real wing its retired side
+  // passage is sealed under the same closure order as the public front doors.
+  D('practice-side', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '153,137', { key:'closure-order', open:false, hinge:'right', swing:'room-in', widthAxis:'y' }),
   D('practice-west-3', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '119,147', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
   D('practice-east-3', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '127,147', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
   D('practice-west-4', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '119,161', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),

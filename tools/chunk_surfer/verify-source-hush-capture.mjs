@@ -21,7 +21,7 @@ const sourcePaths = ['src/main.js', 'src/game/source-continuation.js', 'src/game
   'src/render/props3d.js', 'src/render/pressure-composite.js'];
 const manifest = await Promise.all(sourcePaths.map(async path => ({ path, sha256: createHash('sha256').update(await readFile(path)).digest('hex') })));
 const report = { kind: 'source-hush-capture-real-game', passed: false,
-  disclosure: 'The initial body, HUSH proximity and prior chapter wins are developer-staged. Ordinary update detects the capture; no E or combat confirmation is sent. Escape is a real trusted browser keyboard event. This is not earned-route, participant, packaged-native or acoustic acceptance.',
+  disclosure: 'The initial body, HUSH proximity and prior chapter wins are developer-staged. Ordinary update detects the capture; no E or combat confirmation is sent. Trusted Escape pauses/resumes; trusted Space and arrow keys advance text and choose the visible decline option. This is not earned-route, participant, packaged-native or acoustic acceptance.',
   audio: { browserMuted: true, microphoneRequested: false, captureAudioCalled: false, videoAudioTracks: 0 },
   url: null, sourceManifest: manifest, chapters: [], pageErrors: [], consoleErrors: [], shaderErrors: [], glErrors: [], hmrSockets: [], inputEvents: [], failure: null };
 let browser, page, videoChapter = null;
@@ -64,6 +64,25 @@ async function until(predicate, label, { timeout = 20000, chapter = null } = {})
     await delay(100);
   }
   throw Error(`${label} timed out; final state ${JSON.stringify(value)}`);
+}
+async function advanceDialogue(chapter, { toChoices = false } = {}) {
+  const started = Date.now();
+  while (Date.now() - started < 30000) {
+    const value = await inspect();
+    if (!value?.scene?.startsWith('source-contact:')) return value;
+    const dialogue = value.dialogue;
+    if (dialogue?.pending) {
+      assert.ok(toChoices, 'declining must not lead to another unreviewed choice');
+      return value;
+    }
+    // Wait for the presenter's ordinary dwell. Never send Space into a menu
+    // without first reading its visible options (Space confirms that menu).
+    if (dialogue?.line && dialogue.lineAge >= .4) {
+      await page.keyboard.press('Space');
+    }
+    await delay(160);
+  }
+  throw Error(`Source ${chapter.chapter} dialogue did not advance`);
 }
 async function glStatus(label) {
   const values = await page.evaluate(() => (window.__sourceHushCaptureContexts || []).map(({ canvas, context }) => {
@@ -170,7 +189,7 @@ try {
     };
     window.__sourceHushCaptureInputs = [];
     for (const type of ['keydown', 'keyup']) addEventListener(type, event => {
-      if (['Escape', 'KeyE', 'Enter'].includes(event.code)) window.__sourceHushCaptureInputs.push({ type, code: event.code, trusted: event.isTrusted, wall: performance.now() });
+      if (['Escape', 'KeyE', 'Enter', 'Space', 'ArrowDown', 'ArrowUp'].includes(event.code)) window.__sourceHushCaptureInputs.push({ type, code: event.code, trusted: event.isTrusted, wall: performance.now() });
     }, true);
   });
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 120000 }); await page.bringToFront();
@@ -179,6 +198,7 @@ try {
   for (const chapterId of ['II', 'III']) {
     const chapter = { chapter: chapterId, fixture: true, earnedRoute: false, samples: [], actions: [] }; report.chapters.push(chapter);
     await page.evaluate(async () => { await document.querySelector('#first-strike-review').reviewApi.stage('source-II', { elapsedSeconds: 0 }); });
+    await page.evaluate(()=>{document.querySelector('#first-strike-review').style.visibility='hidden';const receipt=document.querySelector('#first-strike-review-receipt');if(receipt)receipt.style.display='none';});
     chapter.beforeFixture = await inspect(); await startVideo(chapter);
     chapter.actions.push({ action: 'DEV contactFixture', chapter: chapterId, captured: true, sentInteract: false });
     await page.evaluate(async chapter => { await document.querySelector('#first-strike-review').reviewApi.contactFixture(chapter, false, { captured: true }); }, chapterId);
@@ -194,7 +214,21 @@ try {
     await page.screenshot({ path: join(out, screenshot) }); chapter.dialogueScreenshot = screenshot; await glStatus(`${chapterId}-dialogue`);
     const originalRecovery = captured.contact.checkpoint.recovery, wins = captured.contact.chapterWins;
     await page.evaluate(() => document.getElementById('map')?.focus());
-    chapter.actions.push({ action: 'trusted Escape key', combatConfirmed: false }); await page.keyboard.press('Escape');
+    chapter.actions.push({ action: 'trusted Escape pauses and resumes dialogue', combatConfirmed: false });
+    await page.keyboard.press('Escape');
+    await until(value => value.scene === 'pause' && value.paused, `Source ${chapterId} capture can pause`);
+    await page.keyboard.press('Escape');
+    await until(value => value.scene?.startsWith('source-contact:') && !value.paused, `Source ${chapterId} capture resumes without consent`);
+    const choiceView = await advanceDialogue(chapter, { toChoices: true });
+    const menu = choiceView.dialogue.pending;
+    const declineIndex = menu.options.findIndex(option => option.id === 'contact.leave');
+    assert.ok(declineIndex >= 0, 'the visible menu must offer the captured decline');
+    assert.equal(menu.options[declineIndex].text, 'Let it carry me back.');
+    chapter.declineChoice = { id: menu.options[declineIndex].id, text: menu.options[declineIndex].text };
+    chapter.actions.push({ action: 'select visible decline with trusted arrows and Space', ...chapter.declineChoice, combatConfirmed: false });
+    for (let step = menu.index; step !== declineIndex; step = (step + 1) % menu.options.length) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Space');
+    await advanceDialogue(chapter);
     const released = await until(value => value.scene === 'source-continuation' && value.continuation?.recovery?.contact === 'released',
       `Source ${chapterId} declined capture resumes queued recovery`, { chapter });
     chapter.released = released;
@@ -213,7 +247,7 @@ try {
   }
   report.inputEvents = await page.evaluate(() => window.__sourceHushCaptureInputs || []);
   assert.equal(report.inputEvents.some(event => event.code === 'KeyE' || event.code === 'Enter'), false, 'no interaction or combat-confirmation key is manufactured');
-  assert.equal(report.inputEvents.filter(event => event.code === 'Escape' && event.type === 'keydown' && event.trusted).length, 2);
+  assert.equal(report.inputEvents.filter(event => event.code === 'Escape' && event.type === 'keydown' && event.trusted).length, 4);
   assert.deepEqual(report.hmrSockets, [], 'run this capture against the dedicated no-HMR server');
   assert.deepEqual(report.shaderErrors, []); assert.deepEqual(report.pageErrors, []);
   report.passed = true;

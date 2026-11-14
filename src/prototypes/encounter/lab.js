@@ -56,7 +56,7 @@ function reset({ preview = null } = {}) {
 }
 
 function startCombat() {
-  const ids = loadout.top.map(id => BATTLE_GEAR[id].toolId);
+  const ids = loadout.top.filter(Boolean).map(id => BATTLE_GEAR[id].toolId);
   combat = createCombatState(definition, { battery:.84, seed:440, techniques:build.techniques,
     tools:Object.fromEntries([...Object.values(BATTLE_GEAR).map(gear => [gear.toolId, ids.includes(gear.toolId)]), ['order', ids]]) });
   const options = availableCombatTools(combat);
@@ -119,7 +119,7 @@ function describeGear(id) {
 }
 
 function renderEquipment() {
-  $('equipment-slots').innerHTML = loadout.top.map((id,i) => `<button class="equipment-slot" data-slot="${i}" aria-label="Slot ${i+1}: ${BATTLE_GEAR[id].label}" aria-pressed="${selectedSlot===i}"><span class="slot-top"><b>0${i+1}</b><span>CONNECTED <i></i></span></span>${icon(id)}<span class="slot-stamp">${GEAR[id].stamp}</span><span class="slot-name">${BATTLE_GEAR[id].label}</span><span class="slot-move">${GEAR[id].short}</span></button>`).join('');
+  $('equipment-slots').innerHTML = Array.from({length:4},(_,i) => {const id=loadout.top[i];return `<button class="equipment-slot" data-slot="${i}" aria-label="Slot ${i+1}: ${BATTLE_GEAR[id]?.label||'empty'}" aria-pressed="${selectedSlot===i}"><span class="slot-top"><b>0${i+1}</b><span>${id?'CONNECTED':'EMPTY'} <i></i></span></span>${id?icon(id):''}<span class="slot-stamp">${GEAR[id]?.stamp||''}</span><span class="slot-name">${BATTLE_GEAR[id]?.label||'EMPTY'}</span><span class="slot-move">${GEAR[id]?.short||''}</span></button>`;}).join('');
   $('reserve-tools').innerHTML = Object.keys(BATTLE_GEAR).filter(id => !loadout.top.includes(id)).map(id => `<button class="reserve-tool" data-gear="${id}" aria-label="Fit ${BATTLE_GEAR[id].label} in slot ${selectedSlot+1}">${icon(id)}<span>${BATTLE_GEAR[id].label}</span></button>`).join('');
   describeGear(loadout.top[selectedSlot]);
 }
@@ -207,7 +207,7 @@ function paintPatchbay() {
 
 function previewCombat() {
   if (combat) return combat;
-  const order=loadout.top.map(id=>BATTLE_GEAR[id].toolId);
+  const order=loadout.top.filter(Boolean).map(id=>BATTLE_GEAR[id].toolId);
   return createCombatState(definition,{battery:.84,techniques:build.techniques,tools:{...Object.fromEntries(Object.values(BATTLE_GEAR).map(g=>[g.toolId,order.includes(g.toolId)])),order}});
 }
 function renderBattle() {

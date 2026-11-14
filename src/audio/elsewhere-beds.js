@@ -8,6 +8,8 @@
 import { ELSEWHERE_WORLDS } from '../data/elsewhere-worlds.js';
 import { stationHomePresentation } from '../game/station-home.js';
 import { HOME_BEDROOM, HOME_COMFORT_LOOP_SECONDS, homeComfortPhase } from '../data/childhood-bedroom.js';
+import { homeGroundProfile } from '../data/childhood-grounds.js';
+import { homeMountainShelter } from '../data/childhood-valley-trail.js';
 
 export const ELSEWHERE_SHUT_LOWPASS_HZ = 320;
 export const ELSEWHERE_OPEN_LOWPASS_HZ = 12000;
@@ -380,6 +382,10 @@ export function createElsewhereBeds({ context = null, destination = null, random
       const atWindow = inHome && home?.atWindow === true && crossing?.phase !== 'decohering'
         && crossing?.phase !== 'returning' && crossing?.released !== true;
       const homeMix = stationHomePresentation(atWindow ? home.intensity ?? home.attention : 0);
+      const local = crossing?.realm?.pose ?? home?.listener;
+      const shelter = inHome && crossing.phase === 'inside' && local
+        ? Math.max(homeGroundProfile(local.x, local.z).shelter, .56 * homeMountainShelter(local.x, local.z))
+          * (1 - homeMix.attention) : 0;
       if (crossing && bedKind(crossing)) {
         wanted.set(crossing.id, { ...crossing, open: true, strength: 1, distanceM: 0, x: listener.x, z: listener.z });
       }
@@ -419,8 +425,18 @@ export function createElsewhereBeds({ context = null, destination = null, random
           mix.pan = 0;
         } else if (occupied) {
           const coherence = elsewhereDecoherenceEnvelope(crossing);
-          mix.gain *= coherence * (inHome ? homeMix.windGain : 1);
-          mix.lowpassHz = Math.min(mix.lowpassHz, inHome ? homeMix.windLowpassHz : mix.lowpassHz);
+          if (inHome) {
+            // The same wind survives behind the wall. Lose its upper band and
+            // level there, then return to the local wind when leaving the pane.
+            mix.gain *= homeMix.windGain * (1 - .52 * shelter);
+            mix.lowpassHz = Math.min(mix.lowpassHz, homeMix.windLowpassHz,
+              ELSEWHERE_CROSSING_LOWPASS_HZ / (1 + 33 * shelter));
+            const rest=crossing.homePresentation?.rest;
+            const settled=clamp01(rest?.settle),frost=clamp01(Math.max(rest?.commit||0,rest?.frost||0));
+            mix.gain*=1-.17*settled-.76*frost;
+            mix.lowpassHz=Math.min(mix.lowpassHz,16000/(1+1.25*settled+18*frost));
+          }
+          mix.gain *= coherence;
           mix.lowpassHz = Math.round(signature ? Math.min(mix.lowpassHz, signature.lowpassHz)
             : ELSEWHERE_SHUT_LOWPASS_HZ + (mix.lowpassHz - ELSEWHERE_SHUT_LOWPASS_HZ) * coherence);
         }

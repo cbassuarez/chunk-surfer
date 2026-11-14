@@ -4,6 +4,7 @@ import { PIXEL_MESH_FRAG } from './shader.js';
 import { getLookProfile } from '../look-profiles.js';
 import { screenUniforms } from './screens.js';
 import { assetUrl as defaultAssetUrl } from '../../platform/paths.js';
+import { HUSH_COSMOS_GLSL } from '../hush-cosmos.js';
 
 const VERTEX = `precision highp float;
 in vec3 position;
@@ -61,6 +62,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
     ['uRecordingTemporalSmear', recording.temporalSmear], ['uRecordingScenePinning', recording.scenePinning],
     ['uRecordingFearGain', recording.fearGain], ['uRecordingAudioGain', recording.audioGain],
     ['uDebugSource', 0], ['uForceSignal', 0], ['uMovement', 0], ['uHushBodyPost', new THREE.Vector4()],
+    ['uDriveMemoryBreak', new THREE.Vector4()],
     ['uScreenKind', screen.kind], ['uClusteredDotMix', 0], ['uScreenPeriodPx', screen.periodPx], ['uScreenAngles', new THREE.Vector3(...screen.angles)],
     ['uScreenBands', new THREE.Vector2(...screen.bands)], ['uScreenSharpness', screen.sharpness],
     ['uScreenGrainFollow', screen.grainFollow], ['uScreenJitter', screen.jitter],
@@ -83,6 +85,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
     resolution: { value: new THREE.Vector2() },
     projectionInverse: { value: new THREE.Matrix4() },
     toneMappingExposure: { value: renderer.toneMappingExposure },
+    pressureFinish: { value: pressureFinish ? 1 : 0 },
   };
   const acquisitionMaterial = new THREE.RawShaderMaterial({
     glslVersion: THREE.GLSL3, vertexShader: VERTEX,
@@ -90,7 +93,9 @@ export function createTransparentPixelMesh(THREE, renderer, {
       uniform sampler2D source,depth;
       uniform vec2 resolution;
       uniform mat4 projectionInverse;
+      uniform float pressureFinish;
       out vec4 result;
+      ${HUSH_COSMOS_GLSL}
       ${THREE.ShaderChunk.tonemapping_pars_fragment}
       ${THREE.ShaderChunk.colorspace_pars_fragment}
       void main(){
@@ -98,6 +103,13 @@ export function createTransparentPixelMesh(THREE, renderer, {
         vec4 raw=texture(source,uv);
         if(raw.a<=0.0){result=vec4(0.0);return;}
         vec3 linear=raw.rgb/max(raw.a,1e-6);
+        // Signed half-float RGB is explicit material metadata, never display
+        // light. Decode the exact deformed world-field signal BEFORE tone
+        // mapping/acquisition; ordinary nonnegative materials cannot match it.
+        if(pressureFinish>.5){
+          vec2 cosmic=hushCosmosDecodeTransport(linear);
+          linear=mix(linear,hushCosmosSignalMaterial(cosmic.y).rgb,cosmic.x);
+        }
         vec3 display=sRGBTransferOETF(vec4(ACESFilmicToneMapping(linear),1.0)).rgb;
         // Perspective depth is hyperbolic. Reconstruct with the real camera
         // projection so a close human face cannot acquire far-plane marks.

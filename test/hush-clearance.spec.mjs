@@ -10,7 +10,7 @@ const run = (isWalkable, extra = {}) => estimateHushClearance({ actor: { x: 0, y
 
 test('open space preserves native width and proportionally scaled height', () => {
   assert.equal(run(() => true), .90);
-  assert.equal(run(() => true, { actor: { x: 0, y: 0, heightM: 4.10 } }), 1.80);
+  assert.equal(run(() => true, { actor: { x: 0, y: 0, heightM: HUSH_CLEARANCE_LIMITS.nativeHeightM * 2 } }), 1.80);
 });
 
 test('one wall constrains both sides symmetrically around the unchanged root', () => {

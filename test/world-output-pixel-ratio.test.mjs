@@ -29,8 +29,8 @@ function renderer(){
   for(const name of ['sceneTex','sceneFbo','sceneDepthRb','pressureFinishTex','pressureFinishFbo',
     'pressureIdentityTex','horizonStreetTex','markTex','meshTexA','meshTexB','meshFboA','meshFboB',
     'datamoshSourceTex','datamoshSourceFbo','datamoshTexA','datamoshFboA','datamoshTexB','datamoshFboB',
-    'sourceFaultTexA','sourceFaultFboA','sourceFaultTexB','sourceFaultFboB','burstOutTex','burstOutFbo'])ctx[name]=null;
-  Object.assign(ctx,{pressureFinishReady:false,sourceFaultFlip:false,sourceFaultWarm:false,meshFlip:false,lastPixelMeshAt:0});
+    'burstOutTex','burstOutFbo'])ctx[name]=null;
+  Object.assign(ctx,{pressureFinishReady:false,meshFlip:false,lastPixelMeshAt:0});
   vm.createContext(ctx);vm.runInContext(`${ratio}\n${cell}\n${resize}`,ctx);
   return {ctx,gl,events,allocations:()=>events.filter(e=>e[0]==='propsResize').length,
     init(){ctx.gl=gl;ctx.canvas={parentElement:{clientWidth:1280,clientHeight:800},width:0,height:0};ctx.resize();}};

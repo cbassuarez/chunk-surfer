@@ -31,6 +31,6 @@ test('recording HUSH contact owns a direct physical impact before spoil',()=>{
   const source = readFileSync('src/main.js','utf8');
   assert.match(source,/function playRecordingHushImpact\(/);
   assert.match(source,/const out=sfxDirectGain\|\|master\|\|actx\.destination/);
-  assert.match(source,/if\(hitRolling\)playRecordingHushImpact\(\);\s*if\(hitRolling\)REC\.spoilTake\('it found you'\)/);
-  assert.match(source,/if\(hitRolling\)playRecordingHushImpact\(\{taken:true\}\);\s*if\(hitRolling\)REC\.spoilTake\('it took you'\)/);
+  assert.match(source,/if\(hitRolling\)playRecordingHushImpact\(\);\s*if\(hitRolling\)REC\.spoilTake\('it found you',\{interruption:'contact'\}\)/);
+  assert.match(source,/if\(hitRolling\)playRecordingHushImpact\(\{taken:true\}\);\s*if\(hitRolling\)REC\.spoilTake\('it took you',\{interruption:'contact'\}\)/);
 });

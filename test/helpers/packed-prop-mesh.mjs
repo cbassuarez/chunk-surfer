@@ -1,9 +1,20 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 // Read actual packed positions, not the rounded generated metadata bounds.
-export function packedPropMeshes() {
-  const bytes=fs.readFileSync(new URL('../../public/assets/conservatory-props.glb',import.meta.url));
+// The installed real building has private construction variants; canonical
+// names remain available alongside them for explicit remembered/old proofs.
+export function packedPropMeshes({root=fileURLToPath(new URL('../../',import.meta.url)),assets=[
+  'public/assets/conservatory-props.glb',
+  'public/assets/box-office.glb',
+  'public/assets/ellery-garden-approaches.glb',
+]}={}) {
+ const meshes=new Map(),sources={};
+ for(const asset of assets){
+  const bytes=fs.readFileSync(path.resolve(root,asset));
+  sources[asset]=crypto.createHash('sha256').update(bytes).digest('hex');
   const jsonLength=bytes.readUInt32LE(12),json=JSON.parse(bytes.subarray(20,20+jsonLength)),bin=28+jsonLength;
   const read=index=>{
     const a=json.accessors[index],v=json.bufferViews[a.bufferView],n={VEC3:3,SCALAR:1}[a.type];
@@ -11,13 +22,13 @@ export function packedPropMeshes() {
     const start=bin+(v.byteOffset||0)+(a.byteOffset||0),stride=v.byteStride||n*size;
     return Array.from({length:a.count},(_,i)=>Array.from({length:n},(_,d)=>bytes[fn](start+i*stride+d*size)));
   };
-  const meshes=new Map();
   for(const m of json.meshes)meshes.set(m.name,()=>{
     const triangles=[],vertices=[];
     for(const p of m.primitives){const v=read(p.attributes.POSITION),indices=p.indices==null?v.map((_,i)=>[i]):read(p.indices);for(const point of v)vertices.push(point);for(let i=0;i<indices.length;i+=3)triangles.push(indices.slice(i,i+3).map(([i])=>v[i]));}
     return {vertices,triangles};
   });
-  return {sha256:crypto.createHash('sha256').update(bytes).digest('hex'),mesh(name){const get=meshes.get(name);if(!get)throw Error('Missing packed mesh '+name);return get();}};
+ }
+ return {sha256:sources[assets[0]],sources,mesh(name){const get=meshes.get(name);if(!get)throw Error('Missing packed mesh '+name);return get();}};
 }
 
 export function placedMesh(p,geometry) {

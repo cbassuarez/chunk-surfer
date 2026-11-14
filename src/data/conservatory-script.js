@@ -1619,7 +1619,7 @@ export function endingChoice(options = {}, legacyCanSurface = false) {
     : 'Careful. The sentence it likes best is the sentence where I agreed.' });
   if (opts.canSurface) lines.push({ who: 'direction', text: 'The fork and the rig answer the same line. The borrowed body is not sealed.' });
   else if (locks.has('route.surfaced')) lines.push({ who: 'direction', text: 'RETURN is missing from too many pages. Something could still be saved, but not cleanly.' });
-  if (opts.canInvert) lines.push({ who: 'direction', text: 'The bent rig has enough of the source to feed the signal back into itself.' });
+  if (opts.canInvert) lines.push({ who: 'direction', text: 'The service interface has enough of the source to feed the signal back into itself.' });
   lines.push({ who: 'surfer', text: 'Well. Bring me one.' });
 
   const invert = opts.canInvert

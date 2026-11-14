@@ -5,6 +5,7 @@
 import { CutFoley } from './cut/foley.js';
 import {RADIO_PHASES,RADIO_CYCLE_SECONDS,RADIO_FINAL_MANIFEST,RADIO_FINAL_CACHE_BYTES,RADIO_FINAL_MASTER_BYTES,RADIO_PROGRAMME_NAMES,programmeFrame,loadScratchVoices,renderScratchProgramme,validateProgrammeCues,validateProgrammeManifest} from './radio-programmes.js';
 import {driveLoadAt} from './deterioration.js';
+import {createSceneStorm} from '../../audio/scene-storm.js';
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, Number(v) || 0));
 
@@ -101,11 +102,11 @@ export function driveExteriorPans(sources=[]){
 export function driveOpeningAcousticFrame(state){
  const opening=state?.openingCinematic;if(opening?.schema!==1)return null;
  const a=opening.audio||{},submerged=clamp(a.submerged),timeSec=Math.max(0,Number(opening.timeSec)||0);
- return{timeSec,phase:opening.phase,submerged,enginePower:clamp(a.enginePower??1),radioPower:clamp(a.radioPower??1),waterImpact:clamp(a.waterImpact),bodyGrind:clamp(a.bodyGrind),metalStrain:clamp(a.metalStrain),windOpen:clamp(a.windOpen),roadContact:Number.isFinite(a.roadContact)&&a.roadContact>=0&&a.roadContact<=1?a.roadContact:['free-drive','sound-lead','departure'].includes(opening.phase)?1:0,filterHz:18000*(1-submerged)+430*submerged,cues:Array.isArray(opening.cues)?opening.cues:[]};
+ return{timeSec,phase:opening.phase,submerged,lifeFlash:clamp(opening.lifeFlash||0),enginePower:clamp(a.enginePower??1),radioPower:clamp(a.radioPower??1),waterImpact:clamp(a.waterImpact),bodyGrind:clamp(a.bodyGrind),metalStrain:clamp(a.metalStrain),windOpen:clamp(a.windOpen),roadContact:Number.isFinite(a.roadContact)&&a.roadContact>=0&&a.roadContact<=1?a.roadContact:['free-drive','sound-lead','departure'].includes(opening.phase)?1:0,filterHz:18000*(1-submerged)+430*submerged,cues:Array.isArray(opening.cues)?opening.cues:[]};
 }
 
 export class SourceDriveAcoustics {
-  constructor({ context, destination, gain = .5, fetcher = globalThis.fetch, programmeManifestUrl = RADIO_FINAL_MANIFEST } = {}) {
+  constructor({ context, destination, gain = .5, fetcher = globalThis.fetch, programmeManifestUrl = RADIO_FINAL_MANIFEST,stormEnabled=true } = {}) {
     if (!context?.createGain || !destination) throw Error('The drive requires the host AudioContext and output bus.');
     this.context = context;
     this.destination = destination;
@@ -130,6 +131,7 @@ export class SourceDriveAcoustics {
     this.events = [];
     this.paused = true;
     this.closed = false;
+    this.stormEnabled=stormEnabled;this.storm=null;this.stormClock=null;this.stormPresentation={};this.currentStormFrame=null;
   }
 
   async initialize() {
@@ -184,6 +186,7 @@ export class SourceDriveAcoustics {
     this.analyser = node(c.createAnalyser()); this.analyser.fftSize = 256;
     this.cabin.connect(this.analyser); this.samples = new Float32Array(256);
     this.foley = new CutFoley({ ctx: c, cabin: this.cabin, noise: this.noise });
+    if(this.stormEnabled)this.storm=createSceneStorm({getAudio:()=>({ctx:c,destination:this.cabin}),seed:1947,profile:'drive'});
     for (const n of this.continuous) n.start();
     this.initializing=(async()=>{
       const [loaded]=await Promise.all([loadScratchVoices(c,{fetcher:this.fetcher}),this.loadOptionalManifest()]);
@@ -313,6 +316,7 @@ export class SourceDriveAcoustics {
 
   setPaused(paused) {
     this.paused = !!paused;
+    this.storm?.setPaused?.(this.paused);
     if (!this.cabin) return;
     this.cabin.gain.cancelScheduledValues(this.context.currentTime);
     this.cabin.gain.setValueAtTime(paused ? 0 : 1, this.context.currentTime);
@@ -322,6 +326,10 @@ export class SourceDriveAcoustics {
       for (const n of this.transients) { try { n.stop(); } catch {} }
     }
   }
+
+  setStormPresentation(value={}){this.stormPresentation={...value};}
+  stormFrame(){return this.currentStormFrame?{...this.currentStormFrame}:null;}
+  receiverMaterial(){return this.playingBuffer?{buffer:this.playingBuffer,offset:Math.max(0,(this.programmeClock||0)+(this.context.currentTime-(this.programmeAudioTime??this.context.currentTime))),temporary:!!this.playingOptions?.temporary}:null;}
 
   openingReadiness(state){
     let frame=programmeFrame({...state,paused:false});
@@ -373,15 +381,19 @@ export class SourceDriveAcoustics {
     target(this.roadFilter.frequency, 430 + speed * 25 + rough * 850+wetRoad*speed*12, .1);
     if (this.lastGear != null && this.lastGear !== state.gear) this.click('gear-engagement', .32);
     this.lastGear = state.gear;
-    target(this.radio.gain, state.radioOn ? clamp(state.volume??.65)*(opening?.radioPower??1) : 0, .012);
+    target(this.radio.gain, state.radioOn ? clamp(state.volume??.65)*(opening?.radioPower??1)*(1-.83*(opening?.lifeFlash||0)) : 0, .012);
     this.fingerprint.gain.setValueAtTime(state.station === 'service' ? 1 : 0, now);
-    const wanted=programmeFrame(state,evolution),wantedName=`${wanted.station}-${RADIO_PHASES[wanted.phase]}`;
+    const keepReceiver=state.memoryBreak?.active&&state.memoryBreak.age<state.memoryBreak.seconds*.78&&this.activeStation!=null;
+    const receiverState=keepReceiver?{...state,station:this.activeStation}:state;
+    const wanted=programmeFrame(receiverState,evolution);
+    if(keepReceiver&&this.activePhase!=null)wanted.phase=this.activePhase;
+    const wantedName=`${wanted.station}-${RADIO_PHASES[wanted.phase]}`;
     const wantedBuffer=this.getProgramme(wantedName),wantedOptions=this.programmeOptions.get(wantedName);
     const wantedFrame=this.frameForProgramme(state,evolution,wanted.phase,wantedOptions);
     // Same-position edits use the actual old and incoming masters' cue spans,
     // including a late scratch→final replacement. A player's tuning/power
     // operation remains immediate and seeks to the running absolute clock.
-    if(this.activeStation!==state.station){this.activePhase=wanted.phase;this.tuneUntil=state.programTime+.16;this.activeStation=state.station;}
+    if(this.activeStation!==receiverState.station){this.activePhase=wanted.phase;this.tuneUntil=state.programTime+.16;this.activeStation=receiverState.station;}
     if(this.activePhase==null)this.activePhase=wanted.phase;
     let name=`${wanted.station}-${RADIO_PHASES[this.activePhase]}`;
     let buffer=this.getProgramme(name,{requestMaster:false}),options=this.programmeOptions.get(name);
@@ -393,7 +405,7 @@ export class SourceDriveAcoustics {
       const replacementFrame=this.frameForProgramme(state,evolution,this.activePhase,options);
       if(oldFrame.cue||replacementFrame.cue){buffer=previous.buffer;options=previous.options;}
     }
-    const radioFrame=this.currentProgrammeFrame=this.frameForProgramme(state,evolution,this.activePhase,options);
+    const radioFrame=this.currentProgrammeFrame=this.frameForProgramme(receiverState,evolution,this.activePhase,options);
     const {quality,dropout,bandwidthHz}=radioFrame.signal;
     target(this.radioFilter.frequency,bandwidthHz,.22);
     target(this.programmeGain.gain,quality*(1-dropout)*(state.programTime<(this.tuneUntil||0)?.12:1),.025);
@@ -422,6 +434,12 @@ export class SourceDriveAcoustics {
     target(this.loadedWater.panner.pan,pans.waterPan,.11);target(this.loadedFibre.panner.pan,pans.fibrePan,.11);target(this.loadedPressure.panner.pan,pans.pressurePan,.14);
     this.foley.sync({ sources: loadedSources, timeSec: state.programTime, engineHz: this.engineHz, enabled: state.cutEnabled !== false });
     if(opening)this.syncOpening(opening,target);
+    const clock=Number(state.programTime)||0,dt=this.stormClock==null?0:Math.max(0,Math.min(.25,clock-this.stormClock));this.stormClock=clock;
+    const submerged=opening?.submerged||0;
+    this.currentStormFrame=this.storm?.update({dt,profile:'drive',paused:this.paused,
+      active:submerged<.05&&(weatherFrame?.rain??1)>.05,ready:true,
+      roofBands:{low:1,mid:.82,high:.34},listenerYaw:(Number(state.heading)||0)+(Number(state.lookYaw)||0),...this.stormPresentation})||null;
+    if(submerged>.05&&this.currentStormFrame)this.currentStormFrame={...this.currentStormFrame,flash:0};
   }
 
   ensureOpeningBus(){
@@ -434,8 +452,8 @@ export class SourceDriveAcoustics {
   recordingBus(){return this.openingFilter||this.cabin;}
 
   syncOpening(frame,target){
-    target(this.openingFilter.frequency,frame.filterHz,.12);
-    const dry=1-frame.submerged,weather=this.exteriorFrame;
+    target(this.openingFilter.frequency,frame.filterHz*(1-.67*frame.lifeFlash),frame.lifeFlash ? .035 : .075);
+    const dry=(1-frame.submerged)*(1-.77*frame.lifeFlash),weather=this.exteriorFrame;
     target(this.roofRain.gain.gain,weather.roofGain*dry,.08);target(this.glassRain.gain.gain,weather.glassGain*dry,.08);
     target(this.wind.gain.gain,(weather.windGain+frame.windOpen*.045)*dry,.09);
     target(this.loadedWater.gain.gain,.065*frame.submerged+.12*frame.waterImpact,.055);target(this.loadedWater.filter.frequency,520,.12);
@@ -484,10 +502,10 @@ export class SourceDriveAcoustics {
   click(kind = 'tuning-control', strength = .75) { this.transient({ kind, strength }); }
   programmeFrame(){if(!this.currentProgrammeFrame)return null;return this.paused?{...this.currentProgrammeFrame,audible:false,caption:null}:this.currentProgrammeFrame;}
   level() { if (!this.analyser) return 0; this.analyser.getFloatTimeDomainData(this.samples); return Math.sqrt(this.samples.reduce((n, v) => n + v * v, 0) / this.samples.length); }
-  diagnostics() { return { ready: !!this.cabin, paused: this.paused, level: this.level(), opening:this.openingFrame?{...this.openingFrame,cues:this.openingCueLog,filterHz:this.openingFilter?.frequency.value}:null,engine:{hz:this.engineHz||0,gain:this.engineGain?.gain.value||0,filterHz:this.engineFilter?.frequency.value||0}, loadedProgrammes: [...this.programmes.keys()],programmeCacheBytes:[...new Set([...this.programmes.values(),...(this.playingBuffer?[this.playingBuffer]:[])])].reduce((n,b)=>n+b.length*b.numberOfChannels*4,0),scratchCacheLimitBytes:18432000,finalCacheLimitBytes:RADIO_FINAL_CACHE_BYTES,finalCacheLimitMasters:2,masterManifest:{status:this.masterManifestStatus,available:this.masterRows.size,loading:this.loadingMaster?.name||null,queued:[...this.masterQueue.keys()],failed:[...this.masterFailures]},temporaryVoiceClips:this.voices.size,assetErrors:[...this.assetErrors],finishedProgrammeMastersPresent:[...this.programmes.keys()].some(k=>!this.scratchKeys.has(k)),finishedVoiceTakesPresent:[...this.programmeOptions.values()].some(o=>!o.temporary&&o.cues?.some(c=>c.speaker)),programme:this.programmeFrame(),weather:this.weatherState||null,wreckHorns:this.hornFrame||[],exterior:this.exteriorFrame?{...this.exteriorFrame,pans:this.exteriorPans||null}:null,physicalSources:(this.loadedSources||[]).map(source=>({id:source.id,position:source.position,kind:source.motion?.kind||source.kind||'anatomy',distance:source.motion?.distance,load:source.motion?.load||null,physiology:source.motion?.physiology||null,physiologyFoley:source.motion?.physiologyFoley||null})),foley: this.foley?.diagnostics(), provenance: 'Editorial scratch until a validated final master is loaded through the existing physical receiver/cabin/REC bus. A manifest or transcript alone is not a finished performance.' }; }
+  diagnostics() { return { ready: !!this.cabin, paused: this.paused, level: this.level(),storm:this.storm?.snapshot?.()||null, opening:this.openingFrame?{...this.openingFrame,cues:this.openingCueLog,filterHz:this.openingFilter?.frequency.value}:null,engine:{hz:this.engineHz||0,gain:this.engineGain?.gain.value||0,filterHz:this.engineFilter?.frequency.value||0}, loadedProgrammes: [...this.programmes.keys()],programmeCacheBytes:[...new Set([...this.programmes.values(),...(this.playingBuffer?[this.playingBuffer]:[])])].reduce((n,b)=>n+b.length*b.numberOfChannels*4,0),scratchCacheLimitBytes:18432000,finalCacheLimitBytes:RADIO_FINAL_CACHE_BYTES,finalCacheLimitMasters:2,masterManifest:{status:this.masterManifestStatus,available:this.masterRows.size,loading:this.loadingMaster?.name||null,queued:[...this.masterQueue.keys()],failed:[...this.masterFailures]},temporaryVoiceClips:this.voices.size,assetErrors:[...this.assetErrors],finishedProgrammeMastersPresent:[...this.programmes.keys()].some(k=>!this.scratchKeys.has(k)),finishedVoiceTakesPresent:[...this.programmeOptions.values()].some(o=>!o.temporary&&o.cues?.some(c=>c.speaker)),programme:this.programmeFrame(),weather:this.weatherState||null,wreckHorns:this.hornFrame||[],exterior:this.exteriorFrame?{...this.exteriorFrame,pans:this.exteriorPans||null}:null,physicalSources:(this.loadedSources||[]).map(source=>({id:source.id,position:source.position,kind:source.motion?.kind||source.kind||'anatomy',distance:source.motion?.distance,load:source.motion?.load||null,physiology:source.motion?.physiology||null,physiologyFoley:source.motion?.physiologyFoley||null})),foley: this.foley?.diagnostics(), provenance: 'Editorial scratch until a validated final master is loaded through the existing physical receiver/cabin/REC bus. A manifest or transcript alone is not a finished performance.' }; }
   dispose() {
     if (this.closed) return;
-    this.setPaused(true); this.closed = true; this.foley?.dispose();
+    this.setPaused(true); this.closed = true; this.foley?.dispose();this.storm?.dispose();this.storm=null;
     this.playingBuffer=null;this.playingOptions=null;
     for(const entry of this.masterQueue.values())entry.resolve(false);
     this.masterQueue.clear();this.masterRows.clear();this.masterFailures.clear();

@@ -77,6 +77,7 @@ export function updateHushNoisePerception(value, {
   active = false,
   enabled = true,
   concealed = false,
+  allowContact = true,
 } = {}) {
   const state = normalizeHushNoisePerception(value);
   const at = Math.max(0, Number(now) || 0);
@@ -96,7 +97,11 @@ export function updateHushNoisePerception(value, {
   // localised, so behind cover the clock does not run. Holding the bank instead
   // of clearing it would mean stepping out of cover after a loud minute gets you
   // grabbed instantly, for a reason the player cannot see.
-  if (band === MONITOR_BAND.HOT && !concealed) {
+  if (!allowContact || concealed) {
+    state.hotHeldMs = 0;
+    state.hotGapMs = 0;
+    state.contactEscalated = false;
+  } else if (band === MONITOR_BAND.HOT) {
     state.hotHeldMs += elapsedMs;
     state.hotGapMs = 0;
   } else {
@@ -125,6 +130,7 @@ export function updateHushNoisePerception(value, {
   }
 
   if (band === MONITOR_BAND.HOT
+      && allowContact
       && !concealed
       && state.hotHeldMs >= HUSH_NOISE_PERCEPTION.sustainedHotMs
       && !state.contactEscalated) {

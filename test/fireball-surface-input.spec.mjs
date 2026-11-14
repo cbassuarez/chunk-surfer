@@ -21,15 +21,15 @@ function eventBus(){
 
 const outbound=(surfaceIndex=0)=>({castId:'cast-0123abcd',surfaceIndex,state:'outbound',rays:[{id:`ray-${surfaceIndex+1}`,direction:{x:1,y:0}}]});
 
-async function surface({label='fireball-cast-1',bus=eventBus()}={}){
+async function surface({label='fireball-cast-1',bus=eventBus(),width=240,height=240,dpr=1}={}){
   const source=(await readFile(new URL('../src/fireball-cast.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
   const events=new Map(),emitted=[],acquisitions=[];
   const painted=[];let nextFrame,now=0,rafRequests=0;
   const drawing=new Proxy({}, {get:(target,name)=>target[name]??((...args)=>{painted.push({name,args,fillStyle:target.fillStyle});return name==='measureText'?{width:20}:undefined;}),set:(target,name,value)=>{target[name]=value;return true;}});
   let contextOptions;
-  const canvas={getContext:(_kind,options)=>{contextOptions=options;return drawing;},getBoundingClientRect:()=>({left:0,top:0,width:240,height:240})};
+  const canvas={getContext:(_kind,options)=>{contextOptions=options;return drawing;},getBoundingClientRect:()=>({left:0,top:0,width,height})};
   const context={strikeFireballSurface,fireballSurfacePose,createFireballSurfaceChase,structuredClone,Image:class{},document:{getElementById:()=>canvas},performance:{now:()=>now,timeOrigin:1000},
-    innerWidth:240,innerHeight:240,devicePixelRatio:1,
+    innerWidth:width,innerHeight:height,devicePixelRatio:dpr,
     requestAnimationFrame:(handler)=>{nextFrame=handler;rafRequests+=1;return rafRequests;},cancelAnimationFrame:()=>{},
     addEventListener:(name,fn)=>{const handlers=events.get(name)||[];handlers.push(fn);events.set(name,handlers);},
     getCurrentWindow:()=>({label,listen:(name,handler)=>bus.listen(label,name,handler),setFocus:()=>{throw Error('surface must not move OS focus directly');}}),
@@ -38,12 +38,41 @@ async function surface({label='fireball-cast-1',bus=eventBus()}={}){
   vm.runInNewContext(source,context);
   for(let i=0;i<10;i++)await Promise.resolve();
   bus.emitTo(label,'fireball-cast',outbound(Number(label.at(-1))-1));
-  const initialPose=fireballSurfacePose(outbound(Number(label.at(-1))-1));
+  const initialPose=fireballSurfacePose(outbound(Number(label.at(-1))-1),{width,height});
   return{emitted,acquisitions,painted,contextOptions,readFrame:()=>context.readFireballSurfaceFrame(),
     setNow:value=>{now=value;},rafRequests:()=>rafRequests,
+    resize:(w,h)=>{width=context.innerWidth=w;height=context.innerHeight=h;for(const handler of events.get('resize')||[])handler();},
     paint:(at=16)=>{painted.length=0;nextFrame(at);return painted;},
     fire:async(name,{x=initialPose.centerX,y=initialPose.centerY}={})=>{for(const handler of events.get(name)||[])handler({clientX:x,clientY:y,preventDefault(){},stopPropagation(){}});await Promise.resolve();}};
 }
+
+test('a narrow native gutter paints and accepts a click before the first background animation frame',async()=>{
+  const harness=await surface({width:76,height:240,dpr:2});
+  const frame=harness.readFrame();
+  assert.equal(frame.width,76);
+  assert.equal(frame.pose.size,60);
+  assert.equal(frame.pose.x,8);
+  assert.ok(harness.painted.some(({name,args})=>name==='clearRect'&&args[2]===152&&args[3]===480));
+  await harness.fire('pointerdown',{x:frame.pose.centerX,y:frame.pose.centerY});
+  assert.equal(harness.emitted.filter(event=>event.name==='fireball-cast-hit').length,1);
+  assert.equal(harness.rafRequests(),1,'the first click does not depend on background rAF advancing');
+});
+
+test('an already painted fireball follows the resized viewport and ignores a stale native pointer frame',async()=>{
+  const bus=eventBus(),harness=await surface({bus});
+  harness.resize(80,185);
+  const resized=harness.readFrame();
+  assert.equal(resized.width,80);
+  assert.equal(resized.height,185);
+  assert.equal(resized.pose.size,64);
+  bus.emitTo('fireball-cast-1','fireball-cast-pointer',{
+    seed:0x123abcd,index:0,x:resized.pose.centerX,y:resized.pose.centerY,active:true,width:240,height:240,
+  });
+  assert.equal(harness.acquisitions.length,0);
+  assert.deepEqual(harness.readFrame().pose,resized.pose);
+  await harness.fire('pointerdown',{x:resized.pose.centerX,y:resized.pose.centerY});
+  assert.equal(harness.emitted.filter(event=>event.name==='fireball-cast-hit').length,1);
+});
 
 test('native presentation and focus alone never catch a projectile',async()=>{
   const harness=await surface();

@@ -107,6 +107,10 @@ export function mergeImportedProfile(localMeta, localSettings, imported) {
       platform: local.platform,
       presentation: local.presentation,
     }),
-    settings: normalizeSettings({ ...localSettings, ...objectOr(imported.settings) }),
+    settings: normalizeSettings({
+      ...localSettings,
+      ...objectOr(imported.settings),
+      desktopFightEffects: localSettings?.desktopFightEffects === true,
+    }),
   };
 }

@@ -32,6 +32,7 @@
 import * as scenes from './scenes.js';
 import { TRANSPORT, drawRecorderFace, recorderPanelRect, recorderHitRegions, recorderGuideLayout } from '../render/recorder-view.js';
 import { recorderFaceLayout } from '../render/recorder-instrument.js';
+import { recorderRigPointer, clearRecorderRigPointer, noteRecorderRigPress, afterRecorderStopPress } from '../render/recorder-rig.js';
 import { uiSize } from '../render/ui.js';
 import { promptLine, activeInputPromptDevice } from './bindings.js';
 import { fitText } from '../render/fit-text.js';
@@ -82,6 +83,8 @@ export function makeRecorderScene({
   onStopPlayback,
   onClose,
   onClearInput,
+  getRig,
+  onTorch,
 } = {}) {
   const state = () => (typeof getState === 'function' ? getState() : {}) || {};
   const takes = () => (typeof getTakes === 'function' ? getTakes() : []) || [];
@@ -107,6 +110,7 @@ export function makeRecorderScene({
     if (heldControls.has(input)) releaseControl(heldControls.get(input));
     heldControls.set(input, id);
     pressControl(id);
+    if (getRig) noteRecorderRigPress(id);
   }
   function release(input) {
     const id = heldControls.get(input);
@@ -208,8 +212,7 @@ export function makeRecorderScene({
     return true;
   }
 
-  function activate() {
-    const current = key();
+  function activate(current = key()) {
     if (!current) return false;
     if (!current.enabled) {
       // The machine refuses physically. No dialogue, no error beep — the reason
@@ -284,6 +287,10 @@ export function makeRecorderScene({
       const code = event?.code || '';
       const raw = event?.key || '';
       const k = String(raw).toLowerCase();
+      if (onTorch && !event.metaKey && !event.ctrlKey && (code === 'KeyF' || k === 'f' || event.controllerAction === 'light')) {
+        if (!event.repeat) onTorch();
+        return true;
+      }
       if (guideConvo) {
         guideView();
         const pageNext=raw==='PageDown'||event.controllerAction==='tabNext',pagePrev=raw==='PageUp'||event.controllerAction==='tabPrev';
@@ -352,7 +359,8 @@ export function makeRecorderScene({
         return true;
       }
       if (event.type !== 'pointerdown' && event.type !== 'pointermove') return true;
-      const x = Number(event.cellX), y = Number(event.cellY);
+      const point = getRig ? recorderRigPointer(event, RECORDER_SCENE_ID) : event;
+      const x = Number(point.cellX), y = Number(point.cellY);
       const hit = hitRegions.find((region) => x >= region.x && x < region.x + region.w
         && y >= region.y && y < region.y + region.h);
       if (!hit) return true;
@@ -387,7 +395,11 @@ export function makeRecorderScene({
         cursor = hit.index;
         if (event.type === 'pointerdown') {
           if (key()?.enabled) press(hit.controlId, input);
-          activate();
+          if (getRig && hit.id === RECORDER_KEY.STOP && hit.enabled) {
+            afterRecorderStopPress(() => {
+              if (!closed && scenes.top() === scene) activate(keys()[hit.index]);
+            });
+          } else activate();
         }
       }
       return true;
@@ -419,6 +431,7 @@ export function makeRecorderScene({
       guideChoiceScrollMax=guideChoices?.selectedMaxOffset||0;
       const face = {
         ...(live.face || {}),
+        rig: getRig?.(),
         mode,
         browsing: browsingNow,
         recording: !!live.recording,
@@ -473,7 +486,7 @@ export function makeRecorderScene({
       drawRecorderFace(face);
     },
 
-    exit() { closed = true; clearControls(); guideConvo?.stop?.(); guideConvo = null; guide = null; },
+    exit() { closed = true; if (getRig) clearRecorderRigPointer(); clearControls(); guideConvo?.stop?.(); guideConvo = null; guide = null; },
 
     browseTakes,
     beginGuide,

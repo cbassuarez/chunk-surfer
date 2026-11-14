@@ -7,9 +7,11 @@ import {coastalBodyMatrix,coastalMultiply} from '../data/coastal-memory.js';
 // turn gives time to recognize it. The rail kit is one batched prop per chart.
 export const SOURCE_COASTAL_ECHOES=Object.freeze([
   Object.freeze({id:'ii-abyss',chartId:0,x:35,y:-8,z:-32,yaw:Math.PI/2,wreck:true}),
-  Object.freeze({id:'outward-one',chartId:1,x:-101,y:16.8,z:-20,yaw:0}),
-  Object.freeze({id:'outward-two',chartId:2,x:-142,y:8.4,z:-40,yaw:Math.PI/2}),
-  Object.freeze({id:'outward-three',chartId:3,x:-160,y:0,z:-39,yaw:0,wreck:true}),
+  // The expanded courts own their whole decks, including their refuge necks.
+  // Keep the entire rail (and the wreck beside it) beyond those supports.
+  Object.freeze({id:'outward-one',chartId:1,x:-101,y:16.8,z:-13,yaw:0}),
+  Object.freeze({id:'outward-two',chartId:2,x:-142,y:8.4,z:-42,yaw:Math.PI/2}),
+  Object.freeze({id:'outward-three',chartId:3,x:-167,y:0,z:-33,yaw:0,wreck:true}),
   Object.freeze({id:'outward-four',chartId:4,x:-150,y:8.4,z:-78,yaw:Math.PI/2}),
 ]);
 

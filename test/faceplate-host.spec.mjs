@@ -21,7 +21,7 @@ const end=main.indexOf('\nfunction drawStoryHud()',start);
 assert.ok(start>=0&&end>start,'production shared faceplate host is available');
 const hostBody=main.slice(start,end);
 const filmOwners=['openingVehicleScene','openingOvertureScene','studentStrikeScene','activeEndingCutscene',
-  'standingTearScene','sourceDriveSession','coastalMemoryScene','sourceReturnFlashbackScene','firstStrikeScene'];
+  'standingTearScene','sourceDriveSession','coastalMemoryScene','stationFieldScene','sourceReturnFlashbackScene','firstStrikeScene'];
 const realFaceplateIds=['pause','settings','controller-settings','bag','field-map','thought:odette','dialogue:guard',
   'battle:guard','radio:desk','recorder','payphone','b3-console','tower-tenor-performance','academic-bouncers',
   'doc:field-note','object-detail:cup'];
@@ -46,6 +46,9 @@ function host(){
   h.REC={recState:()=>h.rec};h.currentFacilityMapModel=()=>{h.mapReads++;return h.map;};
   h.performance={now:()=>h.now};h.gameplayInputLifecycleActive=()=>h.focused;
   h.recentMischief=()=>null;h.recentApparitions=()=>null;h.monitorDisplaySnapshot=()=>h.monitor;
+  h.playerConditionTelemetry=()=>({});
+  h.liveTakeRecorderLowered=()=>false;
+  h.navigatorDisplayView=()=>({x:.4,y:-.2});
   for(const owner of filmOwners)h[owner]=null;
   vm.createContext(h);vm.runInContext(hostBody,h);
   return{h,save,context:()=>vm.runInContext('sharedFaceplateContext()',h)};
@@ -57,6 +60,7 @@ test('ordinary host supplies the live current-run map, canonical night reading a
   assert.equal(faceplateModulesEligible(snapshot),true);assert.equal(snapshot.runId,f.save.run.id);
   assert.equal(snapshot.map,f.h.map);assert.deepEqual(snapshot.nightClock,nightClockReadout(f.save));
   assert.equal(snapshot.now,4200);assert.equal(snapshot.held,false);assert.equal(snapshot.navigationVisible,true);
+  assert.deepEqual(snapshot.view,{x:.4,y:-.2});
   assert.equal(snapshot.telemetry.monitor,f.h.monitor);assert.equal(snapshot.telemetry.takes,2);
   assert.equal(snapshot.telemetry.injuries,1);assert.equal(snapshot.telemetry.takesEnabled,true);
   delete f.save.flags['work-order.accepted'];assert.equal(f.context().telemetry.takesEnabled,false);
@@ -78,6 +82,9 @@ test('host public preview is read-only survey data with canonical personal targe
   assert.ok(snapshot.map.spaces.every(space=>!space.waypoint&&space.waypointable===false));
   assert.equal(snapshot.telemetry.takesEnabled,false);
   assert.deepEqual(f.h.map,before);assert.deepEqual(f.save,saveBefore,'viewing preview grants no equipment or shift state');
+  f.save.flags={'bag.taken':true,'van.preparation.v1':true};f.h.top={id:'bag',blocksInput:true,blocksWorld:true};
+  const packed=f.context();assert.equal(packed.navigationVisible,true);assert.equal(packed.map.policy.readOnly,true);
+  assert.equal(packed.mapStatus,'PUBLIC PLAN','packing the case keeps the public survey until the SI–1 is taken');
   f.save.flags['map.taken']=true;f.h.missing=true;
   const lost=f.context();assert.equal(lost.navigationVisible,false);assert.equal(lost.mapStatus,'PLAN MISSING');
   assert.equal(lost.map,f.h.map,'owned-map loss never downgrades to an unrestricted public preview');

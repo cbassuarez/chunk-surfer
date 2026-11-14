@@ -14,10 +14,11 @@ async function fixture(){
   const mocks=new Map(Object.entries({
     'render/ui.js':{uiDraw:noop,uiDrawHardware:noop,uiFill:noop,uiGlyph:noop,uiText:noop,
       uiCellMetrics:()=>({cellW:12.675,cellH:30}),uiCurrentScale:()=>1.5},
-    'render/hardware-material.js':{hardwareMotionReduced:()=>true},
+    'render/hardware-material.js':{hardwareMotionReduced:()=>true,hardwareEffectsReduced:()=>true},
     'render/palette.js':{uiBrightness:()=>1},
     'render/recorder-instrument.js':Object.fromEntries(['drawRecorderInstrument','recorderFaceLayout',
       'recorderDisplayPalette','drawRecorderDisplayText','drawRecorderCheckMeter'].map(name=>[name,noop])),
+    'render/recorder-rig.js':{drawRecorderRig:noop},
     'render/transcript.js':{...Object.fromEntries(['layoutTranscript','layoutTranscriptChoices','fitTranscriptChoices'].map(name=>[name,noop])),transcriptChoiceText},
     'narrative/obscured-name.js':{obscuredGlyphAt:noop,obscuredShape:noop},
     'game/access.js':{visualEffectsEnabled:()=>true},

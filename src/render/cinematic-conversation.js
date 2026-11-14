@@ -34,7 +34,8 @@ function currentEntry(view){
 
 export function cinematicConversationLayout(view={}, {cols=120,rows=40,page=0,selectedOffset=0,prompt='',review=false,reviewPage=0}={}){
   const scale=clamp(Number(view.captionScale)||1.15,.8,2),localCols=cols/scale,localRows=rows/scale;
-  const width=Math.max(8,Math.min(88,Math.floor(localCols-6))),contentWidth=Math.max(4,width-4);
+  const maximumWidth=clamp(Number(view.captionWidth)||88,20,88);
+  const width=Math.max(8,Math.min(maximumWidth,Math.floor(localCols-6))),contentWidth=Math.max(4,width-4);
   const placement=view.captionPlacement==='top'?'top':'bottom';
   const available=Math.max(4,Math.floor(localRows-5)),preferred=Math.max(4,Math.min(available,Math.floor(localRows*.60)));
   const x=Math.max(0,(localCols-width)/2),empty={empty:true,scale,x,y:0,width,height:0,bodyRows:[],choices:{rows:[],height:0},selectedIndex:null,placement};
@@ -90,7 +91,10 @@ export function drawCinematicConversation(layout){
     ctx.scale(scale,scale);
     const px=x*cellW*dpr,py=y*cellH*dpr,pw=width*cellW*dpr,ph=height*cellH*dpr;
     const wash=ctx.createLinearGradient(px,py,px+pw,py);
-    wash.addColorStop(0,'rgba(0,0,0,0)');wash.addColorStop(.10,'rgba(0,0,0,.62)');wash.addColorStop(.90,'rgba(0,0,0,.62)');wash.addColorStop(1,'rgba(0,0,0,0)');
+    // Busy acquired light may pass behind speech, but must not compete with
+    // the available replies. Feather the padding, not the text/number gutter.
+    const opacity=layout.review?.80:layout.choices.rows.length?.76:.70,edge=Math.min(.14,2/width),ink=`rgba(0,0,0,${opacity})`;
+    wash.addColorStop(0,'rgba(0,0,0,0)');wash.addColorStop(edge,ink);wash.addColorStop(1-edge,ink);wash.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=wash;ctx.fillRect(px,py,pw,ph);
     let cy=y+1;
     for(const row of layout.bodyRows)textRow(row,x+2,cy++,contentWidth,{center:!layout.review,scale});

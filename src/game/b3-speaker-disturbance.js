@@ -57,7 +57,7 @@ export function createB3SpeakerDisturbance({savedFlags={},onPersist=()=>{},onWak
     if(!(ratio>0)||!recorder?.emitRoomSourceNoise)return 0;
     const unit=Number(recorder.recordingInputLevel?.(1))||1,threshold=Number(recorder.spoilThreshold?.())||.18;
     const level=threshold/unit*ratio;
-    recorder.emitRoomSourceNoise(level,x,y,'music from the B3 live-room speakers',{sourceId:'b3-control-speakers',kind:'instrument_note',continuous:true});return level;
+    recorder.emitRoomSourceNoise(level,x,y,'music from the B3 live-room speakers',{sourceId:'b3-control-speakers',kind:'instrument_note',continuous:true,interruption:'authored'});return level;
   }
   restore(savedFlags);
   return Object.freeze({step,setFader,setPower,inspectReturn,disconnectReturn,snapshot,flush,restore,reportToRecorder});

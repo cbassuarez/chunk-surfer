@@ -9,7 +9,8 @@ import {MEMORY_FIELD_VISIT as V,MEMORY_FIELD_VISITS} from '../src/data/memory-fi
 import {makeTitleScene} from '../src/game/title.js';
 import {withTransientGameState} from '../src/game/save.js';
 import {transferRoomCopy} from '../src/game/post-run-copy.js';
-import {createMemoryFieldScene} from '../src/game/memory-field-scene.js';
+import {createMemoryFieldScene,memoryFieldNeural,memoryFieldLook,freshMemoryField,stepMemoryField} from '../src/game/memory-field-scene.js';
+import {neuralSeconds,NEURAL_NONE} from '../src/game/neural-transition.js';
 
 function fixture(visit=V.fourth,extra={}){
   let disposed=0,returned=0,stopped=0;const frames=[],plates=[];
@@ -26,6 +27,19 @@ test('extras offers all five actual visits before any media and launches scenes 
   const opened=[];const room=makeTransferRoomScene({host:{beginScene:id=>{opened.push(id);return true;}}});
   room.key({key:'Enter'});room.key({key:'ArrowDown'});room.key({key:'Enter'});
   assert.deepEqual(opened,['first','second']);
+});
+
+test('extras keeps source media as an explicit archive and has no world-interruption launch actions',()=>{
+  const scenesOpened=[],archiveOpened=[],removed=[];
+  const room=makeTransferRoomScene({host:{
+    beginScene:id=>{scenesOpened.push(id);return true;},beginField:id=>{archiveOpened.push(id);return true;},
+    flashSeep:()=>removed.push('seep'),playBleed:()=>removed.push('bleed'),deadVerb:()=>removed.push('verb'),
+  }});
+  room.key({key:'2'});room.key({key:'Enter'});
+  assert.deepEqual(archiveOpened,['flowers-seb']);assert.deepEqual(scenesOpened,[]);assert.deepEqual(removed,[]);
+  room.key({key:'1'});room.key({key:'Enter'});assert.deepEqual(scenesOpened,['first']);
+  const source=readFileSync(new URL('../src/game/transfer-room.js',import.meta.url),'utf8');
+  assert.match(source,/MEDIA ARCHIVE/);assert.doesNotMatch(source,/interruptionRows|flashSeep|playBleed|deadDoorCue|deadVerb|INTERRUPTIONS/);
 });
 
 test('the production title exposes extras after a filed sheet or ending and Enter invokes the real callback',async()=>{
@@ -95,14 +109,35 @@ test('the ant remains an encounter, then hands the body back to walk',async()=>{
   f.scene.cancel();
 });
 
-test('a light-leak preview owns its plate and clears it before returning; reduced flash stays capped',async()=>{
-  scenes.clear();let sounds=0;const plate={id:'glass'};
-  const f=fixture(V.fourth,{effect:{kind:'seep',plate},presentation:()=>({reducedFlash:true}),playEffect(){sounds++;}});
+test('field light is an arrival/departure transition and is absent during even a fully decayed visit',async()=>{
+  for(const reducedFlash of[false,true]){
+    const options={reducedFlash},arrive=memoryFieldNeural({elapsed:0,decay:1},options);
+    assert.ok(arrive.white>0&&arrive.leak>0,'entry reveals the actual field through light');
+    if(reducedFlash)assert.ok(arrive.white<=.5);
+    const settled={...freshMemoryField(V.fourth),elapsed:20,decay:1};
+    assert.equal(memoryFieldNeural(settled,options),NEURAL_NONE,'decay never schedules another leak or lens event');
+    assert.ok(memoryFieldLook(settled,V.fourth,options).skyFault>0,'the existing field breakdown still works');
+    const leaving=memoryFieldNeural({...settled,leaving:{at:19.3}},options);
+    assert.ok(leaving.leak>0,'departure still uses the real transition');
+  }
+  scenes.clear();let sounds=0;
+  const f=fixture(V.fourth,{effect:{kind:'seep',plate:{id:'glass'}},presentation:()=>({reducedFlash:true}),playEffect(){sounds++;}});
   scenes.push(f.scene);await f.scene.initialize();advance(f.scene,5);
-  assert.ok(f.plates.includes(plate));assert.equal(f.plates.at(-1),null);assert.equal(sounds,1);
-  const effectFrames=f.frames.filter(row=>row.state.elapsed>=2.4&&row.state.elapsed<4.8);
-  assert.ok(effectFrames.every(row=>(row.look.neural?.white||0)<=.5));
+  assert.deepEqual(f.plates,[],'the retired effect argument cannot revive an image interruption');assert.equal(sounds,0);
+  assert.ok(f.frames.some(row=>row.look.neural.white>0));
+  assert.ok(f.frames.filter(row=>row.state.elapsed>neuralSeconds('arrive',{reducedFlash:true})).every(row=>row.look.neural===undefined||row.look.neural.leak===0));
   f.scene.cancel();assert.equal(f.plates.at(-1),null);assert.equal(f.disposed,1);
+});
+
+test('a reduced-flash field departure completes before releasing its actual scene',async()=>{
+  scenes.clear();const f=fixture(V.fourth,{presentation:()=>({reducedFlash:true})});
+  scenes.push(f.scene);await f.scene.initialize();f.scene.place({elapsed:10,leaving:{at:10,why:'through'}});
+  advance(f.scene,1.15);assert.equal(f.returned,0,'the normal 1.1s boundary cannot cut the slowed transition');
+  assert.ok(f.scene.view().state.elapsed-10<neuralSeconds('leave',{reducedFlash:true}));
+  advance(f.scene,.55);assert.equal(f.returned,1);assert.equal(f.disposed,1);
+  let state={...freshMemoryField(V.third),elapsed:10,leaving:{at:10,why:'through'}};
+  for(let i=0;i<12;i++)state=stepMemoryField(state,V.third,{dt:.1}).state;
+  assert.equal(state.left,true,'normal field departure retains its existing short duration');
 });
 
 test('main opens and leaves a replay without changing a run or discarding the title',async()=>{

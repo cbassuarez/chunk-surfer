@@ -19,7 +19,7 @@ test('Source proper hands actual material, depth and current marks to the overwo
 
 test('Source identities resolve after the complete shared recording chain',()=>{
   const pipeline=section('function drawSourceRoomMemory','const DATAMOSH_FRAG');
-  const stages=['runPixelMeshPass','runSourceFaultPass','runDatamoshPass','presentThroughPost','drawSourceIdentity'];
+  const stages=['runPixelMeshPass','runDatamoshPass','presentThroughPost','drawSourceIdentity'];
   for(let i=1;i<stages.length;i++)assert.ok(pipeline.indexOf(stages[i])>pipeline.indexOf(stages[i-1]),`${stages[i]} must follow ${stages[i-1]}`);
   const identity=section('const SOURCE_IDENTITY_FRAG','const COPY_FRAG');
   assert.match(identity,/texture\(uOpeningMask,uv\)/);

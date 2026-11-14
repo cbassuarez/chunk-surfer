@@ -1,4 +1,5 @@
-import {chooseGait,gaitSpeed,freshBreath,normalizeBreath,stepBreath} from './locomotion.js';
+import {freshBreath,normalizeBreath,stepBreath} from './locomotion.js';
+import {sourceChaseGait} from './source-chase-gait.js';
 import {freshArchipelagoProgress,normalizeArchipelagoProgress,advanceArchipelagoProgress,archipelagoChase,archipelagoExitReady} from './source-archipelago-progress.js';
 import { SOURCE_CONTINUATION as C, CONTINUATION_CATCH_STAGES, continuationStage, continuationRadialPoint, continuationCatchFloor, continuationSurfaces,continuationChartSurfaces,continuationChartSolids,continuationChartDoors,continuationArrivalAnchors, continuationSolids, continuationDoors, continuationProps, continuationSurfaceY, continuationSurfaceContains, continuationSupportAt, continuationDropLip, continuationDropLips, continuationRefugeAt, continuationCatchObstacles, continuationBodyClearAt } from '../data/source-continuation.js';
 import {recoverSourceRestAlcoveCheckpoint} from './source-rest-alcove-recovery.js';
@@ -171,8 +172,7 @@ export function sourceContinuationGait(state,input={}){
   const nearHush=state.hush?.active&&state.hush.chartId===state.chartId&&state.hush.mode==='follow'&&distance(state,state.hush)<25;
   const chase=state.phase==='catch'?!!archipelagoChase(state)||exitPursuit(state):!!nearHush;
   const place=state.phase==='catch'?'exterior':C.place;
-  const gait=chooseGait({place,run:!!input.run,chase,winded:state.breath?.winded});
-  return{place,chase,gait,speed:gaitSpeed(gait)};
+  return{place,chase,...sourceChaseGait({run:!!input.run,winded:state.breath?.winded})};
 }
 export function sourceContinuationDoorFraction(state, id) {
   if(id==='catch-final'&&!archipelagoExitReady(state))return 0;

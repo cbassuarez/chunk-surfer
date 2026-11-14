@@ -36,6 +36,7 @@ function fixture(){
   activeTakeOrdinal:1,recordingFalseHush:null,recordingHallucinationProbeUntil:0,recordingHallucinations:{clear:()=>{}},
   activeTakeContamination:null,activeTakeWitnessed:false,takePlace:null,instrArmedThisTake:false,metronomeRestartPending:null,
   clearInstrument:()=>{},CUES:{CUE:{recorder:'recorder'},playCue:()=>calls.push(['existing-stop-cue'])},
+  flushMetronomeTakeEvents:()=>{},
   emitRecorderTransport:()=>{},STORY:{stopTapeHiss:()=>{}},updateAudio:()=>{},activeSourceReplayTake:null,
   emitProgress:()=>{},EVENT_TYPES:{TAKE_ABORTED:'TAKE_ABORTED'},saveCommit:()=>{},
   // The attempt goes on a cassette; the ledger is tested in cassette-ledger.spec.
@@ -162,12 +163,17 @@ test('embodiment camera basis exactly matches the world renderer for arbitrary p
  }
 });
 test('actual main render-state expression removes embodied props for another world presentation or special space',()=>{
- const start=main.indexOf('    recordingEmbodiment:!worldView'),end=main.indexOf('\n',start),expression=main.slice(start,end).split('recordingEmbodiment:')[1].replace(/,$/,''),
-  h={worldView:null,storyMode:true,usingSpecialSpace:()=>false,recordingEmbodiment:{snapshot:()=>({active:true})}};
+ const start=main.indexOf('    recordingEmbodiment:elleryCaughtOwner'),end=main.indexOf('// Render-only second manifestation',start);
+ const expression=main.slice(start,end).split('recordingEmbodiment:')[1].trim().replace(/,$/,'');
+ const h={worldView:null,storyMode:true,usingSpecialSpace:()=>false,recordingEmbodiment:{snapshot:()=>({active:true})},
+   elleryCaughtOwner:null,caughtHandFrame:(held,frame)=>({held,frame})};
  assert.ok(start>0);vm.createContext(h);vm.runInContext('function selectEmbodiment(){return '+expression+';}',h);
  assert.equal(h.selectEmbodiment().active,true);h.worldView={suppressActors:false};assert.equal(h.selectEmbodiment(),null);
  h.worldView=null;h.usingSpecialSpace=()=>true;assert.equal(h.selectEmbodiment(),null);
  h.usingSpecialSpace=()=>false;h.storyMode=false;assert.equal(h.selectEmbodiment(),null);
+ h.storyMode=true;h.elleryCaughtOwner={staging:{hands:'the staged hands'},scene:{frame:()=> 'impact'}};
+ assert.equal(h.selectEmbodiment().held,'the staged hands');
+ assert.equal(h.selectEmbodiment().frame,'impact');
 });
 test('actual P3 character snapshot resolves aliased hand identity and the retained brace morph without a pose fallback',()=>{
  const bytes=readFileSync(new URL('../public/assets/source-rest/seated-hands.glb',import.meta.url)),asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)),

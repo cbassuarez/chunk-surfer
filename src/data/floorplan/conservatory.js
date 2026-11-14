@@ -47,6 +47,8 @@ import { PUB_LEVELS, PUB_YARD_CONNECTORS, pubYardCellClaimed } from '../exterior
 import { STATIONERS_LEVELS } from '../exterior-stationers.js';
 import { TOWER_WARNING_LEVELS } from '../tower-warning.js';
 import {GLASS_COURT} from '../glass-court.js';
+import {BOX_OFFICE_HATCH} from '../box-office.js';
+import {ELLERY_GARDEN_LEVELS} from '../ellery-garden-approaches.js';
 import {YARD_PUBLIC_ROOM_LEVELS} from '../yard-public-rooms.js';
 import {YARD_JARDINS,YARD_JARDINS_LEVEL,YARD_JARDINS_NORTH_LEVEL} from '../yard-jardins.js';
 import {HALL_STAGE_SERVICE_STAIR} from '../atrium-circulation.js';
@@ -167,6 +169,9 @@ function balconyRows(glyph,{rear=true}={}){
     let c=' ';
     if(x===0||x===w-1||y===0||y===h-1)c='#';
     else if((y>=8&&y<=36&&(x<=4||x>=25))||(rear&&y>=32))c=glyph;
+    // The public east garden takes the first three metres of the front
+    // shoulder. Both balcony tips end at that real exterior return.
+    if(x<3&&y<11)c=' ';
     row+=c;
   }out.push(row);}return out;
 }
@@ -222,7 +227,7 @@ function natatoriumRows(){
     // proper glazed run. The natatorium is its own building now, so its public
     // front is four metres of glazing rather than a two-metre squeeze between
     // the greenhouse and the changing block.
-    if(y===0&&x>=12&&x<=15)c='+';
+    if(y===0&&x>=13&&x<=14)c='+';
     // Five metres of dry lead-in lets the room reveal itself before the pool.
     // A narrower 12 x 16m basin reads longitudinally instead of swallowing the
     // hall as soon as the lobby leaf opens.
@@ -248,7 +253,7 @@ function natatoriumProfile(_x,_y,cell){
   // The academic crown begins at 10m over this physical footprint. Stop the
   // pool hall below that slab; the old 11.2m envelope literally intersected
   // its walls and models, producing the nested room visible from the deck.
-  return{floor:natatoriumBasinFloor(_x,_y,cell.floor),ceil:natatoriumCeilingBroken(_x,_y)?NATATORIUM_SLAB:9.5,flags:cell.flags};
+  return{floor:natatoriumBasinFloor(_x,_y,cell.floor),ceil:natatoriumCeilingBroken(_x,_y)?24:9.5,flags:cell.flags|(natatoriumCeilingBroken(_x,_y)?F.SKY:0)};
 }
 // The deep end falls to the main drain, as a real bath's floor does, so a
 // drained bath keeps a few inches of rainwater over its last seven metres.
@@ -262,7 +267,8 @@ function natatoriumBasinFloor(x,y,floor){
 // What remains is the slab's underside, just short of the academic floor, and
 // the water that came through it from the open courts above. Ragged, so the
 // rim reads as broken, and over the head of the sump, so the drips land in it.
-const NATATORIUM_SLAB=9.98;
+// Missing roof panes look at the real sky. A slab exists only where an
+// actual upper span is present; the central sump has none.
 export const NATATORIUM_CEILING_BREAK=Object.freeze({x0:10,x1:18,y0:11,y1:16});
 export function natatoriumCeilingBroken(x,y){
   const b=NATATORIUM_CEILING_BREAK;
@@ -287,20 +293,22 @@ function bathsApproachThreshold(id,x,z,widthAxis,zone){
 // Both flanking courts are open to the sky. Splitting the height on x gave the
 // west court a 9.5 m lid while the east got 40 m, so walking the glasshouse
 // connector read as a slot between buildings instead of a walk through a yard.
-const courtProfile=(x,z)=>({floor:0,ceil:40,zone:ZONE.civicCourt,material:MATERIAL.wetPaving,flags:F.SKY});
+const academicOverheadAt=(x,z)=>{const c=academicFloorRows()[Math.floor(z)]?.[Math.floor(x)-50];return !!c&&c!==' ';};
+const courtProfile=(x,z)=>({floor:0,ceil:academicOverheadAt(x,z)?9.5:40,zone:ZONE.civicCourt,material:MATERIAL.wetPaving,flags:academicOverheadAt(x,z)?0:F.SKY});
 const BATHS_APPROACH_LEVELS=[
   ...GLASS_COURT.outdoorCourts.map(c=>({id:`baths-outdoor-court-${c.id}`,replace:true,layer:'ground',space:'baths_courtyard',renderGroup:'ground',
     origin:{x:c.x0,y:c.z0},physicalOrigin:{x:c.x0,y:c.z0},base:0,rows:Array(c.z1-c.z0).fill('Y'.repeat(c.x1-c.x0)),profile:(x,z)=>courtProfile(c.x0+x,c.z0+z)})),
   {id:'baths-west-court-wall',replace:true,layer:'ground',space:'baths_courtyard',renderGroup:'ground',
     origin:{x:GLASS_COURT.westCourtWall.x,y:GLASS_COURT.westCourtWall.z0},physicalOrigin:{x:GLASS_COURT.westCourtWall.x,y:GLASS_COURT.westCourtWall.z0},base:0,
-    rows:Array.from({length:GLASS_COURT.westCourtWall.z1-GLASS_COURT.westCourtWall.z0},(_,i)=>GLASS_COURT.westCourtWall.z0+i===GLASS_COURT.westCourtWall.door.z?'+':'#')},
+    rows:Array.from({length:GLASS_COURT.westCourtWall.z1-GLASS_COURT.westCourtWall.z0},(_,i)=>GLASS_COURT.westCourtWall.z0+i<18?'Y':GLASS_COURT.westCourtWall.z0+i===GLASS_COURT.westCourtWall.door.z?'+':'#'),
+    profile:(x,z,cell)=>z<3?courtProfile(GLASS_COURT.westCourtWall.x+x,GLASS_COURT.westCourtWall.z0+z):null},
   {id:'natatorium_glasshouse',replace:true,layer:'ground',space:'greenhouse',renderGroup:'ground',origin:{x:82,y:15},physicalOrigin:{x:82,y:15},base:0,
    rows:Array(12).fill('T'.repeat(4)),profile:bathsApproachProfile(ZONE.glasshouse)},
   {id:'natatorium_changing',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:81,y:28},physicalOrigin:{x:81,y:28},base:0,
    rows:Array(3).fill('T'.repeat(6)),profile:bathsApproachProfile(ZONE.poolChanging)},
   // Enclosed dry return keeps the existing hall public door reachable.
   {id:'hall-east-return',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:95,y:13},physicalOrigin:{x:95,y:13},base:0,
-   rows:Array(12).fill('FF'),profile:()=>({floor:0,ceil:3.6,zone:ZONE.foyer,material:MATERIAL.wetPaving,flags:0})},
+   rows:Array(14).fill('YYY'),profile:(x,z)=>courtProfile(95+x,13+z)},
   ...bathsApproachThreshold('ellery-greenhouse-throat',84,15,'x',ZONE.glasshouse),
   ...bathsApproachThreshold('glasshouse-changing-throat',84,27,'x',ZONE.poolChanging),
   ...bathsApproachThreshold('changing-pool-throat',84,31,'x',ZONE.poolChanging),
@@ -311,7 +319,6 @@ function frontAtriumRows(){
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'A';
     if(y===0&&(x===4||x===5))c='+';    // public glazed entrance pair
     if(x===0&&y===10)c='+';
-    if(x===w-1&&y===13)c='x';          // old staff door, visibly bricked
     if(y===h-1&&(x===21||x===22))c='+';
     // The greenhouse throat begins half a metre beyond this final atrium
     // row. Keep its two-metre approach open up to the real D0 door, rather
@@ -327,29 +334,10 @@ function frontAtriumRows(){
     // A real service passage reaches the stage leaf without opening the keyed
     // office frontage or leaving a metre of uncut masonry before its frame.
     if(x===23&&y>=3&&y<=10)c='F';
-    // THE TICKET WINDOW IS SHUT, AND THE WALL HAS TO SAY SO.
-    //
-    // These two cells used to be open 'F', on the reasoning that the fitted
-    // counter standing in front of them was the barrier. It is not: ticket_counter
-    // is 2.8 x 0.75 at scale 0.75, so it covers runtime x180-181 across y16-20 and
-    // leaves runtime row 21 clear — a two-metre walk-in from the atrium, past the
-    // queue stanchions, straight through where the grille is meant to be. A prop
-    // is dressing; the plan is the collision, and the plan said this was a way in.
-    //
-    // The counter's own text has always described the opposite: "built to keep a
-    // queue outside and cash inside. The grille is still locked down." So the
-    // frontage is wall now and the counter reads as a shuttered hatch in front of
-    // it. Staff still get in the way the sheets say they do — the master-key leaf
-    // on the south wall (foh-office) — which is what makes that hint worth
-    // printing.
-    //
-    // Verified: with these sealed, the key cabinet, the rekey ledger and the desk
-    // all remain reachable from the atrium. test/box-office.spec.mjs holds both
-    // halves of that, because a sealed room is as broken as an open frontage.
+    // Fixed inspection glazing is authored as a separate collision-only
+    // aperture; the keyed staff leaf remains the only body entrance.
     if(y===8&&x===20)c='+';
     // Acoustic lobby into the hall's rear cross aisle.
-    if(x>=16&&y>=21&&y<=23)c='F';
-    if(x===w-1&&(y===21||y===22))c='+';
     row+=c;
   }out.push(row);}return out;
 }
@@ -569,7 +557,9 @@ function practiceWingRows(){
     // narrower and the third floor stops being reachable.
     if(y===0&&x>=9&&x<=14)c='P';
     if(x===w-1&&y===3)c='+';           // thick-wall throat to upper bridge
-    if(x===w-1&&y===16)c='+';          // string-room door to side passage
+    // The sealed side leaf remains the remembered entrance in False Ellery.
+    // Here its old passage is retired, so it cannot become a chapel shortcut.
+    if(x===w-1&&y===16)c='+';
     row+=c;
   }out.push(row);}return out;
 }
@@ -1052,7 +1042,7 @@ const EUCLIDEAN_ADDITIONS=[
   // exists only because their logical cells live somewhere else entirely.
   {id:'hall_stage',replace:true,layer:'hall_stage',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallStageRows(),profile:hallStageProfile},
   {id:'hall_service_top_landing',replace:true,physicalReplace:true,layer:'hall_stage',space:'hall',renderGroup:'hall',
-   origin:{x:99,y:10},physicalOrigin:{x:99,y:10},base:0,rows:['H','H'],
+   origin:{x:102,y:8},physicalOrigin:{x:102,y:8},base:0,rows:['H','H','H','H'],
    profile:()=>({floor:0,ceil:15.5,zone:ZONE.hall})},
   {id:'hall_service_steps',layer:'hall_stage',space:'hall',renderGroup:'hall',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
    stairs:[{from:HALL_STAGE_SERVICE_STAIR.from,to:HALL_STAGE_SERVICE_STAIR.to,
@@ -1167,8 +1157,12 @@ const EUCLIDEAN_ADDITIONS=[
       {id:'nave',at:{x:104,y:154},size:{x:3,y:1},physicalAt:{x:99,z:upperWingZ(82)},height:4.8},
     ],
   }]},
+  ...ELLERY_GARDEN_LEVELS.map(l=>l.id.endsWith('garden-approach')?{...l,profile:(x,z)=>courtProfile(l.physicalOrigin.x+x,l.physicalOrigin.y+z)}:l),
   ...BUILDING_AMENITY_LEVELS,
   ...BUILDING_WINDOW_LEVELS,
+  {id:'box-office-fixed-inspection-window',replace:true,collisionOnly:true,layer:'ground',space:'front_atrium',renderGroup:'ground',
+   origin:{x:BOX_OFFICE_HATCH.aperture.x0,y:BOX_OFFICE_HATCH.aperture.z0},physicalOrigin:{x:BOX_OFFICE_HATCH.aperture.x0,y:BOX_OFFICE_HATCH.aperture.z0},base:0,rows:['=','=','='],
+   profile:()=>({floor:BOX_OFFICE_HATCH.aperture.sill,ceil:BOX_OFFICE_HATCH.aperture.head,zone:ZONE.foyer,material:MATERIAL.doorGlassDuct,flags:0})},
   ...B3_CONTROL_WINDOW_LEVELS,
 ];
 
@@ -1177,7 +1171,7 @@ export const conservatory = {
   // Ellery Square's level lives at logical y 520..566, clear of every saved
   // address below it.
   height: 700,
-  layoutRevision: 5,
+  layoutRevision: 6,
   positionMigrations:[
     {id:'old-upper-coil',beforeRevision:3,bounds:{x0:62,x1:64,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
     {id:'old-lower-coil',beforeRevision:3,bounds:{x0:60,x1:62,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.groundLanding,floor:0},
@@ -1199,9 +1193,17 @@ export const conservatory = {
     // so they need explicit migration too; neither moves a neighbouring cell.
     {id:'b3-control-west-partition',beforeRevision:5,bounds:{x0:18,x1:18.5,y0:6,y1:18.5},to:{x:17,y:12},floor:-4},
     {id:'b3-control-south-partition',beforeRevision:5,bounds:{x0:19,x1:24.5,y0:18,y1:18.5},to:{x:17,y:17},floor:-4},
+    // Revision 6 retires the unshifted upper drawing. Only its orphan air
+    // strips move; current practice rooms, bridge and chapel keep their saves.
+    {id:'retired-upper-north-strip',beforeRevision:6,bounds:{x0:76,x1:97.999,y0:51,y1:52.999},to:MAIN_STAIR_LAYOUT.practiceMouth,floor:4.8},
+    {id:'retired-upper-side-passage',beforeRevision:6,bounds:{x0:80,x1:80.999,y0:58,y1:76.999},to:MAIN_STAIR_LAYOUT.practiceMouth,floor:4.8},
+    {id:'retired-upper-side-bay',beforeRevision:6,bounds:{x0:78,x1:79.999,y0:74,y1:76.999},to:MAIN_STAIR_LAYOUT.practiceMouth,floor:4.8},
   ],
   widenCorridors: true,
   edgePortals:[
+    ...[{id:'west',x:71},{id:'east',x:98}].map(a=>({id:`north-footway-to-${a.id}-garden`,width:3,
+      from:{at:districtLogicalAt(a.x,-.5),along:{x:1,y:0},exit:{x:0,y:1}},
+      to:{at:{x:a.x,y:0},along:{x:1,y:0},exit:{x:0,y:-1}}})),
     {id:'north-footway-to-public-forecourt',width:24,
      from:{at:districtLogicalAt(74,-.5),along:{x:1,y:0},exit:{x:0,y:1}},
      to:{at:{x:74,y:0},along:{x:1,y:0},exit:{x:0,y:-1}}},
@@ -1457,46 +1459,13 @@ export const conservatory = {
       stairs: [],
     },
     {
-      // ── upper, four metres up ──────────────────────────────────────────────
+      // Retain the legacy page as solid save-address space. Its principal
+      // basement stair below still owns its explicit cells, while the current
+      // practice wing, bridge and chapel reopen only their authored footprints.
+      // Keeping this old drawing as air left disconnected corridor fragments
+      // beside the north-shifted rooms, visible as halls through their walls.
       id:'upper',layer:'upper',space:'upper',renderGroup:'upper',origin: { x: 50, y: 44 }, physicalOrigin:{x:50,y:44},base: 4.8,
-      rows: [
-        '         #,,,#',
-        '         #,,,#',
-        '         #,,,#',
-        '         #,,,#',
-        '         #,,,#',
-        '         #,,,#',
-        '         #,,,#',
-        '     ######,####################################',
-        '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
-        '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
-        '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
-        '     ########.#######################+##########',
-        '            #.#                     #.#     ###',
-        '     ########.############ ##########.#################',
-        '     #PPPPPP#,,PPPP#PPP#PPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPPPP#,,PPPP#PPP#PPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPPPP#,,PPPP#PPP#PPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPPPP+,,PPPP#PPP#PPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPPPP#,,PPPP#PPP#PPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPPPP#,,PPPP#PPP#PPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     ########,,##+###+###+## #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #,,,,,,,,,P,,,,,,,,,,,# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     ###+###+###+###+###+### #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPP#PPP#PPP#PPP#PPPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPP#PPP#PPP#PPP#PPPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPP#PPP#PPP#PPP#PPPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPP#PPP#PPP#PPP#PPPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPP#PPP#PPP#PPP#PPPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     #PPPP#PPP#PPP#PPP#PPPP# #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '     ####################### #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '                           #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '                           #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '                           #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-        '                           #############################',
-        '',
-        '',
-      ],
+      rows: Array.from({length:36},()=> '#'.repeat(56)),
       stairs: [
         // Both principal stairs own their complete flights and three-metre
         // landings. No endpoint inherits a neighbouring room's identity.

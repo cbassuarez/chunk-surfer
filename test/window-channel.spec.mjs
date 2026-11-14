@@ -77,3 +77,50 @@ test('native surface prewarm starts before identity or artifact work can block a
   releaseIdentity({schema:1,persona:null,hostname:null,mic:null});
   await entering;
 });
+
+test('reenabling Window Choreography rebuilds the pool for later fireballs in the same fight',async()=>{
+  let allowed=true,releaseClose;
+  const closed=new Promise(resolve=>{releaseClose=resolve;});
+  const full=psychProfileChoice(true);
+  const calls=[];
+  let pool=0;
+  const director=createBattleInterferenceDirector({
+    getSettings:()=>({enabled:allowed}),
+    getProfile:()=>({...full,modules:{...full.modules,windowChoreography:allowed}}),
+    getRecord:()=>({caseId:'FIELD-1234ABCD'}),
+    effects:{
+      begin:()=>{const token=`pool-${++pool}`;calls.push(['pool',token]);return token;},
+      beginFireballCast:(cast,{token})=>calls.push(['cast',token,cast.castId]),
+      syncFireballCast:(cast,rays,{token})=>{calls.push(['sync',token,cast?.castId??null,rays[0]?.state]);return true;},
+      emergencyRestore:()=>closed,
+    },
+  });
+  const fight=director.forBattle('chapel');
+  await fight.enter();
+  const request={movementId:'room',movementIndex:0};
+  const original=fight.beginFireballCast(request);
+  const outbound={index:0,rayId:'ray-1',state:'outbound'};
+  assert.equal(fight.syncFireballCast({castId:original.castId,rays:[outbound]}),true);
+  allowed=false;
+  const disabling=director.settingsChanged();
+  const whileOff=fight.beginFireballCast(request);
+  assert.equal(fight.syncFireballCast({castId:whileOff.castId,rays:[outbound]}),false);
+  allowed=true;
+  const enabling=director.settingsChanged();
+  assert.equal(pool,1,'native teardown must finish before new surfaces receive the same labels');
+  releaseClose();
+  await Promise.all([disabling,enabling]);
+  assert.equal(pool,2);
+  for(const cast of [original,whileOff]){
+    assert.equal(fight.syncFireballCast({castId:cast.castId,rays:[{...outbound,state:'impact'}]}),false,
+      'reenabling cannot send an earlier fireball or its impact to the desktop');
+  }
+  const next=fight.beginFireballCast(request);
+  assert.equal(fight.syncFireballCast({castId:next.castId,rays:[outbound]}),true);
+  assert.equal(fight.syncFireballCast({}),true,'the final empty frame retires the current outside target');
+  assert.deepEqual(calls,[
+    ['pool','pool-1'],['cast','pool-1',original.castId],['sync','pool-1',original.castId,'outbound'],
+    ['pool','pool-2'],['cast','pool-2',next.castId],['sync','pool-2',next.castId,'outbound'],
+    ['sync','pool-2',null,undefined],
+  ]);
+});

@@ -163,5 +163,6 @@ test('no native pane without consent, in a browser, or over a fullscreen window'
 test('main only ever calls it through the one guarded entry, and nothing is gated on it',()=>{
   const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   assert.equal((main.match(/windowTakeover\.begin\(/g)||[]).length,1);
-  assert.ok(/function beginWindowTakeover\(mediaId,\{onDone=\(\)=>\{\},owner=null\}=\{\}\)/.test(main),'the sole entry accepts only an explicit modal owner for extras');
+  assert.ok(main.includes('function beginWindowTakeover(mediaId,{onDone=()=>{},onShown=()=>{},owner=null,name=null}={})'),'the sole entry carries explicit delivery and ownership');
+  assert.ok(main.includes('haystackPaperOpportunityActive')&&main.includes('sourceBracketTableauActive'),'Source permission requires a live semantic claim and noncolliding tableau');
 });

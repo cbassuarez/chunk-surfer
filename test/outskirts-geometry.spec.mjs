@@ -7,6 +7,7 @@ import {
 import { outskirtsCollisionBoxes, outskirtsPointBlocked } from '../src/game/outskirts-geometry.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { OUTSKIRTS_BUS_PASSAGE, busPassageLocal } from '../src/data/outskirts-bus-passage.js';
+import { OUTSKIRTS_VAN_CRASH } from '../src/data/outskirts-van-crash.js';
 
 const layout = outskirtsArrivalLayout();
 const passStart = (k) => OUTSKIRT_STRETCH_START + k * OUTSKIRT_STRETCH_METRES;
@@ -88,9 +89,30 @@ test('final-filtered physical changes survive and the late self-recognition has 
     if (pass.break === 'stutter') assert.ok(pieces.some((p) => p.key.endsWith('-stutter')));
     if (pass.break === 'no-road') assert.ok(!pieces.some((p) => p.key === 'road'));
   }
-  for (const k of [15, 16, 17]) assert.ok(onPass(k).some((p) => p.inspect === 'ledger'));
+  for (const k of [16, 17]) assert.ok(onPass(k).some((p) => p.inspect === 'ledger'));
   for (const key of ['van', 'van-headphones', 'van-handset', 'van-cord']) assert.ok(onPass(25).some((p) => p.key === key));
   assert.ok(!onPass(26).some((p) => p.key.startsWith('van')));
+});
+
+test('the van falls onto a motorway with a continuous clear lane and physical edge barriers', () => {
+  const { pass } = OUTSKIRTS_VAN_CRASH;
+  const pieces = onPass(pass), start = passStart(pass);
+  const roads = pieces.filter(p => p.mesh === 'm62_carriageway').sort((a, b) => a.along - b.along);
+  assert.ok(pieces.every(p => p.m62Scenery), 'the pass still contains town clutter');
+  assert.equal(pieces.some(p => p.payphone || /^booth|^bus|^car/.test(p.key)), false);
+  assert.equal(pieces.filter(p => p.lamp && !p.m62Extension).length, 2);
+  assert.equal(pieces.filter(p => p.mesh === 'm62_route_marker').length, 1);
+  assert.equal(roads.filter(p => p.m62Extension).length, 8);
+  for (const [i, road] of roads.entries()) {
+    assert.ok(Math.abs(road.scaleZ * 41 - OUTSKIRT_STRETCH_METRES) < 1e-9);
+    if (i > 0) assert.ok(Math.abs(road.along - roads[i - 1].along - OUTSKIRT_STRETCH_METRES) < 1e-9);
+    if (road.m62Extension) assert.deepEqual(outskirtsCollisionBoxes(road), []);
+  }
+  for (let along = start + .25; along < start + OUTSKIRT_STRETCH_METRES; along += .5) {
+    assert.equal(blocked(pieces, 0, along), false, 'the wreck closes the straight-ahead lane');
+    assert.ok(blocked(pieces, -6.35, along), 'the central crash barrier has no collision');
+    assert.ok(blocked(pieces, 8.70, along), 'the shoulder fence has no collision');
+  }
 });
 
 test('the early bus requires its front entrance, aisle and rear exit without blocking progression', () => {

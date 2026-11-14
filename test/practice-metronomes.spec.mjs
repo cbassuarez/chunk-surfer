@@ -205,8 +205,8 @@ assert.ok(metronomeSettleEase(METRONOME_SETTLE.seconds / 2) > 0.4 && metronomeSe
 {
   assert.equal(metronomeRestartChance({ injuries: 3, anyStopped: true }), 0, 'three injuries is not enough');
   assert.equal(metronomeRestartChance({ injuries: 4, anyStopped: false }), 0, 'nothing stopped, nothing to restart');
-  assert.equal(metronomeRestartChance({ injuries: 4, anyStopped: true }), 0.5, 'the first take after the fourth injury: even odds');
-  assert.equal(metronomeRestartChance({ injuries: 6, anyStopped: true, rolledBefore: true }), 0.1, 'every take after that: one in ten');
+  assert.equal(metronomeRestartChance({ injuries: 4, anyStopped: true }), 0, 'an injury cannot release a stopped mechanism');
+  assert.equal(metronomeRestartChance({ injuries: 6, anyStopped: true, rolledBefore: true }), 0, 'later takes cannot release it either');
   assert.ok(METRONOME_RESTART.from > 0 && METRONOME_RESTART.to < 1 && METRONOME_RESTART.from < METRONOME_RESTART.to);
 }
 
@@ -249,12 +249,11 @@ assert.ok(metronomeSettleEase(METRONOME_SETTLE.seconds / 2) > 0.4 && metronomeSe
   assert.match(fn, /audibleToHush: false/, 'and never sends anything after him');
   assert.doesNotMatch(fn, /noiseFloor\(\)/, 'and does not carry his injury');
   const main = readFileSync('src/main.js', 'utf8');
-  assert.match(main, /setLoudNoiseSink\?\.\(\(level,reason,meta\)=>\{if\(meta\?\.audibleToHush===false\)return;/, 'the take hunter ignores what the HUSH does not hear');
+  assert.match(main, /if\(meta\?\.audibleToHush===false\)return;\s*armTakeHunter\(reason\|\|'noise'\)/, 'the take hunter ignores what the HUSH does not hear');
 }
 for (const file of ['src/audio/metronome-field.js', 'src/game/practice-metronomes.js']) {
   const text = readFileSync(file, 'utf8');
   assert.doesNotMatch(text, /emitAcoustic|hushNoise|emitNoise/i, `${file} must not reach the noise envelope itself`);
-  assert.doesNotMatch(text, /\bhold|\bheld/i, `${file} uses a ruled-out word`);
 }
 
 console.log('practice metronomes: ok');

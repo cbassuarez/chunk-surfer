@@ -59,15 +59,31 @@ export function resolveTorchLook({ on = true, battery = 1, timeSec = 0, reducedE
   };
 }
 
-// THE TORCH INSIDE SOURCE.
-//
-// The physical hall receives a soft, surface-based profile. Elsewhere Source
-// may ask for an x-ray inversion or a beam taken by the emergency circuit;
-// those modes preserve the battery/failing-bulb power beneath them. The runtime
-// owns their geographic boundaries, while the renderer owns their appearance.
-//
-// Pure, and composes with applyHushTorchInterference rather than replacing it.
 const mix = (a, b, t) => a + (b - a) * t;
+
+// The sheet sits below the eye. Open the carried lamp's penumbra as it rises
+// so nearby walls and the route ahead remain visible around the paper.
+// Compose before HUSH, which can still choke the beam during the gesture.
+export function applyWorkOrderTorchSpill(torch, lift) {
+  const amount = clamp(lift);
+  if (!amount || !torch.power) return torch;
+  const widen = (cosine, scale) => Math.cos(Math.acos(clamp(cosine, -1, 1)) * mix(1, scale, amount));
+  return {
+    ...torch,
+    coneInner: widen(torch.coneInner, 1.55),
+    coneOuter: widen(torch.coneOuter, 1.60),
+    spill: mix(torch.spill, Math.max(torch.spill, .11), amount),
+  };
+}
+
+// Broad reflected spill from the live lamp picks up nearby surfaces around
+// the sheet. Drive it from the final beam, so power loss removes the spill.
+export function workOrderRoomFill(torch, lift) {
+  return .15 * clamp(lift) * clamp(torch.power) * (1 - clamp(torch.hushInterference));
+}
+
+// Source can use a soft physical profile, x-ray inversion or emergency
+// lighting. Each composes over the battery and HUSH attenuation.
 export const SOURCE_TORCH_RED = Object.freeze([1, 0.14, 0.09]);
 export const SOURCE_TORCH_MODE = Object.freeze({
   NONE: 'none',

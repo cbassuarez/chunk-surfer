@@ -6,6 +6,35 @@ import { assetUrl } from '../platform/paths.js';
 const clamp=(value,low,high)=>Math.max(low,Math.min(high,Number(value)||0));
 const BED_KINDS=new Set(['bus','lodge','car','body']);
 const EVENT_KINDS=new Set(['bus-air','bus-door','bus-load','bus-exit','bus-woman-notice','bus-woman-pass','bus-entry-shut','bus-strip','bus-door-stuck','bus-body-open','bus-body-step','bus-body-expel','coat-rustle','footstep','hatch-impact','glass-knock','phone-ring','paper','pen','post-letter','ticket','fold-cloth','fold-pressure','fold-contact','fold-strain','fold-effort','woman-traction']);
+const VAN_CRASH_CUES={
+  'van-crash-approach':{gain:1.06,parts:[
+    {tone:86,toneEnd:49,frequency:500,seconds:1.58,level:.44,attack:.23},
+    {tone:176,toneEnd:100,frequency:840,seconds:1.55,level:.32,attack:.30},
+    {frequency:400,filterEnd:1360,q:.77,seconds:1.59,level:.79,attack:1.12},
+    {frequency:2000,filterEnd:650,q:1.4,seconds:.84,level:.23,delay:.71,attack:.40},
+  ]},
+  'van-crash-impact':{gain:1.42,parts:[
+    {tone:105,toneEnd:42,frequency:900,seconds:.24,level:.62,attack:.006},
+    {frequency:195,filterEnd:95,q:.65,seconds:.45,level:.82,attack:.004},
+    {frequency:1620,filterEnd:460,q:1.8,seconds:.34,level:.70,attack:.004},
+    {frequency:4050,filterEnd:2130,q:2.8,seconds:.25,level:.46,delay:.032,attack:.004},
+    {frequency:790,filterEnd:380,seconds:.37,level:.36,delay:.12,attack:.013},
+    {tone:217,toneEnd:170,frequency:530,seconds:.32,level:.18,delay:.15,attack:.010},
+  ]},
+  'van-crash-settle':{gain:.54,parts:[
+    {frequency:2300,filterEnd:750,q:2.7,seconds:.22,level:.42,attack:.007},
+    {tone:474,toneEnd:181,frequency:640,seconds:.43,level:.31,delay:.045,attack:.13},
+    {frequency:540,filterEnd:220,seconds:.19,level:.53,delay:.38,attack:.013},
+  ]},
+  'van-crash-spill':{gain:.87,parts:[
+    {lowpass:true,frequency:170,seconds:.65,level:.86,attack:.004},
+    {frequency:1300,filterEnd:415,q:1,seconds:1.8,level:.85,attack:.23},
+    {frequency:3700,filterEnd:1950,q:1.7,seconds:1.9,level:.60,delay:.13,attack:.23},
+    {frequency:1100,filterEnd:900,q:3.8,seconds:.20,level:.58,delay:.47,attack:.013},
+    {frequency:1530,filterEnd:850,q:2.9,seconds:.18,level:.39,delay:.91,attack:.01},
+    {frequency:2210,filterEnd:950,q:3.6,seconds:.18,level:.26,delay:1.42,attack:.012},
+  ]},
+};
 export const FOLD_SAMPLE_IDS=Object.freeze(['fold-effort-a','fold-effort-b','fold-effort-c','fold-effort-d','fold-catch','fold-cloth-a','fold-cloth-b','fold-cloth-c']);
 async function loadFoldSample(id,context){
   const response=await fetch(assetUrl(`assets/audio/outskirts/${id}.wav`));
@@ -16,7 +45,8 @@ async function loadFoldSample(id,context){
 export function outskirtsStreetPlacement(source={},listener={}){
   const dx=(Number(source.x)||0)-(Number(listener.x)||0);
   const dz=(Number(source.z)||0)-(Number(listener.z)||0);
-  const distance=Math.hypot(dx,dz),yaw=Number(listener.yaw)||0;
+  const dy=Number.isFinite(source.y)&&Number.isFinite(listener.y)?source.y-listener.y:0;
+  const distance=Math.hypot(dx,dy,dz),yaw=Number(listener.yaw)||0;
   return {
     distance,
     pan:clamp((dx*Math.cos(yaw)+dz*Math.sin(yaw))/Math.max(1,distance),-.92,.92),
@@ -25,7 +55,7 @@ export function outskirtsStreetPlacement(source={},listener={}){
 }
 
 export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFoldSample}={}){
-  let ctx=null,destination=null,noiseBuffer=null,disposed=false,paused=false,listener={};
+  let ctx=null,destination=null,noiseBuffer=null,disposed=false,paused=false,listener={},fallingVan=null;
   let sampleEpoch=0,sampleRequested=false,sampleFailures=0;
   const samples=new Map();
   const beds=new Map(),voices=new Set(),seen=new Set();
@@ -36,6 +66,7 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     for(const source of record.sources){source.onended=null;try{source.stop(ctx?.currentTime||0);}catch(_){}}
     for(const node of record.nodes)disconnect(node);
     voices.delete(record);
+    if(fallingVan===record)fallingVan=null;
   }
   function clear(){for(const record of [...voices])release(record);beds.clear();}
   function audio(){
@@ -67,7 +98,7 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     return noiseBuffer;
   }
   function recordAt(place,level){
-    const record={place:{x:Number(place.x)||0,z:Number(place.z)||0},level,sources:[],nodes:[],dead:false};
+    const record={place:{x:Number(place.x)||0,y:place.y,z:Number(place.z)||0},level,sources:[],nodes:[],dead:false};
     const own=node=>{record.nodes.push(node);return node;};
     record.own=own;record.amp=own(ctx.createGain());
     record.pan=typeof ctx.createStereoPanner==='function'?own(ctx.createStereoPanner()):null;
@@ -85,15 +116,23 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     };
     set(record.amp.gain,gain);if(record.pan)set(record.pan.pan,place.pan);
   }
-  function layer(record,{tone=null,frequency=500,q=.7,level=1,seconds=null,delay=0,attack=.008}={}){
+  function layer(record,{tone=null,toneEnd=null,frequency=500,filterEnd=null,q=.7,level=1,seconds=null,delay=0,attack=.008,lowpass=false}={}){
     const own=record.own,source=own(tone===null?ctx.createBufferSource():ctx.createOscillator());
     record.sources.push(source);
     if(tone===null){source.buffer=noise();source.loop=seconds===null;}
     else{source.type='sine';source.frequency.value=tone;}
-    const filter=own(ctx.createBiquadFilter());filter.type=tone===null?'bandpass':'lowpass';filter.frequency.value=frequency;filter.Q.value=q;
+    const filter=own(ctx.createBiquadFilter());filter.type=tone===null&&!lowpass?'bandpass':'lowpass';filter.frequency.value=frequency;filter.Q.value=q;
     const amp=own(ctx.createGain()),at=ctx.currentTime+delay;
     amp.gain.setValueAtTime(seconds===null?level:0,ctx.currentTime);
     if(seconds!==null){
+      if(toneEnd!==null){
+        source.frequency.setValueAtTime(tone,at);
+        source.frequency.linearRampToValueAtTime(toneEnd,at+seconds);
+      }
+      if(filterEnd!==null){
+        filter.frequency.setValueAtTime(frequency,at);
+        filter.frequency.linearRampToValueAtTime(filterEnd,at+seconds);
+      }
       amp.gain.setValueAtTime(0,at);amp.gain.linearRampToValueAtTime(level,at+attack);
       amp.gain.linearRampToValueAtTime(0,at+Math.max(attack+.003,seconds));
     }
@@ -126,7 +165,7 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     const record=recordAt(place,level),sources=parts.map(part=>layer(record,part));
     let remaining=sources.length;
     for(const source of sources)source.onended=()=>{if(--remaining===0)release(record);};
-    return true;
+    return record;
   }
   function recorded(place,level,id,{rate=1,lowpass=4800}={}){
     const buffer=samples.get(id);
@@ -155,6 +194,12 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     return true;
   }
   function event(spec){
+    const crash=Object.hasOwn(VAN_CRASH_CUES,spec.cue)?VAN_CRASH_CUES[spec.cue]:null;
+    if(crash){
+      const voice=finite(spec,crash.gain*clamp(spec.strength??1,0,1),crash.parts);
+      if(voice&&spec.cue==='van-crash-approach')fallingVan=voice;
+      return !!voice;
+    }
     if(!EVENT_KINDS.has(spec.cue))return false;
     const level=clamp(spec.strength??1,0,1)*.13;
     if(spec.cue==='woman-traction'){
@@ -240,6 +285,8 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
       }
       for(const [id,record] of beds)if(!active.has(id)){release(record);beds.delete(id);}
       for(const spec of frame?.events||[])if(remember(spec?.id))event(spec||{});
+      const van=frame.vanCrash;
+      if(fallingVan&&Number.isFinite(van?.worldY))fallingVan.place={x:van.x,y:van.worldY,z:van.z};
       for(const record of voices)position(record);
       return true;
     }catch(_){clear();return false;}
@@ -248,7 +295,7 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
   function rebase({x=0,z=0}={}){
     if(disposed||!Number.isFinite(x)||!Number.isFinite(z))return false;
     listener={...listener,x:(Number(listener.x)||0)+x,z:(Number(listener.z)||0)+z};
-    for(const record of voices)record.place={x:record.place.x+x,z:record.place.z+z};
+    for(const record of voices)record.place={...record.place,x:record.place.x+x,z:record.place.z+z};
     // Gains, phases, scheduled cooling pips and delivery history are retained.
     return true;
   }

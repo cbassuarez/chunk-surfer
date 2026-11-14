@@ -100,11 +100,44 @@ test('standard and compact battle regions stay inside the faceplate without coll
           inside(sample.panel, layout.tools);
           inside(sample.panel, layout.actions);
           separate(layout.channels, layout.tools);
-          separate(layout.tools, layout.actions);
+          assert.deepEqual(layout.tools, layout.actions, 'the active mode uses the same physical control bank');
           separate(layout.actions, layout.detail);
         }
       } else {
         inside(sample.panel, mode === 'reaction' ? layout.reaction : layout.dialogue);
+      }
+    }
+  }
+});
+
+test('the twelve-row dense battle remains partitioned at normal and enlarged display scales',()=>{
+  const cases=[
+    {panel:{x:2,y:1,w:62,h:12},desktop:false},
+    {panel:{x:2,y:1,w:36,h:12},desktop:false},
+    {panel:{x:4,y:2,w:76,h:12},desktop:true},
+    {panel:{x:4,y:2,w:76,h:18},desktop:true},
+  ];
+  const scaleRect=(r,scale)=>({x:r.x*8.45*scale,y:r.y*20*scale,w:r.w*8.45*scale,h:r.h*20*scale});
+  for(const sample of cases)for(const scale of [1,1.5]){
+    for(const activity of [{},{sourceActive:true},{rosterActive:true}]){
+      for(const mode of ['command','dialogue','reaction','arrival']){
+        const layout=combatHudLayout({...sample,...activity,mode});
+        assert.equal(layout.dense,true);assert.equal(layout.compact,true);
+        for(const name of ['header','stage','deck','playerGauge','resources','conditionStatus','effects','body','detail']){
+          inside(sample.panel,layout[name]);inside(scaleRect(sample.panel,scale),scaleRect(layout[name],scale));
+        }
+        separate(layout.playerGauge,layout.resources);
+        separate(layout.playerGauge,layout.conditionStatus);
+        separate(layout.resources,layout.effects);
+        separate(layout.conditionStatus,layout.effects);
+        separate(layout.conditionStatus,layout.body);separate(layout.effects,layout.body);
+        if(mode==='command'){
+          for(const name of ['channels','tabs','carousel'])inside(sample.panel,layout[name]);
+          separate(layout.channels,layout.tabs);separate(layout.tabs,layout.carousel);separate(layout.carousel,layout.detail);
+          assert.deepEqual(layout.tools,layout.actions);
+          assert.ok(layout.carousel.h>=2.1-1e-9,'the active control bank keeps its minimum height');
+          if(sample.panel.h===12)assert.equal(layout.tabs.h,1.1);
+        }
       }
     }
   }

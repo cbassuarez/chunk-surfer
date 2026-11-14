@@ -12,10 +12,15 @@ function actual(name){
 const names=['onPresenceCatch','offerHushSoundTarget','tickHushNoisePerception','tickPresence'];
 function fixture(){
  const state={recording:true,stalled:true},calls=[],trap=name=>()=>{calls.push(name);throw Error('Unexpected '+name);},
-  h={REC:{isRecording:()=>state.recording,isStalled:()=>state.stalled},performance:{now:()=>123},
+  h={REC:{isRecording:()=>state.recording,isStalled:()=>state.stalled,isSlating:()=>false,isAssistPaused:()=>false},performance:{now:()=>123},
+   elleryCaughtOwner:null,roomMicRunConsent:false,micCheckActive:()=>false,resetElleryCaughtExposure:()=>{},
+   paused:false,gameplayInputLifecycleActive:()=>true,scenes:{blocksInput:()=>false,worldView:()=>null},
+   activeBattleId:null,takenActive:false,lastExposureEvent:null,escape:null,activeEndingCutscene:null,
+   hushRunActive:false,doorRevealCutscene:false,buildingLoadPromise:null,getInTutorialOwner:null,
+   takeRoom:null,currentWorld:()=> 'the_tub',LEVEL_CHECK_ROOM:'level-check',firstB3MinuteIsHis:()=>false,chapelTapeRetakeRoom:()=>null,
    MONITOR:{monitorSnapshot:()=>{calls.push('live-meter');return{hushDb:-35};}},monitorExposureSnapshot:null,
-   PRES:{presenceTableauActive:()=>{calls.push('ordinary-catch-gate');return true;},offerSoundTarget:offer=>{calls.push('ordinary-offer');return offer;}},
-   basementWatcherConfinement:()=>null,usingStairAnomaly:()=>false,storyMode:false,
+   PRES:{pendingContactAttempt:()=>null,presenceTableauActive:()=>{calls.push('ordinary-catch-gate');return true;},offerSoundTarget:offer=>{calls.push('ordinary-offer');return offer;}},
+   basementWatcherConfinement:()=>null,inBasementSpace:()=>false,usingStairAnomaly:()=>false,storyMode:false,
    hushActiveForPlayer:trap('noise-decision'),noteMeterDivergence:trap('divergence'),hushContactApproach:trap('catch'),
    updateHushNoisePerception:trap('belief-step')};
  vm.createContext(h);vm.runInContext(names.map(actual).join('\n'),h);return{h,state,calls};
@@ -33,6 +38,7 @@ test('only a currently recording instrument HOLD receives protection; resume pre
   const{h,state,calls}=fixture();Object.assign(state,change);
   const offer={position:{x:4,y:7}};assert.equal(h.offerHushSoundTarget(offer),offer);
   assert.equal(h.onPresenceCatch({}),false);assert.ok(calls.includes('ordinary-catch-gate'));
+  h.PRES.presenceTableauActive=()=>false;
   assert.throws(()=>h.tickHushNoisePerception(.1),/noise-decision/,'resumption hands control back to the existing perception owner');
  }
 });

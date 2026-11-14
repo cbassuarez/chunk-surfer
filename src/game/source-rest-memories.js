@@ -1,5 +1,6 @@
 // Physical recollections share the listener's chart. They borrow real objects
 // from the game and never replace the player's support, collision or camera.
+import {vanBrandInstances} from '../render/van-brand.js';
 import {SOURCE_REST_SEATS} from './source-rest-seat.js';
 import {OPENING_VEHICLE,openingVehicleInstances} from '../data/opening-vehicle.js';
 
@@ -14,7 +15,7 @@ const part=(id,mesh,dx,y,dz,sx,sy,sz,yaw=0,kind)=>prop(id,PREFIX+'memory-'+mesh,
 const vehicleMeshes=new Set(['opening_drive_vehicle_body','opening_drive_tyre','opening_drive_cabin','opening_drive_cabin_door_r']);
 function vehicleImage(id,anchor,{scale=1,travel=0,speed=0,kind='drive-vehicle',motion=null}={}){
   const wheelRotation=travel/(OPENING_VEHICLE.wheels.radius*scale);
-  return openingVehicleInstances(anchor,{drive:{wipers:false,speed,wheelRotation}})
+  const vehicle=openingVehicleInstances(anchor,{drive:{wipers:false,speed,wheelRotation}})
     .filter(p=>vehicleMeshes.has(p.mesh)).map(p=>{
       const matrix=Array.from(p.matrix);for(let n=0;n<12;n++)matrix[n]*=scale;
       for(const [n,key]of [[12,'x'],[13,'y'],[14,'z']])matrix[n]=anchor[key]+(matrix[n]-anchor[key])*scale;
@@ -22,6 +23,7 @@ function vehicleImage(id,anchor,{scale=1,travel=0,speed=0,kind='drive-vehicle',m
       return{...visual,id:`rest-memory-${id}-`+p.id.replace('opening:',''),matrix,x:matrix[12],y:matrix[13],z:matrix[14],kind,chartId:seat.chartId,
         structural:false,decorative:true,collidable:false,memoryRoute:id,memoryScale:scale,memoryTravel:travel,memoryWheelRotation:wheelRotation,memoryMotion:motion};
     });
+  return [...vehicle,...vanBrandInstances(vehicle).map(p=>({...p,kind,chartId:seat.chartId,decorative:true,collidable:false,memoryRoute:id,memoryScale:scale,memoryTravel:travel,memoryWheelRotation:wheelRotation,memoryMotion:motion}))];
 }
 // Flood recollections reuse the same complete assembly and metre-scale axles.
 // They apply a coastal body pose to this local assembly, not another cockpit.

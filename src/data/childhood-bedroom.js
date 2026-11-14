@@ -17,6 +17,12 @@ export const HOME_BEDROOM = Object.freeze({
   desk: Object.freeze({ x0: -.45, x1: .80, z0: 3.63, z1: 4.25 }),
   door: Object.freeze({ wallX: 1.8, z0: 3.35, z1: 4.17, height: 2.04 }),
   dresser: Object.freeze({ x0: 1.23, x1: 1.79, z0: 2.39, z1: 3.19, height: .91 }),
+  // Recognition is a broad absence on an ordinary middle shelf, rather than
+  // a tiny paper/letter target. These dimensions do not move the accepted room.
+  bookcase: Object.freeze({ x0: -.48, x1: .84, y0: 1.08, y1: 1.83, z0: 3.98, z1: 4.25,
+    shelves: Object.freeze([1.12, 1.44, 1.80]), emptySpan: Object.freeze([-.04, .43]) }),
+  joinery: Object.freeze({ windowBead: .012, sillNosing: .018, drawerPull: .13,
+    drawerBottom: .112, drawerTop: .322, chairStretcherHeight: .19 }),
   anchors: Object.freeze({
     window: point(-.18, 1.49, 70),
     clock: point(-.12, 2.02, 74.49),

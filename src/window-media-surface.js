@@ -12,9 +12,7 @@ import {
   validatePaneScoreEnvelope,
   windowMediaContentId,
 } from './platform/window-composition.js';
-import { physicalPrintPixels } from './render/physical-source-print.js';
-import { worldLetteringFont, worldLetteringFontsStatus, ensureWorldLetteringFonts } from './render/world-lettering-fonts.js';
-import { fitWorldLetteringLine } from './render/world-lettering-layout.js';
+import {bakeHaystackPaper,HAYSTACK_PAPER_SAMPLE_GLSL} from './render/haystack-paper.js';
 
 const canvas=document.getElementById('media');
 const fallback=document.getElementById('fallback');
@@ -23,7 +21,7 @@ const assetById=new Map((mediaManifest.assets||[]).map((asset)=>[asset.id,asset]
 const BLUE_NOISE_SIZE=64;
 let envelope=null,assignment=null,source=null,video=null,poster=null;
 let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,nameTexture=null,paperTexture=null,raf=0;
-let nameReady=false,nameCanvas=null,paperReady=false,paperSerial=0;
+let nameReady=false,nameCanvas=null,paperReady=false,paperSerial=0,paperPreparation=null;
 let frontEndNegative=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
 let pendingPlay=null,failedMedia=null,faultRunState=null;
@@ -69,7 +67,8 @@ float paperClose(vec2 q){
   if(nameEnabled>.5){float nm=texture(nameTexture,vec2(q.x*.92+.04,q.y)).r;ink=min(ink,1.-nm*.88);}
   return clamp(sheet*ink,0.,1.);
 }
-float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;if(procedural==5)return underwaterSurface(q);if(procedural==6)return paperEnabled>.5?texture(paperTexture,q).r:paperClose(q);return .10+.08*sin((q.x+q.y)*30.);}
+${HAYSTACK_PAPER_SAMPLE_GLSL}
+float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;if(procedural==5)return underwaterSurface(q);if(procedural==6)return paperEnabled>.5?haystackPaperAt(paperTexture,q):paperClose(q);return .10+.08*sin((q.x+q.y)*30.);}
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
 // A TERMINAL FAILS IN ROWS AND CELLS, NEVER IN PIXELS. The world's bad-sector
 // run (game/source-faults.js) crosses this pane as it crosses its lane: rows
@@ -171,45 +170,22 @@ function renderName(name){
   gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,gl.RED,gl.UNSIGNED_BYTE,nameCanvas);
   nameReady=true;
 }
-// The name goes onto the page in the world's own hand, in the source print's
 // A note he finds on the ground: the operator's name, then a question that any
 // of his possible voices could ask. No instruction -- just the address and the
 // question, in the world's own hand.
-function paintHaystackNote(c,m,name){
-  const ink='#445a46',inkStrong='#2f4232',rule='#70816b';
-  const text=(str,x,y,size,role='serif',colour=inkStrong)=>{
-    c.font=m.font=worldLetteringFont(size,role);
-    c.fillStyle=colour;m.fillStyle='#fff';
-    c.textBaseline=m.textBaseline='alphabetic';c.textAlign=m.textAlign='left';c.fontKerning='none';
-    c.fillText(str,x,y);m.fillText(str,x,y);
-  };
-  const ruleAt=(y,h=1,colour=rule)=>{c.fillStyle=colour;m.fillStyle='#fff';c.fillRect(40,y,432,h);m.fillRect(40,y,432,h);};
-  text((name||'you')+'\u2009\u2014',40,86,27,'serif',inkStrong);
-  ruleAt(108,1);
-  text('this isn\u2019t going well',40,196,32,'serif',inkStrong);
-  text('is it?',40,244,32,'serif',inkStrong);
-  ruleAt(272,1);
-}
-// Bake a real source page -- the same physical-print pipeline as the in-Source
-// paper: stock, crease/bleed finish, the authored source lines with syntax
-// colours, and the name inked into the margin.
+// Bake the same physical note as the in-game consent/browser fallback.
 async function bakePaper(name){
-  const serial=++paperSerial;
-  paperReady=false;
-  const text=String(name||'').slice(0,32).trim();
+  const serial=++paperSerial;paperReady=false;
   try{
-    if(!worldLetteringFontsStatus().ready)await ensureWorldLetteringFonts({});
-    const bitmap=physicalPrintPixels({width:512,height:512,ground:'#d6d9d0',pigmentOnly:true,
-      finish:{profile:'paper',widthM:0.2,heightM:0.2,seed:'haystack-paper',repeat:false},
-      draw(c,m){paintHaystackNote(c,m,text);}});
-    if(serial!==paperSerial||!gl||!paperTexture)return;
+    const bitmap=await bakeHaystackPaper(name);
+    if(serial!==paperSerial||!gl||!paperTexture)return false;
     gl.bindTexture(gl.TEXTURE_2D,paperTexture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bitmap.width,bitmap.height,0,gl.RGBA,gl.UNSIGNED_BYTE,bitmap.pixels);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    paperReady=true;
-  }catch(_){/* print pipeline unavailable: the synthetic sheet stays */}
+    paperReady=true;return true;
+  }catch(_){return false;} // Withhold acceptance: the host keeps its prepared in-game paper.
 }
 function initGl(){
   gl=canvas.getContext('webgl2',{alpha:false,depth:true,antialias:false,preserveDrawingBuffer:true});
@@ -263,7 +239,7 @@ function loadAssignment(next,{transition:mode='cut',durationMs=0}={}){
   videoClock?.assign(next,Date.now());
   const serial=assignmentSerial,content=assignment.content||{};
   renderName(content.name||null);
-  if(content.preset==='paper-close')void bakePaper(content.name||null);
+  paperPreparation=content.preset==='paper-close'?bakePaper(content.name||null):null;
   document.documentElement.dataset.contentId=windowMediaContentId(content);
   if(content.kind==='snapshot'){
     const initialToken=envelope?.score?.initial?.content?.token;
@@ -400,6 +376,13 @@ async function acceptEnvelope(payload){
   videoClock=createWindowVideoClock({score:payload.score,assignment:payload.score.initial,nowMs:Date.now(),reducedMotion:!!payload.reducedMotion});
   scoreCycle=-1;executedTimed.clear();document.documentElement.dataset.windowLabel=label;document.documentElement.dataset.revision=String(currentRevision);document.body.setAttribute('aria-label',String(payload.description||'Game-owned media fragment'));
   resetScoreCycle(0);document.documentElement.dataset.scoreHeld='false';
+  // The OS window must not acknowledge a synthetic placeholder as the authored
+  // paper. Its normal assignment timeout instead yields to the same-master
+  // in-game surface when fonts or the actual native upload are unavailable.
+  if(payload.score.initial?.content?.preset==='paper-close'){
+    const serial=assignmentSerial,prepared=paperPreparation;
+    if(!prepared||!await prepared||serial!==assignmentSerial||currentSession!==String(payload.sessionToken)||currentRevision!==Number(payload.revision))return false;
+  }
   try{await emit('window-media-accepted',{protocol:WINDOW_MEDIA_PROTOCOL,label,targetLabel:payload.targetLabel,sessionToken:payload.sessionToken,revision:payload.revision,cueId:payload.cueId,paneId:payload.paneId,contentId:windowMediaContentId(payload.score.initial)});}catch(_){}
   return true;
 }

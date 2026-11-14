@@ -6,7 +6,7 @@ import { createBattleHandRig, parseBattleHandTemplate } from '../src/render/batt
 import { buildBattleHandTool } from '../src/render/battle-hand-tools.js';
 import { battleHandFraming, battleHandPerformance, battleHandReach } from '../src/render/battle-hand-performance.js';
 
-const bytes = readFileSync(new URL('../public/assets/battle-hands/right.glb', import.meta.url));
+const bytes = readFileSync(new URL('../public/assets/battle-hands/recordist.glb', import.meta.url));
 const template = await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 const directions = [[1, .372, .217], [.237, 1, .417], [.417, .213, 1]].map(v => new Vector3(...v).normalize());
 const operatedTools = [

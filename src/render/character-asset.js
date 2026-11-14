@@ -228,7 +228,7 @@ function supportContacts(asset, world, local, descriptor, rest) {
   }
 }
 
-export function sampleCharacterPose(asset, entry, descriptor = {}) {
+export function sampleCharacterFrame(asset, descriptor = {}) {
   const rest = () => asset.nodes.map((n,i) => ({ translation: [...n.translation], rotation: [...n.rotation], scale: [...n.scale], weights: [...(n.weights||asset.entries.find(e=>e.node===i)?.defaultMorphs||[])] }));
   let layers=descriptor.clips;
   if(layers!=null&&(!Array.isArray(layers)||layers.length>2||!layers.length))throw new Error('character requires one or two clip layers');
@@ -257,13 +257,24 @@ export function sampleCharacterPose(asset, entry, descriptor = {}) {
     world[i] = n.parent < 0 ? m : characterMultiply(world[n.parent], m);
   }
   supportContacts(asset, world, local, descriptor, rest);
-  const bones = new Float32Array(CHARACTER_LIMITS.joints * 16);
-  for (let i = 0; i < CHARACTER_LIMITS.joints; i++) bones.set(i < entry.skin.joints.length ? characterMultiply(world[entry.skin.joints[i]], entry.skin.inverseBind[i]) : ident(), i * 16);
+  return { world, local, clip: a.clip, time: a.time,
+    layers: sampled.map(({ clip, time, weight }) => ({ clip, time, weight })) };
+}
+
+export function characterMorphs(entry, local, descriptor) {
   const morphs = new Float32Array(CHARACTER_LIMITS.morphs), animated = local[entry.node].weights || entry.defaultMorphs;
   for (let i = 0; i < entry.morphCount; i++) {
     const override = descriptor.morphs?.[entry.morphNames[i]] ?? descriptor.morphs?.[i], v = override ?? animated[i] ?? 0;
     morphs[i] = Math.max(-2, Math.min(2, finite(Number(v), 'morph weight')));
   }
+  return morphs;
+}
+
+export function sampleCharacterPose(asset, entry, descriptor = {}) {
+  const { world, local, ...timing } = sampleCharacterFrame(asset, descriptor);
+  const bones = new Float32Array(CHARACTER_LIMITS.joints * 16);
+  for (let i = 0; i < CHARACTER_LIMITS.joints; i++) bones.set(i < entry.skin.joints.length ? characterMultiply(world[entry.skin.joints[i]], entry.skin.inverseBind[i]) : ident(), i * 16);
+  const morphs = characterMorphs(entry, local, descriptor);
   const bounds = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
   for (let j = 0; j < entry.skin.joints.length; j++) {
     const m = world[entry.skin.joints[j]];
@@ -272,7 +283,7 @@ export function sampleCharacterPose(asset, entry, descriptor = {}) {
     radius *= Math.hypot(m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]);
     for (let k = 0; k < 3; k++) { bounds.min[k] = Math.min(bounds.min[k], m[12 + k] - radius); bounds.max[k] = Math.max(bounds.max[k], m[12 + k] + radius); }
   }
-  return { bones, morphs, bounds, clip: a.clip, time:a.time, layers:sampled.map(({clip,time,weight})=>({clip,time,weight})) };
+  return { bones, morphs, bounds, ...timing };
 }
 
 // Used by both production vertex shaders, including the depth-only shadow pass.

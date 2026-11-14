@@ -120,3 +120,29 @@ test('saved variable night resumes from its recorded instant without borrowing a
  assert.equal(g.save.nightClock.elapsedSeconds,saved.nightClock.elapsedSeconds);assert.equal(g.save.playDuration.seconds,saved.playDuration.seconds);
  g.record(true);recordNightClockTravel(.5);g.tick(901000);assert.equal(g.save.nightClock.elapsedSeconds,saved.nightClock.elapsedSeconds+1);assert.equal(g.save.nightClock.rate,1);
 });
+
+test('the actual host counts the same active night at15,30,60FPS and through foreground render hitches',()=>{
+ const play=(pattern,{moving=false,source=false,final=false}={})=>{
+  const f=host();let now=0;f.h.inSource=source;if(final)f.save.nightClock=leaveSourceNightClock(f.save.nightClock).clock;f.tick(now);
+  let frame=0;while(now<12000-1e-6){const milliseconds=Math.min(pattern[frame++%pattern.length],12000-now);if(moving)recordNightClockTravel(milliseconds/1000*2.6);f.tick(now+=milliseconds);}
+  return f.save;
+ };
+ for(const settings of [{},{moving:true},{final:true,moving:true},{source:true,moving:true}]){
+  const reference=play([1000/60],settings);
+  for(const pattern of [[1000/30],[1000/15],[1000/60,1000/60,500],[1000/60,900,1000/30]]){
+   const save=play(pattern,settings);
+   assert.ok(Math.abs(save.playDuration.seconds-12)<1e-8,'actual presented duration never inherits the50ms simulation cap');
+   assert.ok(Math.abs(save.nightClock.elapsedSeconds-reference.nightClock.elapsedSeconds)<1e-8,JSON.stringify({settings,pattern,elapsed:save.nightClock.elapsedSeconds,reference:reference.nightClock.elapsedSeconds}));
+  }
+ }
+});
+
+test('an accepted-travel hitch cannot bank clock movement through pause, stopped input or Source',()=>{
+ const f=host();let now=0;f.tick(now);recordNightClockTravel(2);f.tick(now+=800);
+ const before=f.save.nightClock.elapsedSeconds;f.h.paused=true;recordNightClockTravel(3);f.tick(now+=8000);f.h.paused=false;f.tick(now+=8000);
+ assert.equal(f.save.nightClock.elapsedSeconds,before,'neither pause edge counts the unpresented gap');
+ for(let i=0;i<600;i++)f.tick(now+=1000/60);
+ assert.ok(f.save.nightClock.rate<1.0001,'no new accepted travel settles back to rest');
+ f.h.inSource=true;recordNightClockTravel(1);const held=f.save.nightClock.elapsedSeconds;f.tick(now+=500);f.h.inSource=false;f.tick(now+=500);
+ assert.ok(Math.abs(f.save.nightClock.elapsedSeconds-held-.5)<.0001,'Source travel never accelerates the return interval');
+});

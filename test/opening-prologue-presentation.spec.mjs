@@ -5,6 +5,7 @@ import * as scenes from '../src/game/scenes.js';
 import {makeOpeningPrologueScene,openingPrologueActFrame,openingPrologueCaptionPlacement} from '../src/game/opening-prologue-scene.js';
 import {cinematicConversationLayout} from '../src/render/cinematic-conversation.js';
 import {uiSetLayoutSize} from '../src/render/ui.js';
+import {shouldOpenPauseForEvent} from '../src/game/pause.js';
 import {openingPrologueSpeechActive} from '../src/audio/opening-prologue-audio.js';
 import {OPENING_PROLOGUE} from '../src/data/opening-prologue.js';
 import {openingHorizonFrame} from '../src/render/opening-omen.js';
@@ -89,7 +90,7 @@ test('the music stays ducked for the actual voice handle, including a long line 
 
 test('every ending question stays wholly readable and selectable at enlarged text scale',()=>{
   for(const options of [OPENING_PROLOGUE.nodes.fate.choices,OPENING_PROLOGUE.nodes.file.choices])for(let selected=0;selected<options.length;selected++){
-    const layout=cinematicConversationLayout({history:[{who:'unknown',text:'What else?'}],pending:{kind:'branch',index:selected,options}},
+    const layout=cinematicConversationLayout({captionScale:1.35,captionWidth:74,history:[{who:'unknown',text:'What else?'}],pending:{kind:'branch',index:selected,options}},
       {cols:76,rows:24,prompt:'UP/DOWN SELECT · ENTER REPLY · Q REVIEW'});
     assert.equal(layout.selectedChoiceComplete,true);
     assert.equal(layout.choices.rows.filter(row=>row.kind==='choice'&&row.selected).map(row=>row.bodyText).join(' ').replace(/\s+/g,' ').trim(),options[selected].text);
@@ -110,10 +111,12 @@ test('opening Review holds the exact live utterance, stage, drive and partial sk
     h.scene.key({key:'e'});advance(h.scene,.25);
     const before=h.scene.view();assert.ok(before.captionHistory.length>0);
     h.scene.key({key:'q'});const held=h.scene.view();assert.equal(held.reviewActive,true);assert.equal(held.paused,true);assert.equal(held.skip,0);assert.equal(h.scene.allowsLook,false);
+    assert.equal(shouldOpenPauseForEvent({storyMode:true,key:'Escape',topSceneId:h.scene.id,localEscape:h.scene.handlesEscape}),false,'the real main-router policy forwards review Back to this scene');
     advance(h.scene,1);const after=h.scene.view();
     assert.deepEqual([after.nodeId,after.lineSerial,after.typed,after.stage.time,after.drive.timeSec],[before.nodeId,before.lineSerial,before.typed,before.stage.time,before.drive.timeSec]);
     assert.equal(h.scene.key({key:'Escape'}),true,'Escape closes this review without opening global pause');
     assert.equal(h.scene.view().reviewActive,false);assert.equal(h.scene.allowsLook,true);
+    assert.equal(shouldOpenPauseForEvent({storyMode:true,key:'Escape',topSceneId:h.scene.id,localEscape:h.scene.handlesEscape}),true,'ordinary Escape still belongs to global pause');
     advance(h.scene,.2);assert.ok(h.scene.view().drive.timeSec>after.drive.timeSec);assert.equal(h.calls.done,0);
   }finally{scenes.clear();uiSetLayoutSize(null);}
 });
@@ -127,6 +130,32 @@ test('closing Review cannot release an independently paused opening',()=>{
     assert.equal(after.drive.timeSec,before.drive.timeSec);assert.equal(after.typed,before.typed);
     h.scene.resume();advance(h.scene,.2);assert.equal(h.scene.view().presentationPaused,false);assert.ok(h.scene.view().drive.timeSec>after.drive.timeSec);
   }finally{scenes.clear();uiSetLayoutSize(null);}
+});
+
+test('an enlarged silent player reply cannot auto-advance past an unread page',()=>{
+  uiSetLayoutSize({cols:140,rows:40});const h=host();
+  try{
+    for(let n=0;n<100&&!h.scene.view().pending;n++){h.scene.key({key:' '});advance(h.scene,.4);}
+    assert.equal(h.scene.view().nodeId,'there');assert.ok(h.scene.view().pending);
+    h.scene.key({key:'2'});assert.equal(h.scene.view().who,'me');
+    let page=0;h.scene.cinematicPresentationLayout=()=>({bodyPage:page,bodyPages:2});
+    advance(h.scene,12);assert.equal(h.scene.view().who,'me','the first page holds after speech and camera are ready');
+    page=1;advance(h.scene,.4);assert.equal(h.scene.view().who,'me','the newly shown last page receives its own dwell');
+    advance(h.scene,.25);assert.equal(h.scene.view().who,'unknown');
+  }finally{scenes.clear();uiSetLayoutSize(null);}
+});
+
+test('real Space and Z event codes cannot bypass the camera establishment hold',()=>{
+  for(const event of[{key:' ',code:'Space'},{key:'z',code:'KeyZ'},{key:'Enter',code:'Enter'}]){
+    uiSetLayoutSize({cols:140,rows:40});const h=host();
+    try{
+      for(let n=0;n<100&&!h.scene.view().pending;n++){h.scene.key({key:'Enter',code:'Enter'});advance(h.scene,.4);}
+      assert.equal(h.scene.view().nodeId,'there');h.scene.key({key:'2',code:'Digit2'});
+      h.scene.key({key:' ',code:'Space'});advance(h.scene,.3);
+      const before=h.scene.view();assert.equal(before.who,'me');assert.equal(before.typing,false);assert.equal(before.journey.established,false);
+      h.scene.key(event);assert.equal(h.scene.view().lineSerial,before.lineSerial,`${event.code} must wait for the actual subject to be in view`);
+    }finally{scenes.clear();uiSetLayoutSize(null);}
+  }
 });
 
 test('a chosen act leaves one real eye shut through the rest of the encounter, without a saved penalty',()=>{

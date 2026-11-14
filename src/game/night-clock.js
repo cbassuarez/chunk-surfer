@@ -97,7 +97,7 @@ export function captureNightClock(value) {
 export const normalizeNightCapture = captureNightClock;
 
 export const NIGHT_CLOCK_PACE_POLICY = Object.freeze({
-  id: 'accepted-travel-v1', restRate: 1, travelRate: 3,
+  id: 'accepted-travel-v2', restRate: 1, travelRate: 3,
   travelHoldSeconds: .24, attackSeconds: .35, settleSeconds: .85,
   // After Source: 05:38 to 06:01 is always 15:20 of play, walking or not, so the
   // last stretch can't be run away or waited out at different speeds.
@@ -118,7 +118,12 @@ export function createNightClockPace(policy = NIGHT_CLOCK_PACE_POLICY) {
       const dt = seconds(foregroundSeconds), from = Math.max(policy.restRate, Math.min(policy.travelRate, rate(currentRate)));
       if (!active || !dt) { hold = 0; return { rate: slow ? policy.restRate : from, averageRate: 0, policy: policy.id }; }
       if (slow) { hold = 0; return { rate: policy.restRate, averageRate: policy.restRate, policy: policy.id }; }
-      if (finite(acceptedTravelMetres) && acceptedTravelMetres > .00001) hold = policy.travelHoldSeconds;
+      // A receipt describes the accepted travel since the previous sample,
+      // not an instantaneous press at the beginning of this update. Spending
+      // only .24s of a long rendered interval as movement made the same walk
+      // lose night time on slow machines. Integrate that whole measured
+      // foreground interval as travel, then retain the ordinary short settle.
+      const travelled=finite(acceptedTravelMetres)&&acceptedTravelMetres>.00001;
       let value = from, integral = 0;
       const integrate = (span, target, tau) => {
         if (!span) return;
@@ -126,9 +131,9 @@ export function createNightClockPace(policy = NIGHT_CLOCK_PACE_POLICY) {
         integral += target * span + (value - target) * tau * (1 - decay);
         value = target + (value - target) * decay;
       };
-      const moving = Math.min(dt, hold);
+      const moving = travelled?dt:Math.min(dt, hold);
       integrate(moving, policy.travelRate, policy.attackSeconds);
-      hold = Math.max(0, hold - dt);
+      hold = travelled?policy.travelHoldSeconds:Math.max(0, hold - dt);
       integrate(dt - moving, policy.restRate, policy.settleSeconds);
       return { rate: value, averageRate: integral / dt, policy: policy.id };
     },

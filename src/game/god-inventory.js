@@ -76,7 +76,7 @@ export function createGodInventory({
         commit({ fieldKit: { ...kit, cosmetics: { ...kit.cosmetics, [group]: value } } }); return true;
       } });
   }
-  flag('interface', 'BENT RIG INTERFACE', 'has.interface');
+  flag('interface', 'SERVICE INTERFACE', 'has.interface');
   add({ id: 'tuning-fork', label: 'TUNING FORK', group: 'Tools and objects', read: () => !!(flags()['has.fork'] || flags()[forkFlag]), format: owned,
     write: value => { writeFlags({ 'has.fork': !!value, [forkFlag]: !!value }); return true; } });
   add({ id: 'plant-spanner', label: 'ADJUSTABLE SPANNER', group: 'Tools and objects', read: () => plant.hasPlantSpanner(), format: owned,

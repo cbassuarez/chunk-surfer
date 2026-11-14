@@ -1,3 +1,5 @@
+import { DOOR_WEDGE_ID, doorWedgeTargetAvailability } from '../game/carried-door-wedge.js';
+
 // The floorplan: one authored building, compiled once, read by two consumers.
 //
 // PARITY BY CONSTRUCTION. The old procedural lattice had to be written twice —
@@ -19,11 +21,11 @@
 // A cell that is `solid` is rock: no floor, no ceiling, you cannot be in it.
 // A cell that is VOID (outside the building) is also solid, but reads as sky.
 
-import { applyBuildingWindowView, buildingWindowForObserver,
+import { applyBuildingWindowView, buildingWindowForObserver, buildingWindowPortal,
   buildingWindowForExteriorObserver, applyBuildingWindowInteriorView } from './building-window-views.js';
 import {
   F, ZONE, ZONE_WORLD, MATERIAL, CELL, cellFor, materialForZone,
-  EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE, isOutdoorZone
+  EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE, isOutdoorZone, BORROWED_INTERIOR_ZONE_BIT
 } from '../data/floorplan/legend.js';
 import {
   DOOR_STATE,
@@ -84,7 +86,9 @@ const plan = {
 };
 let doorPortals=[];
 const doorCellToPortal=new Map();
+const retiredDoors=new Map();
 const doorTickEvents=[];
+let deferredPhysicalRebuild=null;
 
 export function floorplan() { return plan; }
 export function isLoaded() { return plan.loaded; }
@@ -117,7 +121,7 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   const h = authoredH * PLAN_SCALE;
 
   doorKeys.clear();
-  doorPortals=[];doorCellToPortal.clear();
+  doorPortals=[];doorCellToPortal.clear();retiredDoors.clear();
   plan.authoredW = authoredW; plan.authoredH = authoredH;
   plan.scale = PLAN_SCALE;
   plan.w = w; plan.h = h;
@@ -1206,6 +1210,7 @@ function registerConnector({from,to,bidirectional=true,span=null}){
 }
 
 function buildPhysicalSpans(){
+  if(deferredPhysicalRebuild){deferredPhysicalRebuild.dirty=true;return;}
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;const cells=new Map();
   plan.physicalNavigationBuckets=new Set();plan.physicalFrameBuckets=new Set();
   for(let y=0;y<plan.h;y++)for(let x=0;x<plan.w;x++){
@@ -1447,6 +1452,36 @@ export function nearestWalkable(x,y,{floor=null,radius=32}={}){
 }
 
 export function physicalSpanData(){return plan.physical;}
+
+export function capturePhysicalProjection(){
+  return {
+    source:plan.solid,physical:plan.physical,
+    navigationBuckets:plan.physicalNavigationBuckets,frameBuckets:plan.physicalFrameBuckets,
+    doors:doorPortals.map(portal=>[portal.id,portal.open]),
+  };
+}
+
+// The checkpoint host restores its exact corridor cells and door endpoints
+// synchronously. If they match this projection, retain its already baked
+// slices. An incomplete or mismatched restore publishes a fresh projection.
+export function restorePhysicalProjection(projection,restore){
+  if(!projection?.physical||projection.source!==plan.solid||deferredPhysicalRebuild)return false;
+  const scope={dirty:false};
+  deferredPhysicalRebuild=scope;
+  let restored=false;
+  try{
+    restored=restore()===true&&projection.doors.length===doorPortals.length
+      &&projection.doors.every(([id,open],index)=>doorPortals[index].id===id&&doorPortals[index].open===open);
+  }finally{
+    deferredPhysicalRebuild=null;
+    if(restored){
+      plan.physical=projection.physical;
+      plan.physicalNavigationBuckets=projection.navigationBuckets;
+      plan.physicalFrameBuckets=projection.frameBuckets;
+    }else if(scope.dirty)buildPhysicalSpans();
+  }
+  return restored;
+}
 export function ownershipData(){return{owner:plan.owner,conflicts:plan.ownershipConflicts};}
 
 export function logicalAtPhysical(x,z,{group=null,floor=null}={}){
@@ -1745,8 +1780,13 @@ export function physicalRenderPlanFor(x,y){
       // prevent. Nothing in the building is an arc today, so this is inert until
       // a spiral is authored.
       let pool=list;
-      const connected=connectedStairOwners.size?list.filter(span=>((span.flags&F.STAIR)&&connectedStairOwners.has(span.owner))
-        ||connectedEndpointAt(span,px,py)):[];
+      // A connected stair's upper endpoint may project over the occupied
+      // storey below. Keep the actual flights and open well, but do not let a
+      // remote landing replace this storey's floor merely because both ends
+      // belong to the same compound stair. That painted the academic landing
+      // through the second-floor exit hall as a five-metre-high obstruction.
+      const connected=connectedStairOwners.size?list.filter(span=>(((span.flags&F.STAIR)&&connectedStairOwners.has(span.owner))
+        ||connectedEndpointAt(span,px,py))&&(span.flightId||span.stairwell||span.floor<=hy+SPAN_WINDOW)):[];
       if(connected.length)pool=connected;
       if(here.arcId){
         // Matched on the ARC, not the owner: two coils authored as two flights of
@@ -1789,6 +1829,11 @@ export function physicalRenderPlanFor(x,y){
         // right granularity to read a church's roofline off.
         if(s.zone===ZONE.dock)yardCeilByRow[localY]=Math.max(yardCeilByRow[localY]||0,s.ceil);
         if(s.zone===ZONE.church){churchGround.push(i);flags[i]=F.SKY;}
+        if(s.zone===ZONE.civicCourt&&!(s.flags&F.SKY)){
+          // The court overhang is an authored mesh. Its shelter ceiling still
+          // governs the player, but a grid header would rise into open sky.
+          flags[i]|=F.SKY|F.WALLED;
+        }
         if(isCivicMeshEnvelopeZone(s.zone)){
           // Logical floor/ceiling/weather remain .12/3.52/indoors. The real
           // ceiling and walls are depth-writing meshes. Lower ONLY the render
@@ -1877,12 +1922,14 @@ export function physicalRenderPlanFor(x,y){
     const cy=(i-(i%w))/w;
     ceil[i]=yardCeilByRow[cy]||24;
   }
-  if(architecturalWindow)applyBuildingWindowView({w,h,originX,originY,solid,floor,ceil,flags,zone,material},{x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
-  if(exteriorWindow)applyBuildingWindowInteriorView({w,h,originX,originY,solid,floor,ceil,flags,zone,material},
+  if(architecturalWindow)applyBuildingWindowView({w,h,originX,originY,solid,floor,ceil,flags,zone,material},{x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup},plan.physical.cells);
+  const borrowedInterior=exteriorWindow?new Uint8Array(w*h):null;
+  if(exteriorWindow)applyBuildingWindowInteriorView({w,h,originX,originY,solid,floor,ceil,flags,zone,material,borrowedInterior},
     {x:here.x*CELL,z:here.z*CELL,y:here.y,zone:observerZone},plan.physical.cells);
-  for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
+  for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=(solid[i]?0:zone[i])|(borrowedInterior?.[i]?BORROWED_INTERIOR_ZONE_BIT:0);}
   const ambient=bakeAmbientField({w,h,solid,flags,floor,ceil});
-  const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,originX,originY,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;
+  const exteriorPortal=exteriorWindow?buildingWindowPortal(exteriorWindow):null;
+  const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,originX,originY,exteriorPortal,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;
 }
 
 // Door → key. Kept out of the grid (a byte has no room) in a sparse map that
@@ -1965,10 +2012,10 @@ export function interactDoor(px,py,facing,keys){
   // presses during the opening animation are handled above and can never make
   // a paired leaf reverse into the player.
   if(portal.runtime.state!==DOOR_STATE.OPEN)return{ok:true,closed:false,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
-  const removedWedge=portal.runtime.wedge;
+  const removedWedge=portal.runtime.wedge,removedWedgeItemId=portal.runtime.wedgeItemId;
   const closed=beginDoorClose(portal.runtime,{removeWedge:true});
   if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
-  return{ok:true,closed,removedWedge,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
+  return{ok:true,closed,removedWedge,...(removedWedgeItemId===DOOR_WEDGE_ID?{removedWedgeItemId}:{}),id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
 }
 function portalActorCoordinates(portal,x,y){
   const sourceNav=inside(Math.floor(x),Math.floor(y))&&plan.physicalNavigation?.[idx(Math.floor(x),Math.floor(y))];
@@ -2002,6 +2049,18 @@ export function tickDoors(dt,{playerX=Infinity,playerY=Infinity,onlyIds=null}={}
 }
 // Compatibility for older callers: closers are now advanced by tickDoors.
 export function closePassedDoors(){return[];}
+// A portable wedge changes only a fully open ordinary acoustic leaf. It does
+// not open a lock, reverse an animation or bypass an authored one-way door.
+export function insertDoorWedge(id){
+  const portal=doorPortals.find(door=>door.id===id);
+  if(!portal)return{ok:false,reason:'DOOR NOT FOUND',id};
+  const allowed=doorWedgeTargetAvailability({id:portal.id,keyId:portal.keyId,
+    archetype:portal.definition?.archetype,access:portal.definition?.access,leafCount:portal.definition?.leafCount,
+    state:portal.runtime.state,open:portal.open,openFraction:portal.runtime.openFraction,wedge:portal.runtime.wedge});
+  if(!allowed.enabled)return{ok:false,reason:allowed.reason,id};
+  portal.runtime.wedge=true;portal.runtime.wedgeItemId=DOOR_WEDGE_ID;portal.runtime.closeRequested=false;
+  return{ok:true,id};
+}
 export function setDoorOpen(id,open){
   const portal=doorPortals.find((p)=>p.id===id);if(!portal)return false;
   portal.autoCloseSide=0;return setPortalOpen(portal,open);
@@ -2049,7 +2108,10 @@ export function loadDoorState(saved={}){
     const endpoint=normalized.states[portal.id]||[...aliases].map((id)=>normalized.states[id]).find(Boolean);
     portal.runtime=endpoint?normalizeDoorEndpoint(endpoint,portal.definition):freshDoorRuntime(portal.definition||{initialState:legacyOpen.has(portal.id)?'open':'closed'});
     if(!endpoint&&[...aliases].some((id)=>legacyOpen.has(id)))portal.runtime=normalizeDoorEndpoint({state:DOOR_STATE.OPEN,wedge:portal.definition?.wedged,closerArmed:portal.definition?.closerArmed},portal.definition);
-    changed=true;setPortalPassable(portal,!doorBlocksPassage(portal.runtime),{rebuild:false});
+    const passable=!doorBlocksPassage(portal.runtime);
+    changed=changed||portal.open!==passable;
+    portal.autoCloseSide=0;
+    setPortalPassable(portal,passable,{rebuild:false});
   }
   }finally{if(changed)buildPhysicalSpans();}
 }
@@ -2062,7 +2124,7 @@ export function resetDoors(){
 }
 export function doorState(){return doorPortals.map((portal)=>({
   id:portal.id,legacyId:portal.legacyId,archetype:portal.definition?.archetype||'legacy',state:portal.runtime.state,openFraction:portal.runtime.openFraction,
-  keyId:portal.keyId,open:portal.open,wedge:portal.runtime.wedge,closer:portal.definition?.closer||'none',closerArmed:portal.runtime.closerArmed,
+  keyId:portal.keyId,open:portal.open,wedge:portal.runtime.wedge,...(portal.runtime.wedge&&portal.runtime.wedgeItemId===DOOR_WEDGE_ID?{wedgeItemId:DOOR_WEDGE_ID}:{}),closer:portal.definition?.closer||'none',closerArmed:portal.runtime.closerArmed,
   acousticLossDb:portal.definition?.acousticLossDb||0,construction:portal.definition?.construction||'legacy',leafCount:portal.definition?.leafCount||1,
   activeLeaves:[...(portal.activeLeaves||[0])],aperture:{...(portal.aperture||{width:portal.cells.length/PLAN_SCALE,height:3.4})},leaf:{...(portal.leaf||{width:1,height:2.1,depth:.05})},
   hinge:portal.definition?.hinge||'left',swing:portal.definition?.swing||'escape',head:portal.definition?.head||'masonry-infill',
@@ -2109,6 +2171,11 @@ export function retireDoor(id){
   const at=doorPortals.findIndex((portal)=>portal.id===id||portal.legacyId===id);
   if(at<0) return false;
   const portal=doorPortals[at];
+  const cells=portal.cells.filter(({x,y})=>inside(x,y)).map(({x,y})=>{
+    const i=idx(x,y);
+    return {i,solid:plan.solid[i],flags:plan.flags[i],material:plan.material[i],encodedFlags:plan.rgba[i*4+2]};
+  });
+  retiredDoors.set(portal.id,{portal,at,mask:portal.volume?.mask,cells});
 
   // The volume becomes masonry, exactly as the compiler would have built it from
   // an 'x'. `rgba` matters as much as `flags` here: it is the texture the
@@ -2130,7 +2197,55 @@ export function retireDoor(id){
   return true;
 }
 
+// A Work Order retry may go back to before the masonry was installed. Only
+// this checkpoint replay restores the authored opening in the current plan.
+export function restoreRetiredDoor(id){
+  const retired=retiredDoors.get(id);
+  if(!retired)return false;
+  const {portal,at,mask,cells}=retired;
+  if(portal.volume)portal.volume.mask=mask;
+  for(const {i,solid,flags,material,encodedFlags} of cells){
+    plan.solid[i]=solid;
+    plan.flags[i]=flags;
+    plan.material[i]=material;
+    plan.rgba[i*4+2]=encodedFlags;
+  }
+  doorPortals.splice(at,0,portal);
+  for(const {x,y} of portal.cells)doorCellToPortal.set(`${x},${y}`,portal);
+  retiredDoors.delete(id);
+  buildPhysicalSpans();
+  return true;
+}
+
 // ── mutation support (M4.1 writes through these) ────────────────────────────
+const MUTATION_FIELDS = ['solid', 'floor', 'ceil', 'flags', 'zone', 'material',
+  'physicalX', 'physicalY', 'layer', 'space', 'renderGroup'];
+
+export function validMutationPhysicalCoordinate(value, originalValue) {
+  return Number.isInteger(value) && (Math.abs(value) < 4_096 || value === PHYSICAL_VOID && value === originalValue);
+}
+
+export function mutationCellState(x, y) {
+  const i = idx(x, y);
+  return Object.fromEntries(MUTATION_FIELDS.map(key => [key, plan[key][i]]));
+}
+
+// These cells already have their exact physical embedding. Restoring a
+// checkpoint applies all changes before rebuilding the renderer's span map.
+export function applyMutationCells(cells) {
+  if (!cells.length) return;
+  for (const { x, y, cell } of cells) {
+    const i = idx(x, y);
+    for (const key of MUTATION_FIELDS) plan[key][i] = cell[key];
+    const solid = !!cell.solid;
+    plan.rgba[i * 4] = solid ? 0 : encodeH(cell.floor);
+    plan.rgba[i * 4 + 1] = solid ? 0 : encodeH(cell.ceil);
+    plan.rgba[i * 4 + 2] = solid ? F.SOLID : cell.flags;
+    plan.rgba[i * 4 + 3] = solid ? 0 : cell.zone;
+  }
+  buildPhysicalSpans();
+}
+
 export function setSolid(x, y, solid) {
   if (!inside(x, y)) return false;
   const i = idx(x, y);

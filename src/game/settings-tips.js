@@ -65,6 +65,7 @@ const SETTING_HELP = Object.freeze({
     profileMeasure: 'MEASUREMENT stores four bounded fictional dimensions, confidence, and sample count—not an event history.',
     profileAdaptive: 'ADAPTIVE DIFFICULTY may move one bounded band at safe checkpoints. Authored assistance and accessibility remain authoritative.',
     profileWindow: 'WINDOW CHOREOGRAPHY may temporarily leave Game Mode, move the main frame, and use up to four game-owned panes. Turning it off keeps every beat in a simulated desktop inside the game.',
+    desktopFightEffects: 'Click targets on a temporary desktop layer in select fights.',
     profileFiles: 'INTERFERENCE FILES are stored locally and contain limited session summaries and architectural history, not raw behavioral logs.',
     profileRetryMic: 'RETRY MICROPHONE launches the operating-system permission request again.',
     profileRestore: 'RESTORE GAME WINDOW closes all game-owned panes and restores the last player-selected frame and Windowed/Game Mode choice.',

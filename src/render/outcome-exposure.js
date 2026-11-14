@@ -41,6 +41,7 @@ export function normalizeOutcomeExposure(value) {
     ? Math.min(.72, value.duration) : value.kind === 'taken' ? .72 : .62;
   return freeze({ eventId: value.eventId.slice(0, 160), kind: value.kind,
     elapsed: value.elapsed, duration, reduced: value.reduced === true,
+    grab: value.grab === true,
     bearing: finite(value.bearing) ? value.bearing : null,
     anchor: capturedAnchor(value.anchor, value.bearing) });
 }
@@ -70,8 +71,11 @@ export function outcomeExposureActor(value, source, settings = {}) {
     glow: sample.glow, mode: anchor.mode,
     performance: { ...copy(anchor.performance),
       manifestation: Math.max(anchor.performance.manifestation, .9),
+      ...(value.grab ? { grab: smooth(value.elapsed / .18) } : {}),
       // No cue overprint/size shift: one real body and its original skinned pose.
-      cue: null, reducedMotion: true },
+      // The anchor already owns a frozen simulation sample. Calling it reduced
+      // motion would change the deformation selected for that captured pose.
+      cue: null, reducedMotion: anchor.performance.reducedMotion === true },
   });
 }
 

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-09T00:19:33.063Z",
-  "bytes": 64509688,
-  "totalTriangles": 891133,
+  "generatedAt": "2026-11-13T04:22:03.533Z",
+  "bytes": 64730312,
+  "totalTriangles": 890557,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -500,8 +500,8 @@
       "vertices": 4263
     },
     "academic_roof_service_stair": {
-      "triangles": 8100,
-      "vertices": 16200
+      "triangles": 7524,
+      "vertices": 15048
     },
     "academic_roof_gate": {
       "triangles": 168,
@@ -4036,7 +4036,7 @@
       "max": [
         3.06,
         8.023,
-        2.14
+        2.86
       ]
     },
     "academic_roof_gate": {

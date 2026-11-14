@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {freshHushDensityPose,normalizeHushDensityPose,stepHushDensityPose,hushDensityCharacter,hushDensityTravelPacket} from '../src/game/hush-density-performance.js';
+import {createHash} from 'node:crypto';
+import {HUSH_POSTURE_REVISION,HUSH_POSTURE_ASSET_SHA256} from '../src/data/generated/hush-last-posture-support.js';
 import {parseCharacterAsset} from '../src/render/character-asset.js';
 
 test('chase loading is earned by accepted travel and survives save without another root or target',()=>{
@@ -34,13 +36,23 @@ test('secondary traction has a finite catch, hold and release rather than a sine
  for(const x of[.01,.17,.43,.79,.99])assert.ok(Math.abs(hushDensityTravelPacket(x,.22)-hushDensityTravelPacket(x+1,.22))<1e-12);
 });
 
-test('the delivered body contains the new authored chase and retains its nonhuman physical envelope',()=>{
- const bytes=readFileSync(new URL('../public/assets/hush-density.glb',import.meta.url)),asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
+test('the delivered body retains a collapsed adult anatomical envelope and authored gathering chase',()=>{
+ const bytes=readFileSync(process.env.HUSH_POSTURE_TEST_ASSET||new URL('../public/assets/hush-density.glb',import.meta.url)),asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
  assert.ok(asset.clips.has('density_chase'));assert.equal(asset.clips.get('density_chase').duration,Math.fround(2.4));
- const stats=JSON.parse(readFileSync(new URL('../public/assets/hush-density/stats.json',import.meta.url),'utf8'));
- assert.equal(stats.modelRevision,'density-raked-load-2');assert.equal(stats.joints.length,19);assert.equal(stats.triangles,44000);
- assert.deepEqual(stats.restBounds,{min:[-.45,0,-.35],max:[.45,2.05,.35]});
- assert.equal(stats.topology.connectedComponents,1);assert.equal(stats.topology.boundaryEdges,0);assert.equal(stats.topology.openChannels,2);
- assert.equal(stats.baseContact.maximumRootRelativeBaseDriftM,0);
- assert.equal(asset.nodes.some(n=>/head|foot|thigh|pelvis/.test(n.name||'')),false);
+ const stats=JSON.parse(readFileSync(process.env.HUSH_POSTURE_TEST_STATS||new URL('../public/assets/hush-density/stats.json',import.meta.url),'utf8'));
+ assert.equal(stats.modelRevision,HUSH_POSTURE_REVISION);
+ assert.equal(stats.modelRevision,asset.json.extras.modelRevision);
+ assert.equal(stats.sha256,HUSH_POSTURE_ASSET_SHA256);
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),HUSH_POSTURE_ASSET_SHA256);assert.equal(stats.identity,'The Last Posture');
+ assert.equal(stats.joints.length,43);const triangles=asset.entries.find(entry=>entry.name==='hush_density_volume').primitives[0].indices.length/3;
+ assert.equal(stats.triangles,triangles);assert.ok(triangles>0&&triangles<=stats.visibleTriangleBudget);
+ const volume=asset.entries.find(e=>e.name==='hush_density_volume');assert.equal(volume.skin.joints.length,43);
+ assert.equal(volume.primitives.reduce((n,p)=>n+p.indices.length/3,0),stats.triangles);
+ assert.ok(Math.abs(stats.restBounds.min[1])<2e-6);
+ assert.ok(Math.abs(stats.restBounds.max[1]-stats.restBounds.min[1]-asset.json.extras.heightM)<2e-6);
+ assert.ok(stats.restBounds.max[2]-stats.restBounds.min[2]<.65,'adult anatomical depth remains credible without globally flattening the torso');
+ assert.equal(stats.topology.boundaryEdges,0);assert.equal(stats.topology.nonManifoldEdges,0);
+ assert.equal(stats.supportContract.worldPlantingClaim,false,'an in-place clip cannot promise world support');
+ for(const name of['head','pelvis','thigh_L','thigh_R','foot_L','foot_R'])assert.ok(asset.nodes.some(n=>n.name===name));
+ assert.equal(asset.nodes.some(n=>/^fold_/.test(n.name||'')),false);
 });

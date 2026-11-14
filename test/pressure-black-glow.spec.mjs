@@ -96,7 +96,9 @@ test('Pressure material still enters the shared recording instead of a smooth fi
 test('material identity is emitted alongside the exact already occluded finite finish', () => {
   assert.match(PRESSURE_FINISH_FRAG, /layout\(location=0\)out vec4 o;/);
   assert.match(PRESSURE_FINISH_FRAG, /layout\(location=1\)out vec4 oIdentity;/);
-  assert.match(PRESSURE_FINISH_FRAG, /oIdentity=vec4\(coreMask,step\(\.000001,glowLight\),cosmic.a,cosmosMask\);/);
+  assert.match(PRESSURE_FINISH_FRAG, /oIdentity=vec4\(coreMask,step\(\.000001,glowLight\),cosmicSignal,cosmosMask\);/);
+  assert.match(PRESSURE_FINISH_FRAG,/float cosmicSignal=mod\(bits,32.0\)\/31.0;/,
+    'identity must retain the exact transported pre-acquisition signal');
   const identityIndex = PRESSURE_FINISH_FRAG.indexOf('oIdentity=vec4(');
   assert.ok(identityIndex > PRESSURE_FINISH_FRAG.indexOf('float glowLight='));
   assert.ok(identityIndex < PRESSURE_FINISH_FRAG.indexOf('if(uAcquiredOnly>.5)'));

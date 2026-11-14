@@ -62,7 +62,7 @@ const inspectionFrom = (route,id) => {
 {
   for (let y = 18; y <= 21; y += 1) {
     for (let x = 182; x <= 183; x += 1) {
-      assert.equal(FP.isSolid(x, y), true,
+      assert.equal(FP.canStep(x-1,y,x,y,{keys:new Set()}).ok, false,
         `the box office frontage is open at (${x},${y}) — the public can walk through the ticket window`);
     }
   }

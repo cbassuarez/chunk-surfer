@@ -20,7 +20,9 @@ import assert from 'node:assert/strict';
 import * as FP from '../src/world/floorplan.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as PROPS from '../src/game/props.js';
-import { MESH_SURFACE, PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import { MESH_SURFACE as SHARED_SURFACE, PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import {BOX_OFFICE_SURFACES} from '../src/data/box-office.js';
+const MESH_SURFACE={...SHARED_SURFACE,...BOX_OFFICE_SURFACES};
 import { wallContactAt } from '../src/world/wall-contact.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { TENOR_ROPE_AUTHORED } from '../src/data/bell-tower-layout.js';
@@ -184,7 +186,7 @@ const plan = {
 // An authored inspectAt remains an explicit exception to anchor following.
 {
   const inspectAt={x:95.5,y:9.5};
-  const [mounted]=PROPS.propsInit(FP,[{id:'explicit-anchor-proof',mesh:'chapel_key_cabinet',x:96.25,y:9.45,yaw:0,mount:'wall',inspectAt}]);
+  const [mounted]=PROPS.propsInit(FP,[{id:'explicit-anchor-proof',mesh:'chapel_key_cabinet',x:95.25,y:9.45,yaw:0,mount:'wall',inspectAt}]);
   assert.equal(mounted.interactionX,inspectAt.x);
   assert.equal(mounted.interactionY,inspectAt.y);
   const landing=instances.find(p=>p.id==='landing-upper-floor-landing');

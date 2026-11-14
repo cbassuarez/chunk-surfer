@@ -5,7 +5,7 @@
 // `maxSeconds`. The door gives when you leave it alone. Input is read the whole time:
 // the handle rattles, you can walk, and Escape still reaches the pause menu.
 import {MEMORY_FIELD as C} from '../data/memory-field.js';
-import {neuralFrame,NEURAL_NONE} from './neural-transition.js';
+import {neuralFrame,neuralSeconds,NEURAL_NONE} from './neural-transition.js';
 import {antPoseAt} from './memory-field-ant.js';
 
 const finite=(v,f=0)=>typeof v==='number'&&Number.isFinite(v)?v:f;
@@ -63,10 +63,9 @@ export function memoryFieldNeural(state,{reducedFlash=false,reducedMotion=false}
   if(state.leaving)return neuralFrame('leave',state.elapsed-state.leaving.at,options);
   const arriving=neuralFrame('arrive',state.elapsed,options);
   if(!arriving.done)return arriving;
-  // It looks worse the longer he stays: the leaks come in by themselves, the focus goes.
-  const d=state.decay||0;
-  if(d<.3)return NEURAL_NONE;
-  return{...NEURAL_NONE,leak:.68*smooth(.3,1,d)*(reducedFlash?.7:1),lens:.42*smooth(.55,1,d),time:state.elapsed,shimmer:reducedFlash?0:1,done:false};
+  // Light belongs to crossing into or out of a visit. The field can decay
+  // through its own geometry, colour and gaze without a new lens event.
+  return NEURAL_NONE;
 }
 export function memoryFieldLook(state,visit,{reducedDread=false,reducedMotion=false,reducedFlash=false}={}){
   const d=state.decay,times=memoryFieldTimes(visit,{reducedDread});
@@ -80,7 +79,7 @@ function blockedByLeaf(state,before,visit){
   if(state.released!=null&&state.elapsed-state.released>C.swingSeconds*.5)return false;
   return across&&Math.sign(before.z-z)!==Math.sign(state.z-z);
 }
-export function stepMemoryField(current,visit,{dt=0,forward=0,strafe=0,reducedMotion=false,reducedDread=false,tell=null}={}){
+export function stepMemoryField(current,visit,{dt=0,forward=0,strafe=0,reducedMotion=false,reducedDread=false,reducedFlash=false,tell=null}={}){
   const state={...current,said:{...current.said},...(current.ant?{ant:{...current.ant,said:{...current.ant.said}}}:{})},events=[],times=memoryFieldTimes(visit,{reducedDread});
   if(state.left)return{state,events};
   const step=Math.max(0,Math.min(C.maxFrameDelta,finite(dt)));
@@ -128,7 +127,9 @@ export function stepMemoryField(current,visit,{dt=0,forward=0,strafe=0,reducedMo
     }
     if(state.released!=null&&!state.leaving&&state.elapsed-state.released>=C.leaveSeconds){state.leaving={at:state.elapsed,why:'waited'};}
   }else if(!state.leaving&&state.elapsed-after>=times.max){state.leaving={at:state.elapsed,why:'over'};}
-  if(state.leaving&&state.elapsed-state.leaving.at>=C.coverOut){state.left=true;events.push({type:'left',why:state.leaving.why});}
+  // Reduce Flash lengthens the real leave transition. Do not restore the
+  // world before that slower crossing has reached its white handoff.
+  if(state.leaving&&state.elapsed-state.leaving.at>=neuralSeconds('leave',{reducedFlash})){state.left=true;events.push({type:'left',why:state.leaving.why});}
   return{state,events};
 }
 // [E], or any other verb he has. It reads, it answers, and it does nothing.
@@ -178,7 +179,7 @@ export function createMemoryFieldScene({visit,renderer,audio=null,tell=null,pres
       if(stopped()){keys.clear();return;}
       const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         strafe=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),v=p();
-      const result=stepMemoryField(state,visit,{dt,forward,strafe,reducedMotion:!!v.reducedMotion,reducedDread:!!v.reducedDread,tell});
+      const result=stepMemoryField(state,visit,{dt,forward,strafe,reducedMotion:!!v.reducedMotion,reducedDread:!!v.reducedDread,reducedFlash:!!v.reducedFlash,tell});
       state=result.state;dispatch(result.events);
       if(caption&&state.elapsed>captionUntil)caption=null;
       audio?.update?.(state,visit);

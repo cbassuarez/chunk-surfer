@@ -138,7 +138,7 @@ test('recorder physical key and left-wrist contact share the authored operation 
 });
 
 test('baked anatomical grips support every tool without intersecting the actual holding body', async () => {
-  const bytes = await readFile(new URL('../public/assets/battle-hands/right.glb', import.meta.url));
+  const bytes = await readFile(new URL('../public/assets/battle-hands/recordist.glb', import.meta.url));
   const template = await parseBattleHandTemplate(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
   const bodies = {
     recorder: ['DA-1000 chassis'], radio: ['portable short-wave radio'], rig: ['bent interface chassis'],

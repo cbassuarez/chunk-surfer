@@ -166,11 +166,46 @@ choices are `default`, `d3d11`, and `vulkan`. This sets the native process's
 `CHUNK_SURFER_ANGLE_BACKEND` override for that launch; it does not change Windows
 or user-wide settings. An explicit environment override takes precedence over
 the file, and an existing WebView2 `--use-angle` choice takes precedence over
-both. Packaged Windows builds retain WebView2's automatic choice unless that
-environment override is explicitly supplied. Vulkan is a verified local
-workaround for this checkout's RTX 5060 shader compiler failure. The Windows
-target passes `cargo check`; visual startup in native WebView2 still needs
-acceptance.
+both.
+
+### Desktop graphics startup recovery
+
+New Windows and Linux builds from this source check graphics startup and retry
+eligible alternatives after a fatal WebGL2, shader, framebuffer, or frame-readback
+failure. Windows tries the default backend, then Vulkan and D3D11; Linux tries
+the default path, then disables the DMABUF renderer, then tries that path under
+X11 when `DISPLAY` exists and no explicit `GDK_BACKEND` prevents it. Each
+eligible mode is tried at most once in a recovery sequence. Existing graphics
+environment overrides are preserved, and saved games are untouched.
+
+The working mode is remembered for this app version only after boot and a
+complete rendered frame succeed. A slow load or an unrelated JavaScript error
+does not trigger graphics restarts. If recovery is exhausted, startup keeps a
+readable error and retry control available instead of silently hiding the game.
+
+For a blank compositor window that cannot show those controls, quit the game
+and request an alternative directly. On Windows, run from the extracted folder:
+
+```powershell
+.\chunk-surfer.exe --graphics-recovery
+```
+
+On Linux, use the actual downloaded AppImage filename, or the installed binary:
+
+```sh
+./chunk-surfer-linux-x64.AppImage --graphics-recovery
+chunk-surfer --graphics-recovery
+```
+
+`--graphics-recovery` bypasses the remembered choice and selects the first
+eligible alternative; it still respects explicit environment overrides.
+These changes require rebuilt packages: the current itch download is unchanged
+until a new build is published. The combined Vulkan/high-performance-GPU
+launcher was confirmed working by a tester on an RTX 5070 hybrid laptop; that
+test does not isolate which of those two changes resolved its black screen.
+GL checks alone cannot prove that an OS compositor presents the window. Native
+Windows and Linux acceptance on the exact release artifacts remains required;
+see the graphics startup matrix in `STORE_PREP.md`.
 
 ### Web Build
 

@@ -8,8 +8,10 @@ font with a glow is not a VFD or LCD rendering path.
 - VFD prose and legends use the authored character ROM in `vfd-font.js`:
   phosphor dots with controlled emission. The recorder's existing numeric
   segment display remains a segment display.
-- LCD map annotations and compact status values use the same ROM with crisp
-  rectangular pixels, faint dormant cells, and no phosphor bloom.
+- LCD map annotations and compact status values use rectangular electrodes with
+  faint dormant cells and a small halo around lit cells. The navigator holds
+  its text and meter behind a recessed cover. The electrode plane shifts with
+  the view inside the fixed aperture.
 - Faceplate etching, printed button legends, paper, world signs, and ordinary
   non-instrument overlays remain physical ink or their own authored medium.
 - Values, room names, dialogue, and interaction state come from their existing

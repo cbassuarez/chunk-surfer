@@ -203,21 +203,23 @@ function normalizeMeasurement(value) {
   return { rms, peak: rms, clipped: rms >= CLIP_PEAK };
 }
 
-export function monitorSnapshot(nowMs = performance.now()) {
+export function monitorSnapshot(nowMs = performance.now(), { auxiliaryCanExpose = true, useInjectedExposure = true } = {}) {
   const injectedMeasurement = injected != null ? normalizeMeasurement(injected) : null;
-  const programRms = injectedMeasurement?.rms ?? semanticRmsAt(nowMs, { hushOnly: true });
+  const programRms = semanticRmsAt(nowMs, { hushOnly: true });
+  const drawnProgramRms = injectedMeasurement?.rms ?? programRms;
   let auxiliary = { rms: 0, peak: 0, clipped: false };
   try { auxiliary = normalizeMeasurement(auxiliaryInput?.()); } catch (_) {}
   // The room microphone never connects to this AudioNode or to the speakers.
   // It is nevertheless HUSH evidence whenever permission has made it active.
   // What the recorder hears of the OPERATOR. This is the honest figure and it is
   // what the HUSH's perception is fed.
-  const heardRms = Math.min(1, Math.hypot(programRms, auxiliary.rms));
+  const heardProgramRms = useInjectedExposure ? drawnProgramRms : programRms;
+  const heardRms = Math.min(1, Math.hypot(heardProgramRms, auxiliaryCanExpose ? auxiliary.rms : 0));
   let presenceRms = 0;
   try { presenceRms = Math.max(0, Math.min(1, Number(presenceInput?.()) || 0)); } catch (_) {}
   // What the NEEDLE shows. The two are the same number all night except when
   // something is standing close enough to put its own level on the input.
-  const rms = Math.min(1, Math.hypot(heardRms, presenceRms));
+  const rms = Math.min(1, Math.hypot(drawnProgramRms, auxiliary.rms, presenceRms));
   const instantPeak = Math.max(injectedMeasurement?.peak || programRms, auxiliary.peak, presenceRms);
   const clipping = !!injectedMeasurement?.clipped || auxiliary.clipped || instantPeak >= CLIP_PEAK;
 
@@ -253,8 +255,8 @@ export function monitorSnapshot(nowMs = performance.now()) {
     hushRms: heardRms,
     hushDb: heardDb,
     hushBand: monitorBandForDb(heardDb),
-    inputKind: auxiliary.rms > 0 ? 'room-mic' : lastPlayerInput?.until > nowMs ? lastPlayerInput.kind : null,
-    inputPosition: auxiliary.rms <= 0 && lastPlayerInput?.audibleToHush && lastPlayerInput?.until > nowMs && lastPlayerInput.position
+    inputKind: auxiliaryCanExpose && auxiliary.rms > 0 ? 'room-mic' : lastPlayerInput?.until > nowMs ? lastPlayerInput.kind : null,
+    inputPosition: (!auxiliaryCanExpose || auxiliary.rms <= 0) && lastPlayerInput?.audibleToHush && lastPlayerInput?.until > nowMs && lastPlayerInput.position
       ? { ...lastPlayerInput.position }
       : null,
   };
@@ -283,13 +285,16 @@ export function monitorSetAuxInput(provider = null) { auxiliaryInput = typeof pr
 // lie reads the same, so the repeatability IS the tell that this is diegetic.
 export function monitorSetPresenceInput(provider = null) { presenceInput = typeof provider === 'function' ? provider : null; }
 
+export function monitorClearExposure() {
+  acousticInputs = [];
+  lastPlayerInput = null;
+  peak = peakUntil = clipUntil = 0;
+}
+
 export function monitorReset() {
   ctx = analyser = null;
   programTimeData = programFrequencyData = null;
-  peak = 0;
-  peakUntil = clipUntil = 0;
+  monitorClearExposure();
   injected = null;
   auxiliaryInput = null;
-  acousticInputs = [];
-  lastPlayerInput = null;
 }

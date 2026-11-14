@@ -36,11 +36,11 @@ test('the final packed geometry clears the protected cross aisle, including ever
 test('the installed service run has a real support plane on every compiled tread',()=>{
   const m=placed(S.id),tops=m.triangles.filter(t=>Math.max(...t.map(p=>p[1]))-Math.min(...t.map(p=>p[1]))<1e-7);
   for(let i=0;i<8;i++){
-    const x=100+i*.5+.25,z=10.75,h=hallServiceTreadHeight(i);
+    const x=S.from.x+i*S.going+S.going/2,z=S.from.y+S.width/2,h=hallServiceTreadHeight(i);
     const support=tops.some(t=>Math.abs(t[0][1]-h)<1e-6
       &&x>=Math.min(...t.map(p=>p[0]))-1e-6&&x<=Math.max(...t.map(p=>p[0]))+1e-6
       &&z>=Math.min(...t.map(p=>p[2]))-1e-6&&z<=Math.max(...t.map(p=>p[2]))+1e-6);
     assert.ok(support,`packed step${i} must support the actual body floor`);
-    assert.ok(Math.abs(FP.floorAt(200+i,21)-h)<1e-6);
+    assert.ok(Math.abs(FP.floorAt(S.from.x*2+i,S.from.y*2+1)-h)<1e-6);
   }
 });

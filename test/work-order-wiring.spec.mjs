@@ -30,7 +30,7 @@ test('the cab offers the tick only while the shift is open, on the work order al
   assert.equal(openingCabInspectionModel({shiftPending:true},'notebook').shiftPending,false);
   assert.match(fn('tickShiftOnWorkOrder'),/chooseShift\(cassetteLedger\(\),selection\.preset\)/);
   assert.match(main,/onChooseDifficulty:\(\)=>\{\n\s*if\(ownerPending\|\|failedSave\(\)\|\|!flagTest\('van\.difficulty\.pending'\)\)return;\n\s*if\(workOrderShiftTicked\(\)\)/);
-  assert.match(main,/saveCommit\(result\.patch\);inkFinalShift\(\);/);
+  assert.match(main,/saveCommitSilent\(result\.patch\);inkFinalShiftSilent\(\);[\s\S]*?await persistVanWorkbenchState\(\)/);
 });
 
 test('a take on a lost cassette stops counting, survives a save that way, and counts again when found',()=>{

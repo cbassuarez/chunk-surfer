@@ -430,6 +430,19 @@ test('shared II gait follows supported metre speed and refuses unsupported, relo
   sound.dispose();
 });
 
+test('fast Source feet remain actual supported contacts through low frame rates and stop in the air',()=>{
+ for(const fps of [4,15,30,60]){
+  const contacts=[],g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g,onFootContact:e=>contacts.push(e)});
+  let s=state({phase:'wrong-return',x:16,z:-8,feet:0,breath:{sprinting:true}});frame(sound,s,1/fps);
+  for(let i=1;i<=2*fps;i++){s={...s,z:-8-i*8.25/fps,elapsed:i/fps};g.ctx.currentTime+=1/fps;frame(sound,s,1/fps);}
+  assert.ok(contacts.length>=6&&contacts.length<=11,`${fps}FPS: ${contacts.length} physical contacts`);
+  assert.ok(contacts.every(e=>Math.abs(e.speed-8.25)<1e-6&&e.condition==='sprint'));
+  const count=contacts.length;s={...s,fall:{elapsed:0}};
+  for(let i=0;i<fps;i++){s={...s,z:s.z-.05};g.ctx.currentTime+=1/fps;frame(sound,s,1/fps);}
+  assert.equal(contacts.length,count,'no airborne stride after an arbitrary jump');sound.dispose();
+ }
+});
+
 test('three corridor contacts survive score isolation, retain spatial tails and never reopen generic effects',()=>{
   const g=graph(),calls=[];let protection=false;
   const sound=createSourceContinuationAudio({getAudio:()=>g,protectedAudio:()=>protection});

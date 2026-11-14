@@ -176,7 +176,7 @@ export function createCoastalHandsScene({
       const keepRelease = releaseTail && !paused && !blurred && ready;
       clearInput();apply({ putDown: true }, 0);closed = true;
       if (!keepRelease) sound();
-      audio?.dispose?.({ releaseTail: keepRelease });onExit({ interaction: structuredClone(interaction),recorderHeld });
+      audio?.dispose?.({ releaseTail: keepRelease });onExit({ interaction: structuredClone(interaction),recorderHeld,intentionalLowering:releaseTail===true });
       return true;
     },
     diagnostics: () => ({ ready, error, mode: interaction.mode, paused, blurred, pinHeld, keys: [...keys] }),

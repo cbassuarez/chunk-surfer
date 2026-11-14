@@ -4,7 +4,7 @@ import {SourceDriveAcoustics} from './source-drive/acoustics.js';
 import {assetUrl} from '../platform/paths.js';
 export {normalizeSourceReturnFlashbackCheckpoint} from './source-return-flashback.js';
 
-export function makeSourceReturnFlashbackScene({destination,checkpoint=null,returnPose=null,context,destinationAudio,reducedMotion=false,isHeld=()=>false,
+export function makeSourceReturnFlashbackScene({destination,checkpoint=null,returnPose=null,context,destinationAudio,reducedMotion=false,isHeld=()=>false,getPresentation=()=>({}),
  onCheckpoint=()=>{},paintCover=()=>{},onRestore=()=>{},onDone=()=>{},onPause=()=>{},onError=()=>{},
  fetcher=globalThis.fetch?.bind(globalThis),createRenderer=createSourceReturnFlashbackRenderer,createAudio=options=>new SourceDriveAcoustics(options),
 }={}){
@@ -13,6 +13,15 @@ export function makeSourceReturnFlashbackScene({destination,checkpoint=null,retu
  function serialize(){return state?structuredClone(state):null;}
  function save(){const value=serialize();if(value)onCheckpoint(value);}
  const frozen=()=>paused||blurred||isHeld();
+ function syncAudio(actual){
+  if(!actual)return;
+  let presentation,external;try{presentation=getPresentation()||{};external=typeof presentation.protectedAudio==='function'?presentation.protectedAudio():presentation.protectedAudio;}catch{presentation={};external=true;}
+  const tape=actual.recording||{},protectedAudio=!!(external||tape.active||tape.recording||tape.playing||tape.cuing||tape.slating||tape.listening);
+  audio?.setPaused(frozen()||!ready||restored);
+  audio?.setStormPresentation?.({flashMode:presentation.flashMode||(presentation.effectsMode==='off'?'off':'full'),protectedAudio,listenerYaw:actual.look?.yaw||0});
+  audio?.sync(actual.driveState,[],actual.weather,actual.evolution,[]);
+  actual.storm=audio?.stormFrame?.()||null;
+ }
  function disposeAudio(){if(!audio||audioDisposed)return;audioDisposed=true;audio.dispose?.();}
  function restore(){if(restored)return;restored=true;disposeAudio();renderer?.dispose?.();onRestore({returnPose:state?.returnPose||returnPose,destination});}
  function finish(reason=null){if(closed||completed)return;completed=true;paintCover(1);restore();onDone({destination,returnPose:state?.returnPose||returnPose,error:reason});}
@@ -36,12 +45,15 @@ export function makeSourceReturnFlashbackScene({destination,checkpoint=null,retu
    if(arrivalReveal!==null){paintCover(Math.max(0,1-arrivalReveal/.9));return;}
    if(preview<3){paintCover(Math.max(0,Math.min(1,(preview-2)/1)));return;}
    if(!ready){paintCover(1);return;}
-   const frame=sourceReturnFlashbackFrame(state);presented=renderer.render(frame,metrics,{lookOffset})!==false;
+   const frame=sourceReturnFlashbackFrame(state);let synchronized=false;
+   // The wrapper builds the existing sea/car/fish frame once, lets its audio
+   // owner resolve that same storm event, then submits both together.
+   presented=renderer.render(frame,metrics,{lookOffset,beforePresent(actual){syncAudio(actual);synchronized=true;}})!==false;
    if(!presented){audio?.setPaused(true);paintCover(1);return;}
-   const actual=renderer.last?.();if(actual)audio?.sync(actual.driveState,[],actual.weather,actual.evolution,[]);
+   const actual=renderer.last?.();if(actual&&!synchronized)syncAudio(actual);
    audio?.setPaused(frozen());paintCover(frame.coverAlpha);handoffPresented=frame.handoffReady&&frame.coverAlpha===1;
   },
-  key(event){const k=String(event?.key||'').toLowerCase();if(k==='escape'){save();onPause();return true;}return true;},keyup:()=>true,
+  key(event){const k=String(event?.key||'').toLowerCase();if(k==='escape'){paused=true;audio?.setPaused(true);save();onPause();return true;}return true;},keyup:()=>true,
   pointer(event){if(closed||!ready||frozen())return true;
    if(event.type==='pointerdown')drag={x:event.clientX,y:event.clientY};
    if(event.type==='pointerup'||event.type==='pointercancel')drag=null;

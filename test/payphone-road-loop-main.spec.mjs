@@ -3,33 +3,44 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {planPayphoneRoadLoop,PAYPHONE_LOOP_ROUTE} from '../src/game/payphone-road-loop.js';
-import {payphoneLoopHolds,PAYPHONE_PASS,SARAH_PAGE} from '../src/game/payphone.js';
+import {payphoneBellLight,payphoneLoopHolds,PAYPHONE_PASS,SARAH_PAGE} from '../src/game/payphone.js';
 import {CELL} from '../src/data/floorplan/legend.js';
+import {OUTSKIRTS_VAN_CRASH} from '../src/data/outskirts-van-crash.js';
 import {outskirtsBusInteriorLightMix} from '../src/render/outskirts-bus-weather.js';
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),renderer=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
 const copy=x=>JSON.parse(JSON.stringify(x));
 function production(source,name){const a=source.indexOf(`function ${name}(`),b=source.indexOf('\n}',a);assert.ok(a>=0&&b>a,name);return source.slice(a,b+2);}
 function harness(){
- const calls=[],rings=[];let broken=false,now=1000,along=PAYPHONE_LOOP_ROUTE.end+.037,box={id:'r13-phone-box',z:-12,along:465};
- const env={planPayphoneRoadLoop,payphoneLoopHolds,PAYPHONE_PASS,SARAH_PAGE,px:3,py:-100.137,payphoneScene:null,
+ const calls=[],rings=[],pan=[];
+ let broken=false,now=1000,along=PAYPHONE_LOOP_ROUTE.end+.037,turns=0,stops=0;
+ let box={id:'r13-phone-box',x:8.6,z:-12,along:465};
+ const exitLamp={id:'r15-lamp-0',x:3.5,z:-33,yaw:Math.PI};
+ const env={planPayphoneRoadLoop,payphoneBellLight,payphoneLoopHolds,PAYPHONE_PASS,PAYPHONE_LOOP_ROUTE,SARAH_PAGE,CELL,OUTSKIRTS_VAN_CRASH,
+  px:3,py:-100.137,payphoneScene:null,
   motionRig:{x:3,z:-101.2,vx:.03,vz:-.25,targetX:3,targetZ:-100.137,lastMs:800},
   renderMove:{to:{x:3,z:-100.137},toLogical:{x:3,y:-100.137},startedAt:900,durationMs:140},
   trail:[{x:3,y:-99.137},{x:3,y:-100.137}],phoneFlurry:0,phoneFlurryDrainAt:0,phoneFlurryProbeOff:false,
-  phoneWorld:{box:{piece:{...box},callId:'loop-answer',next:3,until:Infinity},van:null},
+  phoneWorld:{box:{piece:{...box},callId:'loop',next:3,until:Infinity},van:null},
   performance:{now:()=>now},flagGet:()=>broken,
-  phoneWorldLine:()=>({bell:place=>rings.push(place),ringNearby:place=>rings.push(place)}),payphoneWorldPlace:piece=>({z:piece.z}),
-  payphoneIncomingForPass:()=>({id:'loop-answer',rings:1}),payphonePassPiece:()=>box,
+  actx:{currentTime:3},sfxDirectGain:{},sfxGain:{},master:{},
+  phoneWorldLine:()=>({bell:place=>{rings.push(place);return{stop:()=>stops++,panner:{pan:{setTargetAtTime:value=>pan.push(value)}}};}}),
+  payphoneWorldPlace:piece=>({pan:.4,z:piece.z}),payphoneEye:()=>({x:0,z:18,yaw:0}),
+  flashMode:()=>'full',shakeMode:()=>'full',
+  payphoneIncomingForPass:()=>broken?null:{id:'loop',rings:Infinity},payphonePassPiece:()=>assert.fail('the loop must target its own box'),
   R3:{r3dFacing:()=>1,r3dRebasePresentation:value=>calls.push(['camera',value])},
   outskirtsStreetAudio:{rebase:value=>calls.push(['audio',value])},
   chunkSurfRuntime:{setPayphoneRoadLoopHolding:value=>calls.push(['holding',value]),
-   payphoneRoadLoopFrame:()=>({active:true,along}),
-   rebasePayphoneRoadLoop:plan=>{calls.push(['runtime',copy(plan)]);along=plan.toAlong;return{};},
+   payphoneRoadLoopFrame:()=>({active:true,along,turns}),
+   rebasePayphoneRoadLoop:plan=>{calls.push(['runtime',copy(plan)]);along=plan.toAlong;turns+=plan.periods;return{};},
+   outskirtsPiece:key=>key==='r13-phone-box'?box:key==='r14-lamp-0'?exitLamp:null,
    setPlayerPosition:value=>calls.push(['position',value]),outskirtsPassAt:()=>13,
    horizonFrame:()=>({unravelling:{active:false}}),outskirtsDogQuietZone:()=>0,setOutskirtsFlurry:()=>{}},
  };
  const ctx=vm.createContext(env);
- for(const name of['phoneWorldRing','tickPhoneWorld','applyPayphoneRoadLoopPlan','preparePayphoneRoadLoop','syncPayphoneRoad'])vm.runInContext(production(main,name),ctx);
- return{env,calls,rings,run:code=>vm.runInContext(code,ctx),setBroken:value=>{broken=value;},setClock:value=>{now=value;},setBox:value=>{box=value;}};
+ for(const name of['phoneWorldRing','clearPhoneWorldBox','tickPhoneWorld','applyPayphoneRoadLoopPlan','preparePayphoneRoadLoop','syncPayphoneRoad',
+   'payphoneLoopPresentation','lightPayphoneBox','lightPayphoneLoopPractical'])vm.runInContext(production(main,name),ctx);
+ return{env,calls,rings,pan,stops:()=>stops,run:code=>vm.runInContext(code,ctx),setBroken:value=>{broken=value;},
+   setClock:value=>{now=value;},setBox:value=>{box=value;},setAlong:value=>{along=value;}};
 }
 
 test('the real host translates eye spring, target, trail and sources without losing velocity or time',()=>{
@@ -47,13 +58,55 @@ test('the real host translates eye spring, target, trail and sources without los
 
 test('the ringing call retains cadence when the nearest repeated kiosk identity changes',()=>{
  const f=harness();f.run('preparePayphoneRoadLoop()');const current=f.env.phoneWorld.box;
- f.setBox({id:'r14-phone-box',z:18.2,along:465});f.run('syncPayphoneRoad({along:453.237})');
+ f.setBox({id:'r14-phone-box',x:8.6,z:18.2,along:465});f.run('syncPayphoneRoad({along:453.237})');
  assert.equal(f.env.phoneWorld.box,current);assert.equal(current.next,3);assert.equal(f.rings.length,0,'no extra bell at the coordinate seam');
  f.setClock(3001);f.run('syncPayphoneRoad({along:453.237})');assert.equal(f.rings.length,1);assert.equal(f.rings[0].z,18.2);assert.ok(Math.abs(current.next-6.001)<1e-12);
 });
 
+test('the active kiosk alone carries the double bell, with a stable reduced-effects practical and a real seam cue',()=>{
+ const f=harness();f.run('preparePayphoneRoadLoop()');
+ f.setBox({id:'r14-phone-box',x:8.6,z:18.2,along:465});f.setClock(3000);f.run('syncPayphoneRoad({along:453.237})');
+ assert.equal(f.rings[0].destination,f.env.sfxDirectGain);
+ const signal=f.run('payphoneLoopPresentation(3.2)');
+ assert.equal(signal.piece.id,'r14-phone-box');assert.equal(signal.power,1);assert.match(signal.caption,/^THE SAME STREET · TELEPHONE RINGING/);
+ assert.ok(f.run('payphoneLoopPresentation(3.5).power')<signal.power);
+ assert.equal(f.run('payphoneLoopPresentation(3.8).power'),1);
+ f.env.flashMode=()=>'reduced';
+ assert.equal(f.run('payphoneLoopPresentation(3.2).power'),f.run('payphoneLoopPresentation(3.5).power'));
+ f.env.flashMode=()=>'full';
+ const [bright,dim]=f.run(`[3.2,3.5].map(time=>{
+   const signal=payphoneLoopPresentation(time),matrix=Array(16).fill(0);matrix[13]=15.2;
+   const pieces=[{id:'r13-phone-box:glow',matrix},{id:'r14-phone-box:glow',matrix},{id:'r14-phone-box',matrix}];
+   return {pool:lightPayphoneLoopPractical(pieces,signal,0,18/CELL-.5),pieces};
+ })`);
+ assert.equal(bright.pieces[0].emissive,undefined);
+ assert.ok(bright.pieces[1].fixturePower>.9);assert.ok(dim.pieces[1].fixturePower<.03);
+ assert.equal(bright.pieces[1].fixturePower,bright.pieces[2].fixturePower);
+ assert.equal(bright.pool.id,'r14-phone-box:lamp');assert.ok(bright.pool.strength>10*dim.pool.strength);
+ f.setClock(3200);f.run('tickPhoneWorld()');assert.deepEqual(f.pan,[.4]);
+ f.setBroken(true);f.run('syncPayphoneRoad({along:453.237})');
+ assert.equal(f.stops(),1);assert.equal(f.run('payphoneLoopPresentation().caption'),null);
+ f.setAlong(PAYPHONE_LOOP_ROUTE.end+.2);const release=f.run('payphoneLoopPresentation()');
+ assert.equal(release.phase,'released');assert.equal(release.piece.id,'r15-lamp-0');assert.equal(release.caption,'THE ROAD GOES ON');
+});
+
 test('pickup releases the loop and occupied booths cannot move the body',()=>{
  for(const mode of['broken','occupied']){const f=harness(),before=copy(f.env.motionRig),py=f.env.py;if(mode==='broken')f.setBroken(true);else f.env.payphoneScene={};assert.equal(f.run('preparePayphoneRoadLoop()'),false);assert.equal(f.env.py,py);assert.deepEqual(copy(f.env.motionRig),before);assert.ok(!f.calls.some(c=>c[0]==='runtime'));}
+});
+
+test('the motorway has no optional telephone ring and the next street can ring again',()=>{
+ const f=harness();let pass=OUTSKIRTS_VAN_CRASH.pass;
+ f.env.chunkSurfRuntime.outskirtsPassAt=()=>pass;
+ f.env.payphoneIncomingForPass=()=>({id:'key',rings:Infinity});
+ f.env.payphonePassPiece=()=>({id:'crash-pass-kiosk',x:8,z:-22});
+ f.env.phoneWorld.box.handle={stop:()=>f.env.phoneWorld.cancelled=true};
+ f.run('syncPayphoneRoad({along:523})');
+ assert.equal(f.env.phoneWorld.cancelled,true);
+ assert.equal(f.env.phoneWorld.box,null);
+ assert.equal(f.rings.length,0);
+ pass++;f.run('syncPayphoneRoad({along:557})');
+ assert.equal(f.env.phoneWorld.box.callId,'key');
+ assert.equal(f.rings.length,1);
 });
 
 test('the coordinate rebase preserves recorder movement history and the world-pinned ink origin',()=>{
@@ -108,7 +161,7 @@ test('wet-ground and rain sampling preserve their pre-rebase phase while physica
  assert.match(shader,/patternP=p\+uWorldPatternOffset\.xz/);
  assert.match(shader,/vnoise\(patternP\*\.32\)/);
  assert.match(shader,/patternHit=hit\+uWorldPatternOffset\.xz/);
- assert.match(shader,/rainVolume\(uEyeCells\+uWorldPatternOffset\/\.5,wd,distanceM\)/);
+ assert.match(shader,/traceRainField\(\s*uEyeCells\s*\+\s*uWorldPatternOffset\s*\/\s*0?\.5\s*,\s*wd\s*,/);
  assert.match(shader,/length\(p-uPuddle\.xy\)/,'the local lamp pool retains its physical anchor');
  assert.match(shader,/rel=hit-uDoorA\[k\]\.xy/,'door pools remain relative to actual doors');
  const delta=PAYPHONE_LOOP_ROUTE.period,before={groundZ:-485.17,rainEyeZ:-970.34,offset:0},after={groundZ:before.groundZ+delta,rainEyeZ:before.rainEyeZ+delta/CELL,offset:-delta};

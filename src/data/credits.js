@@ -150,6 +150,20 @@ export const CREDITS = Object.freeze([
     lines: Object.freeze(sourceRestCouperinCreditLines()),
   }),
   Object.freeze({
+    heading: 'Tannenried — Robert de Visée',
+    lines: Object.freeze([
+      'D-minor suite, Prélude, Allemande and Courante — Andrej Jovanić (Nimbus Art Belgrade), Baroque guitar, theorbo and figured-bass realization.',
+      'https://www.youtube.com/watch?v=CQ-p1S3dC-U',
+      'https://www.youtube.com/watch?v=cPOqu4kaE-0',
+      'https://www.youtube.com/watch?v=QiUbIZxIeI0',
+      'La Montfermeil — Andrej Jovanić (Nimbus Art Belgrade), solo theorbo.',
+      'https://www.youtube.com/watch?v=NlW5w3RH1pI',
+      'Creative Commons Attribution (YouTube) — https://support.google.com/youtube/answer/2797468',
+      'https://creativecommons.org/licenses/by/3.0/ · https://creativecommons.org/licenses/by/4.0/',
+      'Edited into looping phrases, made 5.5% faster at the original pitch, level matched, dithered and spatially filtered.',
+    ]),
+  }),
+  Object.freeze({
     heading: 'Sound Effect Recordings',
     lines: Object.freeze([
       ...soundEffectCredits(),

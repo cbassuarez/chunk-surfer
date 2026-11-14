@@ -13,6 +13,7 @@ import {
 import { SOURCE_CHAPEL_OUTSKIRTS } from '../src/data/source-level.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { buildBellsGodPreset, buildChapelOutskirtsGodPreset } from '../src/game/chunk-surf-god.js';
+import { createStationFieldScene } from '../src/game/station-field-scene.js';
 
 // ── The worlds ─────────────────────────────────────────────────────────────
 assert.equal(ELSEWHERE_WORLD_COUNT, ELSEWHERE_WORLDS.length);
@@ -114,6 +115,36 @@ const inChapelField = (seed) => {
 };
 const middleOf = (door) => ({ x: (door.threshold[0].x + door.threshold[1].x) / 2, y: (door.threshold[0].y + door.threshold[1].y) / 2 });
 const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + door.normal[0] * cells, y: m.y + door.normal[2] * cells }; };
+// Exercise the actual local controller and its witnessed return contract; this
+// is a CPU boundary fixture, not evidence of rendered or player acceptance.
+async function inspectAndReturn(runtime) {
+  const frame = runtime.stationFieldFrame(), visit = frame.visit;
+  let result = null;
+  const scene = createStationFieldScene({ visit, checkpoint: frame.checkpoint,
+    renderer: { initialize: async () => true, render: () => true, dispose() {} },
+    onCheckpoint: (checkpoint) => runtime.setStationFieldState(checkpoint),
+    onDone: (value) => { result = runtime.finishStationFieldReturn(value); } });
+  await scene.initialize();
+  const walkTo = (target) => {
+    for (let n = 0; n < 2000; n++) {
+      const at = scene.serialize(), dx = target.x - at.x, dz = target.z - at.z, distance = Math.hypot(dx, dz);
+      if (distance < 1.4) return;
+      scene.setLook({ yaw: Math.atan2(dx, -dz), pitch: 0 });
+      scene.input('forward', true); scene.update(.1); scene.input('forward', false);
+    }
+    assert.fail('local target not reached');
+  };
+  walkTo(visit.landmark);
+  const at = scene.serialize(), dx = visit.landmark.x - at.x, dz = visit.landmark.z - at.z;
+  scene.setLook({ yaw: Math.atan2(dx, -dz), pitch: Math.atan2(visit.landmark.height - 1.62, Math.hypot(dx, dz)) });
+  assert.equal(scene.interact(), true);
+  walkTo(visit.returnDoor); scene.setLook({ yaw: Math.PI, pitch: 0 });
+  assert.equal(scene.interact(), true);
+  for (let n = 0; n < 6; n++) { scene.update(.1); scene.render(); }
+  assert.ok(result?.meaningful); scene.exit();
+  return result;
+}
+
 {
   const { runtime } = inChapelField(4417);
   const doors = runtime.doorFieldDoors();
@@ -130,7 +161,8 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.ok(before.every((leak) => leak.distanceM <= 30));
   const shutLeak = before.find((leak) => leak.id === first.id);
   assert.ok(shutLeak && shutLeak.open === false && shutLeak.strength < .5, 'a shut door leaks as much as an open one');
-  assert.deepEqual(shutLeak.colour, [...ELSEWHERE_WORLDS[first.variant].leak]);
+  assert.deepEqual(shutLeak.colour, [1-first.destination.day*.12,.88-first.destination.day*.16,.67-first.destination.day*.12]);
+  assert.equal(shutLeak.bed, 'field', 'ordinary field air must not use fire or storm identity');
 
   runtime.openDoorFieldDoor(first.id);
   runtime.openDoorFieldDoor(second.id);
@@ -144,6 +176,9 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   const [bl, br] = portal.corners;
   assert.deepEqual(portal.origin.map((value) => +value.toFixed(6)), [(bl[0] + br[0]) / 2, (bl[1] + br[1]) / 2, (bl[2] + br[2]) / 2].map((value) => +value.toFixed(6)));
   assert.equal(portal.key, false, 'a chapel door is a tower key');
+  assert.equal(portal.variant, 10 + first.variant);
+  assert.equal(portal.fieldId, first.fieldId);
+  assert.equal(portal.deformation, first.destination.deformation);
 
   // Walking through is a short crossing into that world, then the door is gone.
   assert.equal(runtime.doorCrossingFrame(), null);
@@ -153,8 +188,9 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.ok(crossing, 'walking through an open door is not a crossing');
   assert.equal(crossing.id, first.id);
   assert.equal(crossing.variant, first.variant);
-  assert.equal(crossing.phase, 'inside');
-  assert.ok(crossing.realm && Number.isFinite(crossing.realm.pose.x), 'crossing has no actual realm position');
+  assert.equal(crossing.phase, 'field');
+  assert.equal(crossing.field.fieldId, first.fieldId, 'crossing has no actual field owner');
+  assert.equal(runtime.stationRealmFrame(), null, 'new field must not instantiate a retired cosmic arena');
   assert.ok(runtime.doorFieldDoors().find((door) => door.id === first.id).erased, 'the door is still there during its crossing');
   assert.ok(!runtime.doorFieldLeaks(standing.x, standing.y).some((leak) => leak.id === first.id), 'an erased door still leaks');
   const f = crossing.forward, n = first.normal;
@@ -164,12 +200,11 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.equal(runtime.doorCrossingFrame().id, first.id, 'one crossing interrupted another');
   assert.equal(runtime.doorFieldDoors().find((door) => door.id === second.id).erased, false, 'a held crossing consumed another door without its visit');
   const t0 = crossing.startedAt;
-  assert.equal(runtime.doorCrossingFrame(t0 + 60).phase, 'inside', 'waiting spent the walking allowance');
-  for (let step = 0; runtime.stationRealmFrame().stage === 'inside' && step < 1000; step += 1)
-    runtime.moveStationRealm({ dx: Math.floor(step / 8) % 2 ? -.085 : .085 });
-  assert.equal(runtime.doorCrossingFrame().phase, 'decohering');
-  runtime.advanceStationTime(1.2);
+  assert.equal(runtime.doorCrossingFrame(t0 + 60).phase, 'field', 'waiting must not force a blackout');
+  await inspectAndReturn(runtime);
   assert.equal(runtime.doorCrossingFrame(), null);
+  assert.equal(runtime.stationFieldFrame(), null);
+  assert.equal(runtime.state().station.entries.at(-1).meaningful, true);
   assert.equal(runtime.doorCrossingFrame(t0 + 1), null, 'a finished crossing comes back');
 }
 {
@@ -192,23 +227,32 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.ok(heard, 'no locked door in twenty fields ever answers');
 }
 {
-  // The tower's two key doors have the tower in their worlds; nothing else does,
-  // and the locked tower door itself never answers.
+  // Two marked physical connections release the matching tower bolts. Entry
+  // alone cannot unlock anything, and the locked tower door never answers.
   const built = buildBellsGodPreset(440, { seed: 4417, marbleEyes: 'returned' });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
   runtime.setPlayerPosition(built.position);
   const doors = runtime.doorFieldDoors();
-  const keys = doors.filter((door) => door.key);
-  assert.equal(keys.length, 2);
+  const connections = doors.filter((door) => door.destination?.connectionNumber);
+  assert.equal(connections.length, 2);
+  assert.ok(doors.every((door) => !door.key));
   for (const door of doors.filter((entry) => !entry.route && !entry.shut)) {
     runtime.openDoorFieldDoor(door.id);
     const at = middleOf(door);
     const portal = runtime.outskirtPortals(at.x, at.y).find((entry) => entry.id === door.id);
     assert.ok(portal, `${door.id} shows nothing when open`);
-    assert.equal(portal.key, door.key, `${door.id} ${door.key ? 'hides' : 'shows'} the tower`);
+    assert.equal(portal.key, false);
+    assert.equal(portal.variant, door.personal ? 14 : 10 + door.variant);
   }
   const tower = doors.find((door) => door.route === 'tower');
   for (let i = 0; i < 3; i += 1) assert.equal(runtime.openDoorFieldDoor(tower.id).answer ?? null, null, 'the tower door answered');
+  for (const [index, door] of connections.entries()) {
+    runtime.onStep(outFrom(door, 1.5), outFrom(door, -1.5));
+    assert.equal(runtime.doorFieldDoors().find((entry) => entry.route === 'tower').unlocked, false);
+    await inspectAndReturn(runtime);
+    assert.equal(runtime.doorFieldDoors().find((entry) => entry.route === 'tower').unlocked, index === 1);
+  }
+  assert.equal(runtime.openDoorFieldDoor(tower.id).opened, true);
 }
 
 console.log('source elsewhere specs passed');

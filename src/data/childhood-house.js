@@ -14,6 +14,12 @@ export const HOME_HOUSE = freeze({
   x0: -2.2, x1: 5.4, z0: 70, z1: 77.4,
   bottom: -2.8, eaves: 2.72, ridge: 4.55,
   roof: { overhang: .24, thickness: .12, ridgeZ: 73.7 },
+  // Projecting work belongs outside the accepted pane and occupied room.
+  // A continuous head/sill makes the lit opening read before its small contents.
+  windowDress: { jamb: .075, projection: .045, lintelHeight: .12, lintelBearing: .15,
+    sillProjection: .15, sillThickness: .055, dripSetback: .065 },
+  eavesJoinery: { fasciaHeight: .105, fasciaThickness: .028, soffitDepth: .22,
+    gutterBracketSpacing: 1.15, flashingHeight: .16 },
   // This void contains the accepted bedroom's own shell as well as its air.
   // The exterior mass must never paint over those walls, furniture or joinery.
   bedroomVoid: {
@@ -38,6 +44,6 @@ export const HOME_HOUSE = freeze({
   lowerDoor: { face: 'right', x: 5.4, y: -1.775, z: 73.45, halfWidth: .43, halfHeight: 1.025 },
   snowScours: [
     { id: 'left-corner', x: -3.2, z: 71.35, radiusX: 2.8, radiusZ: 3.65, depth: 1.45 },
-    { id: 'right-side', x: 6.4, z: 73.10, radiusX: 2.9, radiusZ: 4.45, depth: 1.35 },
+    { id: 'right-side', x: 6.4, z: 73.10, radiusX: 2.9, radiusZ: 4.45, depth: 1.56 },
   ],
 });

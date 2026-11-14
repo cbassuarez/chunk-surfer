@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createStationHomeState, normalizeStationHomeState, serializeStationHomeState,
-  stationHomePresentation, updateStationHome, STATION_HOME_LEAVE_METRES,
+  stationHomePresentation, updateStationHome,
 } from '../src/game/station-home.js';
 
 const windowView = { atWindow: true, lookingAtWindow: true, approach: 0.5 };
@@ -30,7 +30,6 @@ test('attention follows voluntary gaze, approach and settling rather than elapse
   assert.ok(frame.presentation.footstepGain < closer.presentation.footstepGain);
   const aside = updateStationHome(frame.state, { atWindow: true });
   assert.equal(aside.effects.depart, false);
-  assert.equal(aside.state.awayArmed, false);
   assert.equal(aside.presentation.windGain, 1);
   const snow = updateStationHome(frame.state, { atWindow: true, lookingTowardSnow: true });
   assert.equal(snow.state.attention, 0);
@@ -39,30 +38,22 @@ test('attention follows voluntary gaze, approach and settling rather than elapse
   assert.equal(snow.effects.depart, false);
 });
 
-test('leaving requires a deliberate outward distance toward snow, saved across small movement updates', () => {
+test('walking back into snow releases attention without choosing the quick exit', () => {
   const arrived = updateStationHome(createStationHomeState(), windowView).state;
-  const aside = updateStationHome(arrived, { atWindow: true, outwardDistance: 1 });
-  assert.equal(aside.effects.depart, false);
   const turned = updateStationHome(arrived, { atWindow: true, lookingTowardSnow: true });
-  assert.equal(turned.effects.depart, false);
-  let walking = turned;
-  for(let n=0;n<4;n++){
-    walking=updateStationHome(serializeStationHomeState(walking.state),{lookingTowardSnow:true,outwardDistance:.085});
-    assert.equal(walking.effects.depart,false,'a tiny movement tick must not choose departure');
-  }
-  assert.ok(walking.state.outwardDistance<STATION_HOME_LEAVE_METRES);
-  walking=updateStationHome(walking.state,{lookingTowardSnow:true,outwardDistance:.085});
-  assert.equal(walking.effects.depart, true);
-  assert.equal(walking.state.departed, true);
-  assert.equal(walking.presentation.attention, 0);
-  assert.equal(updateStationHome(walking.state, windowView).effects.depart, false);
-  const partial=updateStationHome(turned.state,{lookingTowardSnow:true,outwardDistance:.3});
-  const lookedBack=updateStationHome(partial.state,windowView);
-  assert.equal(lookedBack.state.outwardDistance,0);
-  assert.equal(updateStationHome(lookedBack.state,{lookingTowardSnow:true,outwardDistance:.085}).effects.depart,false);
-  const returned=updateStationHome(partial.state,{lookingTowardSnow:true,outwardDistance:-.01});
-  assert.equal(returned.state.outwardDistance,0);
-  assert.equal(updateStationHome(turned.state,{lookingTowardSnow:true,walkedAway:true}).effects.depart,false,'a boolean intent is not measured travel');
+  const away = updateStationHome(serializeStationHomeState(turned.state), { lookingTowardSnow: true });
+  assert.equal(away.effects.depart, false);
+  assert.equal(away.state.recognized, true);
+  assert.equal(away.state.departed, false);
+  assert.equal(away.presentation.attention, 0);
+});
+
+test('the exterior writing follows a view of the bedroom and survives reload', () => {
+  const nearby = updateStationHome(createStationHomeState(), { atWindow: true }).state;
+  assert.equal(nearby.viewedRoom, false);
+  const looked = updateStationHome(nearby, { ...windowView, viewingRoom: true }).state;
+  const restored = serializeStationHomeState(JSON.parse(JSON.stringify(looked)));
+  assert.equal(updateStationHome(restored, { lookingTowardSnow: true }).state.viewedRoom, true);
 });
 
 test('LOOK stays repeatable, STAY is separate, and leaving never requires either',()=>{
@@ -95,16 +86,14 @@ test('LOOK and explicit departure require separate fresh presses, including an a
 
 test('pause freezes attention, recognition and input decisions; saved state is finite and bounded', () => {
   const state = updateStationHome(createStationHomeState(), windowView).state;
-  const paused = updateStationHome(state, { paused: true, lookingTowardSnow: true, outwardDistance: 1, interactionDown: true, action: 'turn-away' });
+  const paused = updateStationHome(state, { paused: true, lookingTowardSnow: true, interactionDown: true, action: 'turn-away' });
   assert.deepEqual(paused.state, state);
   assert.deepEqual(paused.effects, { recognize: false, look: false, stay: false, depart: false });
   assert.equal(updateStationHome(createStationHomeState(), { paused: true, atWindow: true }).state.recognized, false);
   for (const attention of [NaN, Infinity, -Infinity, -5, 6, undefined]) {
-    const normalized = normalizeStationHomeState({ recognized: true, attention, outwardDistance:attention, unknown: Infinity });
+    const normalized = normalizeStationHomeState({ recognized: true, attention, unknown: Infinity });
     assert.ok(Number.isFinite(normalized.attention));
     assert.ok(normalized.attention >= 0 && normalized.attention <= 1);
-    assert.ok(Number.isFinite(normalized.outwardDistance));
-    assert.ok(normalized.outwardDistance>=0&&normalized.outwardDistance<=STATION_HOME_LEAVE_METRES);
     assert.equal('unknown' in normalized, false);
     assert.deepEqual(JSON.parse(JSON.stringify(normalized)), normalized);
   }

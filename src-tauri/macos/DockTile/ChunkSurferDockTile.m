@@ -1,33 +1,44 @@
-// The Dock tile while Chunk Surfer is not running.
-//
-// The bundle and this plug-in use the same transparent ear. This plug-in
-// keeps the closed-app tile static; the running app owns its one-shot
-// assembly animation through src/dock_tile.rs.
-//
-// This code runs inside the Dock's own helper process
-// (com.apple.dock.external.extra), not in the game. A plug-in that throws
-// there crashes the helper on every login, so every step bails quietly.
-
+// Runs in the Dock helper, including while the game is closed. It reads only
+// the icon preference and bundled artwork; game saves and signed files stay put.
 #import <AppKit/AppKit.h>
+#import "DockIconPolicy.h"
 
 @interface ChunkSurferDockTile : NSObject <NSDockTilePlugIn>
+@property(nonatomic, weak) NSDockTile *tile;
+@property(nonatomic) BOOL observing;
 @end
 
 @implementation ChunkSurferDockTile
-
-- (void)setDockTile:(NSDockTile *)dockTile {
-    // nil means the plug-in is being detached; the view goes with the tile.
-    if (dockTile == nil) return;
-    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
-    // DockTile.icns carries the approved ear at every supported Dock size.
-    NSImage *image = [bundle imageForResource:@"DockTile"];
+- (void)refresh {
+    NSDockTile *tile = self.tile;
+    if (tile == nil) return;
+    NSBundle *bundle = [NSBundle bundleForClass:self.class];
+    NSImage *image = [bundle imageForResource:CSStoredEarIcon() ? @"Ear" : @"DockTile"];
+    if (image == nil) image = [bundle imageForResource:@"DockTile"];
     if (image == nil) return;
-    NSSize size = dockTile.size;
-    NSImageView *view = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, size.width, size.height)];
+    NSImageView *view = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, tile.size.width, tile.size.height)];
     view.image = image;
     view.imageScaling = NSImageScaleProportionallyUpOrDown;
-    dockTile.contentView = view;
-    [dockTile display];
+    view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    tile.contentView = view;
+    [tile display];
 }
-
+- (void)choiceChanged:(NSNotification *)notification {
+    (void)notification;
+    if (NSThread.isMainThread) [self refresh];
+    else { __weak ChunkSurferDockTile *weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf refresh]; }); }
+}
+- (void)setDockTile:(NSDockTile *)dockTile {
+    if (self.observing) {
+        [NSDistributedNotificationCenter.defaultCenter removeObserver:self name:CSIconChoiceNotification object:nil];
+        self.observing = NO;
+    }
+    self.tile = dockTile;
+    if (dockTile == nil) return;
+    [NSDistributedNotificationCenter.defaultCenter addObserver:self selector:@selector(choiceChanged:)
+        name:CSIconChoiceNotification object:nil suspensionBehavior:NSNotificationSuspensionBehaviorDeliverImmediately];
+    self.observing = YES;
+    [self refresh];
+}
+- (void)dealloc { [NSDistributedNotificationCenter.defaultCenter removeObserver:self]; }
 @end

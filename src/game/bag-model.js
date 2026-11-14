@@ -13,6 +13,7 @@
 
 import {
   combatCompartment,
+  combatBranchGear,
   isBattleGear,
   normalizeCombatLoadout,
 } from './combat-loadout.js';
@@ -25,6 +26,9 @@ import { sheetDialogueFor } from './bag-sheets.js';
 import { FIELD_KIT_OPTIONS } from './field-kit.js';
 import { journalTrackable } from './journal-review.js';
 import { BATTLE_OPERATING_COPY } from './combat-operating-facts.js';
+import {isCarryItem,carryItemDefinition} from './carry-items.js';
+import {keepsakeInspectionActions} from './keepsake-inspection.js';
+import {bagSupplyDefinition} from './bag-supplies.js';
 
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
@@ -75,11 +79,11 @@ const KNOWN_GEAR = Object.freeze({
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ROOM-TONE PICKUP']],
   },
   interface: {
-    title: 'BENT RIG INTERFACE',
-    subtitle: 'CIRCUIT-BENT RETURN',
+    title: 'SERVICE INTERFACE',
+    subtitle: 'INSPECTION SEAL CUT',
     icon: 'interface',
     status: ['READY', 'active'],
-    description: 'A rewired return path capable of reversing a hostile signal.',
+    description: 'An Audiocorp service unit with its inspection seal cut. It can turn a hostile loop back.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'INVERT / FEEDBACK'], ['BATTLE', BATTLE_OPERATING_COPY.interface.detail]],
   },
   'tuning-fork': {
@@ -113,6 +117,12 @@ const KNOWN_GEAR = Object.freeze({
     status: ['GETTING COLD', 'metadata'],
     description: 'Coffee from the service booth. Still technically warm.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT'], ['BATTLE', BATTLE_OPERATING_COPY.coffee.detail]],
+  },
+  badge: {
+    title: 'FILM BADGE', subtitle: 'PASSIVE DOSIMETER', icon: 'badge',
+    status: ['EXPIRED', 'dim'],
+    description: 'An olive film dosimeter with three filters and a sprung clip. It records exposure without answering it.',
+    facts: [['POSITION', 'IN THE CASE'], ['BATTLE', BATTLE_OPERATING_COPY.badge.detail]],
   },
   'plant-spanner': {
     title: 'ADJUSTABLE SPANNER',
@@ -192,6 +202,7 @@ function actionDescriptor(id, verb, label, {
 }
 
 function gearKey(raw) {
+  if (isCarryItem(raw?.id)||bagSupplyDefinition(raw?.id)) return String(raw.id).trim().toLowerCase();
   const direct = slug(raw?.id || raw?.label || 'gear');
   return GEAR_ALIAS[direct] || direct;
 }
@@ -262,6 +273,8 @@ export function normalizeEquipment(item, index = 0) {
     };
   } else if (resolvedAction) {
     actionReason = displayTitle(resolvedAction.reason || 'ACTION UNAVAILABLE');
+    primary={id:resolvedAction.id,label:displayTitle(resolvedAction.label||'USE'),mode:resolvedAction.mode||'command',
+      enabled:false,reason:actionReason,closeBefore:!!resolvedAction.closeBefore,destructive:false,confirm:null};
   } else if (present && typeof raw.action === 'function') {
     // Compatibility for small render labs and older fixtures. The live game
     // supplies semantic descriptors and dispatches them through one boundary.
@@ -501,7 +514,7 @@ export function normalizeBagSectionId(sectionId) {
 // three things the screen has to be able to say without the player deducing
 // anything: which of the three states it is in, what it does, and — when it is
 // locked — what unlocks it BY NAME. "TIER I REQUIRED" told nobody anything.
-function buildSkillsSection({ build, settledBuild = null, hasRig }) {
+function buildSkillsSection({ build, settledBuild = null, hasRig, kit }) {
   const current = normalizeCombatBuild(build);
   const settled = normalizeCombatBuild(settledBuild ?? build);
   const nameOf = (id) => TECHNIQUE_DEFS.find((entry) => entry.id === id)?.label || '';
@@ -523,6 +536,12 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
         // pull needs no warning; one that takes the run below it does.
         const pulls = (availability.pulls || []).map(nameOf);
         const requiredBy = entry.requires ? TECHNIQUE_DEFS.find((other) => other.id === entry.requires) : null;
+        const gear = entry.label === 'HEADROOM' ? null : combatBranchGear(branch);
+        const item = gear ? kit.find((candidate) => candidate.sourceId === gear.id) : null;
+        const toolStatus = gear && (!item || !item.present || item.compartment !== 'top')
+          ? (item?.source?.deployed ? 'RADIO ON FLOOR' : item?.present
+              ? `${gear.label} STOWED FOR BATTLE` : `${gear.label} NOT CARRIED`)
+          : '';
         return {
           id: `skill:${entry.id}`,
           techniqueId: entry.id,
@@ -533,6 +552,8 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
           detail: entry.detail,
           active: !!entry.active,
           special: !!entry.special,
+          circuitBend: !!entry.circuitBend,
+          toolStatus,
           owned,
           pending,
           enabled: availability.enabled,
@@ -541,9 +562,9 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
           blockedBy: owned ? ''
             : availability.enabled ? ''
               : entry.requires && !current.techniques.includes(entry.requires)
-                ? `NO CONTINUITY · PATCH ${nameOf(entry.requires)} ABOVE IT`
+                ? `FIT ${nameOf(entry.requires)} FIRST`
                 : entry.requiresRig && !hasRig
-                  ? 'THIS SOCKET IS ON THE BENT RIG · IT IS IN THE PLANT ROOM'
+                  ? 'FIND THE SERVICE INTERFACE IN THE PLANT ROOM'
                   : current.unspent <= 0 ? 'NO SPARE LEAD · PULL ONE'
                     : String(availability.reason || 'NO REACH'),
           buyPrompt: 'TAKES EFFECT WHEN THE CASE CLOSES',
@@ -585,38 +606,25 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
       }),
   }));
   const maxTier = branches.reduce((max, branch) => Math.max(max, ...branch.entries.map((e) => e.tier)), 1);
+  const pending = current.techniques.filter(id => !settled.techniques.includes(id)).length;
+  const pulled = settled.techniques.filter(id => !current.techniques.includes(id)).length;
+  const edits = [pending && `${pending} NEW`, pulled && `${pulled} PULLED`].filter(Boolean);
+  const spare = current.unspent;
+  const leadCount = spare ? `${spare} LEAD${spare === 1 ? '' : 'S'}` : '';
   return {
     id: 'skills',
     label: 'SKILLS',
-    // The delta is SIGNED now, because a session can end with fewer patches than
-    // it started with. It used to be interpolated raw, so a pull printed
-    // `· -2 CHOSEN` on the tab.
-    countLabel: (() => {
-      const spare = current.unspent;
-      const moved = current.techniques.length - settled.techniques.length;
-      const change = moved > 0 ? ` · ${moved} NEW` : moved < 0 ? ` · ${-moved} PULLED` : '';
-      if (spare) return `${spare} LEAD${spare === 1 ? '' : 'S'}${change}`;
-      if (change) return change.slice(3);
-      return `${current.techniques.length} PATCHED`;
-    })(),
+    countLabel: [leadCount, ...edits].filter(Boolean).join(' · ') || `${current.techniques.length} PATCHED`,
     entries: branches.flatMap((branch) => branch.entries),
     tree: {
       branches,
       maxTier,
-      pins: {
-        earned: current.pinsEarned,
-        spent: current.pinsSpent,
-        unspent: current.unspent,
-        pending: Math.max(0, current.techniques.length - settled.techniques.length),
-        // A session can now end smaller than it began. Clamped the other way so
-        // the headline can say what happened either direction.
-        pulled: Math.max(0, settled.techniques.length - current.techniques.length),
-      },
+      pins: { earned: current.pinsEarned, spent: current.pinsSpent, unspent: spare, pending, pulled },
     },
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], map = null, mapUnavailableReason = '', loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null, sectionIds = null } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], map = null, mapUnavailableReason = '', loadout = null, loadoutLocked = false, build = null, settledBuild = null, hasRig = false, sheetInsights = null, sectionIds = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -625,27 +633,30 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
   };
 
   const normalizedLoadout = normalizeCombatLoadout(loadout);
+  const lockedReason = typeof loadoutLocked === 'string' ? loadoutLocked : loadoutLocked ? 'CONTACT UNDERWAY' : '';
   const kit = (Array.isArray(equipment) ? equipment : []).map(normalizeEquipment).map((entry) => {
     const battleCapable = entry.source?.battleCapable ?? isBattleGear(entry.sourceId);
-    const assignedCompartment = battleCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
+    const readyCapable = isCarryItem(entry.sourceId);
+    const assignedCompartment = readyCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
     // A saved quick-slot assignment survives loss/deployment, but the slot row only
     // depicts gear physically in hand. Recovery restores the same slot/order.
-    const compartment = battleCapable && entry.present ? assignedCompartment : 'storage';
+    const compartment = readyCapable && entry.present ? assignedCompartment : 'storage';
     const topIndex = normalizedLoadout.top.indexOf(entry.sourceId);
+    const held = compartment === 'top' && entry.present && normalizedLoadout.heldSlot === topIndex;
     const compartmentLabel = compartment === 'top'
       ? `QUICK SLOT ${topIndex + 1} OF ${normalizedLoadout.capacity}`
-      : battleCapable && !entry.present && assignedCompartment === 'top'
+      : readyCapable && !entry.present && assignedCompartment === 'top'
         ? `NOT CARRIED / QUICK SLOT ${topIndex + 1} KEPT`
-        : battleCapable ? 'IN BAG / NOT SET FOR A FIGHT' : 'IN BAG';
+        : readyCapable ? 'IN BAG / OUT OF REACH' : 'IN BAG';
     const primary=entry.actions?.primary||null;
     const primaryIsInspect=String(primary?.id||'').startsWith('inspect-');
     const primaryIsDrop=primary?.id==='radio-deploy'||primary?.id==='drop';
     const primaryIsSpecial=primary?.id==='radio-show-map';
-    const setAction=battleCapable
-      ? actionDescriptor(compartment==='top'?'unset-slot':'set-slot',compartment==='top'?'unset':'set',compartment==='top'?'UNSET':'SET',{
-          enabled:entry.present,reason:entry.present?'':'ITEM NOT CARRIED',
+    const setAction=readyCapable
+      ? actionDescriptor(compartment==='top'?'unset-slot':'set-slot',compartment==='top'?'unset':'set',compartment==='top'?'PUT IN BAG':'EQUIP',{
+          enabled:entry.present && !lockedReason,reason:lockedReason || (entry.present?'':'ITEM NOT CARRIED'),
         })
-      : actionDescriptor('set-slot','set','SET',{enabled:false,reason:'NOT USED IN A FIGHT'});
+      : actionDescriptor('set-slot','set','EQUIP',{enabled:false,reason:'DOES NOT USE A REACHABLE SLOT'});
     const unavailableUseReason = ({
       interface: 'SET IT IN A QUICK SLOT',
       'tuning-fork': 'SET IT IN A QUICK SLOT',
@@ -655,24 +666,45 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
       keyring: 'USED AUTOMATICALLY AT LOCKED DOORS',
     })[entry.sourceId] || 'NO USE AVAILABLE FROM THE BAG';
     const useAction=!primaryIsInspect&&!primaryIsDrop&&!primaryIsSpecial&&primary
-      ? actionDescriptor(primary.id,'use',primary.label,{enabled:primary.enabled!==false,reason:primary.reason,confirm:primary.confirm,exitPolicy:primary.closeBefore?'close':'stay'})
+      ? actionDescriptor(primary.id,'use',primary.label,{
+          enabled:primary.enabled!==false && (!lockedReason || primary.id==='map-open'),
+          reason:lockedReason && primary.id!=='map-open'?'USE THE CONTACT CONTROLS':primary.reason,
+          confirm:primary.confirm,exitPolicy:primary.closeBefore?'close':'stay',
+        })
       : actionDescriptor('use-unavailable','use','USE',{enabled:false,reason:entry.present?unavailableUseReason:'ITEM NOT CARRIED'});
     const dropAction=entry.sourceId==='radio'
       ? actionDescriptor('radio-deploy','drop','DROP / DEPLOY HERE',{
-          enabled:entry.present,
-          reason:entry.present?'':entry.source?.deployed?'ALREADY DEPLOYED':'ITEM NOT CARRIED',
+          enabled:entry.present && !lockedReason,
+          reason:lockedReason || (entry.present?'':entry.source?.deployed?'ALREADY DEPLOYED':'ITEM NOT CARRIED'),
           exitPolicy:'close',
           confirm:entry.present?{title:'DROP RADIO HERE?',body:'THE RADIO WILL REMAIN HERE UNTIL YOU RECOVER IT.'}:null,
         })
       : actionDescriptor('drop-unavailable','drop','DROP',{enabled:false,reason:entry.present?"CAN'T LEAVE THIS ITEM BEHIND":'ITEM NOT CARRIED'});
     const actionList=[
+      actionDescriptor(held?'lower-item':'hold-item',held?'lower':'hold',held?'LOWER':'HOLD',{
+        enabled:entry.present && compartment==='top' && !lockedReason,
+        reason:lockedReason || (!entry.present?'ITEM NOT CARRIED':!readyCapable?'NOT A HAND TOOL':compartment!=='top'?'EQUIP IN A SLOT FIRST':''),
+      }),
       setAction,useAction,dropAction,
       actionDescriptor('inspect-item','inspect','INSPECT',{enabled:true}),
+      ...(entry.sourceId==='ren-home-cassette'?[actionDescriptor('inspect-ren-home-cassette','special','OPEN CASSETTE',{
+        enabled:entry.present&&!lockedReason,reason:lockedReason||'ITEM NOT CARRIED',special:true,
+      })]:[]),
       ...(primaryIsSpecial?[actionDescriptor(primary.id,'special',primary.label,{enabled:primary.enabled!==false,reason:primary.reason,special:true})]:[]),
-    ];
+    ].filter(action => {
+      if (!readyCapable) return !['hold', 'lower', 'set', 'unset', 'drop'].includes(action.verb)
+        && !['use-unavailable', 'none', 'missing'].includes(action.id);
+      return battleCapable || !['use-unavailable', 'drop-unavailable', 'none', 'missing'].includes(action.id);
+    });
     return {
       ...entry,
       battleCapable,
+      readyCapable,
+      battleDetail: battleCapable ? BATTLE_OPERATING_COPY[entry.sourceId]?.detail || '' : '',
+      carryDetail:readyCapable&&!battleCapable?'No combat move. Keep it within reach to hold and examine it.':'',
+      inventoryKind:carryItemDefinition(entry.sourceId)?.kind||'equipment',
+      inspectionActions:entry.source?.inspectionActions||keepsakeInspectionActions(entry.sourceId,entry.source),
+      held,
       compartment,
       topIndex,
       facts: [['COMPARTMENT', compartmentLabel], ...entry.facts],
@@ -680,7 +712,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
       actionList,
       actions: {
         ...entry.actions,
-        secondary: battleCapable && entry.present
+        secondary: readyCapable && entry.present && !lockedReason
           ? {
               id: compartment === 'top' ? 'move-storage' : 'move-top',
               label: compartment === 'top' ? 'CLEAR QUICK SLOT' : 'PUT IN QUICK SLOT',
@@ -690,7 +722,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
         // Tray order is the in-fight tool rail order. One "move up" is a
         // complete reorder primitive — walk a tool down by lifting the one below
         // it — and it only exists for gear that has somewhere above to go.
-        tertiary: compartment === 'top' && entry.present && topIndex > 0
+        tertiary: compartment === 'top' && entry.present && topIndex > 0 && !lockedReason
           ? { id: 'reorder-up', label: 'MOVE UP', destructive: false }
           : null,
       },
@@ -732,11 +764,13 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
       { id: 'kit', label: 'INVENTORY', countLabel: `${kit.length}`, entries: kit },
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'sheets', label: 'SHEETS', countLabel: String(files.length).padStart(2, '0'), entries: files },
-      buildSkillsSection({ build, settledBuild, hasRig }),
+      buildSkillsSection({ build, settledBuild, hasRig, kit }),
       { id: 'journal', label: 'JOURNAL', countLabel: `${quests.filter((entry) => entry.hasOpenCommitment ?? entry.state === 'active').length} OPEN${quests.some(entry=>entry.unseen) ? ` · ${quests.filter(entry=>entry.unseen).length} NEW` : ''}`, entries: quests },
     ].filter(section=>!Array.isArray(sectionIds)||sectionIds.some(id=>normalizeBagSectionId(id)===section.id)),
     progress: { done, total },
     loadout: normalizedLoadout,
+    heldSlot: normalizedLoadout.heldSlot,
+    loadoutLocked: lockedReason,
     job: safeJob,
     map,
     mapUnavailableReason: String(mapUnavailableReason || ''),

@@ -75,9 +75,11 @@ void main(){
   albedo=mix(albedo,pen.rgb,pen.a);
   vec3 mat=uUseMaterial>.5?texture(uMaterial,tuv).rgb:vec3(.86,.502,.09);
   float rough=clamp(mat.r,.42,.96);
-  float h=mat.g-.5;
-  float hx=(texture(uMaterial,tuv+vec2(uMaterialTexel.x,0)).g-texture(uMaterial,tuv-vec2(uMaterialTexel.x,0)).g);
-  float hy=(texture(uMaterial,tuv+vec2(0,uMaterialTexel.y)).g-texture(uMaterial,tuv-vec2(0,uMaterialTexel.y)).g);
+  float hx=0.0,hy=0.0;
+  if(uUseMaterial>.5){
+    hx=texture(uMaterial,tuv+vec2(uMaterialTexel.x,0)).g-texture(uMaterial,tuv-vec2(uMaterialTexel.x,0)).g;
+    hy=texture(uMaterial,tuv+vec2(0,uMaterialTexel.y)).g-texture(uMaterial,tuv-vec2(0,uMaterialTexel.y)).g;
+  }
   vec3 n=normalize(cross(dFdx(vWorld),dFdy(vWorld)));
   vec3 tx=normalize(dFdx(vWorld)),ty=normalize(dFdy(vWorld));
   n=normalize(n+tx*hx*.31-ty*hy*.31);
@@ -133,14 +135,14 @@ function translate(x,y,z){const m=ident();m[12]=x;m[13]=y;m[14]=z;return m;}
 function perspective(fov,aspect,near=.05,far=4){const f=1/Math.tan(fov/2),m=new Float32Array(16);m[0]=f/aspect;m[5]=f;m[10]=(far+near)/(near-far);m[11]=-1;m[14]=(2*far*near)/(near-far);return m;}
 function size(w,h){const W=Math.max(320,Math.min(1536,Math.round(w))),H=Math.max(454,Math.min(2172,Math.round(h)));if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}gl.viewport(0,0,W,H);return [W,H];}
 
-export function paper3dRender({image,materialImage=null,inkImage=null,inkVersion=0,width=900,height=1273,handlingVector=[-1,0,0,0],seed=0,bow=.0009,edgeCurl=.0007,yaw=0,pitch=0,roll=0,turn=0,turnDir=1}={}){
+export function paper3dRender({image,materialImage=null,inkImage=null,inkVersion=0,width=900,height=1273,handlingVector=[-1,0,0,0],seed=0,bow=.0009,edgeCurl=.0007,yaw=0,pitch=0,roll=0,distance=.515,turn=0,turnDir=1}={}){
   if(!image||!init())return null;
   try{
     const [W,H]=size(width,height);if(lastPageImage!==image){pageTexture=upload(image,pageTexture);lastPageImage=image;}if(materialImage&&lastMaterialImage!==materialImage){materialTexture=uploadMaterial(materialImage,materialTexture);lastMaterialImage=materialImage;}
     // The ink changes while the pen is writing; re-upload only when it does.
     if(inkImage&&(lastInkImage!==inkImage||lastInkVersion!==inkVersion)){inkTexture=upload(inkImage,inkTexture);lastInkImage=inkImage;lastInkVersion=inkVersion;}
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.bindVertexArray(vao);
-    let model=translate(0,0,-.515);model=mul(model,rotZ(roll));model=mul(model,rotY(yaw));model=mul(model,rotX(pitch));
+    let model=translate(0,0,-distance);model=mul(model,rotZ(roll));model=mul(model,rotY(yaw));model=mul(model,rotX(pitch));
     const proj=perspective(FOV,W/H);
     gl.uniformMatrix4fv(uniform('uModel'),false,model);gl.uniformMatrix4fv(uniform('uProj'),false,proj);gl.uniform4fv(uniform('uHandling'),new Float32Array(handlingVector||[-1,0,0,0]));gl.uniform4f(uniform('uShape'),bow,edgeCurl,Math.max(0,Math.min(1,turn)),turnDir>=0?1:-1);gl.uniform1f(uniform('uSeed'),Number(seed)||0);
     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,pageTexture);gl.uniform1i(uniform('uPage'),0);

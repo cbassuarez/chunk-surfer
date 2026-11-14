@@ -43,6 +43,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
   paintOverlay = () => {}, onCheckpoint = () => {}, onRecording = () => false,
   onReturn = () => false, onTorch = () => false, onExit = () => {}, onError = () => {}, onTrace = () => {},
   onPickUp = () => false, onFootContact = null, clearFootContacts = () => {},
+  isBoxTaken = () => false,
 } = {}) {
   const options = { layout, runId, entryDoorId, returnPose };
   let state = normalizeCoastalMemory(checkpoint, options);
@@ -72,7 +73,9 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
     const value = coastalMemoryFrame(state, { layout });
     const entryCover = ready ? 1 - clamp(entryElapsed / .65, 0, 1) : 1;
     const errorReturn = !!error && !renderReady() && (state.status === 'active' || returnFailed);
-    return { ...value, ready: renderReady(), closed, paused, hidden, leaving, error, recorderHeld, noteOpen,
+    const boxTaken=isBoxTaken()===true;
+    return { ...value, boxTaken, canPickUp:value.canPickUp&&!boxTaken, canListen:value.canListen&&!boxTaken,
+      ready: renderReady(), closed, paused, hidden, leaving, error, recorderHeld, noteOpen,
       coverAlpha: Math.max(entryCover, value.returnCover),
       ui: { instruction: !noteOpen && value.canInspectNote && value.status === 'active' ? 'E · READ NOTE' : null,
         pickup: null,
@@ -218,9 +221,9 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
       // Handling borrows the coast's body and renderer. Only its real routed
       // melody can feed the existing receipt; rotation/rattle and elapsed game
       // time cannot grant listening progress.
-      if(closed||!paused||state.status!=='active'||!coastalMemoryFrame(state,{layout}).canPickUp)return false;
+      if(closed||!paused||state.status!=='active'||!isBoxTaken()&&!coastalMemoryFrame(state,{layout}).canPickUp)return false;
       recorderHeld=sample.recorderHeld===true;
-      apply({dt:0,recorderHeld,audioRunning:sample.audioRunning===true,sourceReady:sample.sourceReady===true,
+      apply({dt:0,recorderHeld,sourceInHands:isBoxTaken()===true,audioRunning:sample.audioRunning===true,sourceReady:sample.sourceReady===true,
         audibleSeconds:recorderHeld?clamp(sample.audibleSeconds,0,.25):0,recordingOffset:sample.recordingOffset});
       return true;
     },
@@ -281,7 +284,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
         if (returnFailed) scene.retryReturn();
         else if (coastalMemoryFrame(state, { layout }).canInspectNote) { flush(); apply({ dt: 0, inspectNote: true }); noteOpen = true; clear(); }
       }
-      if (!event.repeat && key === 'f' && coastalMemoryFrame(state, { layout }).canPickUp) { flush(); clear(); onPickUp(); }
+      if (!event.repeat && key === 'f' && (isBoxTaken()||coastalMemoryFrame(state, { layout }).canPickUp)) { flush(); clear(); onPickUp(); }
       return true;
     },
     keyup(event = {}) { runKey.keyup(event); keys.delete(keyOf(event)); return true; },

@@ -6,6 +6,12 @@ import {COASTAL_MEMORY_LAYOUT as L,COASTAL_SETTLED_BODY_WORLD,coastalWorldPoint,
 import {vanWreckFoldMatrix} from '../src/data/van-wreck.js';
 import {createPropRangeController} from '../src/render/prop-range.js';
 const metrics=JSON.parse(fs.readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url)));
+test('taking the recovered gift removes the exact box and key while leaving its plinth and note',()=>{
+ const frame=coastalMemoryRenderFrame({pose:L.spawn,elapsed:10,boxTaken:true},{vehicleMetrics:metrics});
+ assert.ok(!frame.scene.props.some(p=>['coastal-broken-music-box','coastal-music-box-key'].includes(p.id)));
+ assert.ok(frame.scene.props.some(p=>p.id==='coastal-music-box-plinth'));
+ assert.ok(frame.scene.props.some(p=>p.id==='coastal-damp-note'));
+});
 test('on-foot camera and actual wreck share the opening site frame without moving Source',()=>{
  const state={pose:{...L.spawn,yaw:.7,pitch:-.2},elapsed:8,wreckLightLevel:.5};
  const before=structuredClone(state),f=coastalMemoryRenderFrame(state,{vehicleMetrics:metrics});
@@ -24,12 +30,13 @@ test('unnoticed headlights remain dark; reduced motion freezes sea without freez
  assert.equal(a.scene.props.find(p=>p.id==='coastal-sunken-same-van').fixturePower,0,'headlamp glass cannot emit before the glance wakes its supply');
  const b=coastalMemoryRenderFrame({pose:{...L.spawn,x:L.spawn.x+1},elapsed:18},{reducedMotion:true,vehicleMetrics:metrics});assert.notDeepEqual(a.eye,b.eye);
 });
-test('only the confirmed submerged opening van carries solid paint on its exact settled body frame',()=>{
+test('the opening wreck and its separated rear leaves carry their own solid paint in the exact panel frames',()=>{
  for(const level of[0,.5,1]){
   const frame={pose:L.spawn,elapsed:12,wreckLightLevel:level},before=structuredClone(frame);
   const out=coastalMemoryRenderFrame(frame,{vehicleMetrics:metrics}),body=out.scene.props.find(p=>p.id==='coastal-sunken-same-van');
-  const marks=out.scene.props.filter(p=>p.paintOf);assert.equal(marks.length,1);
-  const mark=marks[0];assert.equal(mark.paintOf,body.id);assert.equal(mark.mesh,'van_wreck_brand');
+  const marks=out.scene.props.filter(p=>p.paintOf);assert.equal(marks.length,3);
+  for(const paint of marks){const parent=out.scene.props.find(p=>p.id===paint.paintOf);assert(parent);assert.deepEqual(paint.matrix,parent.matrix);}
+  const mark=marks.find(p=>p.paintOf===body.id);assert.equal(mark.paintOf,body.id);assert.equal(mark.mesh,'van_wreck_brand');
   // The lettering is bent into the wreck with its panels, so it shares the hull's frame.
   assert.deepEqual(mark.matrix,COASTAL_SETTLED_BODY_WORLD);assert.deepEqual(mark.matrix,body.matrix);assert.notEqual(mark.matrix,body.matrix);
   assert.equal(mark.sourceStructure,'coastal-memory');assert.equal(mark.skyExposed,false);assert.equal(mark.fixturePower,level);

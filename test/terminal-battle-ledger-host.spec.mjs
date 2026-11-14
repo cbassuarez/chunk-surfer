@@ -24,7 +24,7 @@ function block(from, to) {
 const tracker = block('function trackFinalBattleProgress(', '\nfunction tickSourceFinalEncounter(){');
 const sourceHost = block('function tickSourceFinalEncounter(){', '\nlet stairAnomalyEnteredAt=');
 const cathedralHost = block('function saveCathedralFight(', '\n// ── ST BRENDAN');
-const cathedralLoss = block('function resolveCathedralLoss(){', '\n// The second and third conversations.');
+const cathedralLoss = block('function resolveCathedralLoss(){', '\nfunction openHorizonBustReturn(');
 const clone = value => JSON.parse(JSON.stringify(value));
 
 function progressHost(save = { run: freshRunRecord({ now: 1, id: 'ordinary-terminal-host' }) }) {

@@ -3,6 +3,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { assetUrl } from '../platform/paths.js';
 
 // Metres, with the wrist at the origin. +Y extends along the fingers, +Z is
 // the palm normal, and +X is the thumb side of the right hand.
@@ -41,6 +42,10 @@ export function loadBattleHandTemplate(url = `${import.meta.env?.BASE_URL || '/'
     templates.set(url, pending);
   }
   return templates.get(url);
+}
+
+export function loadRecordistHandTemplate() {
+  return loadBattleHandTemplate(assetUrl('assets/battle-hands/recordist.glb'));
 }
 
 function solveLinear(matrix, values) {
@@ -106,6 +111,11 @@ export function createBattleHandRig(template, { side = 'right', material, nailMa
     }
   }
   let pose = { index: [.06, .12, .08], middle: [.10, .16, .10], ring: [.14, .20, .13], pinky: [.20, .26, .17], spread: { index: -.035, middle: 0, ring: .025, pinky: .05 }, thumb: { opposition: .15, abduction: 0, mcp: .12, ip: .08 } };
+  const correction = skin.morphTargetDictionary;
+  const setCorrection = (finger, amount) => {
+    const index = correction?.[finger];
+    if (index != null) skin.morphTargetInfluences[index] = Math.max(0, Math.min(1, amount));
+  };
   const rotate = new Quaternion();
   function applyFinger(finger) {
     if (finger === 'thumb') {
@@ -120,6 +130,7 @@ export function createBattleHandRig(template, { side = 'right', material, nailMa
       cmc.quaternion.premultiply(rotate.setFromAxisAngle(Y, -t.opposition * .80));
       cmc.quaternion.multiply(rotate.setFromAxisAngle(Z, t.opposition * 1.10));
       for (const [name, angle] of [['thumb-phalanx-proximal', t.mcp], ['thumb-phalanx-distal', t.ip]]) joints[name].quaternion.copy(rest[name].quaternion).multiply(rotate.setFromAxisAngle(X, -angle));
+      setCorrection(finger, (t.opposition + t.mcp * .35) / 1.25);
     } else {
       for (const [i, part] of ['proximal', 'intermediate', 'distal'].entries()) {
         const name = `${finger}-finger-phalanx-${part}`, bone = joints[name];
@@ -127,6 +138,8 @@ export function createBattleHandRig(template, { side = 'right', material, nailMa
         if (i === 0) bone.quaternion.multiply(rotate.setFromAxisAngle(Y, pose.spread[finger] || 0));
         bone.quaternion.multiply(rotate.setFromAxisAngle(X, -pose[finger][i]));
       }
+      const [mcp, pip] = pose[finger];
+      setCorrection(finger, (mcp * .6 + pip * .4) / 1.15);
     }
     root.updateMatrixWorld(true);
   }

@@ -59,6 +59,7 @@ export default defineConfig(({ command }) => ({
         fireballCast: resolve(import.meta.dirname, 'fireball-cast.html'),
         windowMedia: resolve(import.meta.dirname, 'window-media.html'),
         sourceDesktop: resolve(import.meta.dirname, 'source-desktop-surface.html'),
+        chapelDesktop: resolve(import.meta.dirname, 'chapel-desktop-surface.html'),
         sourceRestRecorder: resolve(import.meta.dirname, 'source-rest-recorder.html'),
       },
     },

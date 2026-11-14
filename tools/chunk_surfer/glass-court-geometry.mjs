@@ -167,16 +167,13 @@ export function buildGlassCourtGeometry(court){
   // Ellery's new south face closes the occupied building, with its two honest
   // apertures: the greenhouse and the dry eastern return to the concert hall.
   const end=court.elleryFace,z=end.z-court.origin.z;
-  for(const[a,b]of[[end.x0,83],[85,95],[97,end.x1]])box(frame,`ellery-rear-wall:${a}`,'ellery-envelope',M.wall,[(a+b)/2-court.origin.x,4.75,z],[b-a,9.5,.24]);
-  for(const[a,b]of[[83,85],[95,97]])box(frame,`ellery-rear-header:${a}`,'ellery-envelope',M.wall,[(a+b)/2-court.origin.x,6.45,z],[b-a,6.1,.24]);
+  for(const[a,b]of[[end.x0,83],[85,end.x1]])box(frame,`ellery-rear-wall:${a}`,'ellery-envelope',M.wall,[(a+b)/2-court.origin.x,4.75,z],[b-a,9.5,.24]);
+  for(const[a,b]of[[83,85]])box(frame,`ellery-rear-header:${a}`,'ellery-envelope',M.wall,[(a+b)/2-court.origin.x,6.45,z],[b-a,6.1,.24]);
   // The detached pool has its own complete north elevation and a real door.
   for(const[a,b]of[[70,83],[85,97]])box(frame,`baths-north-wall:${a}`,'natatorium-envelope',M.wall,[(a+b)/2-court.origin.x,4.75,12],[b-a,9.5,.24]);
   box(frame,'baths-north-header','natatorium-envelope',M.wall,[2,6.45,12],[2,6.1,.24]);
-  // The hall return is a narrow enclosed arm at the far court boundary.
-  box(frame,'hall-return-west-wall','hall-return',M.wall,[13,1.8,4.5],[.18,3.6,9]);
-  box(frame,'hall-return-ceiling','hall-return',M.wall,[14.5,3.65,4.5],[3,.14,9]);
-  box(frame,'hall-lobby-west-wall','hall-return',M.wall,[12,1.8,10.5],[.18,3.6,3]);
-  box(frame,'hall-lobby-south-wall','hall-return',M.wall,[14,1.8,12],[4,3.6,.18]);
+  // The former dry eastern return is now the public east garden; its
+  // exterior hall leaf remains in the real hall wall, not an enclosed arm.
   // These unique meshes cannot be overwritten by the optional gallery pack.
   for(const[tier,polygon,base]of[['academic',court.upperGuards.academicPolygon,10]])for(let n=0;n<polygon.length;n++){
     const a=polygon[n],b=polygon[(n+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz),nx=dz/length,nz=-dx/length;

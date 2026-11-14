@@ -43,6 +43,9 @@ assert.equal(custom.modules.microphone, false);
 const stored = normalizeSettings({ psychProfile: enabled, mic: 'off' });
 assert.equal(stored.psychProfile.consentVersion, PSYCH_PROFILE_CONSENT_VERSION);
 assert.equal(stored.psychProfile.modules.microphone, true, 'new schema is authoritative over legacy mic');
+assert.equal(stored.desktopFightEffects, false, 'Profile Master cannot grant consent for desktop fight effects');
+assert.equal(normalizeSettings({ desktopFightEffects: 'true' }).desktopFightEffects, false);
+assert.equal(normalizeSettings({ desktopFightEffects: true, psychProfile: disabled }).desktopFightEffects, true);
 assert.equal(normalizeMeta({ psychProfile: { ...freshPsychProfileState(), sampleCount: 9 } }).psychProfile.sampleCount, 9);
 
 const legacy = normalizeSettings({

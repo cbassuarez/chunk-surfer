@@ -6,7 +6,8 @@ import {createDoorDriveTeaser} from './source-drive/door-teaser.js';
 import {createBumperIntrusion} from './source-drive/bumper-intrusion.js';
 import {createDriveBumperIntrusionAudio} from '../audio/drive-bumper-intrusion.js';
 import {assetUrl} from '../platform/paths.js';
-import {playRadioDialCut} from '../audio/radio-dial-cut.js';
+import {createRadioDialCut} from '../audio/radio-dial-cut.js';
+import {loadOpeningLifeFlashAtlas,openingLifeFlashFrame} from '../render/opening-life-flash.js';
 
 const clamp=n=>Math.max(0,Math.min(1,n));
 export function makeGetInDriveTeaserScene({
@@ -15,6 +16,8 @@ export function makeGetInDriveTeaserScene({
   createAcoustics=options=>new SourceDriveAcoustics(options),
   createController=createDoorDriveTeaser,
   createIntrusion=createBumperIntrusion,createIntrusionAudio=createDriveBumperIntrusionAudio,
+  createMemorySignal=createRadioDialCut,prepareDestination=null,
+  loadLifeFlashAtlas=loadOpeningLifeFlashAtlas,paintLifeFlash=()=>{},
   presentationNow=()=>globalThis.performance.now(),
   getPresentation=()=>({}),
   createRecording=null,onTapeChanged=()=>{},paintOverlay=()=>{},getViewport=()=>null,
@@ -24,15 +27,38 @@ export function makeGetInDriveTeaserScene({
 }={}){
   let disposed=false,restored=false,completed=false,ready=false,preparing=false;
   let prelude=0,prepareSeconds=0,error=null,current=null,doorsClosed=false,wasHeld=true,impact=false;
-  const renderer=createRenderer(),controller=createController(),intrusion=createIntrusion();
+  const renderer=createRenderer(),controller=createController({requireDestinationReady:true,requireCoveredPresentation:true}),intrusion=createIntrusion();
   let intrusionAudio=null,intrusionQuietUntil=0,lastPresentationTime=null;
   let crashDissolve=null,lastPresentedFrame=null;
-  let audio=null,metrics=null,pending=null,audioDisposed=false,recording=null,transport=Promise.resolve(),finishing=false,drag=null,dialSerial=0;
-  // Each time skip turns the radio dial: clicks, static, and the new station.
-  function soundTheDial(frame){
-    const tuning=frame?.vehiclePose?.tuning;if(!tuning||tuning.serial===dialSerial||wasHeld)return;
-    dialSerial=tuning.serial;
-    try{playRadioDialCut({context,destination:audio?.cabin||destination,seconds:tuning.seconds,reducedFlash:getPresentation()?.effectsMode==='off'});}catch(error){console.warn('[drive-time-skip] The dial could not be heard.',error);}
+  let lifeFlashAtlas=null,lifeFlashReady=false;
+  let audio=null,metrics=null,pending=null,audioDisposed=false,recording=null,transport=Promise.resolve(),finishing=false,drag=null,dialSerial=0,memorySignal=null,breakWaitSeconds=0;
+  function protectedSignal(presentation=getPresentation()||{}){
+    const status=recording?.status?.()||{};
+    let external;try{external=typeof presentation.protectedAudio==='function'?presentation.protectedAudio():presentation.protectedAudio;}catch{external=true;}
+    return!!(external||status.recording||status.playing||status.cuing||status.slating||status.listening);
+  }
+  // One owner follows the picture clock, including a held acquisition point.
+  // Its bounded power exception never unmutes the receiver or the master bus.
+  function soundTheDial(frame,accepted=false){
+    const tuning=frame?.vehiclePose?.tuning;
+    if(!tuning){memorySignal?.dispose();memorySignal=null;breakWaitSeconds=0;return;}
+    if(tuning.serial!==dialSerial&&!wasHeld){
+      dialSerial=tuning.serial;memorySignal?.dispose();breakWaitSeconds=0;
+      const material=audio?.receiverMaterial?.();
+      try{memorySignal=createMemorySignal({context,destination:audio?.cabin||destination,seconds:tuning.seconds,
+        seed:4417+tuning.serial*97,reason:tuning.reason,sourceBuffer:material?.buffer,sourceOffset:material?.offset||0,
+        authoredPowerException:true,receiverPowered:frame.driveState?.radioOn!==false});}catch(error){console.warn('[drive-time-skip] The receiver interruption could not be prepared.',error);}
+      const serial=tuning.serial,request={serial,from:tuning.from,to:tuning.to,destination:tuning.destination};
+      Promise.resolve().then(()=>prepareDestination?prepareDestination(request):renderer.prepareDestination?renderer.prepareDestination(request):renderer.ready?.()!==false)
+        .then(value=>{if(disposed||restored||serial!==dialSerial)return;if(value===false)throw Error('The remembered road destination could not be prepared.');controller.setDestinationReady?.(serial,true);})
+        .catch(reason=>{if(!disposed&&!restored&&serial===dialSerial)fail(reason);});
+    }
+    const protectedAudio=protectedSignal();
+    // Preparation may happen before a frame. Starting or resuming the signal
+    // requires the corresponding accepted picture; a held/rejected frame can
+    // only pause or cancel it, never sound an unseen interruption.
+    if(accepted||wasHeld||protectedAudio)memorySignal?.sync({age:tuning.age,paused:!accepted||wasHeld||!!tuning.waiting,
+      protectedAudio,receiverPowered:frame.driveState?.radioOn!==false});
   }
   const keyInputs={w:'forward',arrowup:'forward',s:'reverse',arrowdown:'reverse',a:'left',arrowleft:'left',d:'right',arrowright:'right',' ':'brake'};
   const pressedKeys=new Set();
@@ -45,7 +71,8 @@ export function makeGetInDriveTeaserScene({
     const visualStep=dt>0?Math.max(dt,elapsed):0;
     lastPresentationTime=Number.isFinite(now)?now:null;
     intrusion.update(visualStep,frame,{...presentation,allowTrigger:presentation.allowTrigger!==false
-      &&!drag&&frame.timeSec>=intrusionQuietUntil&&!(frame.vehiclePose?.radioLean>0)});
+      &&!protectedSignal(presentation)&&!drag&&frame.timeSec>=intrusionQuietUntil&&!(frame.vehiclePose?.radioLean>0)});
+    if(protectedSignal(presentation)&&intrusion.snapshot().visible)intrusion.cancel();
     current=intrusion.apply(frame);soundTheDial(current);return current;
   }
   function setHeld(value){
@@ -54,12 +81,14 @@ export function makeGetInDriveTeaserScene({
     // Never freeze a collision image in a menu, or deliver its slam on return.
     if(held&&intrusion.snapshot().triggered)intrusion.cancel();
     audio?.setPaused(held||restored||!!crashDissolve);intrusionAudio?.setPaused(held||restored||!!crashDissolve);recording?.setPaused?.(held||restored||!!crashDissolve);controller.setPaused(held);wasHeld=held;drag=null;pressedKeys.clear();if(held)controller.setRadioLean?.(false);
+    if(held||restored||crashDissolve)memorySignal?.setPaused?.(true);
     if(ready)refreshFrame();
   }
   function disposeAudio(){intrusionAudio?.dispose();if(!audio||audioDisposed)return;audioDisposed=true;audio.dispose();}
   function restore(){
     if(restored)return;restored=true;
-    intrusion.cancel();intrusionAudio?.dispose();audio?.setPaused(true);renderer.dispose();lastPresentedFrame=null;onRestore();
+    lifeFlashAtlas=null;
+    intrusion.cancel();intrusionAudio?.dispose();memorySignal?.dispose();memorySignal=null;audio?.setPaused(true);renderer.dispose();lastPresentedFrame=null;onRestore();
   }
   function finish(){
     if(completed||disposed||finishing)return;finishing=true;restore();
@@ -72,6 +101,11 @@ export function makeGetInDriveTeaserScene({
   }
   async function prepare(){
     if(preparing||disposed)return pending;preparing=true;
+    // Acquire ahead of the fall without putting the memory on the drive's
+    // loading path. A late or unavailable decode leaves the crash playable.
+    Promise.resolve().then(loadLifeFlashAtlas).then(atlas=>{
+      if(!disposed&&!restored&&atlas){lifeFlashAtlas=atlas;lifeFlashReady=true;}
+    }).catch(()=>{});
     pending=(async()=>{
       const response=await fetcher(assetUrl('assets/source-drive/geometry/metrics.json'));
       if(disposed)return false;if(!response?.ok)throw Error('The opening vehicle could not be prepared.');
@@ -94,7 +128,15 @@ export function makeGetInDriveTeaserScene({
   function renderFrame(){
     if(!current?.renderFrame||restored)return;
     const f=current.renderFrame;
-    audio?.sync(f.driveState,f.scene.cut.sources,f.weather,f.evolution,f.scene.predicaments.sources);
+    const presentation=getPresentation()||{};
+    audio?.setStormPresentation?.({flashMode:presentation.flashMode||(presentation.effectsMode==='off'?'off':'full'),protectedAudio:protectedSignal(presentation),listenerYaw:f.look?.yaw||0});
+    const exposure=lifeFlashAtlas&&openingLifeFlashFrame(current,presentation);
+    const drive=exposure&&!protectedSignal(presentation)&&f.driveState.openingCinematic
+      ? {...f.driveState,openingCinematic:{...f.driveState.openingCinematic,lifeFlash:exposure.envelope*(exposure.steady?.45:1)}}
+      : f.driveState;
+    audio?.sync(drive,f.scene.cut.sources,f.weather,f.evolution,f.scene.predicaments.sources);
+    f.storm=audio?.stormFrame?.()||null;
+    if(f.memoryBreak)f.memoryBreak={...f.memoryBreak,effectsMode:presentation.effectsMode||'full',reducedFlash:presentation.flashMode==='reduced'};
     recording?.tick?.();
     const status=recording?.status?.()||{},seconds=status.playing?status.playbackTapeSeconds:status.headSeconds;
     const level=audio?.level?.()||0;
@@ -103,6 +145,8 @@ export function makeGetInDriveTeaserScene({
     const shown=renderer.render({...f,cinematicLook:!current.controlsEnabled});
     if(shown===false){intrusion.presented(false);fail(Error('The opening drive frame could not be presented.'));return;}
     lastPresentedFrame=f;
+    controller.presented?.(f.memoryBreak);
+    soundTheDial(current,true);
     const contact=intrusion.presented(!wasHeld&&!isHeld());
     if(contact)intrusionAudio?.play({...contact,reducedMotion:contact.mode==='still'});
   }
@@ -175,6 +219,7 @@ export function makeGetInDriveTeaserScene({
       if(!restored)audio?.setPaused(false);
       // A dial cut clears the pedals; pressed pedals resume with the picture.
       controller.update(step,{input:Object.fromEntries([...pressedKeys].map(action=>[action,true]))});refreshFrame(step);
+      if(current?.vehiclePose?.tuning?.waiting){breakWaitSeconds+=step;if(breakWaitSeconds>12){fail(Error('The remembered road remained unavailable.'));return;}}
       if(current.phase==='impact-black'&&!impact){impact=true;audio?.joint({strength:1});}
       if(current.worldOwner==='return'&&!restored){
         if(returnToBlack&&lastPresentedFrame&&crashFadeSeconds>0&&!crashDissolve){
@@ -201,7 +246,11 @@ export function makeGetInDriveTeaserScene({
         // longer visible closing fade before relinquishing the world renderer.
         else if(current?.worldOwner==='drive'&&current?.cliffCommitted)alpha=0;
       }
-      if(ready&&!restored)paintOverlay({frame:current,radio:audio?.programmeFrame?.()||current?.renderFrame?.radio,tape:recording?.status?.()||null,error});
+      if(ready&&!restored){
+        const exposure=!wasHeld&&lifeFlashAtlas&&openingLifeFlashFrame(current,getPresentation());
+        if(exposure)paintLifeFlash(lifeFlashAtlas,exposure);
+        paintOverlay({frame:current,radio:exposure?null:audio?.programmeFrame?.()||current?.renderFrame?.radio,tape:recording?.status?.()||null,error});
+      }
       if(alpha>.001)paintCover(alpha);
     },
     key(event){
@@ -240,8 +289,8 @@ export function makeGetInDriveTeaserScene({
       if(disposed)return;disposed=true;restore();controller.dispose();
       if(recording)Promise.resolve(recording.dispose?.()).catch(onError).finally(disposeAudio);else disposeAudio();onExit();
     },
-    view(){return{prelude,preparing,ready,restored,completed,disposed,error,...(current||{}),crashDissolve:crashDissolve?{...crashDissolve}:null,bumperIntrusion:intrusion.snapshot()};},
-    audioDiagnostics(){return audio?{...audio.diagnostics?.(),bumperIntrusion:intrusionAudio?.diagnostics()||null}:null;},
+    view(){return{prelude,preparing,ready,restored,completed,disposed,error,...(current||{}),crashDissolve:crashDissolve?{...crashDissolve}:null,lifeFlash:{ready:lifeFlashReady,frame:!wasHeld&&lifeFlashAtlas?openingLifeFlashFrame(current,getPresentation()):null},bumperIntrusion:intrusion.snapshot()};},
+    audioDiagnostics(){return audio?{...audio.diagnostics?.(),storm:audio.stormFrame?.()||null,memorySignal:memorySignal?.snapshot?.()||null,bumperIntrusion:intrusionAudio?.diagnostics()||null}:null;},
     tapeDiagnostics(){return recording?.status?.()||null;},
     pending:()=>pending,
   };

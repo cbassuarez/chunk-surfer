@@ -25,6 +25,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
   drive=null,driveMetrics=null,driveLive=()=>true,onDriveFrame=()=>{},onBeat=()=>{}}={}){
   let phase='loading',paused=false,exited=false,finished=false,skip=0,held=false,posed=null,cardAt=0,lastNode=null,fates=0,pictured=0,lastSerial=0,lastLine=null,beat=drive?'drive':'omen',openingAct=null;
   let lastFrame=null,reviewStage=null,reviewSnap=false,hasSpoken=false,bodyCue='neutral',bodyCueStarted=false,started=false,lastPresented=false,presentationHeld=false,reviewHolding=false;
+  let echoSerial=0,echoPage=-1,echoPageAt=0;
   const direction=drive?createOpeningPrologueDirection({reducedMotion}):null;
   const stage=createOpeningPrologueStage({reducedMotion}),nodes=OPENING_PROLOGUE.nodes,log=[];
   const metrics=()=>typeof driveMetrics==='function'?driveMetrics():driveMetrics;
@@ -42,7 +43,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     const history=new Map(log.map(row=>[row.serial,row]));
     for(const row of view.history||[])history.set(row.serial,row);
     return{...view,captionPlacement:openingPrologueCaptionPlacement(direction?.view()?.intent,stage.id()),
-      captionScale:1.15,captionReady:phase==='film'&&!paused&&!reviewHolding&&!presentationHeld&&established()&&bodyComplete(),
+      captionScale:1.35,captionWidth:74,captionReady:phase==='film'&&!paused&&!reviewHolding&&!presentationHeld&&established()&&bodyComplete(),
       captionAutomatic:view.who==='me'&&!view.pending,captionHidden:phase!=='film'||!!nodes[view.nodeId]?.card,
       captionHistory:[...history.values()].sort((a,b)=>a.serial-b.serial)};
   }
@@ -51,7 +52,10 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     onCinematicReviewChange:active=>{reviewHolding=active;held=false;skip=0;drive?.setPaused?.(paused||reviewHolding);},
     voiceEnabled:true,audio,getAudio,replay,worldView:picture,onDone:finish});
   const baseEnter=scene.enter.bind(scene),baseExit=scene.exit.bind(scene),baseUpdate=scene.update.bind(scene),baseKey=scene.key.bind(scene),baseKeyup=scene.keyup.bind(scene),baseView=scene.view.bind(scene),baseRender=scene.render.bind(scene);
-  Object.assign(scene,{handlesEscape:false,worldPresentation:'visible',lookProfile:'calm'});
+  Object.assign(scene,{worldPresentation:'visible',lookProfile:'calm'});
+  // The main input router offers global pause before forwarding Escape. Review
+  // temporarily owns Back so returning to the live line does not open a menu.
+  Object.defineProperty(scene,'handlesEscape',{configurable:true,get:()=>reviewHolding});
   // The world frame carries the omen; a drive beat owns the picture itself
   // and hides the world exactly the way the door teaser does.
   Object.defineProperty(scene,'worldPresentation',{configurable:true,get:()=>drive?'hidden':'visible'});
@@ -123,8 +127,15 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
       drive.update(step);present(step);
     }
     setMusic(semantic()==='road'?.6:semantic()==='ellery'?.78:semantic()==='return'||v.nodeId==='off'?.42:.62);
-    // You chose to say it. It does not then need a second press to have been said.
-    if(v.who==='me'&&!v.typing&&!v.pending&&v.lineAge>ECHO_DWELL&&established()&&bodyComplete())baseKey({key:' '});
+    // Already chosen local speech needs no second confirmation. If enlarged
+    // text requires pages, every page stays available and the last receives
+    // its own short dwell before the silent echo can leave the picture.
+    if(v.who==='me'&&!v.pending){
+      const size=uiSize(),layout=size.cols>0&&size.rows>0?scene.cinematicPresentationLayout?.():null,page=layout?.bodyPage||0;
+      if(echoSerial!==v.lineSerial||echoPage!==page){echoSerial=v.lineSerial;echoPage=page;echoPageAt=v.lineAge;}
+      const lastPage=!layout||page>=(layout.bodyPages||1)-1;
+      if(!v.typing&&lastPage&&v.lineAge-echoPageAt>ECHO_DWELL&&established()&&bodyComplete())baseKey({key:' '});
+    }else{echoSerial=0;echoPage=-1;}
     if(node?.card){cardAt+=step;if(cardAt>=node.seconds){finish();return;}}
   };
   scene.key=(event={})=>{

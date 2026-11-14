@@ -7,23 +7,42 @@ import {transcriptRole} from '../src/render/transcript.js';
 
 function context(){
  const commands=[],stack=[],state={globalAlpha:1,shadowBlur:0,fillStyle:''};
+ let rectangles=[];
  const methods={save(){stack.push({...state});},restore(){Object.assign(state,stack.pop());},
   fillText(){throw Error('Native font leaked into electronic display');},measureText(){throw Error('Native font metrics leaked into electronic display');},
   fillRect(...args){commands.push({kind:'pixel',args,alpha:state.globalAlpha,color:state.fillStyle});},
   arc(...args){commands.push({kind:'dot',args,alpha:state.globalAlpha,color:state.fillStyle});},
-  fill(){commands.push({kind:'fill',alpha:state.globalAlpha,color:state.fillStyle});},
-  drawImage(...args){commands.push({kind:'tile',args,alpha:state.globalAlpha});},beginPath(){},moveTo(){},lineTo(){},stroke(){}};
+  fill(){commands.push({kind:'fill',alpha:state.globalAlpha,color:state.fillStyle,
+    shadowBlur:state.shadowBlur,shadowColor:state.shadowColor,rectangles:[...rectangles]});},
+  drawImage(...args){commands.push({kind:'tile',args,alpha:state.globalAlpha});},
+  beginPath(){rectangles=[];},rect(...args){rectangles.push(args);},moveTo(){},lineTo(){},stroke(){}};
  const ctx=new Proxy(state,{get:(target,key)=>key in methods?methods[key]:target[key],set:(target,key,value)=>(target[key]=value,true)});
  return{ctx,commands,state,stack};
 }
-test('LCD labels are a fixed 5x7 rectangular matrix; no native font or emission',()=>{
+test('LCD labels retain the rectangular matrix and only active electrodes feed the backlight',()=>{
  clearElectronicTextCache();const h=context();
  const size=drawElectronicText(h.ctx,'A',10,20,{fontSize:14,mode:'lcd',color:'#bcd2b4',baseline:'top'});
  assert.equal(size.width,measureElectronicText('A',{fontSize:14}));assert.equal(size.height,14);
- assert.equal(h.commands.length,35);assert.ok(h.commands.every(c=>c.kind==='pixel'));
  const lit=vfdGlyph('A').reduce((n,row)=>n+row.toString(2).replaceAll('0','').length,0);
- assert.equal(h.commands.filter(c=>c.alpha===1).length,lit);
- assert.ok(h.commands.every(c=>c.args[2]>0&&c.args[3]>0));assert.equal(h.state.shadowBlur,0);assert.equal(h.stack.length,0);
+ const [dormant,light,ink,edge]=h.commands;
+ assert.equal(dormant.rectangles.length,35-lit);assert.equal(dormant.shadowBlur,0);
+ assert.deepEqual(light.rectangles,ink.rectangles);assert.equal(ink.rectangles.length,lit);
+ assert.equal(light.shadowColor,'#bcd2b4');assert.ok(light.shadowBlur>0);
+ assert.equal(ink.alpha,1);assert.equal(ink.shadowBlur,0);assert.equal(edge.rectangles.length,lit);
+ assert.ok(h.commands.flatMap(c=>c.rectangles).every(c=>c[2]>0&&c[3]>0));
+ assert.equal(h.state.shadowBlur,0);assert.equal(h.stack.length,0);
+});
+test('dark LCD ink keeps contrast and a powered backlight can be supplied explicitly',()=>{
+ const h=context();
+ drawElectronicText(h.ctx,'8',10,20,{mode:'lcd',color:'#1d3b29'});
+ assert.ok(h.commands.every(c=>c.shadowBlur===0));
+ h.commands.length=0;
+ drawElectronicText(h.ctx,'8',10,20,{mode:'lcd',color:'#1d3b29',lcdGlow:'#a6dc8e'});
+ assert.equal(h.commands.find(c=>c.shadowBlur>0)?.shadowColor,'#a6dc8e');
+ assert.equal(h.commands.find(c=>c.alpha===1)?.color,'#1d3b29');
+ h.commands.length=0;
+ drawElectronicText(h.ctx,'8',10,20,{mode:'lcd',color:'#cde3a9',lcdGlow:false});
+ assert.ok(h.commands.every(c=>c.shadowBlur===0));
 });
 test('VFD prose uses formed phosphor dots and preserves inherited alpha',()=>{
  const h=context();h.state.globalAlpha=.5;
@@ -36,13 +55,14 @@ test('measurement, alignment, explicit cell pitch and maxWidth share one electro
  const h=context(),options={fontSize:14,cellWidth:10,tracking:2,mode:'lcd',baseline:'top'};
  assert.equal(measureElectronicText('AB',options),22);assert.equal(measureElectronicText('',options),0);
  const normal=drawElectronicText(h.ctx,'AB',40,20,{...options,align:'right'});
- assert.equal(normal.width,22);assert.ok(h.commands[0].args[0]>=18&&h.commands[0].args[0]<20);
+ assert.equal(normal.width,22);assert.ok(h.commands[0].rectangles[0][0]>=18&&h.commands[0].rectangles[0][0]<20);
  h.commands.length=0;const fit=drawElectronicText(h.ctx,'AB',40,20,{...options,maxWidth:11,align:'center'});
- assert.equal(fit.width,11);assert.equal(fit.height,7);assert.ok(h.commands[0].args[0]>=34.5&&h.commands[0].args[0]<36);
+ assert.equal(fit.width,11);assert.equal(fit.height,7);assert.ok(h.commands[0].rectangles[0][0]>=34.5&&h.commands[0].rectangles[0][0]<36);
 });
 test('unsupported electronic glyphs remain visible and spaces remain empty',()=>{
  const h=context();drawElectronicText(h.ctx,' ',0,0);assert.equal(h.commands.length,0);
- drawElectronicText(h.ctx,'🛸',0,0);assert.equal(h.commands.length,35);
+ drawElectronicText(h.ctx,'🛸',0,0,{lcdGlow:false});
+ assert.equal(h.commands.reduce((n,c)=>n+c.rectangles.length,0),35);
  assert.equal(measureElectronicText('🛸'),measureElectronicText('A'),'measurement counts character codes, not surrogate halves');
 });
 test('electronic glyph cache is bounded and can be discarded',()=>{

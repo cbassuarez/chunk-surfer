@@ -332,7 +332,7 @@ export function createFireballExchange({
     active.externalPresented=presented===true;
   }
 
-  function update(dt, { enabled = true } = {}) {
+  function update(dt, { enabled = true, allowSpawn = true } = {}) {
     if (stopped) return snapshot();
     // Dialogue freezes live projectiles, but short deflect/RETURN/impact tails
     // are allowed to finish so no burst becomes a permanent overlay merely
@@ -340,7 +340,7 @@ export function createFireballExchange({
     if (!enabled && (!active || liveRays().length)) return snapshot();
     const seconds = Math.max(0, Number(dt) || 0);
     if (!active) {
-      if (manual) return snapshot();
+      if (manual || !allowSpawn) return snapshot();
       spawnIn -= seconds;
       if (spawnIn <= 0) spawn();
       return snapshot();

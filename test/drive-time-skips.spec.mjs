@@ -32,11 +32,11 @@ test('the cliff drive comes apart into stretches of one night, often the same ro
 });
 
 test('the cut is the dial: out, the van moved in the dark middle, back in; contact is cut before it happens',()=>{
-  assert.ok(T.cut.placeAt>0&&T.cut.placeAt<T.cut.seconds&&T.cut.seconds<1.2,'quick, to jar');
+  assert.ok(T.cut.coverAt<T.cut.placeAt&&T.cut.placeAt<T.cut.revealAt&&T.cut.revealAt<T.cut.seconds&&T.cut.seconds<=1.8,'a bounded break gives complete cover before replacement');
   assert.ok(T.cut.contactLead>.15&&T.cut.contactLead<.6);
   assert.ok(RADIO_DIAL_CUT.clicks.length>=3,'detent clicks under the fingers');assert.ok(RADIO_DIAL_CUT.land>.6);
   assert.ok(radioDialStaticAlpha(.5)>radioDialStaticAlpha(.1)&&radioDialStaticAlpha(0)<.01&&radioDialStaticAlpha(1)<.01);
-  assert.ok(radioDialStaticAlpha(.5,{reducedFlash:true})<radioDialStaticAlpha(.5));
+  assert.equal(radioDialStaticAlpha(.5),1,'construction never changes beneath a partial television overlay');
 });
 
 test('a figure stood in the lane is cut on contact if he drives at it, and never if he steers round or stops',()=>{

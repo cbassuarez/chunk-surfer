@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "source": "tools/chunk_surfer/build-box-office.mjs",
+  "license": "Project source",
+  "origin": "New project-authored fitted joinery, sliding glazing, restrained fixed grille, clerking furniture and deterministic code-native textures. No external photo pixels or meshes.",
+  "provenance": "Dimensions resolved against actual game chair, room, staff door and approved hatch aperture. Reference and unknowns remain documented in artifacts/ellery-construction-source-drive-audit/report.html. Not a surveyed historic reconstruction.",
+  "glass": "Sparse alpha-MASK surface evidence; actual room visibility is the wall aperture. No optical transparency or refraction claimed.",
+  "scope": "Existing box office only. No new key, puzzle, dialogue, encounter or global furniture change.",
+  "sourceSha256": {
+    "src/data/box-office.js": "8ac4c70d02b3b56a8ee05213e5325066056c3fe8a975cc4e339ee8e2fe7523b2",
+    "tools/chunk_surfer/box-office-geometry.mjs": "ead10b69036d7ed2e7b7a1a9b1872cfe3f0fc0f52ce44a8f366cfb43aa690094",
+    "tools/chunk_surfer/build-box-office.mjs": "6d97457bbfe2fd3aa927f87235d573b4ea2fd8f59f8c4f7b1861f0e147cea7a0",
+    "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
+    "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
+    "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
+    "tools/chunk_surfer/lettering/finish-profiles.mjs": "19a61bb88d5a81ecb92541baad1683eeae38c0696f9aab880f7392ca866b1c8a",
+    "tools/chunk_surfer/lettering/fonts/NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264"
+  },
+  "pack": {
+    "file": "public/assets/box-office.glb",
+    "bytes": 223216,
+    "sha256": "cf4eeb067ffe9fecdfe4f515c90e5caf221651e11a28a62ecf1844baf8df430b"
+  },
+  "meshes": [
+    "box_office_clerking_hatch",
+    "box_office_clerks_desk",
+    "box_office_returns_tray"
+  ]
+}

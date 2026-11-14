@@ -4,7 +4,11 @@
 import {MEMORY_FIELD as C} from '../data/memory-field.js';
 import {EYE,ZONE} from '../data/floorplan/legend.js';
 import {memoryFieldGeometry,memoryGeometryBounds} from './memory-field-models.js';
-import {antPoseAt} from '../game/memory-field-ant.js';
+import {memoryFieldSlabSupport} from '../data/memory-field-slab.js';
+import {MEMORY_FIELD_SLAB_MESHES,MEMORY_FIELD_SLAB_GRASS} from './memory-field-slab.js';
+import {MEMORY_FIELD_JUMPER_MESHES} from './memory-field-jumper.js';
+import {memoryFieldJumperHangingPoint} from './memory-field-far-landmarks.js';
+import {memoryFieldAntRig} from './memory-field-ant-rig.js';
 
 const SHARED=Object.freeze({structural:false,decorative:true,zone:ZONE.street,noReflection:true,noShadow:true});
 const bounds=new Map();
@@ -57,20 +61,26 @@ export function memoryFieldRenderFrame(state,visit,{reducedMotion=false,reducedD
   const dx=state.x,dz=state.z;
   const variety=Math.max(1,Math.round(C.variants*(1-smooth(.35,.7,decay))));
   const heldGrid=smooth(.5,.8,decay)>.5;
-  props.push(instance('mf_ground','ground',translate(Math.round(dx/8)*8,0,Math.round(dz/8)*8),{cullRadius:900}));
-  if(decay<.85)props.push(instance('mf_hills','hills',translate(dx,0,dz),{cullRadius:900}));
+  props.push(instance('mf_ground','ground',translate(0,0,0),{cullRadius:900}));
+  const turfTile=36,tx=Math.floor(dx/turfTile),tz=Math.floor(dz/turfTile);
+  for(let iz=-1;iz<=1;iz++)for(let ix=-1;ix<=1;ix++){
+    const x=tx+ix,z=tz+iz,yaw=(cellHash(x,z)%4)*Math.PI*.5;
+    const middle=yawed((x+.5)*turfTile,0,(z+.5)*turfTile,yaw);
+    for(let stock=0;stock<3;stock++)props.push(instance(`mf_turf_${stock}`,`ground-turf-${x}:${z}:${stock}`,middle,{cullRadius:30}));
+  }
+  if(decay<.85)props.push(instance('mf_hills','hills',translate(0,0,0),{cullRadius:900}));
   // Near: repeating squares of grass and daisies, leaning on one wind.
   const S=C.chunk,cx=Math.floor(dx/S),cz=Math.floor(dz/S),gust=reducedMotion?0:.035+.03*Math.sin(t*.33);
   for(let iz=-C.near;iz<=C.near;iz++)for(let ix=-C.near;ix<=C.near;ix++){
     const x=cx+ix,z=cz+iz,variant=heldGrid?0:cellHash(x,z)%variety,wx=x*S,wz=z*S;
     if(Math.hypot(wx+S/2-dx,wz+S/2-dz)>S*(C.near+.5))continue;
-    // While he is down, the square under the slab is drawn close instead (the ant's patch).
-    if(watching&&Math.abs(slab.x-(wx+S/2))<S/2+ant.patch&&Math.abs(slab.z-(wz+S/2))<S/2+ant.patch)continue;
+    const prefix=slab&&(x===-1||x===0)&&(z===-1||z===0)
+      ?`mf_slabsurround_${x}_${z}_${variant}`:`mf_near_${variant}`;
     const phase=t*1.2+wx*.09+wz*.07,lx=reducedMotion?0:gust*(.7+.5*Math.sin(phase)),lz=reducedMotion?0:gust*.35*Math.sin(phase*.8+1);
     for(const part of['dark','light','petal','yellow']){
       // Cones cost more oxygen than rods. The yellow goes first.
       if(part==='yellow'&&decay>.92)continue;
-      props.push(instance(`mf_near_${variant}_${part}`,`n${x}:${z}:${part}`,leaning(wx,wz,lx,lz),{cullRadius:S*.8}));
+      props.push(instance(`${prefix}_${part}`,`n${x}:${z}:${part}`,leaning(wx,wz,lx,lz),{cullRadius:S*.8}));
     }
   }
   // Far: the same field from further off, ringing the near.
@@ -100,10 +110,11 @@ export function memoryFieldRenderFrame(state,visit,{reducedMotion=false,reducedD
   for(let iz=-3;iz<=3;iz++)for(let ix=-3;ix<=3;ix++){
     const x=hx+ix,z=hz+iz,h=cellHash(x+31,z-17),wx=(x+((h&255)/255))*heroCell,wz=(z+(((h>>8)&255)/255))*heroCell,height=.2+(((h>>16)&63)/63)*.26;
     if((h>>24)%5===0)continue;
-    if(watching&&nearSlab(wx,wz,ant.patch))continue;
+    if(slab&&nearSlab(wx,wz,ant.patch*.94))continue;
     const toX=dx-wx,toZ=dz-wz,sunYaw=Math.atan2(sun[0],sun[2]),eyeYaw=Math.atan2(toX,toZ),yaw=sunYaw+Math.atan2(Math.sin(eyeYaw-sunYaw),Math.cos(eyeYaw-sunYaw))*facing,sway=reducedMotion?0:.02*Math.sin(t*1.4+wx);
-    const m=yawed(wx+sway,height,wz,yaw,2);
-    props.push(instance('mf_hero_petal',`hero-p${x}:${z}`,m),instance('mf_hero_disc',`hero-d${x}:${z}`,m));
+    const m=yawed(wx+sway,height,wz,yaw,1+.34*(h%71)/71);
+    const stem=yawed(wx+sway,height,wz,yaw);stem[4]=sway;stem[5]=height;
+    props.push(instance('mf_hero_petal',`hero-p${x}:${z}`,m),instance('mf_hero_disc',`hero-d${x}:${z}`,m),instance('mf_hero_stem',`hero-s${x}:${z}`,stem));
   }
   // THE DOOR.
   if(visit.door){
@@ -113,18 +124,25 @@ export function memoryFieldRenderFrame(state,visit,{reducedMotion=false,reducedD
     const hinge=yawed(x-C.door.halfWidth,0,z,rattle-gave*1.75);
     for(const part of['leaf','glass','trim','metal'])props.push(instance(`mf_door_${part}`,`door-${part}`,hinge,{cullRadius:2.2}));
   }
-  // THE ANT, on its slab. The slab stays when he gets up; the close grass and the ant go.
+  // The one slab and its surrounding sod remain when the player stands.
   if(ant){
-    const m=yawed(slab.x,0,slab.z,slab.yaw);
-    for(const part of['top','side','crack'])props.push(instance(`mf_ant_slab_${part}`,`ant-slab-${part}`,m,{cullRadius:1}));
+    const slabMatrix=yawed(slab.x,0,slab.z,slab.yaw);
+    for(const mesh of MEMORY_FIELD_SLAB_MESHES)props.push(instance(mesh,`ant-landmark-${mesh}`,slabMatrix,{cullRadius:1}));
     props.push(instance('mf_ant_pebble','ant-pebble',yawed(ant.pebble.x,ant.slab.height,ant.pebble.z,.7),{cullRadius:.3}));
+    for(const [layer,mesh] of MEMORY_FIELD_SLAB_GRASS.entries()){
+      const flex=reducedMotion?0:.014*Math.sin(t*(.67+layer*.28)+layer*1.2);
+      props.push(instance(mesh,`ant-margin-${mesh}`,leaning(slab.x,slab.z,flex,flex*.42),{cullRadius:ant.patch+.5}));
+    }
     if(watching){
-      for(const part of['dark','light'])props.push(instance(`mf_ant_patch_${part}`,`ant-patch-${part}`,leaning(slab.x,slab.z,reducedMotion?0:.012*Math.sin(t*.9),0),{cullRadius:ant.patch+.5}));
-      const pose=antPoseAt(ant,state.ant.t);
-      if(!pose.gone)props.push(instance(`mf_ant_${pose.frame}`,'ant',yawed(pose.x,pose.y,pose.z,-pose.yaw),{cullRadius:.3}));
+      const rig=memoryFieldAntRig(ant,state.ant.t,{reducedMotion,groundHeight:memoryFieldSlabSupport});
+      for(const {mesh,id,matrix} of rig)props.push(instance(mesh,id,matrix,{cullRadius:.12}));
     }
   }
-  if(visit.jumper)props.push(instance('mf_jumper','jumper',translate(visit.jumper.x-.8,1.1,visit.jumper.z)));
+  if(visit.jumper){
+    const [x,y,z]=memoryFieldJumperHangingPoint(visit.jumper.z);
+    const hung=translate(visit.jumper.x-.8+x,y,z);
+    for(const mesh of MEMORY_FIELD_JUMPER_MESHES)props.push(instance(mesh,mesh.slice(3).replaceAll('_','-'),hung));
+  }
   if(visit.wheel&&hasWheel){
     const spin=(reducedMotion?.6:state.elapsed*3.4),{x,z}=visit.wheel,c=Math.cos(spin),s=Math.sin(spin);
     // On its side in the daisies, still going round.
@@ -139,5 +157,9 @@ export function memoryFieldRenderFrame(state,visit,{reducedMotion=false,reducedD
     const rows=memoryFieldGeometry().filter(row=>row.fault);
     for(let k=0;k<rows.length&&k<amount;k++)props.push(instance(rows[k].name,`fault-${k}`,translate(Math.floor(dx/28)*28+7,0,Math.floor(dz/28)*28-12),{cullRadius:40,sourceAmbientFault:true}));
   }
-  return{props,eye,authoredCamera:{eye,yaw:state.yaw,pitch:state.pitch},floorH:eye[1]-EYE};
+  // Attention narrows while he is on his heels. Widen with the same rise as
+  // the body, with no additional blur or change to the standing camera.
+  const focus=ant&&!reducedMotion&&(watching||state.ant?.done)?1-smooth(ant.eye,C.eye,eye[1]):0;
+  const lens=focus>.001?{focalLengthMm:12/(.95-.34*focus),sensorHeightMm:24,focusDistanceM:.32,apertureFNumber:8,maxBlurPx:0}:undefined;
+  return{props,eye,authoredCamera:{eye,yaw:state.yaw,pitch:state.pitch,lens},floorH:eye[1]-EYE};
 }

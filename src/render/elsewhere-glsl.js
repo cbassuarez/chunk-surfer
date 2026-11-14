@@ -12,7 +12,14 @@ import { ELSEWHERE_WORLDS } from '../data/elsewhere-worlds.js';
 import { REALM_POCKET_GLSL, HOME_WINDOW } from './realm-pocket-geometry.js';
 import { CHILDHOOD_BEDROOM_GLSL } from './childhood-bedroom-glsl.js';
 import { CHILDHOOD_HOUSE_GLSL } from './childhood-house-glsl.js';
+import { CHILDHOOD_GROUNDS_GLSL } from './childhood-grounds-glsl.js';
+import { CHILDHOOD_VALLEY_SITES_GLSL } from './childhood-valley-sites.js';
+import { CHILDHOOD_VALLEY_MOUNTAINS_GLSL } from './childhood-valley-mountains.js';
+import { CHILDHOOD_VALLEY_FOREST_GLSL } from './childhood-valley-forest.js';
+import { CHILDHOOD_VALLEY_WEATHER_GLSL } from './childhood-valley-weather.js';
+import { CHILDHOOD_VALLEY_ACTIVITY_GLSL } from './childhood-valley-activities.js';
 import { HOME_BEDROOM } from '../data/childhood-bedroom.js';
+import { STATION_FIELD_PREVIEW_GLSL } from './station-field-preview-glsl.js';
 
 export const ELSEWHERE_WORLD_COUNT = ELSEWHERE_WORLDS.length;
 const glf = (value) => Number.isInteger(value) ? `${value}.0` : String(value);
@@ -41,8 +48,11 @@ uniform float uStormFlash;
 uniform float uWayOut;
 uniform float uRealmActive,uRealmDecoherence,uRealmTorch;
 uniform vec3 uRealmView;
-// eligible, attention, hold, the gust concealing the final approach.
+// eligible, attention, hold.
 uniform vec4 uHomeState;
+uniform vec4 uHomeOldv,uHomeOldvSteps[16];
+uniform vec4 uHomeActivity,uHomeAngel;
+uniform vec3 uHomeActivityEye,uHomeRest;
 
 ${REALM_POCKET_GLSL}
 
@@ -50,7 +60,13 @@ float ewRoundBox(vec3 p,vec3 b,float radius){return ewBox(p,b)-radius;}
 float ewCapsule(vec3 p,vec3 a,vec3 b,float radius){vec3 pa=p-a,ba=b-a;return length(pa-ba*clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0))-radius;}
 
 ${CHILDHOOD_BEDROOM_GLSL}
+${CHILDHOOD_VALLEY_WEATHER_GLSL}
+${CHILDHOOD_VALLEY_ACTIVITY_GLSL}
+${CHILDHOOD_GROUNDS_GLSL}
+${CHILDHOOD_VALLEY_SITES_GLSL}
 ${CHILDHOOD_HOUSE_GLSL}
+${CHILDHOOD_VALLEY_MOUNTAINS_GLSL}
+${CHILDHOOD_VALLEY_FOREST_GLSL}
 
 vec3 ewSky(vec3 d,int v,float seed,float t,float flash){
   float az=atan(d.x,d.z)+seed*6.2831853;
@@ -90,8 +106,7 @@ vec3 ewSky(vec3 d,int v,float seed,float t,float flash){
     return sky;
   }
   if(v==5){
-    vec3 sky=mix(vec3(.86,.88,.90),vec3(.70,.73,.78),smoothstep(0.0,.8,e));
-    return sky+vec3(.2)*smoothstep(.2,.1,length(vec2(ewWrap(az-.8),e-.3)));
+    return ewHomeSky(d,t);
   }
   if(v==6){
     // Through the gone roof: a low white sky, snow coming down out of it.
@@ -225,17 +240,7 @@ float ewLandscapeMap(vec3 p,int v,float seed,float key,float t,out float m){
       if(shard<d){d=shard;m=1.0;}
     }
   }else if(v==5){
-    d=(p.y-(ewFbm(p.xz*.03)*2.2*smoothstep(8.0,50.0,p.z)-.1))*.55;
-    vec3 q=p;
-    q.z=mod(p.z,45.0)-22.5;
-    q.x=p.x+9.0;
-    float w=.9*(1.0-clamp(p.y/28.0,0.0,1.0))+.15;
-    float pylon=ewBox(vec3(q.x,p.y-13.0,q.z),vec3(w,13.0,w));
-    float arm=ewBox(vec3(q.x,p.y-24.0,q.z),vec3(4.0,.25,.25));
-    float sag=23.8-3.5*(1.0-pow(q.z/22.5,2.0));
-    float wire=length(vec2(abs(q.x)-3.8,p.y-sag))-.09;
-    float s=max(min(min(pylon,arm),wire)*.8,6.0-p.z);
-    if(s<d){d=s;m=1.0;}
+    d=1e5;
   }else if(v==6){
     // THE SCHOOL HALL, snowed in: parquet under drifted snow, chairs set out in
     // rows, a stage at the end with its lights still on, and no roof.
@@ -359,12 +364,14 @@ float ewLandscapeMap(vec3 p,int v,float seed,float key,float t,out float m){
   return d;
 }
 
-float ewMap(vec3 p,int v,float seed,float key,float t,out float m){
+float ewMap(vec3 p,int v,float seed,float key,float t,float viewDistance,out float m){
   float d=ewLandscapeMap(p,v,seed,key,t,m);
   if(v>5)return d;
   // The procedural vista starts beyond the authored pocket. It cannot silently
   // put apparent support under an edge that collision treats as open sky.
-  d=max(d,(v==5?90.0:34.0)-length(p.xz));
+  // A low distant snow apron hides the rim of the traversable basin.
+  if(v==5)d=min(d,(p.y+7.2)*.78);
+  else d=max(d,34.0-length(p.xz));
   if(v==0||v==3||v==4){
     float lower=(p.y+(v==0?3.8:v==3?2.4:2.1))*.8;
     if(lower<d){d=lower;m=0.0;}
@@ -377,6 +384,22 @@ float ewMap(vec3 p,int v,float seed,float key,float t,out float m){
   float pm,pd=ewPocketMap(nearP,v,pm);
   if(pd<d){d=pd;m=pm;}
   if(v==5){
+    float line=ewHomeServiceLine(p);
+    if(line<d){d=line;m=18.0;}
+    float approachMat,approachTree=ewHomeTrees(p,d,approachMat,t);
+    if(approachTree<d){d=approachTree;m=approachMat;}
+    float siteMat,site=ewHomeValleySites(p,d,siteMat);
+    if(site<d){d=site;m=siteMat;}
+    if(uHomeActivity.x>.5||(p.x<-62.0&&p.x>-71.0&&p.z>103.0&&p.z<112.0)){
+      float activityMat,activity=ewHomeMaulGeometry(p,d,activityMat);
+      if(activity<d){d=activity;m=activityMat;}
+    }
+    if(uHomeActivity.w>=0.0&&uHomeAngel.w>0.0){
+      float sleeveMat,sleeve=ewHomeAngelSleeves(p,d,sleeveMat);
+      if(sleeve<d){d=sleeve;m=sleeveMat;}
+    }
+    float forestMat,forest=ewHomeForest(p,d,forestMat,t,viewDistance);
+    if(forest<d){d=forest;m=forestMat;}
     float hm,hd=ewHouseMap(p,t,hm);
     if(hd<d){d=hd;m=hm;}
     float bedroomBound=ewBox(p-vec3(0.0,1.28,${glf(HOME_BEDROOM.origin.z + HOME_BEDROOM.depth / 2)}),vec3(1.97,1.39,2.49));
@@ -393,7 +416,7 @@ float ewTrace(vec3 ro,vec3 rd,int v,float seed,float key,float t,float tMax,out 
   for(int i=0;i<88;i++){
     vec3 p=ro+rd*dist;
     float mm;
-    float d=ewMap(p,v,seed,key,t,mm);
+    float d=ewMap(p,v,seed,key,t,dist,mm);
     if(d<min(.035,.0015*dist+.0025)){m=mm;return dist;}
     m=mm;last=d;
     dist+=max(.002,d*.85);
@@ -427,14 +450,60 @@ vec3 ewFog(int v){
   return vec3(.86,.88,.90);
 }
 
-vec3 ewSurface(vec3 p,vec3 rd,float dist,float m,int v,float seed,float key,float t,float flash){
+float ewHomeWindowSpill(vec3 p,vec3 n){
+  float distanceFromWall=${glf(HOME_WINDOW.z)}-p.z;
+  if(distanceFromWall<.045||distanceFromWall>5.5||abs(p.x-(${glf(HOME_WINDOW.x)}))>3.5)return 0.0;
+  // Trace back to a broad source just behind the closed pane. Only light
+  // whose path clears the lower reveal and jambs can reach the snow.
+  vec3 light=vec3(${glf(HOME_WINDOW.x)},1.65,${glf(HOME_WINDOW.z+.72)});
+  vec3 ray=light-p;
+  vec2 atPane=(p+ray*(distanceFromWall/ray.z)).xy;
+  float across=1.0-smoothstep(${glf(HOME_WINDOW.halfWidth-.23)},${glf(HOME_WINDOW.halfWidth)},abs(atPane.x-light.x));
+  float sill=smoothstep(${glf(HOME_WINDOW.bottom)},${glf(HOME_WINDOW.bottom+.32)},atPane.y);
+  float head=1.0-smoothstep(${glf(HOME_WINDOW.top-.20)},${glf(HOME_WINDOW.top)},atPane.y);
+  float incidence=max(0.0,dot(n,normalize(ray)));
+  return across*sill*head*incidence*(1.0-smoothstep(3.2,5.5,distanceFromWall))/(1.0+.44*dot(ray,ray));
+}
+
+vec3 ewSurface(vec3 p,vec3 rd,float dist,float m,int v,float seed,float key,float t,float flash,vec2 homeWeather,out vec2 surfacePrint){
+  surfacePrint=vec2(0.0);
   float e=.02+dist*.002;
   if(v==5&&m>19.5)e=.004+min(.004,dist*.0007);
   float dm;
-  vec3 n=normalize(vec3(
-    ewMap(p+vec3(e,0.0,0.0),v,seed,key,t,dm)-ewMap(p-vec3(e,0.0,0.0),v,seed,key,t,dm),
-    ewMap(p+vec3(0.0,e,0.0),v,seed,key,t,dm)-ewMap(p-vec3(0.0,e,0.0),v,seed,key,t,dm),
-    ewMap(p+vec3(0.0,0.0,e),v,seed,key,t,dm)-ewMap(p-vec3(0.0,0.0,e),v,seed,key,t,dm)));
+  // Most valley pixels hit the height field. Sample its exact slope instead
+  // of tracing neighboring rays against every building and tree six times.
+  vec3 n;
+  if(v==5&&m>12.5&&m<13.5&&ewHomeSmoothSnow(p))n=ewHomeSnowNormal(p.xz);
+  else if(v==5&&((m>49.5&&m<87.5)||m>99.5)&&!(m>64.5&&m<67.5)&&!(m>80.5&&m<82.5)&&uHomeActivity.x<.5
+    &&!(p.x>-2.65&&p.x<5.85&&p.z>69.54&&p.z<77.86)
+    &&!(p.x<-65.0&&p.x>-67.3&&p.z>106.5&&p.z<108.4)){
+    // A resolved prop is inside its own group's bound. Estimate the face from
+    // that group without querying terrain, the house or the forest again.
+    float here=ewHomeValleySites(p,.12,dm);
+    float xm=ewHomeValleySites(p-vec3(e,0.0,0.0),.12,dm);
+    float ym=ewHomeValleySites(p-vec3(0.0,e,0.0),.12,dm);
+    float zm=ewHomeValleySites(p-vec3(0.0,0.0,e),.12,dm);
+    n=normalize(vec3(here-xm,here-ym,here-zm)+vec3(1e-6));
+  }
+  else if(v==5&&m>64.5&&m<67.5){
+    float here=ewHomeForest(p,.12,dm,t,dist);
+    float xm=ewHomeForest(p-vec3(e,0.0,0.0),.12,dm,t,dist);
+    float ym=ewHomeForest(p-vec3(0.0,e,0.0),.12,dm,t,dist);
+    float zm=ewHomeForest(p-vec3(0.0,0.0,e),.12,dm,t,dist);
+    n=normalize(vec3(here-xm,here-ym,here-zm)+vec3(1e-6));
+  }
+  else if(v==5&&m>87.5&&m<89.5){
+    e=.004+min(.004,dist*.0007);
+    float here=ewHomeTrees(p,.12,dm,t);
+    float xm=ewHomeTrees(p-vec3(e,0.0,0.0),.12,dm,t);
+    float ym=ewHomeTrees(p-vec3(0.0,e,0.0),.12,dm,t);
+    float zm=ewHomeTrees(p-vec3(0.0,0.0,e),.12,dm,t);
+    n=normalize(vec3(here-xm,here-ym,here-zm)+vec3(1e-6));
+  }
+  else n=normalize(vec3(
+    ewMap(p+vec3(e,0.0,0.0),v,seed,key,t,dist,dm)-ewMap(p-vec3(e,0.0,0.0),v,seed,key,t,dist,dm),
+    ewMap(p+vec3(0.0,e,0.0),v,seed,key,t,dist,dm)-ewMap(p-vec3(0.0,e,0.0),v,seed,key,t,dist,dm),
+    ewMap(p+vec3(0.0,0.0,e),v,seed,key,t,dist,dm)-ewMap(p-vec3(0.0,0.0,e),v,seed,key,t,dist,dm)));
   vec3 sunDir=normalize(vec3(.4,.12,1.0)),sunCol=vec3(1.2,.45,.2),fog=ewFog(v),albedo=vec3(.05,.045,.045),emit=vec3(0.0),ambient=vec3(.05,.02,.02);
   float fogDensity=.006;
   if(v==0){
@@ -456,7 +525,11 @@ vec3 ewSurface(vec3 p,vec3 rd,float dist,float m,int v,float seed,float key,floa
   }else if(v==4){
     sunDir=normalize(vec3(.1,.6,.4));sunCol=vec3(.5,.55,.8);albedo=m<.5?vec3(.03,.03,.045):vec3(.22,.23,.28);ambient=vec3(.05,.05,.08);fogDensity=.004;
   }else if(v==5){
-    sunDir=normalize(vec3(.2,.6,.8));sunCol=vec3(.9);albedo=m<.5?vec3(.85,.87,.90):vec3(.12);ambient=vec3(.35,.36,.38);fogDensity=.018;
+    sunDir=normalize(homeCloudLight);
+    sunCol=mix(vec3(.43,.452,.454),vec3(.225,.237,.239),homeWeather.x);
+    albedo=m<.5?vec3(.58,.585,.587):vec3(.12);
+    ambient=vec3(.51,.527,.53);
+    fogDensity=.014;
   }else if(v==6){
     sunDir=normalize(vec3(.1,.8,.3));sunCol=vec3(.8,.82,.86);
     albedo=m<.5?vec3(.82,.84,.88):vec3(.30,.26,.21);ambient=vec3(.32,.33,.36);fogDensity=.010;
@@ -487,21 +560,57 @@ vec3 ewSurface(vec3 p,vec3 rd,float dist,float m,int v,float seed,float key,floa
     else if(m<14.5){albedo=vec3(.065,.075,.11);ambient=vec3(.18,.20,.30);}
     else if(m<15.5){albedo=vec3(.10,.12,.13)*(1.0+grain);ambient=vec3(.27,.30,.34);}
     else if(m<16.5){albedo=vec3(.36,.34,.30)*(1.0+grain);ambient=vec3(.34,.38,.43);}
-    vec3 toLamp=vec3(${glf(HOME_WINDOW.x)},1.8,${glf(HOME_WINDOW.z)}-.15)-p;
-    float warm=v==5?exp(-length(toLamp)*.30)*(.65+.35*max(0.0,dot(n,normalize(toLamp)))):0.0;
-    emit+=vec3(1.0,.60,.27)*warm*.38;
+    if(v==5){
+      if(m>12.5&&m<13.5){
+        float packedSnowShelter;
+        albedo=ewHomeGroundAlbedo(p,n,rd,dist,packedSnowShelter);
+        float skyAccess=1.0-.24*ewHomeCanopy(p.xz);
+        float nearWalls=ewHomeBuildingLee(p.xz);
+        ambient*=skyAccess*(1.0-.13*nearWalls)*(1.0-packedSnowShelter);
+        sunCol*=skyAccess*(1.0-.45*nearWalls);
+      }
+      else if(m>16.5&&m<17.5){albedo=ewHomeStoneAlbedo(p,n);ambient=vec3(.55,.565,.57);}
+      else if(m>17.5&&m<18.5){albedo=vec3(.19,.188,.176)*(1.0+grain);ambient=vec3(.61,.62,.62);}
+    }
     // Local practical lighting retains the bedroom's depth and materials.
     if(m>19.5&&m<39.5){
       ewBedroomMaterial(p-hbOrigin,n,rd,t,m,albedo,ambient,emit);
       sunCol=vec3(0.0);fogDensity=.0005;
     }
+    if(v==5&&((m>49.5&&m<63.5)||(m>69.5&&m<87.5)||m>99.5)){
+      albedo=m>99.5?hvSignAlbedo(p,m,dist,surfacePrint):ewHomeValleyAlbedo(p,n,m,dist);
+      float bounced=.49+.17*smoothstep(-.9,.4,n.y);
+      ambient=vec3(bounced)*vec3(.985,1.0,1.004);
+      // Packed wash, stone and timber use a softer bounce from the snow
+      // underneath, so eaves and reveals survive without white rims.
+      if(abs(n.y)<.65)ambient+=vec3(.049,.051,.052);
+      // Snow reflects light back into visible bearing timbers and rolled metal.
+      if(m>85.5&&m<86.5)ambient+=vec3(.16,.169,.17)*smoothstep(.1,.95,-n.y);
+      if(m>86.5&&m<87.5)emit+=vec3(.16,.093,.045);
+      if(m>99.5)ambient=max(ambient,vec3(.84,.86,.87));
+    }
+    if(v==5&&m>64.5&&m<67.5){
+      albedo=ewHomeForestAlbedo(p,n,m);
+      // Overcast light reaches the sides of the loaded boughs. Lift their
+      // blue-grey snow and the needle structure above the silhouette floor.
+      float snowBounce=1.0-smoothstep(-.80,.34,n.y);
+      float retainedSnow=step(66.5,m);
+      ambient=vec3(.70,.73,.737)+vec3(.09,.116,.125)*snowBounce+retainedSnow*.21;
+      sunCol*=.72;
+    }
+    if(v==5&&m>87.5&&m<89.5){
+      albedo=ewHomeApproachTreeAlbedo(p,n,m,dist);
+      ambient=vec3(.70,.73,.737)+step(88.5,m)*.15;
+      sunCol*=.72;
+    }
     if(v==5&&m>39.5&&m<49.5){
-      ewHouseMaterial(p,n,m,albedo,ambient,emit);
-      sunCol=vec3(0.0);fogDensity=.085;
+      ewHouseMaterial(p,n,rd,m,dist,albedo,ambient,emit);
+      sunCol*=.46;
     }
   }
   float dif=max(dot(n,sunDir),0.0);
   vec3 col=albedo*(sunCol*dif+ambient)+emit;
+  if(v==5&&m>12.5&&m<13.5)col+=albedo*vec3(1.0,.63,.31)*ewHomeWindowSpill(p,n)*1.55;
   col+=flash*vec3(.55,.6,1.0)*(.3+.7*max(n.y,0.0))*albedo*6.0;
   if(v==4&&(m<.5||(m>13.5&&m<14.5))){
     vec3 r=reflect(rd,n);
@@ -516,6 +625,11 @@ vec3 ewSurface(vec3 p,vec3 rd,float dist,float m,int v,float seed,float key,floa
     float torch=min(.75,uRealmTorch/(1.0+dist*.45+dist*dist*.08))*cone;
     col+=albedo*vec3(.88,.93,1.0)*torch*max(.12,dot(n,-rd));
   }
+  if(v==5&&!(m>19.5&&m<39.5)){
+    vec3 weathered=ewHomeAerial(col,p,dist,homeWeather.x);
+    if(m>12.5&&m<13.5)weathered=ewHomeSpindrift(weathered,p,rd,dist,t,homeWeather);
+    return weathered;
+  }
   // What is lit or is the tower carries through the fog, so a key door reads.
   // The snowbound house resolves out of distance haze. Its closed exterior
   // must not inherit the tower/emissive-material exemption from whiteout fog.
@@ -528,7 +642,7 @@ vec3 ewSurface(vec3 p,vec3 rd,float dist,float m,int v,float seed,float key,floa
 // Ash blowing past, snow coming down: flat layers at three depths, so they
 // part around you at different rates as you move.
 vec3 ewParticles(vec3 ro,vec3 rd,vec3 col,float hit,int v,float t){
-  if(v!=0&&v!=5&&v!=6&&v!=7&&v!=8)return col;
+  if(v!=0&&v!=6&&v!=7&&v!=8)return col;
   // World-space flakes sampled at depths around the moving eye. There is no
   // forward-z test: turning sideways or back retains near and distant snow.
   for(int k=0;k<7;k++){
@@ -536,7 +650,7 @@ vec3 ewParticles(vec3 ro,vec3 rd,vec3 col,float hit,int v,float t){
     float tp=1.3+fk*fk*1.6;
     if(hit>0.0&&tp>hit)continue;
     vec3 q=(ro+rd*tp)*1.1;
-    if(v==5||v==6){q.y+=t*(.8+fk*.15);q.x+=t*.18;}
+    if(v==6){q.y+=t*(.8+fk*.15);q.x+=t*.18;}
     else{q.x+=t*(1.1+fk*.3);q.y-=t*.2;}
     vec3 cell=floor(q),f=fract(q);
     vec2 id=cell.xy+cell.z*vec2(17.1,39.7);
@@ -544,40 +658,46 @@ vec3 ewParticles(vec3 ro,vec3 rd,vec3 col,float hit,int v,float t){
     vec3 delta=f-vec3(ewHash(id+3.0),ewHash(id+7.0),ewHash(id+11.0));
     vec3 crossRay=delta-rd*dot(delta,rd);
     float speck=step(.54,h)*(1.0-smoothstep(.018,.065+fk*.008,length(crossRay)))*step(abs(dot(delta,rd)),.45);
-    if(v==5)speck*=1.0+uRealmDecoherence*.7*sin(fk*2.0+t*3.0);
-    col=mix(col,(v==5||v==6)?vec3(.95):(v==0?vec3(1.4,.23,.025):v==8?vec3(.55,.52,.47):vec3(.18,.14,.12)),speck*((v==5||v==6)?.8:.5));
+    col=mix(col,v==6?vec3(.95):(v==0?vec3(1.4,.23,.025):v==8?vec3(.55,.52,.47):vec3(.18,.14,.12)),speck*(v==6?.8:.5));
   }
   return col;
 }
 
-vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,float calm,out float surfaceHit){
+${STATION_FIELD_PREVIEW_GLSL}
+vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,float calm,out float surfaceHit,out vec2 surfacePrint){
+  surfacePrint=vec2(0.0);
+  if(v>=10&&v<=13)return sfFieldPreview(ro,rd,v,t,calm,surfaceHit);
+  if(v==14)return sfCoastPreview(ro,rd,surfaceHit);
   float flash=v==4?uStormFlash:0.0;
   float waterY=-.20+uRealmActive*uRealmDecoherence*2.7;
   float tWater=(v==1&&rd.y<0.0)?(waterY-ro.y)/rd.y:1e9;
   if(tWater<=0.0)tWater=1e9;
   float m;
+  vec2 homeWeather=v==5?ewHomeWeather(ro,t):vec2(0.0);
   float hit=ewTrace(ro,rd,v,seed,key,t,min(460.0,tWater),m);
   // Transparent glazing clips exterior flakes, but furniture behind it keeps
   // its own acquisition depth. Never flatten the whole room to the glass.
   surfaceHit=hit>0.0?hit:460.0;
   vec3 col;
   if(hit>0.0){
-    col=ewSurface(ro+rd*hit,rd,hit,m,v,seed,key,t,flash);
+    col=ewSurface(ro+rd*hit,rd,hit,m,v,seed,key,t,flash,homeWeather,surfacePrint);
   }else if(tWater<1e8){
     vec3 p=ro+rd*tWater;
     vec2 ripple=vec2(ewNoise(p.xz*.35+t*.25),ewNoise(p.xz*.35-t*.21))-.5;
     vec3 rr=normalize(vec3(rd.x+ripple.x*.04,-rd.y,rd.z+ripple.y*.04));
     float rm;
     float rh=ewTrace(p+rr*.1,rr,v,seed,key,t,300.0,rm);
-    vec3 reflected=rh>0.0?ewSurface(p+rr*rh,rr,rh,rm,v,seed,key,t,flash):ewSky(rr,v,seed,t,flash);
+    vec2 reflectedPrint;
+    vec3 reflected=rh>0.0?ewSurface(p+rr*rh,rr,rh,rm,v,seed,key,t,flash,homeWeather,reflectedPrint):ewSky(rr,v,seed,t,flash);
     float fresnel=.25+.75*pow(1.0-abs(rd.y),5.0);
     col=mix(vec3(.01,.015,.012),reflected,fresnel*.8);
     col=mix(col,vec3(.35,.40,.33),1.0-exp(-tWater*.004));
   }else if(rd.y<0.0&&v!=2){
-    col=mix(ewFog(v),ewSky(vec3(rd.x,0.0,rd.z),v,seed,t,flash),.25);
+    col=mix(v==5?ewHomeMistColour(homeWeather.x):ewFog(v),ewSky(vec3(rd.x,0.0,rd.z),v,seed,t,flash),.25);
   }else{
     col=ewSky(rd,v,seed,t,flash);
   }
+  if(v==5&&hit<0.0)col=ewHomeMountainHorizon(ro,rd,col,homeWeather.x,surfaceHit);
   if(v==1&&waterY>ro.y)col=mix(col,vec3(.025,.12,.105),.72);
   if(v==5){
     // Closed glazing is composited where the physical pane intersects this ray;
@@ -585,6 +705,7 @@ vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,floa
     float glassT=(${glf(HOME_WINDOW.z)}-ro.z)/rd.z;
     vec3 gp=ro+rd*glassT;
     vec2 pane=vec2(gp.x-(${glf(HOME_WINDOW.x)}),gp.y);
+    float litPane=0.0;
     if(glassT>0.0&&rd.z>.001&&abs(pane.x)<${glf(HOME_WINDOW.halfWidth)}&&pane.y>${glf(HOME_WINDOW.bottom)}&&pane.y<${glf(HOME_WINDOW.top)}&&(hit<0.0||glassT<hit+.03)){
       float rim=min(${glf(HOME_WINDOW.halfWidth)}-abs(pane.x),min(pane.y-${glf(HOME_WINDOW.bottom)},${glf(HOME_WINDOW.top)}-pane.y));
       float frost=(1.0-smoothstep(.015,.19,rim))*(.65+.35*ewNoise(pane*43.0));
@@ -596,20 +717,46 @@ vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,floa
       float breath=(.035+.025*sin(t*6.2831853/7.1))*(1.0-smoothstep(.12,.36,length(pane-vec2(.08,1.50))));
       float mist=(.035+.045*ewNoise(pane*32.0))*(1.0-clear)+breath;
       col=mix(col,vec3(.62,.72,.82),clamp(fresnel+frost*.32+mist,0.0,.48));
+      if(m>19.5&&m<39.5){
+        litPane=1.0;
+        // At long range the practical resolves as a warm pane before the
+        // furniture can resolve. Mullions still occlude the light normally.
+        float transmitted=smoothstep(8.0,29.0,glassT)*(1.0-.58*frost)*smoothstep(.2,.64,rd.z);
+        col=mix(col,vec3(.89,.58,.30),transmitted*.52);
+      }
       hit=min(hit>0.0?hit:1e5,glassT);
     }
-    float gust=sin(clamp(uHomeState.w,0.0,1.0)*3.14159265);
-    col=mix(col,vec3(.79,.84,.89),gust*.72);
+    float yardDepth=ewHomeYardHaze(ro,rd,hit>0.0?hit:460.0);
+    vec3 haze=ewHomeMistColour(.69);
+    vec3 scattered=mix(haze,haze*vec3(1.13,.92,.70),litPane*.62);
+    col=mix(col,scattered,1.0-exp(-yardDepth*.126));
     // Attention changes the cold exterior's presence while preserving the
     // window's world-space position and all camera control.
     float nearWindow=1.0-smoothstep(2.0,7.0,length(ro.xz-vec2(${glf(HOME_WINDOW.x)},${glf(HOME_WINDOW.z)})));
     float looking=pow(max(0.0,rd.z),6.0);
     if(m<19.5||(m>39.5&&m<49.5))col=mix(col,col*vec3(.79,.77,.74),uHomeState.z*nearWindow*looking*.45);
+    col=ewHomeFallingSnow(ro,rd,col,hit,t,homeWeather);
+    // Rest only changes the air around the seated body. The terminal cut
+    // takes over after this frost has crossed the occupied valley.
+    if(uHomeRest.y>0.0){
+      float frost=max(uHomeRest.y,uHomeRest.z);
+      float rim=smoothstep(.38,1.0,1.0-max(0.0,dot(rd,uRealmView)));
+      float settle=smoothstep(0.0,1.0,frost);
+      col=mix(col,vec3(dot(col,vec3(.2126,.7152,.0722))),settle*.74);
+      col=mix(col,vec3(.60,.623,.632),settle*(.16+.35*rim));
+      col*=1.0-smoothstep(.68,1.0,frost)*.94;
+    }
+    return col;
   }
   return ewParticles(ro,rd,col,hit,v,t);
 }
 vec3 elsewhereScene(vec3 ro,vec3 rd,int v,float seed,float key,float t,float calm){
   float surfaceHit;
-  return elsewhereSceneDepth(ro,rd,v,seed,key,t,calm,surfaceHit);
+  vec2 surfacePrint;
+  return elsewhereSceneDepth(ro,rd,v,seed,key,t,calm,surfaceHit,surfacePrint);
+}
+vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,float calm,out float surfaceHit){
+  vec2 surfacePrint;
+  return elsewhereSceneDepth(ro,rd,v,seed,key,t,calm,surfaceHit,surfacePrint);
 }
 `;

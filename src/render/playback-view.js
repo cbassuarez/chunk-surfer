@@ -26,13 +26,14 @@ export function buildPlaybackViewModel(snapshot, { roomTitle = 'SEALED TAKE', ta
 // here as a second implementation of the same instrument. They are in
 // render/recorder-view.js now, drawn once for both transports.
 
-export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumber = 0, clearBottom = 0 } = {}) {
+export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumber = 0, clearBottom = 0, rig } = {}) {
   const view = buildPlaybackViewModel(snapshot, { roomTitle, takeNumber });
   if (!view) return false;
 
   const rect = recorderPanelRect({ cols, rows, progress: 0, rowsNeeded: 9, clearBottom });
   drawRecorderFace({
     mode: TRANSPORT.PLAY,
+    rig,
     rect,
     buttons: playbackOverlayButtons(),
     source: 'HEADPHONES',

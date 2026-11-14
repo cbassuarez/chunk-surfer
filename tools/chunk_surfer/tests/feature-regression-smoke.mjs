@@ -607,6 +607,11 @@ try {
   assert.ok(livePlant.light.rig.some((entry)=>entry.id==='plant-manifold-live'));
   assert.equal(livePlant.hum.audible,true);
 
+  const stagePlantB3=await page.evaluate(()=>{
+    const probe=window.__probe;
+    return probe.rec().takes.includes('main_b3')?null:probe.setTakes(['main_b3']);
+  });
+  if(stagePlantB3)assert.ok(stagePlantB3.ok&&stagePlantB3.takes.includes('main_b3'));
   await page.evaluate(()=>{window.__probe.setPower('sp01',false);window.__probe.warpCell(33,35.8,2);window.__probe.plantVisual('hissing');});
   await settleViewport();
   await page.screenshot({path:path.join(output,'07q-plant-manifold-hissing.png')});
@@ -619,6 +624,7 @@ try {
   assert.equal(haulVisual.plant.heavyMode,'dragging');
   assert.equal(haulVisual.hush.tableau,true);
   await page.evaluate(()=>window.__probe.plantVisual('dormant'));
+  if(stagePlantB3)assert.equal((await page.evaluate(()=>window.__probe.setTakes(['main_b3'],false))).ok,true);
 
   // The same physical radio is captured in each phase, followed by its case
   // and isolated map channel. Nothing here uses a HUSH or objective marker.

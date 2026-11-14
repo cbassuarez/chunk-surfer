@@ -271,7 +271,7 @@ export function stepCoastalMemory(value, input = {}, { layout, ...options } = {}
     state.recordingOffset = ((input.recordingOffset % COASTAL_MEMORY_SECONDS) + COASTAL_MEMORY_SECONDS) % COASTAL_MEMORY_SECONDS;
   // A host must supply actual running monitor evidence. Merely approaching,
   // reading, simulation dt, or ambient music never earns the archival receipt.
-  if (frame.canListen && input.recorderHeld && input.audioRunning === true && input.sourceReady === true) {
+  if ((frame.canListen || input.sourceInHands === true) && input.recorderHeld && input.audioRunning === true && input.sourceReady === true) {
     state.listenedSeconds = listenSeconds(state.listenedSeconds + clamp(input.audibleSeconds, 0, COASTAL_MEMORY_SECONDS));
     if (!state.recordingHeard && state.listenedSeconds >= COASTAL_MEMORY_LISTEN_SECONDS) {
       state.recordingHeard = true;

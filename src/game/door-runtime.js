@@ -1,3 +1,5 @@
+import { DOOR_WEDGE_ID } from './carried-door-wedge.js';
+
 export const DOOR_STATE = Object.freeze({
   CLOSED: 'closed', OPENING: 'opening', OPEN: 'open', CLOSING: 'closing',
 });
@@ -25,6 +27,7 @@ export function normalizeDoorEndpoint(value, definition) {
     openFraction: state === DOOR_STATE.OPEN ? 1 : 0,
     wedge: value.wedge == null ? fresh.wedge : !!value.wedge,
     closerArmed: value.closerArmed == null ? fresh.closerArmed : !!value.closerArmed,
+    ...(value.wedge&&value.wedgeItemId===DOOR_WEDGE_ID?{wedgeItemId:DOOR_WEDGE_ID}:{}),
   };
 }
 
@@ -36,7 +39,7 @@ export function beginDoorOpen(runtime) {
 }
 
 export function beginDoorClose(runtime, { removeWedge = true } = {}) {
-  if (runtime.wedge && removeWedge) runtime.wedge = false;
+  if (removeWedge) { runtime.wedge = false; delete runtime.wedgeItemId; }
   if (runtime.wedge || runtime.state === DOOR_STATE.CLOSED || runtime.state === DOOR_STATE.CLOSING) return false;
   runtime.state = DOOR_STATE.CLOSING;
   runtime.closeRequested = true;
@@ -71,7 +74,8 @@ export function doorBlocksPassage(runtime) { return runtime.openFraction < .85; 
 
 export function stableDoorEndpoint(runtime) {
   const open = runtime.state === DOOR_STATE.OPEN || runtime.state === DOOR_STATE.OPENING;
-  return { state: open ? DOOR_STATE.OPEN : DOOR_STATE.CLOSED, wedge: !!runtime.wedge, closerArmed: !!runtime.closerArmed };
+  return { state: open ? DOOR_STATE.OPEN : DOOR_STATE.CLOSED, wedge: !!runtime.wedge, closerArmed: !!runtime.closerArmed,
+    ...(runtime.wedge&&runtime.wedgeItemId===DOOR_WEDGE_ID?{wedgeItemId:DOOR_WEDGE_ID}:{}) };
 }
 
 export function normalizeDoorSave(value) {
@@ -85,6 +89,7 @@ export function normalizeDoorSave(value) {
       state: endpoint.state === DOOR_STATE.OPEN ? DOOR_STATE.OPEN : DOOR_STATE.CLOSED,
       wedge: !!endpoint.wedge,
       closerArmed: !!endpoint.closerArmed,
+      ...(endpoint.wedge&&endpoint.wedgeItemId===DOOR_WEDGE_ID?{wedgeItemId:DOOR_WEDGE_ID}:{}),
     }])),
     legacyOpen: Array.isArray(source.open) ? source.open.filter((id) => typeof id === 'string').slice(0, 64) : [],
   };

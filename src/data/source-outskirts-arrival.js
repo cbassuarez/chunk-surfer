@@ -26,6 +26,7 @@
 import { outskirtsTownPlacement, outskirtsTownBoundaryCollision } from './source-outskirts-town.js';
 import { outskirtsFoldLayout } from './source-outskirts-folds.js';
 import { OUTSKIRTS_BUS_PASSAGE, busPassageCollisionBoxes, busPassageRoadPoint } from './outskirts-bus-passage.js';
+import { OUTSKIRTS_VAN_CRASH } from './outskirts-van-crash.js';
 export { SOURCE_OUTSKIRTS_TOWN, outskirtsTownSet } from './source-outskirts-town.js';
 
 const freeze = Object.freeze;
@@ -90,6 +91,42 @@ export const OUTSKIRT_LIFECYCLE = freeze({
 });
 
 const put = (id, mesh, across, along, extra = {}) => freeze({ id, mesh, across, along, yaw: 0, y: 0, ...extra });
+// The walked road is a reframe of the carriageway already used by the drive.
+// The GLB is 41 m along local Z. Match the pass length without changing its
+// measured lane widths or the height of the barrier.
+const M62_ROAD_LENGTH = 41;
+const M62_BARRIER_BODIES = freeze([
+  freeze({ minX: -6.47, maxX: -6.31, minZ: -OUTSKIRT_STRETCH_METRES / 2, maxZ: OUTSKIRT_STRETCH_METRES / 2 }),
+  freeze({ minX: 8.65, maxX: 8.75, minZ: -OUTSKIRT_STRETCH_METRES / 2, maxZ: OUTSKIRT_STRETCH_METRES / 2 }),
+]);
+
+function m62PassPieces() {
+  const half = OUTSKIRT_STRETCH_METRES / 2;
+  const pieces = [];
+  for (let tile = -4; tile <= 4; tile += 1) {
+    const offset = tile * OUTSKIRT_STRETCH_METRES;
+    const suffix = tile < 0 ? `back-${-tile}` : tile > 0 ? `ahead-${tile}` : 'main';
+    const flags = { m62Scenery: true, m62Extension: tile !== 0, structural: true };
+    const roadTransform = { y: .025, scaleZ: OUTSKIRT_STRETCH_METRES / M62_ROAD_LENGTH, ...flags };
+    pieces.push(put(tile === 0 ? 'road' : `m62-road-${suffix}`, 'm62_carriageway', 0, half + offset,
+      { ...roadTransform, collision: tile === 0 ? M62_BARRIER_BODIES : 'none' }));
+    pieces.push(put(`m62-verge-${suffix}`, 'm62_verge', 0, half + offset, { ...roadTransform, collision: 'none' }));
+    const lampStops = tile === 0 ? [5.8, 27.7] : [half];
+    for (const [index, along] of lampStops.entries()) {
+      pieces.push(put(tile === 0 ? `m62-lamp-${index}` : `m62-lamp-${suffix}`, 'yard_lamp_column', 8.15, along + offset,
+        { yaw: Math.PI, lamp: true, glow: [1, .71, .38, .12], collision: 'none', ...flags }));
+    }
+  }
+  pieces.push(put('m62-route-marker', 'm62_route_marker', 7.3, 22.8, {
+    m62Scenery: true, structural: true,
+    collision: freeze([-.51, .51].map(x => freeze({ minX: x - .045, maxX: x + .045, minZ: -.09, maxZ: 0 }))),
+  }));
+  const baseVan = OUTSKIRT_STRETCH.find(piece => piece.id === 'van');
+  pieces.push(freeze({ ...baseVan, ...OUTSKIRTS_VAN_CRASH.rest, collision: OUTSKIRTS_VAN_CRASH.collision,
+    vanCrash: true, m62Scenery: true }));
+  return pieces;
+}
+
 // Attachments are authored against the actual support surface, not road-space
 // guesses. A changed parent arrangement carries its contents and inspection point.
 function attach(parent, id, mesh, x, y, z, extra = {}) {
@@ -204,9 +241,8 @@ const LAST = OUTSKIRT_STRETCH_COUNT - 1;
 // clean so the scene can be learned; after that the chance climbs slowly and
 // then steeply.
 export const outskirtWear = (k) => Math.max(0, Math.min(1, k / LAST));
-// The loop pass (PAYPHONE_PASS.loop in src/game/payphone.js, index 13) is never
-// broken: its box has to be there, ringing, every time round.
-const QUIET_PASSES = freeze([0, 1, 13, 28]);
+// Preserve the compulsory telephone box and the motorway's authored break.
+const QUIET_PASSES = freeze([0, 1, 13, OUTSKIRTS_VAN_CRASH.pass, 28]);
 // Breaks the road must have at least once, whatever the hash says, on a pass it
 // leaves unbroken: somebody walking the road a moment ahead of him.
 const PINNED_BREAKS = freeze({ 3: 'mirrored', 4: 'turned', 7: 'blocked', 17: 'already-walked', 20: 'stranger', 21: 'no-road', 23: 'unfinished', 26: 'emptied', 27: 'stutter' });
@@ -305,6 +341,7 @@ export const OUTSKIRT_BEATS = freeze(BEATS_WRITTEN.map(({ line, ...beat }) => fr
 // One pass of the scene: the same pieces, worn by `wear`, then broken if it breaks.
 function passPieces(pass) {
   const { k, wear } = pass;
+  if (k === OUTSKIRTS_VAN_CRASH.pass && !pass.break) return m62PassPieces();
   const base = Object.fromEntries(OUTSKIRT_STRETCH.map((piece) => [piece.id, piece]));
   const kept = (id) => !vanished(k, { id });
   // Recognition needs a trustworthy baseline. A landmark moves only when the
@@ -338,7 +375,7 @@ function passPieces(pass) {
     pieces.push(put('booth-hatch', 'outskirts_lodge_hatch', lodge.across, lodge.along, { yaw: lodge.yaw }));
     pieces.push(put('booth-phone', 'outskirts_lodge_phone', lodge.across, lodge.along, { yaw: lodge.yaw }));
     pieces.push(put('booth-kettle', 'outskirts_lodge_kettle', lodge.across, lodge.along, { yaw: lodge.yaw }));
-    if ([1, 2, 3, 4, 10, 11, 12, 13, 15, 16, 17].includes(k)) pieces.push(put('booth-ledger', 'outskirts_lodge_ledger', lodge.across, lodge.along, { yaw: lodge.yaw, inspect: k === 2 ? undefined : 'ledger', interact: [-0.68, -1.8], closeReach: 1.6, focusPriority: 9 }));
+    if ([1, 2, 3, 4, 10, 11, 12, 13, 16, 17].includes(k)) pieces.push(put('booth-ledger', 'outskirts_lodge_ledger', lodge.across, lodge.along, { yaw: lodge.yaw, inspect: k === 2 ? undefined : 'ledger', interact: [-0.68, -1.8], closeReach: 1.6, focusPriority: 9 }));
     // The same man as Wrong Fold, still upright. His feet meet the lodge's
     // .20m plinth and his head clears the service window. Local +Z faces into
     // the lodge, keeping his back to the road; the inspection stays at the hatch.
@@ -386,7 +423,7 @@ function passPieces(pass) {
     pieces.push(attach(bus, 'bus-woman-aboard', 'outskirts_bus_woman', 0, .50, 1.3, { yaw: Math.PI / 2 }));
   }
   else if (kept('bus-woman')) pieces.push(freeze({ ...off(base['bus-woman'], 0.5), watcher: hash(k, 'watch', 9) < 0.25 + wear * 0.6 }));
-  if (kept('van')) pieces.push(base.van,attach(base.van,'van-lamp','yard_van_lamp',0,2.3,2,{glow:base['van-lamp'].glow}));
+  if (kept('van')) pieces.push(base.van, attach(base.van, 'van-lamp', 'yard_van_lamp', 0, 2.3, 2, { glow: base['van-lamp'].glow }));
   // THE VAN FILLS UP. Nobody says so: pass by pass his own kit turns up in the
   // back, then his bag with the letter in it, then her page on the dash and more of
   // it, and at the end his headphones laid on the blanket and the car phone's
@@ -590,9 +627,8 @@ export function outskirtsArrivalLayout() {
   const end = { stretch: OUTSKIRT_STRETCH_COUNT, repeat: OUTSKIRT_STRETCH_COUNT, wear: 1, broken: null, watcher: false, dark: false };
   out.push(freeze({ ...put('last-light', 'yard_lamp_column', OUTSKIRT_LAST_LIGHT.across + 1.6, OUTSKIRT_LAST_LIGHT.along, { yaw: Math.PI, lamp: true, faulty: true }), ...end, key: 'last-light', id: 'end-last-light' }));
   out.push(freeze({ ...put('last-recorder', 'ending_recorder_open', OUTSKIRT_LAST_LIGHT.across, OUTSKIRT_LAST_LIGHT.along, { yaw: Math.PI / 2, lastRecorder: true }), ...end, key: 'last-recorder', id: 'end-last-recorder' }));
-  // The remnant of a service enclosure only resolves over the final eleven
-  // metres of black. It meets the actual field edge, so approaching the light
-  // is physical geometry rather than a hidden trigger across the whole void.
+  // The service rails converge on the listening pool. Their backstop closes
+  // behind the body at the narrow entrance, leaving the road ahead open.
   const threshold = OUTSKIRT_LAST_THRESHOLD;
   for (const side of [-1, 1]) {
     const dx = side * (threshold.railAcross - threshold.outerAcross);
@@ -607,8 +643,9 @@ export function outskirtsArrivalLayout() {
     out.push(freeze({ ...put(key, 'outskirts_boundary_rail_6', side * threshold.railAcross, threshold.throatAlong + 3,
       { structural: true, lastThreshold: true }), ...end, key, id: `end-${key}` }));
   }
-  out.push(freeze({ ...put('last-service-stop', 'outskirts_boundary_rail_6', 0, threshold.endpointAlong,
-    { yaw: Math.PI / 2, structural: true, lastThreshold: true }), ...end, key: 'last-service-stop', id: 'end-last-service-stop' }));
+  out.push(freeze({ ...put('last-backstop', 'outskirts_boundary_rail_6', 0, threshold.gateAlong,
+    { yaw: Math.PI / 2, scaleZ: 2 * threshold.railAcross / 6, collision: 'none',
+      structural: true, lastThreshold: true, lastBackstop: true }), ...end, key: 'last-backstop', id: 'end-last-backstop' }));
   return out;
 }
 
@@ -625,12 +662,12 @@ export const OUTSKIRT_ROAD_END = OUTSKIRT_STRETCH_START + OUTSKIRT_STRETCH_COUNT
 export const OUTSKIRT_LAST_LIGHT = freeze({ along: OUTSKIRT_ROAD_END + 62, across: 0 });
 // Standing here, where its reflection stood, starts the recording.
 export const OUTSKIRT_LAST_MARK = freeze({ along: OUTSKIRT_LAST_LIGHT.along - 0.9, across: OUTSKIRT_LAST_LIGHT.across });
-// The retained set's six real 6m panels per diagonal: no mesh scaling. The
-// continuous unravelling runtime removes these guide and stop pieces, leaving
-// the recording pool optional and the road open through the old tape seam.
+// Six 6m panels per diagonal, then one straight section at each side. The
+// moving backstop spans just the narrow entrance instead of capping the exit.
 export const OUTSKIRT_LAST_THRESHOLD = freeze({
   outerAcross: 36, railAcross: 1.15,
   throatAlong: OUTSKIRT_LAST_MARK.along - 2.2,
   fromAlong: OUTSKIRT_LAST_MARK.along - 2.2 - Math.sqrt(36 ** 2 - (36 - 1.15) ** 2),
-  endpointAlong: OUTSKIRT_LAST_MARK.along + 1.1,
+  gateAlong: OUTSKIRT_LAST_MARK.along - 1.8,
+  railsEndAlong: OUTSKIRT_LAST_MARK.along + 3.8,
 });

@@ -127,7 +127,7 @@ test('pause, hidden state, real DOM/native focus and world scenes suspend both c
     'confirmed native focus preserves input lifecycle despite delayed DOM truth');
 });
 
-test('global pre-world pass really ticks demolition before the Horizon-specific early return', () => {
+test('global pre-world pass ticks demolition before the retained street branch', () => {
   const h = harness(), loop = production('loop');
   const outer = loop.indexOf('if(inRogue){'), begin = outer + 'if(inRogue){'.length;
   const end = loop.indexOf('if(!scenes.blocksWorld()){', begin);
@@ -145,19 +145,20 @@ test('global pre-world pass really ticks demolition before the Horizon-specific 
   Object.assign(h, {
     tickTowerPersonal: () => false, endSourceHaystackMosh() {}, endSourceBracketPresence() {},
     PRES: { isActive: () => false }, sourceFearFloor: 0,
-    tickHorizonScore: () => h.order.push('score'), speakHorizonMarker() {},
-    preparePayphoneRoadLoop() {}, syncOutskirtsNight() {}, tickPayphone() {}, syncSourceRender: () => h.order.push('render'),
+    preparePayphoneRoadLoop() {}, syncOutskirtsNight: () => h.order.push('street'),
+    tickPayphone: () => h.order.push('phone'), syncSourceRender: () => h.order.push('render'),
     shakeMode: () => 'full',
   });
   Object.assign(h.chunkSurfRuntime, {
-    bellsFrame: () => ({ active: false }), horizonFrame: () => ({ active: true }),
-    tickHorizon: dt => { h.order.push('horizon'); assert.equal(dt, .05); },
+    bellsFrame: () => ({ active: false }), horizonFrame: () => ({ active: true, preTape: true }),
+    horizonApproachDue: () => false,
+    tickOutskirtsCharacters: dt => { h.order.push('characters'); assert.equal(dt, .05); },
     setPlayerPosition() {}, tick() { assert.fail('the Horizon early return must bypass the generic Source tick'); },
   });
   vm.runInContext(`function actualPreWorldPass(dt){${prefix}}\n${production('tickSourceSpace')}`, h);
   h.actualPreWorldPass(.05); h.tickSourceSpace(.05);
   assert.equal(h.runtimeTicks.length, 1);
-  assert.deepEqual(h.order, ['demolition', 'horizon', 'score', 'render']);
+  assert.deepEqual(h.order, ['demolition', 'characters', 'street', 'phone', 'render']);
   h.blocked = true; h.actualPreWorldPass(.05);
   assert.equal(h.runtimeTicks.length, 2, 'pre-world work remains reachable while a scene blocks generic work');
   assert.equal(h.runtimeTicks.at(-1).options.suspendedPresentation, true);
@@ -226,7 +227,7 @@ function attachResetDependencies(h) {
     'clearStairEnvironmentalTimers', 'endSourceHaystackMosh', 'retireStandingTear', 'resetMotionInput', 'resetArchitectureDoorAudio',
     'retireStudentStrike','resetPlayerFootContacts']) h[name] = () => {};
   for (const name of ['r3dSetHorizon', 'r3dSetSourceShore', 'r3dSetSourceEmergency', 'r3dSetSourceWhiteout',
-    'r3dSetSourceFault', 'r3dSetIndoorRain', 'r3dSetLocalLights', 'r3dSetSourceScene', 'r3dSetSourceSurface']) h.R3[name] = () => {};
+    'r3dSetIndoorRain', 'r3dSetLocalLights', 'r3dSetSourceScene', 'r3dSetSourceSurface']) h.R3[name] = () => {};
   for (const name of ['cancelRecordingPressureAudio','resetRunAudio', 'clearSourceRuntime', 'godClearSpecialWorlds', 'beginNewGameFlow']) {
     vm.runInContext(production(name), h, { filename: `src/main.js:${name}` });
   }

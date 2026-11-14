@@ -21,6 +21,7 @@ export function vanBrandInstances(renderedHosts = []) {
     if (matrix != null ? matrix.length !== 16 || !Array.from(matrix).every(Number.isFinite)
       : !Number.isFinite(host.x) || !Number.isFinite(host.z)) continue;
     const mark = { id, mesh: fit.mesh, paintOf: host.id || host.mesh, structural: false, noShadow: true };
+    const fallback=vanBrandFit(host.fallbackMesh);if(fallback)mark.fallbackMesh=fallback.mesh;
     for (const field of FIELDS) if (host[field] !== undefined) mark[field] = detached(host[field]);
     out.push(mark); seen.add(id);
   }

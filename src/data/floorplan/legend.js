@@ -23,6 +23,10 @@ export const AMBIENT_PLACE_SCALE = 4.0;
 export const STEP_UP = 0.45;      // the tallest riser a person takes without thinking
 export const HEADROOM = 1.80;     // below this you do not fit
 
+// High bit of the render texture's zone byte. Borrowed room geometry is
+// visible only to rays entering through the selected exterior window.
+export const BORROWED_INTERIOR_ZONE_BIT = 128;
+
 // Flags (bitfield, one byte)
 export const F = {
   SOLID:    1 << 0,   // rock. never enterable.

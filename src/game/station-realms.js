@@ -1,4 +1,5 @@
-import { stationRealmPocket, realmSupportHeight } from '../data/realm-pockets.js';
+import { stationRealmPocket, realmSupportHeight, homeSnowHeight } from '../data/realm-pockets.js';
+import { advanceHomeOldv, rememberHomeFootfall, normalizeHomeOldv } from './childhood-valley-oldv.js';
 
 export const STATION_REALM_BODY_RADIUS = .22;
 export const STATION_DECOHERENCE_SECONDS = 1.15;
@@ -42,7 +43,18 @@ function plain(value, depth = 0) {
   return Object.fromEntries(Object.entries(value).filter(([key]) => !['__proto__', 'constructor', 'prototype'].includes(key))
     .slice(0, 40).map(([key, v]) => [key, plain(v, depth + 1)]));
 }
-export const normalizeStationRealmHomeState = (value) => value && typeof value === 'object' ? plain(value) : null;
+export function normalizeStationRealmHomeState(value) {
+  if (!value || typeof value !== 'object') return null;
+  const state = plain(value);
+  delete state.awayArmed;
+  delete state.outwardDistance;
+  if (Object.hasOwn(state, 'oldv')) {
+    const oldv = normalizeHomeOldv(value.oldv);
+    if (oldv) state.oldv = oldv;
+    else delete state.oldv;
+  }
+  return state;
+}
 
 export function normalizeStationRealm(value) {
   const pocket = stationRealmPocket(value?.variant);
@@ -93,16 +105,17 @@ export function beginStationRealmReturn(realm, now, reason = 'budget') {
 export function stationRealmFrame(realm, now = 0) {
   if (!realm) return null;
   const pocket = stationRealmPocket(realm.variant), nearWindow = stationRealmAtWindow(realm);
+  const homeState = normalizeStationRealmHomeState(realm.homeState);
   const decoherence = realm.returnStartedAt == null ? 0 : clamp((now - realm.returnStartedAt) / realm.returnDuration, 0, 1);
   return { ...realm, pose: { ...realm.pose, floorY: stationRealmFloor(realm.variant, realm.pose.x, realm.pose.z) ?? 0 },
-    returnPose: { ...realm.returnPose }, homeState: normalizeStationRealmHomeState(realm.homeState),
+    returnPose: { ...realm.returnPose }, homeState,
     time: now, stepBudget: pocket.stepBudget, strideLength: pocket.strideLength, eyeHeight: pocket.eyeHeight,
     window: pocket.home ? { ...pocket.home.window } : null,
     decoherence, atWindow: nearWindow,
     home: { eligible: realm.home, nearWindow, reached: realm.windowReached,
       fold: realm.home ? clamp((realm.pose.z - (pocket.home?.foldFrom ?? 58))
         / Math.max(.001, (pocket.home?.foldTo ?? 66.7) - (pocket.home?.foldFrom ?? 58)), 0, 1) : 0,
-      ...(normalizeStationRealmHomeState(realm.homeState) || {}) },
+      ...(homeState || {}) },
   };
 }
 
@@ -110,6 +123,9 @@ export function moveStationRealm(realm, { dx = 0, dz = 0, yaw, pitch } = {}, now
   if (!realm) return { movedDistance: 0, footsteps: 0, blocked: false, retreated: false, atWindow: false };
   if (Number.isFinite(Number(yaw))) realm.pose.yaw = Number(yaw);
   if (Number.isFinite(Number(pitch))) realm.pose.pitch = clamp(pitch, -1.4, 1.4);
+  if (realm.stage !== 'inside') {
+    return { movedDistance: 0, footsteps: 0, blocked: false, retreated: false, atWindow: stationRealmAtWindow(realm) };
+  }
   dx = finite(dx); dz = finite(dz);
   // Cap a request, then sweep it. Frame stalls cannot tunnel through a wall or
   // turn a corrupt delta into a whole visit's worth of footsteps.
@@ -129,7 +145,8 @@ export function moveStationRealm(realm, { dx = 0, dz = 0, yaw, pitch } = {}, now
       const completed = Math.floor((realm.strideM + 1e-9) / pocket.strideLength);
       realm.strideM = Math.max(0, realm.strideM - completed * pocket.strideLength);
       realm.steps += completed;
-      beginStationRealmReturn(realm, now, 'retreat'); retreated = true; break;
+      beginStationRealmReturn(realm, now, realm.windowReached ? 'home' : 'retreat');
+      retreated = true; break;
     }
     const floor = stationRealmFloor(realm.variant, ax, az) ?? 0;
     let nx = ax + sx, nz = az + sz;
@@ -142,8 +159,20 @@ export function moveStationRealm(realm, { dx = 0, dz = 0, yaw, pitch } = {}, now
     const nextFloor = stationRealmFloor(realm.variant, nx, nz) ?? floor;
     const travelled = Math.hypot(nx - ax, nextFloor - floor, nz - az);
     realm.pose.x = nx; realm.pose.z = nz; movedDistance += travelled;
+    const previousStride = realm.strideM;
     realm.strideM += travelled;
     const completed = Math.floor((realm.strideM + 1e-9) / pocket.strideLength);
+    if (realm.home && realm.stage === 'inside' && travelled > 0) {
+      realm.homeState = advanceHomeOldv(realm.homeState, nx, nz);
+      if (completed && realm.homeState?.oldv && !realm.homeState.oldv.left) {
+        // Place the foot where the swept body crosses the stride boundary,
+        // even when a frame contains several substeps or slides along a wall.
+        const at = clamp((pocket.strideLength - previousStride) / travelled, 0, 1);
+        const x = ax + (nx - ax) * at, z = az + (nz - az) * at;
+        realm.homeState = rememberHomeFootfall(realm.homeState, x, z, realm.pose.yaw, realm.steps + 1,
+          Math.abs(nextFloor - homeSnowHeight(nx, nz)) < .018);
+      }
+    }
     realm.strideM = Math.max(0, realm.strideM - completed * pocket.strideLength);
     realm.steps += completed;
     if (realm.stage === 'inside' && !realm.home && realm.steps >= pocket.stepBudget) beginStationRealmReturn(realm, now, 'budget');

@@ -1,0 +1,398 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to main content" [ref=e3] [cursor=pointer]:
+      - /url: "#maincontent"
+    - generic [ref=e4]:
+      - heading [level=1] [ref=e5]:
+        - link "itch.io itch.io logo" [ref=e6] [cursor=pointer]:
+          - /url: https://itch.io/
+          - generic [ref=e7]: itch.io
+          - img "itch.io logo" [ref=e8]
+      - link "Dashboard" [ref=e10] [cursor=pointer]:
+        - /url: https://itch.io/dashboard
+      - generic [ref=e11]:
+        - text: "Manage:"
+        - link "Edit game" [ref=e12] [cursor=pointer]:
+          - /url: https://itch.io/game/edit/4768870
+        - link "Analytics" [ref=e13] [cursor=pointer]:
+          - /url: https://itch.io/game/summary/4768870
+        - link "Widget" [ref=e14] [cursor=pointer]:
+          - /url: https://itch.io/game/widget/4768870
+        - button " Edit theme" [ref=e15] [cursor=pointer]:
+          - generic [ref=e16]: 
+          - text: Edit theme
+        - link "Restricted" [ref=e18] [cursor=pointer]:
+          - /url: https://itch.io/game/edit/4768870#published
+      - generic [ref=e19]:
+        - link "8" [ref=e20] [cursor=pointer]:
+          - /url: https://itch.io/notifications
+        - link "seb" [ref=e21] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io
+        - button "Account Menu" [ref=e25] [cursor=pointer]
+  - generic [ref=e29]:
+    - generic [ref=e31]:
+      - heading "You recently updated this page" [level=2] [ref=e32]
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: Consider posting a devlog to notify followers of the updates.
+          - generic [ref=e36]: Added CHUNK SURFER for Windows 0.3.2, CHUNK SURFER for macOS (Silicon) 0.3.2, CHUNK SURFER for Linux (Debian) 0.3.2, CHUNK SURFER for Linux (AppImage) 0.3.2, 9 images
+        - generic [ref=e37]:
+          - button "Dismiss" [ref=e39] [cursor=pointer]
+          - link "New devlog →" [ref=e40] [cursor=pointer]:
+            - /url: https://itch.io/dashboard/game/4768870/new-devlog
+    - list:
+      - listitem:
+        - link "Add To Collection" [ref=e41] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io/chunk-surfer/add-to-collection?source=game
+    - generic [ref=e45]:
+      - heading "CHUNK SURFER" [level=1] [ref=e47]
+      - generic [ref=e50]:
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - paragraph [ref=e54]: AUDIOCORP / WORK ORDER 4417-C
+            - paragraph [ref=e55]: ELLERY CONSERVATORY
+          - generic [ref=e56]:
+            - link "OVERVIEW (selected)" [ref=e57] [cursor=pointer]:
+              - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview
+              - generic: OVERVIEW
+              - generic [ref=e58]: (selected)
+            - link "GAMEPLAY" [ref=e59] [cursor=pointer]:
+              - /url: https://cbassuarez.itch.io/chunk-surfer#cs-gameplay
+            - link "STORY & WORLD" [ref=e60] [cursor=pointer]:
+              - /url: https://cbassuarez.itch.io/chunk-surfer#cs-story
+            - link "DOWNLOAD" [ref=e61] [cursor=pointer]:
+              - /url: https://cbassuarez.itch.io/chunk-surfer#cs-download
+          - generic [ref=e62]:
+            - generic [ref=e65]:
+              - generic [ref=e67]:
+                - link [ref=e68] [cursor=pointer]:
+                  - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNC5qcGc=/original/oOt8l3.jpg
+                  - img "The view from the van looks past its dashboard and windscreen toward Ellery’s gate and the buildings across the street." [ref=e70]
+                - generic [ref=e72]:
+                  - generic [ref=e73]:
+                    - paragraph [ref=e74]: ARRIVAL
+                    - paragraph [ref=e75]: 01 / 03
+                  - heading "TAKE THE JOB." [level=2] [ref=e76]
+                  - paragraph [ref=e80]:
+                    - text: Report to condemned Ellery Conservatory as the field recordist. Capture five clean room tones before demolition at
+                    - strong [ref=e81]: 06:00
+                    - text: . Step out of the van. Check in.
+              - generic [ref=e82]:
+                - generic [ref=e83]:
+                  - paragraph [ref=e84]:
+                    - text: SELECT A SCENE
+                    - generic [ref=e85]: Choose an image to view.
+                  - generic [ref=e87]:
+                    - link "‹ PREV" [ref=e88] [cursor=pointer]:
+                      - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview-3
+                    - link "NEXT ›" [ref=e89] [cursor=pointer]:
+                      - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview-2
+                - generic [ref=e90]:
+                  - link "01 Arrival (current image)" [ref=e91] [cursor=pointer]:
+                    - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview
+                    - generic [ref=e93]:
+                      - generic [ref=e94]: "01"
+                      - generic [ref=e95]: Arrival
+                    - generic [ref=e97]: (current image)
+                  - link "02 Recording" [ref=e98] [cursor=pointer]:
+                    - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview-2
+                    - generic [ref=e100]:
+                      - generic [ref=e101]: "02"
+                      - generic [ref=e102]: Recording
+                  - link "03 Impossible spaces" [ref=e104] [cursor=pointer]:
+                    - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview-3
+                    - generic [ref=e106]:
+                      - generic [ref=e107]: "03"
+                      - generic [ref=e108]: Impossible spaces
+            - generic [ref=e110]:
+              - generic [ref=e111]:
+                - paragraph [ref=e112]: TRAILER
+                - button "Click to activate YouTube embed" [ref=e115] [cursor=pointer]: PLAY TRAILER
+                - paragraph [ref=e116]:
+                  - link "WATCH ON YOUTUBE ↗" [ref=e117] [cursor=pointer]:
+                    - /url: https://www.youtube.com/watch?v=VH-7d9_QVvw
+              - generic [ref=e119]:
+                - heading "ONE NIGHT AT ELLERY." [level=3] [ref=e120]
+                - paragraph [ref=e124]:
+                  - text: Five clean room tones before demolition at
+                  - strong [ref=e125]: 06:00
+                  - text: .
+                - paragraph [ref=e126]: Listen, record, explore, and meet the people still occupying the school.
+                - paragraph [ref=e127]:
+                  - link "Explore gameplay ›" [ref=e128] [cursor=pointer]:
+                    - /url: https://cbassuarez.itch.io/chunk-surfer#cs-gameplay
+                  - link "Discover the story & world ›" [ref=e129] [cursor=pointer]:
+                    - /url: https://cbassuarez.itch.io/chunk-surfer#cs-story
+              - generic [ref=e130]:
+                - link "DOWNLOAD" [ref=e131] [cursor=pointer]:
+                  - /url: https://cbassuarez.itch.io/chunk-surfer#cs-download
+                - paragraph [ref=e132]: Builds, permissions & accessibility.
+          - generic [ref=e133]:
+            - paragraph [ref=e134]:
+              - strong [ref=e135]: CONTENT WARNING
+              - text: Loud sounds, jumpscares, flashing lights, and high-contrast patterns.
+            - paragraph [ref=e136]:
+              - link "Permissions, accessibility & full warnings ›" [ref=e137] [cursor=pointer]:
+                - /url: https://cbassuarez.itch.io/chunk-surfer#cs-download
+            - generic [ref=e138]:
+              - generic [ref=e139]: DISPLAY MOTION
+              - link "Ⅱ PAUSE TEXT" [ref=e142] [cursor=pointer]:
+                - /url: https://cbassuarez.itch.io/chunk-surfer#cs-overview-still
+                - generic [ref=e143]: Ⅱ
+                - generic [ref=e144]: PAUSE TEXT
+        - generic [ref=e146]:
+          - link "More information" [ref=e148] [cursor=pointer]:
+            - /url: javascript:void(0)
+          - text: 
+        - generic [ref=e151]:
+          - heading "Download" [level=2] [ref=e152]
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - link "Download" [ref=e155] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - generic [ref=e156]:
+                - generic [ref=e157]:
+                  - strong [ref=e158]: CHUNK SURFER for Windows
+                  - generic [ref=e159]: 565 MB
+                  - generic [aria-hidden] [ref=e161]: 
+                - generic [ref=e162]:
+                  - text: Version 0.3.2
+                  - generic "09 November 2026 @ 01:55 UTC" [ref=e164]:
+                    - generic [aria-hidden] [ref=e165]: 
+                    - text: 13 hours ago
+            - generic [ref=e166]:
+              - link "Download" [ref=e167] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - generic [ref=e168]:
+                - generic [ref=e169]:
+                  - strong [ref=e170]: CHUNK SURFER for macOS (Silicon)
+                  - generic [ref=e171]: 572 MB
+                  - generic [aria-hidden] [ref=e173]: 
+                - generic [ref=e174]:
+                  - text: Version 0.3.2
+                  - generic "09 November 2026 @ 01:55 UTC" [ref=e176]:
+                    - generic [aria-hidden] [ref=e177]: 
+                    - text: 13 hours ago
+            - generic [ref=e178]:
+              - link "Download" [ref=e179] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - generic [ref=e180]:
+                - generic [ref=e181]:
+                  - strong [ref=e182]: CHUNK SURFER for Linux (Debian)
+                  - generic [ref=e183]: 566 MB
+                  - generic [aria-hidden] [ref=e185]: 
+                - generic [ref=e186]:
+                  - text: Version 0.3.2
+                  - generic "09 November 2026 @ 01:55 UTC" [ref=e188]:
+                    - generic [aria-hidden] [ref=e189]: 
+                    - text: 13 hours ago
+            - generic [ref=e190]:
+              - link "Download" [ref=e191] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - generic [ref=e192]:
+                - generic [ref=e193]:
+                  - strong [ref=e194]: CHUNK SURFER for Linux (AppImage)
+                  - generic [ref=e195]: 639 MB
+                  - generic [aria-hidden] [ref=e197]: 
+                - generic [ref=e198]:
+                  - text: Version 0.3.2
+                  - generic "09 November 2026 @ 01:55 UTC" [ref=e200]:
+                    - generic [aria-hidden] [ref=e201]: 
+                    - text: 13 hours ago
+        - generic [ref=e202]:
+          - heading "Install instructions" [level=2] [ref=e203]
+          - generic [ref=e204]:
+            - paragraph [ref=e205]: CHUNK SURFER / INSTALLATION
+            - paragraph [ref=e206]:
+              - strong [ref=e207]: INSTALL THE BETA.
+            - paragraph [ref=e208]: v0.3.0 PUBLIC BETA · UNSIGNED
+            - paragraph [ref=e209]: Choose the package for your computer. Follow the steps below.
+            - list [ref=e210]:
+              - listitem [ref=e211]:
+                - strong [ref=e212]: macOS
+                - text: Apple Silicon · DMG
+              - listitem [ref=e213]:
+                - strong [ref=e214]: windows
+                - generic [ref=e215]:
+                  - text: x64 ·
+                  - code [ref=e216]: chunk-surfer-windows-x64.zip
+                  - text: · Microsoft Edge WebView2 Runtime required
+              - listitem [ref=e217]:
+                - strong [ref=e218]: linux
+                - generic [ref=e219]:
+                  - text: x64 ·
+                  - code [ref=e220]: chunk-surfer-linux-x64.AppImage
+                  - text: or
+                  - code [ref=e221]: chunk-surfer-linux-x64.deb
+              - listitem [ref=e222]:
+                - strong [ref=e223]: audio
+                - text: Headphones recommended. A microphone is optional.
+            - paragraph [ref=e224]: These beta packages are unsigned, so your operating system may block the first launch. Use the approval steps below for the copy you downloaded from this page. Download sizes appear beside each file.
+            - heading "macOS" [level=2] [ref=e225]
+            - list [ref=e226]:
+              - listitem [ref=e227]:
+                - text: Open the downloaded macOS Apple Silicon
+                - code [ref=e228]: .dmg
+                - text: and drag
+                - strong [ref=e229]: Chunk Surfer
+                - text: into
+                - strong [ref=e230]: Applications
+                - text: .
+              - listitem [ref=e231]:
+                - text: Launch
+                - strong [ref=e232]: Chunk Surfer
+                - text: from Applications. If macOS blocks it, open
+                - strong [ref=e233]: System Settings → Privacy & Security
+                - text: and use
+                - strong [ref=e234]: Open Anyway
+                - text: for Chunk Surfer, then confirm the launch.
+              - listitem [ref=e235]: If you enable microphone input, also allow access in the macOS permission prompt. You can continue playing if you decline.
+            - heading "Windows" [level=2] [ref=e236]
+            - list [ref=e237]:
+              - listitem [ref=e238]:
+                - text: Extract
+                - code [ref=e239]: chunk-surfer-windows-x64.zip
+                - text: completely into a folder you can write to.
+              - listitem [ref=e240]:
+                - text: Keep all extracted files together and run
+                - code [ref=e241]: chunk-surfer.exe
+                - text: . Do not launch it from inside the ZIP.
+              - listitem [ref=e242]:
+                - text: The
+                - strong [ref=e243]: Microsoft Edge WebView2 Runtime
+                - text: must be installed. If it is missing, install it from Microsoft and launch the game again.
+              - listitem [ref=e244]:
+                - text: If SmartScreen shows
+                - emphasis [ref=e245]: Windows protected your PC
+                - text: ", use"
+                - strong [ref=e246]: More info → Run anyway
+                - text: for this downloaded beta.
+            - heading "Linux" [level=2] [ref=e247]
+            - list [ref=e248]:
+              - listitem [ref=e249]:
+                - strong [ref=e250]: "AppImage:"
+                - text: "make the file executable and run it:"
+                - code [ref=e251]: chmod +x chunk-surfer-linux-x64.AppImage
+                - code [ref=e252]: ./chunk-surfer-linux-x64.AppImage
+              - listitem [ref=e253]:
+                - strong [ref=e254]: "Debian / Ubuntu:"
+                - text: install with
+                - code [ref=e255]: sudo apt install ./chunk-surfer-linux-x64.deb
+                - text: ", then open"
+                - strong [ref=e256]: Chunk Surfer
+                - text: from your applications menu.
+            - paragraph [ref=e257]: The game needs working 3D graphics support. If you see a blank or incorrectly rendered world, include your GPU and graphics-driver details in a bug report. Compatibility and performance on additional hardware are still being tested.
+            - heading "Controls" [level=2] [ref=e258]
+            - paragraph [ref=e259]: "Keyboard and mouse or a controller can be used for normal play. Controller buttons can be remapped in Settings. These are the default on-foot keyboard controls; driving and other scenes show their own prompts:"
+            - table [ref=e260]:
+              - rowgroup [ref=e261]:
+                - row [ref=e262]:
+                  - columnheader "Key" [ref=e263]
+                  - columnheader "Action" [ref=e264]
+              - rowgroup [ref=e265]:
+                - row [ref=e266]:
+                  - cell "WASD / arrow keys" [ref=e267]
+                  - cell "Move" [ref=e268]
+                - row [ref=e269]:
+                  - cell "Shift" [ref=e270]
+                  - cell "Quiet movement" [ref=e271]
+                - row [ref=e272]:
+                  - cell "C" [ref=e273]
+                  - cell "Hide" [ref=e274]
+                - row [ref=e275]:
+                  - cell "F" [ref=e276]
+                  - cell "Light" [ref=e277]
+                - row [ref=e278]:
+                  - cell "B" [ref=e279]
+                  - cell "Bag" [ref=e280]
+                - row [ref=e281]:
+                  - cell "M" [ref=e282]
+                  - cell "Map" [ref=e283]
+                - row [ref=e284]:
+                  - cell "R" [ref=e285]
+                  - cell "Open recorder" [ref=e286]
+                - row [ref=e287]:
+                  - cell "V" [ref=e288]
+                  - cell "Radio" [ref=e289]
+                - row [ref=e290]:
+                  - cell "E" [ref=e291]
+                  - cell "Interact" [ref=e292]
+                - row [ref=e293]:
+                  - cell "P" [ref=e294]
+                  - cell "Playback" [ref=e295]
+                - row [ref=e296]:
+                  - cell "Esc" [ref=e297]
+                  - cell "Menu / pause" [ref=e298]
+            - paragraph [ref=e299]:
+              - text: The recorder has
+              - strong [ref=e300]: REC
+              - text: ","
+              - strong [ref=e301]: STOP
+              - text: ", and"
+              - strong [ref=e302]: TAKES
+              - text: controls. Opening it does not pause the room. Follow the prompts on the machine when starting a recording or saving a usable take.
+            - heading "Microphone and local recordings" [level=2] [ref=e303]
+            - paragraph [ref=e304]: Microphone permission is optional. With permission, the game measures room loudness locally so real noise can affect play. You can also choose to record spoken take slates and voicemail. These recordings stay on your device; the game does not recognize speech or automatically upload audio. You can complete the game without a microphone.
+            - paragraph [ref=e305]:
+              - text: Use
+              - strong [ref=e306]: Settings → Input
+              - text: to select an input and test its level. Operating-system privacy settings control the app’s microphone permission.
+            - heading "Local profile and desktop effects" [level=2] [ref=e307]
+            - paragraph [ref=e308]: The separate profile choice permits disclosed local personalization using names, computer details, and in-game responses. Optional desktop effects can move the game window, open additional game-owned windows, and create field-return files in the game’s local data folder. Profile data is processed locally and is not uploaded.
+            - paragraph [ref=e309]: You can play the complete game with the profile off. Settings let you disable individual modules, restore the game window, and erase the profile data.
+            - heading "Content warning and accessibility" [level=2] [ref=e310]
+            - paragraph [ref=e311]: Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Set your preferred effects before starting.
+            - paragraph [ref=e312]: Settings include text speed and instant text, flash/strobe and screen-shake reduction, controller configuration, recording forgiveness, navigation help, combat assistance, and escape-timer adjustments.
+            - heading "Saved data and uninstalling" [level=2] [ref=e313]
+            - paragraph [ref=e314]:
+              - text: Removing the app normally leaves local progress, settings, and recordings on this device. To remove them too, first open
+              - strong [ref=e315]: Settings → Memory → Erase all data & restart
+              - text: in the game and confirm. Wait for the restart, then quit and remove the app or package. Exported copies and operating-system backups are not removed by this reset.
+            - heading "Report a problem" [level=2] [ref=e316]
+            - paragraph [ref=e317]: Include the game version, operating system, CPU/GPU, controller model if relevant, and the steps that led to the problem. A diagnostic report from the in-game About/Support panel also helps.
+            - list [ref=e318]:
+              - listitem [ref=e319]:
+                - strong [ref=e320]: bugs
+                - link "Report a bug" [ref=e322] [cursor=pointer]:
+                  - /url: https://github.com/cbassuarez/chunk-surfer/issues/new?labels=bug
+              - listitem [ref=e323]:
+                - strong [ref=e324]: feedback
+                - link "Send playtest feedback" [ref=e326] [cursor=pointer]:
+                  - /url: https://github.com/cbassuarez/chunk-surfer/issues/new?labels=feedback
+            - paragraph [ref=e327]:
+              - strong [ref=e328]: CHUNK SURFER / v0.3.0 PUBLIC BETA
+        - generic [ref=e329]:
+          - heading "Development log" [level=2] [ref=e330]
+          - list [ref=e331]:
+            - listitem [ref=e332]:
+              - link "Initial beta" [ref=e333] [cursor=pointer]:
+                - /url: https://cbassuarez.itch.io/chunk-surfer/devlog/1586760/initial-beta
+              - generic "15 July 2026 @ 01:43 UTC" [ref=e335]:  Jul 15, 2026
+        - generic [ref=e337]:
+          - heading "Comments" [level=2] [ref=e338]
+          - textbox "Write your comment…" [ref=e341]
+      - generic [ref=e342]:
+        - link [ref=e343] [cursor=pointer]:
+          - /url: https://itch.io/
+        - link "itch.io" [ref=e346] [cursor=pointer]:
+          - /url: https://itch.io/
+        - generic [ref=e347]: ·
+        - link "View all by seb" [ref=e348] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io
+        - generic [ref=e349]: ·
+        - link "Report" [ref=e350] [cursor=pointer]:
+          - /url: javascript:void(0);
+        - generic [ref=e351]: ·
+        - link "Embed" [ref=e352] [cursor=pointer]:
+          - /url: javascript:void(0);
+        - generic [ref=e353]: ·
+        - generic [ref=e354]: Updated 13 hours ago
+        - generic [ref=e355]:
+          - link "Games" [ref=e356] [cursor=pointer]:
+            - /url: https://itch.io/games
+          - text: ›
+          - link "Adventure" [ref=e357] [cursor=pointer]:
+            - /url: https://itch.io/games/genre-adventure
+          - text: ›
+          - link "Free" [ref=e358] [cursor=pointer]:
+            - /url: https://itch.io/games/free

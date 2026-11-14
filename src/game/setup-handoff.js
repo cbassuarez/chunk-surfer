@@ -9,7 +9,10 @@ export const SETUP_HANDOFF = Object.freeze({
 const F=SETUP_HANDOFF;
 
 export function beginSetupHandoff(flags={}) {
-  return flags[F.started] ? flags : {...flags,[F.started]:true,[F.mode]:'recording'};
+  // The Get In lesson can teach the existing rehearsal/Skills first. Its
+  // completed Skills receipt must not swallow the still-unvisited Map lesson.
+  return flags[F.started]&&!(flags[F.mode]==='skills'&&flags[F.skillsClosed])
+    ?flags:{...flags,[F.started]:true,[F.mode]:'recording'};
 }
 
 export function beginSetupSkillsHandoff(flags={}) {
@@ -23,6 +26,11 @@ export function beginSetupSkillsHandoff(flags={}) {
 }
 
 export function recoverSetupHandoff(flags={}, {atGetIn=false,hasRealTake=false}={}) {
+  if(flags['setup.tutorial.requested']&&!flags['combat.trained'])return flags;
+  if(flags['setup.tutorial.requested']){
+    const skills=beginSetupSkillsHandoff(flags);
+    if(skills!==flags)return skills;
+  }
   // Training and the lesson can be separate saves. Recover that earned debt
   // before bypassing recording setup for an established run or closed route.
   if(flags['combat.trained']===true&&(hasRealTake||flags[F.closed]||flags[F.mode]==='skills'||flags[F.skillsCaseOpened])){
@@ -73,6 +81,7 @@ export function advanceSetupHandoff(flags={}, event={}, context={}) {
 
 export function setupCanLeave(flags={}, {hasRealTake=false}={}) {
   if(hasRealTake)return true; // Do not replay opening gates in a progressed legacy run.
+  if(flags['setup.tutorial.requested']&&(!flags['combat.trained']||!(flags[F.skillsClosed]||flags[F.skillsDone]&&flags[F.closed])))return false;
   if(!flags['setup.levels']||!flags['setup.waypoint'])return false;
   return !flags[F.started] || !!flags[F.closed];
 }

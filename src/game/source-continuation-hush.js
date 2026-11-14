@@ -433,7 +433,8 @@ function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refu
 
 export function advanceContinuationHush(actor,options={}) {
   const {dt=0,player,frozen=false,protectedRefuge=false,events=[]}=options;
-  const active=actor.active,beforeClock=actor.animationClock,beforeHeading=actor.heading,beforeChart=actor.chartId;
+  const active=actor.active,beforeClock=actor.animationClock,beforeHeading=actor.heading,beforeChart=actor.chartId,
+    beforeX=actor.x,beforeZ=actor.z,beforeFeet=actor.feet;
   const eventStart=events.length,hadRoute=actor.trail.length>0;
   const result=advanceContinuationHushBody(actor,{...options,events});
   if(!active||!actor.active||frozen||!(dt>0))return result;
@@ -445,6 +446,9 @@ export function advanceContinuationHush(actor,options={}) {
   const blocked=actor.mode==='follow'&&hadRoute&&!acceptedMetres&&!actor.fall&&!actor.recovery&&!protectedRefuge&&!teachingHold&&!folded;
   actor.density=stepHushDensityPose(actor.density,{
     dt,acceptedMetres,headingDelta:folded?0:actor.heading-beforeHeading,
+    acceptedDelta:folded?{x:0,z:0}:{x:Math.cos(actor.heading)*(actor.x-beforeX)+Math.sin(actor.heading)*(actor.z-beforeZ),
+      z:-Math.sin(actor.heading)*(actor.x-beforeX)+Math.cos(actor.heading)*(actor.z-beforeZ)},resetSupport:folded,
+    acceptedFloorDelta:folded?0:actor.feet-beforeFeet,unsupported:!!actor.fall||!!actor.recovery,
     listening:actor.mode==='notice',blocked,seed:0x48555348,
   });
   return result;

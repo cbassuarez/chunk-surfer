@@ -51,7 +51,7 @@ test('selection key, repeats and a missing real tool cannot perform a release', 
   f.ctx.hasRig = false; hold(f.scene, 5);
   assert.equal(f.scene.serialize().stage, 'address'); assert.equal(f.carries.length, 0);
   assert.equal(f.scene.view().canInteract, false);
-  assert.match(f.scene.view().prompt, /BENT RIG/);
+  assert.match(f.scene.view().prompt, /SERVICE INTERFACE/);
 });
 
 test('all physical operations save transitions before the one earned carry callback', () => {

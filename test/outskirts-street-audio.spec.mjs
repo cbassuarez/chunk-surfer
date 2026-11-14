@@ -24,6 +24,26 @@ test('street sources follow world position and facing rather than fixed screen s
   assert.ok(outskirtsStreetPlacement({x:-5,z:0},listener).pan<-.8);
   assert.equal(outskirtsStreetPlacement({x:0,z:-80},listener).gain,0);
   assert.ok(outskirtsStreetPlacement({x:0,z:-2},listener).gain>outskirtsStreetPlacement({x:0,z:-20},listener).gain);
+  assert.ok(outskirtsStreetPlacement({x:0,y:12,z:-2},{...listener,y:1}).gain<outskirtsStreetPlacement({x:0,y:1,z:-2},{...listener,y:1}).gain);
+});
+
+test('van crash has four finite spatial cues with a stronger impact and no duplicate delivery',()=>{
+  const audio=fakeAudio(),sound=createOutskirtsStreetAudio(audio);
+  const stages=['approach','impact','settle','spill'];
+  const events=stages.map((stage,index)=>({id:`van:${stage}`,cue:`van-crash-${stage}`,x:index+2,z:-6}));
+  sound.update({events},{listener});
+  assert.equal(sound.snapshot().voices,stages.length);
+  const pans=audio.nodes.filter(node=>node.kind==='pan');
+  assert.ok(pans.every(node=>node.pan.value>0&&node.connections.includes(audio.destination)));
+  const levels=audio.nodes.filter(node=>pans.some(pan=>node.connections.includes(pan))).map(node=>node.gain.value);
+  assert.ok(levels[1]>levels[0]&&levels[1]>levels[2]&&levels[1]>levels[3]);
+  const sources=audio.nodes.filter(node=>node.starts);
+  assert.ok(sources.length>=12&&sources.every(node=>node.loop!==true&&node.stops[0]-node.starts[0][0]<2));
+  const allocated=audio.nodes.length;
+  sound.update({events},{listener});
+  assert.equal(audio.nodes.length,allocated);
+  sound.destroy();
+  assert.ok(audio.nodes.every(node=>node.disconnected));
 });
 
 test('continuous sources are bounded, move with the listener, and detach when the street is gone',()=>{

@@ -4,10 +4,11 @@ import { readFileSync } from 'node:fs';
 
 globalThis.__LOCAL_TEXT_REVIEW__ = true;
 const review = await import('../src/game/local-text-review.js');
-const { makeCombatScene, battleTextReviewLines, battleThoughtReviewLine, cathedralCombatLayout } = await import('../src/game/combat.js');
+const { makeCombatScene, battleTextReviewLines, battleThoughtReviewLine } = await import('../src/game/combat.js');
 const { uiInit, uiSize } = await import('../src/render/ui.js');
 const { machinePanelBody } = await import('../src/render/presentation.js');
 const { combatHudLayout } = await import('../src/render/combat-hud-layout.js');
+const { combatStageOverlayLayout } = await import('../src/render/combat-stage-overlays.js');
 const { hardWrapBattleText, battleDialoguePageView } = await import('../src/game/combat-dialogue-model.js');
 
 const noop = () => {};
@@ -76,10 +77,11 @@ test('painted battle thoughts can be edited and flagged without changing intent 
     const before=h.scene.battleView();assert.equal(before.phase,'tool');
     const {cols,rows}=uiSize(),w=Math.max(36,cols-8),x=Math.floor((cols-w)/2);
     const panel=machinePanelBody(x-2,1,w+4,rows-2,{footer:'CONTROLS'}),layout=combatHudLayout({panel,mode:'command'});
+    const overlay=combatStageOverlayLayout({stage:layout.stage,panel,compact:layout.compact});
     const intentX=panel.x+1,intentW=Math.min(34,Math.floor(panel.w*.30));
     review.beginReviewFrame();h.scene.render();
     const regions=review.textReviewSession.regions();assert.ok(regions.length>0);
-    assert.deepEqual(regions.map(rect),regions.map((region,index)=>({x:intentX,y:layout.stage.y+1+index,w:region.target.fields[0].original.slice(0,intentW).length,h:1})));
+    assert.deepEqual(regions.map(rect),regions.map((region,index)=>({x:intentX,y:overlay.top+index,w:region.target.fields[0].original.slice(0,intentW).length,h:1})));
     for(const region of regions){
       assert.equal(region.target.speaker,'you');assert.match(region.target.nodeId,/^movement:first-movement:intent:broadcast:phase:/);
       assert.equal(review.textReviewSession.hit(region.x+.1,region.y+.1).id,region.target.id);
@@ -90,7 +92,7 @@ test('painted battle thoughts can be edited and flagged without changing intent 
     review.textReviewSession.flag(target,'change','Review the internal thought.');
     review.beginReviewFrame();h.scene.render();
     const after=h.scene.battleView(),updated=review.textReviewSession.regions()[0];
-    assert.deepEqual(rect(updated),{x:intentX,y:layout.stage.y+1,w:edited.length,h:1});
+    assert.deepEqual(rect(updated),{x:intentX,y:overlay.top,w:edited.length,h:1});
     assert.equal(review.reviewText(field.key,field.original),edited);
     assert.equal(review.textReviewSession.snapshot().flags[0].target.id,target.id);
     assert.deepEqual(after.state,before.state);assert.deepEqual(after.intent,before.intent);
@@ -161,14 +163,20 @@ test('normal battle review regions follow the exact wrapped lead and visible bod
   }finally{h.scene.exit();restore();}
 });
 
-test('cathedral battle review uses its actual command rows and keeps the full unpaged field',async()=>{
+test('cathedral battle review uses shared visible rows and retains the full field',async()=>{
   enableReview();const restore=canvasSize();const text='An authored sentence across several rows. '.repeat(5);
   const h=await harness({cathedral:true,intro:[{id:'cathedral-line',who:'direction',text}]});
   try{
     h.scene.textReviewSuspend();review.beginReviewFrame();h.scene.render();
-    const panel=cathedralCombatLayout(uiSize()),lines=hardWrapBattleText(text,uiSize().cols-8).slice(0,4);
+    const {cols,rows}=uiSize(),w=Math.max(36,cols-8),x=Math.floor((cols-w)/2);
+    const panel=machinePanelBody(x-2,1,w+4,rows-2,{footer:'CONTROLS'}),layout=combatHudLayout({panel,mode:'dialogue'});
+    const textY=layout.dialogue.y+1,dlgW=Math.max(20,panel.w-2);
+    const visible=battleDialoguePageView({text,typed:text.length,width:dlgW,
+      maxRows:Math.max(2,Math.floor(layout.contentBottom-textY)),page:0});
     const regions=review.textReviewSession.regions();
-    assert.deepEqual(regions.map(rect),lines.map((line,index)=>({x:panel.x+1,y:panel.y+4.1+index,w:line.length,h:1})));
+    assert.deepEqual(regions.map(rect),visible.rows.map((line,index)=>({x:panel.x,y:textY+index,w:line.length,h:1})));
+    assert.ok(regions.length>0);
+    for(const region of regions)assert.ok(region.y>=layout.dialogue.y&&region.y+region.h<=layout.contentBottom);
     assert.equal(regions[0].target.fields[0].original,text);
   }finally{h.scene.exit();restore();}
 });

@@ -9,13 +9,15 @@ import { normalizeCombatBuild, PIN_SOURCES } from '../src/game/combat-progressio
 import { TECHNIQUE as T } from '../src/game/combat-state.js';
 import { makeCombatScene } from '../src/game/combat.js';
 import { authoredCombatProfile,sourceCombatBattle } from '../src/data/combat-definitions.js';
-import { paintBattlePreparationReadout } from '../src/render/battle-preparation-view.js';
+import { paintBattlePreparationReadout,battlePreparationSlotPresentation,battlePreparationItemCopy } from '../src/render/battle-preparation-view.js';
+import { preparationBattleTools } from '../src/game/combat-operating-facts.js';
 const funded=()=>normalizeCombatBuild(null,PIN_SOURCES.encounters);
 const equipment=['light','recorder','radio','interface'];
 
 function readoutFixture({dpr=1,zoom=1,available=true}={}) {
-  const pixels=[],ctx={globalAlpha:1,save(){},restore(){},clearRect(){pixels.length=0;},
-    fillRect(...args){pixels.push([...args,this.globalAlpha]);},
+  const pixels=[],path=[],ctx={globalAlpha:1,save(){},restore(){},clearRect(){pixels.length=0;},
+    beginPath(){path.length=0;},rect(...args){path.push(args);},
+    fill(){for(const args of path)pixels.push([...args,this.globalAlpha]);},
     fillText(){throw Error('LCD must not use a browser font');},measureText(){throw Error('LCD must not use browser font metrics');}};
   const canvas={dataset:{},width:0,height:0,setAttribute(k,v){this[k]=v;},getContext:()=>available?ctx:null,
     getBoundingClientRect:()=>({left:zoom,top:zoom,width:198*zoom,height:50*zoom})};
@@ -89,9 +91,9 @@ test('preparation edits an owned-gear draft without changing the save',()=>{
   assert.equal(m.equip('coffee'),false);
   assert.deepEqual(loadout.top,['light','recorder','radio']);assert.deepEqual(build.techniques,[]);
   // Putting one back frees the slot it was in.
-  m.slot(1);m.store();assert.deepEqual(m.snapshot().loadout.top,['light','radio','interface']);
+  m.slot(1);m.store();assert.deepEqual(m.snapshot().loadout.top,['light',null,'radio','interface']);
   assert.equal(m.equip('recorder'),true);
-  assert.deepEqual(m.snapshot().loadout.top,['light','radio','interface','recorder']);
+  assert.deepEqual(m.snapshot().loadout.top,['light','recorder','radio','interface']);
 });
 
 test('a full case asks which tool to give up, by name, and takes no for an answer',()=>{
@@ -123,7 +125,83 @@ test('a full case asks which tool to give up, by name, and takes no for an answe
   assert.equal(m.equip('radio'),true);assert.equal(m.snapshot().replacing,'radio');
   m.slot(0);m.store();
   assert.equal(m.snapshot().replacing,null,'the freed slot takes it');
-  assert.deepEqual(m.snapshot().loadout.top,['recorder','tuning-fork','interface','radio']);
+  assert.deepEqual(m.snapshot().loadout.top,['radio','recorder','tuning-fork','interface']);
+});
+
+test('preparation preserves numbered gaps, owned missing reservations and held preference through READY',()=>{
+  const loadout={schema:2,capacity:4,top:['light',null,'radio','recorder'],heldSlot:3};
+  const before=structuredClone(loadout);
+  const m=createBattlePreparationModel({loadout,equipment:[
+    {id:'light',present:false},{id:'radio',present:true},{id:'recorder',present:true},{id:'interface',present:true},
+  ]});
+  assert.deepEqual(m.snapshot().loadout,loadout);
+  assert.deepEqual(m.snapshot().available,['radio','recorder','interface']);
+  assert.deepEqual(preparationBattleTools(m.snapshot()).order,['radio','recorder'],
+    'a missing reserved torch cannot become a live combat tool');
+  m.slot(3);assert.equal(m.snapshot().selectedSlot,3);
+  assert.equal(m.store(),true);
+  assert.equal(m.snapshot().selectedSlot,3,'clearing the last bay must not move its selection');
+  assert.deepEqual(m.snapshot().loadout.top,['light',null,'radio']);
+  assert.equal(m.equip('interface'),true);
+  assert.deepEqual(m.snapshot().loadout.top,['light','interface','radio']);
+  assert.equal(m.snapshot().loadout.heldSlot,3);
+  let committed;
+  assert.equal(m.commit(value=>{committed=value;return true;}),true);
+  assert.deepEqual(committed.loadout,{schema:2,capacity:4,top:['light','interface','radio'],heldSlot:3});
+  assert.deepEqual(loadout,before,'preparation modified the supplied save before READY');
+});
+
+test('only unowned assignments are removed and remaining gear keeps its original bay',()=>{
+  const m=createBattlePreparationModel({
+    loadout:{schema:2,top:['light','recorder',null,'radio'],heldSlot:null},
+    equipment:[{id:'radio',present:false},'coffee'],
+  });
+  assert.deepEqual(m.snapshot().loadout,{schema:2,capacity:4,top:[null,null,null,'radio'],heldSlot:null});
+  assert.deepEqual(m.snapshot().owned,['radio','coffee']);
+  assert.deepEqual(m.snapshot().available,['coffee']);
+  assert.deepEqual(preparationBattleTools(m.snapshot()).order,[]);
+  m.slot(3);assert.equal(m.store(),true);
+  assert.equal(m.snapshot().selectedSlot,3);
+  assert.deepEqual(m.snapshot().loadout.top,[]);
+  assert.equal(m.snapshot().loadout.heldSlot,null);
+});
+
+test('all four physical bays can be selected even with an empty inventory',()=>{
+  const m=createBattlePreparationModel({equipment:[],loadout:{schema:2,top:[],heldSlot:null}});
+  for(let index=0;index<4;index++){
+    m.slot(index);assert.equal(m.snapshot().selectedSlot,index);
+    assert.equal(m.store(),false);
+    assert.equal(m.snapshot().selectedSlot,index);
+  }
+});
+
+test('a missing reservation occupies its actual bay until explicitly replaced',()=>{
+  const m=createBattlePreparationModel({loadout:{schema:2,top:['light','recorder','radio','interface'],heldSlot:2},
+    equipment:[{id:'light',present:false},'recorder',{id:'radio',present:false},'interface','coffee']});
+  assert.equal(m.equip('coffee'),true);
+  assert.equal(m.snapshot().replacing,'coffee','a missing item still owns its reserved place');
+  assert.equal(m.replace('light'),true);
+  assert.deepEqual(m.snapshot().loadout.top,['coffee','recorder','radio','interface']);
+  assert.equal(m.snapshot().loadout.heldSlot,2);
+  assert.deepEqual(preparationBattleTools(m.snapshot()).order,['coffee','recorder','rig']);
+});
+
+test('the presentation counts ready and reserved items independently and exposes every numbered bay',()=>{
+  const model=createBattlePreparationModel({loadout:{schema:2,top:['light',null,'radio','recorder']},
+    equipment:[{id:'light',present:false},'radio',{id:'recorder',present:false}]});
+  const presentation=battlePreparationSlotPresentation(model.snapshot());
+  assert.equal(presentation.assigned,3);
+  assert.equal(presentation.ready,1);
+  assert.equal(presentation.reserved,2);
+  assert.deepEqual(presentation.slots.map(slot=>[slot.index,slot.id,slot.ready,slot.reserved]),[
+    [0,'light',false,true],[1,null,false,false],[2,'radio',true,false],[3,'recorder',false,true],
+  ]);
+  const empty=battlePreparationSlotPresentation({loadout:{schema:2,top:[]},available:[]});
+  assert.equal(empty.slots.length,4);assert.equal(empty.assigned,0);assert.equal(empty.ready,0);assert.equal(empty.reserved,0);
+  const view=readFileSync('src/render/battle-preparation-view.js','utf8');
+  assert.match(view,/const slotPresentation=battlePreparationSlotPresentation\(snapshot\)/);
+  assert.doesNotMatch(view,/i>loadout\.top\.length\?'disabled'/,'empty later bays must remain selectable');
+  assert.match(view,/NOT CARRIED/,'reserved tools need a visible unavailable state');
 });
 
 test('the case flips to the question, and the question names tools',()=>{
@@ -303,4 +381,26 @@ test('the sheet panel is its own row, never one of the four slots',()=>{
   const main=readFileSync('src/main.js','utf8');
   assert.match(main,/readSheet:\(\)=>godBattleOpen\?false:readSheetFromBag\(\{speak:false\}\)/,
     'a god-menu fight cannot spend a real sheet');
+});
+
+
+test('preparation preserves carry-only belongings while combat receives only actual tools',()=>{
+  const source={schema:2,capacity:4,top:['ren-home-cassette','light','recording-cassette:3','marble-eyes'],heldSlot:0};
+  const model=createBattlePreparationModel({loadout:source,equipment:['ren-home-cassette','light',
+    {id:'recording-cassette:3',present:false},'marble-eyes','b3-session-card']});
+  assert.deepEqual(model.snapshot().loadout,source);
+  assert.deepEqual(preparationBattleTools(model.snapshot()).order,['torch']);
+  const presentation=battlePreparationSlotPresentation(model.snapshot());
+  assert.equal(presentation.ready,3);assert.equal(presentation.battleReady,1);assert.equal(presentation.retainedReady,2);assert.equal(presentation.reserved,1);
+  assert.equal(model.equip('b3-session-card'),true);assert.equal(model.snapshot().replacing,'b3-session-card');
+  assert.equal(model.replace('ren-home-cassette'),true);
+  assert.deepEqual(model.snapshot().loadout.top,['b3-session-card','light','recording-cassette:3','marble-eyes']);
+  assert.equal(model.snapshot().loadout.heldSlot,0);
+  let committed;assert.equal(model.commit(value=>{committed=value;return true;}),true);
+  assert.deepEqual(committed.loadout,model.snapshot().loadout);
+  assert.deepEqual(preparationBattleTools(model.snapshot()).order,['torch']);
+  for(const id of ['ren-home-cassette','recording-cassette:3','marble-eyes','b3-session-card','vale-guarantor-slip','lyle-music-box']){
+    assert.equal(battlePreparationItemCopy(id).move,'NO BATTLE MOVE');
+    assert.match(battlePreparationItemCopy(id).detail,/adds no battle move/);
+  }
 });

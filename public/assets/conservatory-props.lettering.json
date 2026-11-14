@@ -31882,7 +31882,7 @@
   "gutterPx": 16,
   "packing": "MaxRects BSSF; four stable orders; 8px bin-width and bounded 16px bin-height search; tight NPOT envelope; no rotation/resampling",
   "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake.",
-  "packSha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+  "packSha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
   "sourceHashes": {
     "public/assets/items/headphones-reference.glb": "ac4b5e54bf5489980ac071b5ffcf7bcb142b1936786d4d8ccae425fde89ee86c",
     "public/assets/items/headphones-closed.glb": "f8d07a880c7109cd9d7a5aec8aadc56f2bedad4cb926abbebd95ce63fa21efb1",

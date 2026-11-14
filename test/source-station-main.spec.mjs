@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createElsewhereBeds } from '../src/audio/elsewhere-beds.js';
+import { createHomeValleyMusic } from '../src/audio/childhood-valley-music.js';
 import { createPayphoneLine } from '../src/audio/payphone-line.js';
 import { advanceStationWalk } from '../src/game/station-walk.js';
 import { createStationHomeState, updateStationHome } from '../src/game/station-home.js';
+import { createHomeValleyActivities, homeValleyActivityFocus, homeValleyActivityPresentation, updateHomeValleyActivities } from '../src/game/childhood-valley-activities.js';
+import { chooseHomeValleyRestLocus, homeValleyRestFocus } from '../src/game/childhood-valley-rest.js';
 import { createStationRealm, normalizeStationRealm, stationRealmFrame, moveStationRealm,
   beginStationRealmReturn, stationRealmAtWindow } from '../src/game/station-realms.js';
 import { SOURCE_CHAPEL_OUTSKIRTS } from '../src/data/source-level.js';
@@ -13,7 +16,8 @@ import { keyboardMotionAxes } from '../src/input/input-manager.js';
 import {createFootContactClock,resolveFootContact} from '../src/audio/foot-contact.js';
 import {resolveSourceFootingTreatment} from '../src/audio/source-footing-treatment.js';
 import {recordNightClockTravel} from '../src/game/night-clock-travel.js';
-import {MATERIAL} from '../src/data/floorplan/legend.js';
+import {MATERIAL,CELL} from '../src/data/floorplan/legend.js';
+import { createRecorderRigMotion } from '../src/render/recorder-rig-motion.js';
 
 // Run the production functions themselves, with browser/audio boundaries replaced.
 // A wiring or lifecycle change in main therefore changes these tests' behaviour.
@@ -144,23 +148,26 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     get(target, key) { return target[key] || ((value) => { render[key] = value; }); },
   });
   const sandbox = {
-    chunkSurfRuntime: runtime, actx: audio.context, sfxGain: destination, master: null,createFootContactClock,resolveFootContact,resolveSourceFootingTreatment,recordNightClockTravel,MATERIAL,
+    chunkSurfRuntime: runtime, actx: audio.context, sfxGain: destination, master: null,createFootContactClock,createRecorderRigMotion,resolveFootContact,resolveSourceFootingTreatment,recordNightClockTravel,MATERIAL,
     activeGeometry:()=>null,usingSpecialSpace:()=>true,usingPlan:()=>false,physicalPointFor:(x,y)=>({x,z:y}),outskirtsLosing:()=>0,
     currentStepIntervalMs:()=>100,inRogue:false,sourceReturnFlashbackScene:null,getInDriveTeaserScene:null,gameplayInputLifecycleActive:()=>!sandbox.document.hidden,
     sourceDemolitionAudio: null, sourceEarthfallAudio:null,
-    sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,stationFieldScene:null,
     chapelChoirAudio:null,chapelChoirAudioFrame:null,chapelChoirOcclusionKey:'',chapelChoirOcclusion:new Map(),
     chapelServiceAudio:null,chapelServiceAudioFrame:null,chapelMurmurAudio:null,chapelServiceOcclusionKey:'',chapelServiceOcclusion:new Map(),
     brendanBellAudio:null,brendanSoundFrame:null,brendanSoundOcclusionKey:'',brendanSoundOcclusion:new Map(),
     renderMove: null,
     controllerGameplayAxes: () => ({ moveX: 0, moveY: 0, turnX: 0, lookY: 0 }),
-    R3: renderer, px: 0, py: 0, CELL: 1, SOURCE_CHAPEL_OUTSKIRTS,
+    R3: renderer, px: 0, py: 0, CELL, SOURCE_CHAPEL_OUTSKIRTS,
     RENDERER: '3d', keysDown: new Set(), keyboardMotionAxes,
     beginCoastalMemoryJourney:()=>{coastalHandoffs++;return true;},
     CONTROLLER: { controllerMotionAxes: () => ({ moveX: 0, moveY: 0 }) },
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     CHUNK_SURF_PHASE: { CHAPEL_OUTSKIRTS: 'chapel-outskirts' }, createElsewhereBeds, advanceStationWalk,
-    createStationHomeState, updateStationHome,
+    createStationHomeState, updateStationHome, createHomeValleyMusic,
+    createHomeValleyActivities, homeValleyActivityFocus, homeValleyActivityPresentation, updateHomeValleyActivities,
+    chooseHomeValleyRestLocus, homeValleyRestFocus, protectedPresentationAudio: () => false, assetUrl: value => value,
+    saveSourceView: () => sandbox.saveCommit({ chunkSurf: runtime.state() }),
     usingSourceSpace: () => !!sandbox.chunkSurfRuntime,
     phoneWorldLine: () => ({ ringBellNearby(options) {
       const before = audio.nodes.length, handle = line.ringBellNearby(options);
@@ -188,7 +195,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     RT: { footstep: (...args) => steps.push(args), setBed: noOp }, STORY: { stopAll: noOp }, STAB: { reportThreat: noOp },
     b3SpeakerAudio:{stop:noOp},b3Speaker:{flush:noOp},b3HushVisit:null,recordingEmbodiment:{reset:noOp},sourceWindowMedia:{stop:async()=>false},
     mischiefNextAtMs: 0, mischiefQuietUntilMs: 0,
-    recordingPressureVoices:new Set(),recordingPressurePerformance:{reset:()=>events.push('recording-pressure-reset')},
+    recordingScareSelector:{reset:noOp},recordingPressureVoices:new Set(),recordingPressurePerformance:{reset:()=>events.push('recording-pressure-reset')},
     setupHandoffBlocksMovement: () => false, sourceDoorArrival: null, storyMode: false,
     stairTriggerCrossed: () => false, performance: { now: () => time * 1000 },
     sourceCameraPatch: () => ({}), lastMoveAtMs: 0, stepCount: 0,
@@ -198,7 +205,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     'endHorizonScore', 'stopBellTowerRuntime', 'clearInstrument', 'stopHushAudioRuntime', 'stopAllVoices',
     'stopWorldLayerVoice', 'silenceAmbientDrone', 'silenceSampleField', 'endSourceHaystackMosh',
     'endSourceBracketPresence', 'tickHorizonScore', 'speakHorizonMarker', 'syncOutskirtsNight', 'tickPayphone', 'syncSourceRender',
-    'cancelApparitionApplause','resetArchitectureDoorAudio']) sandbox[name] = noOp;
+    'cancelApparitionApplause','resetArchitectureDoorAudio','releaseStationField']) sandbox[name] = noOp;
   vm.createContext(sandbox);
   vm.runInContext(production + `\nglobalThis.api={clearSourceRuntime,resetRunAudio,syncElsewhereBeds,syncStationEdgeSound,
     syncStationErrand,homeWalkStep,tickHomeWalk,tickSourceSpace,stationFootfall,step:(...args)=>{const result=step(...args);tickPlayerFootsteps(.1,100);return result;},arrowDelta,
@@ -290,12 +297,12 @@ test('production movement routes every direction into real local ground and leav
   assert.ok(h.realmMoves[1].dz > 0);
   assert.ok(h.realmMoves[2].dz < 0);
   assert.equal(h.sandbox.px, 0); assert.equal(h.sandbox.py, 0);
-  assert.equal(h.realm.steps, 0, 'movement updates are not completed footfalls');
+  assert.equal(h.realm.steps, 2, 'three half-metre scheduler moves account for two actual .68m strides');
   for (let i = 0; i < 8; i += 1) h.api.step(1, 0);
-  assert.equal(h.realm.steps, 1,'the completed-stride gameplay ledger remains independent of audible starting plants');
+  assert.equal(h.realm.steps, 5,'the completed-stride ledger follows accepted distance, including partial wall approach');
   assert.ok(h.steps.length>0&&h.steps.length<=11,'finite accepted travel produces at most one real contact per frame');
   assert.ok(h.steps.every((row,i)=>row[1].id>0&&(!i||row[1].id>h.steps[i-1][1].id)&&row[1].footSide===(i%2?'right':'left')),'the actual foot clock owns unique alternating contact receipts');
-  assert.equal(h.sandbox.stepCount, 1);
+  assert.equal(h.sandbox.stepCount, h.realm.steps);
   h.realm.pose.x = 2.77;
   const before = { steps: h.realm.steps, stride: h.realm.strideM, sound: h.steps.length };
   for (let i = 0; i < 5; i += 1) h.api.step(1, 0);
@@ -342,12 +349,12 @@ test('held keyboard movement follows continuous realm gaze through an oblique do
   const h = harness({ realm: realmVisit({ z: 1 }), frame: { forward } });
   h.api.syncStationErrand(h.runtime.doorCrossingFrame());
   h.sandbox.keysDown.add('KeyW');
-  for (let n = 0; n < 780; n += 1) {
+  for (let n = 0; n < 132; n += 1) {
     const delta = h.api.arrowDelta();
     h.api.step(...delta);
   }
   assert.ok(Math.abs(h.realm.pose.x) < 1e-8, 'looking straight ahead must not accumulate lateral drift');
-  assert.ok(Math.abs(h.realm.pose.z - 67.3) < 1e-8);
+  assert.ok(Math.abs(h.realm.pose.z - 67) < 1e-8);
   assert.equal(h.runtime.stationRealmFrame().atWindow, true);
   assert.equal(h.realm.homeState.recognized, true);
   assert.equal(h.restores, 1);
@@ -468,16 +475,16 @@ test('LOOK remains repeatable, STAY is optional, and selected TURN AWAY grants t
   h.line.destroy();
 });
 
-test('side glances and tiny steps are harmless; measured outward travel while facing snow departs', () => {
+test('walking away from the window keeps the village open for the return', () => {
   const h = harness({ realm: realmVisit() });
   h.api.syncStationErrand(h.runtime.doorCrossingFrame());
-  h.setLook({ yaw: Math.PI / 2 }); h.api.syncStationErrand(h.runtime.doorCrossingFrame());
-  h.api.step(1, 0); assert.equal(h.releases, 0);
-  h.setLook({ yaw: Math.PI }); h.api.syncStationErrand(h.runtime.doorCrossingFrame());
-  assert.equal(h.releases, 0, 'merely facing snow should restore clarity without expelling him');
-  for(let n=0;n<4;n++){h.api.step(0,1);assert.equal(h.releases,0,'one 0.085m tick cannot end the encounter');}
-  h.api.step(0, 1); assert.equal(h.releases, 1);
-  assert.equal(h.save.flags['station.home.departed'], true);
+  h.setLook({ yaw: Math.PI });
+  h.api.syncStationErrand(h.runtime.doorCrossingFrame());
+  for (let n = 0; n < 40; n++) h.api.stationRealmStep(0, .17);
+  assert.equal(h.releases, 0);
+  assert.equal(h.realm.stage, 'inside');
+  assert.equal(h.realm.homeState.attention, 0);
+  assert.ok(h.realm.pose.z < 65);
   assert.equal(h.save.flags['station.jumper'], undefined);
   h.line.destroy();
 });
@@ -517,31 +524,32 @@ test('close lateral inspection follows the facade without arming departure',()=>
     assert.equal(h.releases,0,'looking along the facade is still inspection, even when the pane is behind his shoulder');
   }
   assert.ok(h.realm.pose.x>1);
-  assert.equal(h.realm.homeState.awayArmed,false);
+  assert.equal(h.realm.homeState.attention,0);
   h.setLook({yaw:Math.PI});
   h.api.syncStationErrand(h.runtime.doorCrossingFrame());
   for(let n=0;n<8&&h.releases===0;n++)h.api.step(0,1);
-  assert.equal(h.releases,1,'walking back into snow still permits a voluntary departure');
+  assert.equal(h.releases,0,'walking back into snow keeps the return path open');
   h.line.destroy();
 });
 
-test('partial outward travel survives reload and looking back cancels it before a deliberate new departure',()=>{
-  const first=harness({realm:realmVisit()});
-  first.api.syncStationErrand(first.runtime.doorCrossingFrame());
-  first.setLook({yaw:Math.PI});first.api.syncStationErrand(first.runtime.doorCrossingFrame());
-  for(let n=0;n<3;n++)first.api.step(0,1);
-  assert.equal(first.releases,0);assert.ok(first.realm.homeState.outwardDistance>.25);
-  const restored=harness({realm:copy(first.realm),flags:copy(first.save.flags)});
-  restored.api.syncStationErrand(restored.runtime.doorCrossingFrame());
-  assert.ok(restored.realm.homeState.outwardDistance>.25,'restoring the saved gaze must retain partial actual travel');
-  restored.api.step(0,1);assert.equal(restored.releases,0);
-  restored.setLook({yaw:0});restored.api.syncStationErrand(restored.runtime.doorCrossingFrame());
-  assert.equal(restored.realm.homeState.outwardDistance,0);assert.equal(restored.releases,0);
-  restored.setLook({yaw:Math.PI});restored.api.syncStationErrand(restored.runtime.doorCrossingFrame());
-  for(let n=0;n<4;n++){restored.api.step(0,1);assert.equal(restored.releases,0);}
-  restored.api.step(0,1);assert.equal(restored.releases,1);
-  assert.equal(restored.restores,0,'recognized saves must not refill composure again');
-  first.line.destroy();restored.line.destroy();
+test('reloading after the bedroom view still allows a physical return and one jumper delivery', () => {
+  const realm = realmVisit();
+  realm.windowReached = true;
+  realm.homeState = { recognized: true, viewedRoom: true };
+  realm.pose.z = .5;
+  const h = harness({ realm, flags: { 'station.home.restored': true } });
+  h.api.syncStationErrand(h.runtime.doorCrossingFrame());
+  h.setLook({ yaw: Math.PI });
+  for (let n = 0; n < 12 && h.realm.stage === 'inside'; n++) h.api.stationRealmStep(0, .17);
+  assert.equal(h.realm.returnReason, 'home');
+  assert.equal(h.save.flags['station.jumper'], undefined);
+  h.runtime.advanceStationTime(1);
+  h.api.syncStationErrand(null);
+  h.api.syncStationErrand(null);
+  assert.equal(h.save.flags['station.jumper'], true);
+  assert.equal(h.events.filter(text => text.includes("LYLE'S JUMPER")).length, 1);
+  assert.equal(h.restores, 0);
+  h.line.destroy();
 });
 
 test('the local home audio receives saved realm time and canonical listener/window coordinates',()=>{

@@ -32,7 +32,7 @@ export const RADIO_CONTACT_CONTROLS = freeze({
   ])),
 });
 
-const SEGMENTS = [[0,.0075,.008,.0014], [.0047,.0038,.0014,.0068], [.0047,-.0038,.0014,.0068], [0,-.0075,.008,.0014], [-.0047,-.0038,.0014,.0068], [-.0047,.0038,.0014,.0068], [0,0,.008,.0014]];
+const SEGMENTS = [[0,.0075,.008,.0021], [.0047,.0038,.002,.0056], [.0047,-.0038,.002,.0056], [0,-.0075,.008,.0021], [-.0047,-.0038,.002,.0056], [-.0047,.0038,.002,.0056], [0,0,.008,.0021]];
 const DIGITS = ['1111110','0110000','1101101','1111001','0110011','1011011','1011111','1110000','1111111','1111011'];
 const KEY_GLYPHS = {
   '0':['111','101','101','101','111'],'1':['010','110','010','010','111'],
@@ -55,11 +55,15 @@ export function buildRadioContactModel() {
   const mat = {
     rubber: physical('#283329', .94), shell: physical('#56634b', .79, .09), edge: physical('#7b866e', .65, .16),
     dark: physical('#101a13', .84), steel: physical('#a6ad99', .4, .72), brass: physical('#a68d52', .48, .65),
-    ink: physical('#d5d4b5', .85), screen: physical('#a2ad7d', .61), segment: physical('#243b29', .75),
+    ink: physical('#d5d4b5', .85), screen: physical('#101c14', .90),
+    segment: physical('#9eaf76', .65), dormant: physical('#19261a', .92), lens: physical('#b2c39c', .28),
     button: physical('#4e5b46', .9), red: physical('#8e5145', .86), green: physical('#82926a', .8),
     led: physical('#a9c78a', .38), strap: physical('#202b24', 1),
   };
   mat.led.emissive.set('#7f9e5e'); mat.led.emissiveIntensity = .15;
+  mat.screen.emissive.set('#233723');
+  mat.segment.emissive.set('#b2e283');
+  mat.lens.transparent=true;mat.lens.opacity=.045;mat.lens.depthWrite=false;
   function geo(key, build) { if (!cache.has(key)) { const g = build(); cache.set(key, g); geometries.add(g); } return cache.get(key); }
   function add(name, geometry, material, position = [0,0,0], parent = group, rotation) {
     const mesh = new THREE.Mesh(geometry, material); mesh.name = name; mesh.position.set(...position);
@@ -88,22 +92,43 @@ export function buildRadioContactModel() {
   const shell = plate('shoulder-tapered moulded chassis', [[-.044,-.088],[-.051,-.070],[-.051,.063],[-.040,.085],[.035,.085],[.048,.062],[.050,-.069],[.042,-.088]], .044, 0, mat.rubber, .002);
   plate('olive faceplate rolled lip', [[-.039,-.080],[-.041,.058],[-.031,.073],[.030,.073],[.039,.056],[.040,-.080]], .004, .024, mat.edge, .0012);
   plate('inset enamel front', [[-.035,-.076],[-.037,.055],[-.028,.067],[.027,.067],[.035,.053],[.036,-.076]], .0015, .027, mat.shell, .0005);
-  // Display is passive LCD: its characters are physical segment geometry.
-  // Neither subtitles nor the conversation can be written into this aperture.
-  box('LCD rubber gasket', [.069,.034,.004], [0,.046,.029], mat.dark, .003);
-  const screen = box('channel LCD substrate', [.058,.023,.0016], [0,.046,.0314], mat.screen, .001);
+  // The front lip masks the recessed substrate at an angle. The polarizer,
+  // electrodes and cover are independent planes carried by the same chassis.
+  const apertureY=.046, apertureWidth=.058, apertureHeight=.023, inkZ=.0308, coverZ=.0338;
+  const outline=(w,h)=>[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]];
+  const [outer,inner]=[outline(.069,.034),outline(apertureWidth,apertureHeight)];
+  const wall=outer.flatMap(([x,y],i)=>{
+    const j=(i+1)%outer.length;
+    const a=[x,y,coverZ],b=[...outer[j],coverZ],c=[...inner[j],inkZ],d=[...inner[i],inkZ];
+    return [a,b,c,a,c,d].flat();
+  });
+  const gasket=new THREE.BufferGeometry();
+  gasket.setAttribute('position',new THREE.Float32BufferAttribute(wall,3));
+  const uv=[];
+  for(let i=0;i<wall.length;i+=3)uv.push(wall[i]/.069+.5,wall[i+1]/.034+.5);
+  gasket.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  gasket.computeVertexNormals();geometries.add(gasket);
+  add('LCD rubber gasket',gasket,mat.dark,[0,apertureY,0]);
+  const screen = box('channel LCD substrate', [apertureWidth+.001,apertureHeight+.001,.0013], [0,apertureY,.0299], mat.screen, .0005);
+  const lens = box('LCD front cover', [apertureWidth,apertureHeight,.0005], [0,apertureY,coverZ-.00025], mat.lens, 0);
+  lens.castShadow=false;lens.receiveShadow=false;
   const display = new THREE.Group(); display.name = 'physical channel LCD segments'; group.add(display);
+  const dormant=new THREE.Group();dormant.name='unlit LCD electrodes';display.add(dormant);
   const digits = [];
   for (const x of [-.003,.010]) {
-    const segments = SEGMENTS.map(([dx,dy,w,h], i) => box(`LCD digit segment ${digits.length}:${i}`, [w,h,.0002], [x+dx,.046+dy,.0324], mat.segment, 0, display)); digits.push(segments);
+    const segments = SEGMENTS.map(([dx,dy,w,h], i) => {
+      box('unlit LCD segment',[w,h,.00016],[x+dx,apertureY+dy,inkZ-.00003],mat.dormant,0,dormant);
+      return box(`LCD digit segment ${digits.length}:${i}`,[w,h,.0002],[x+dx,apertureY+dy,inkZ+.00008],mat.segment,0,display);
+    });
+    digits.push(segments);
   }
   const glyphs = { C:['111','100','100','100','111'], H:['101','101','111','101','101'] };
-  for (const [letter,x] of [['C',-.024],['H',-.0175]]) glyphs[letter].forEach((row,y) => [...row].forEach((v,col) => { if (v==='1') box(`LCD CH ${letter}`, [.00105,.0011,.0002], [x+col*.0015,.049-y*.0016,.0324], mat.segment, 0, display); }));
-  for (let i=0;i<4;i++) box('LCD battery segment', [.0022,.0011,.0002], [.020+i*.0022,.053,.0324], mat.segment, 0, display);
+  for (const [letter,x] of [['C',-.024],['H',-.0175]]) glyphs[letter].forEach((row,y) => [...row].forEach((v,col) => { if (v==='1') box(`LCD CH ${letter}`, [.00105,.0011,.0002], [x+col*.0015,.049-y*.0016,inkZ], mat.segment, 0, display); }));
+  for (let i=0;i<4;i++) box('LCD battery segment', [.0022,.0011,.0002], [.020+i*.0022,.053,inkZ], mat.segment, 0, display);
   function statusMark(text) {
     const state=new THREE.Group();state.name=`LCD ${text} carrier mark`;display.add(state);const cubes=[];
     [...text].forEach((letter,i)=>KEY_GLYPHS[letter].forEach((row,y)=>[...row].forEach((v,x)=>{if(v==='1'){
-      const cube=new THREE.BoxGeometry(.00065,.00065,.0002);cube.translate(-.024+i*.0035+x*.00085,.038-y*.00085,.0324);cubes.push(cube);
+      const cube=new THREE.BoxGeometry(.00065,.00065,.0002);cube.translate(-.024+i*.0035+x*.00085,.038-y*.00085,inkZ);cubes.push(cube);
     }})));
     const geometry=mergeGeometries(cubes);cubes.forEach(g=>g.dispose());geometries.add(geometry);add(`LCD ${text} ink`,geometry,mat.segment,[0,0,0],state);return state;
   }
@@ -193,10 +218,10 @@ export function buildRadioContactModel() {
   box('lanyard anchor ferrule',[.006,.009,.007],[.044,-.074,-.015],mat.steel,.001);
 
   const controls=structuredClone(RADIO_CONTACT_CONTROLS);
-  const parts={shell,screen,display,indicator,ptt,battery,latch,channelKnob,volumeKnob,strap:strapGroup,strapBand,receiveMark,transmitMark,antennaTip,keys,auxiliaryKeys};
+  const parts={shell,screen,lens,display,indicator,ptt,battery,latch,channelKnob,volumeKnob,strap:strapGroup,strapBand,receiveMark,transmitMark,antennaTip,keys,auxiliaryKeys};
   // Batch only fixed construction. Moving keys, LCD segments, PTT and battery
   // remain independent parts; their transforms and control targets stay real.
-  const dynamic = new Set([shell,screen,indicator,ptt,latch,strapBand,...keys,...auxiliaryKeys,...digits.flat()]);
+  const dynamic = new Set([shell,screen,lens,indicator,ptt,latch,strapBand,...keys,...auxiliaryKeys,...digits.flat()]);
   const authoredNames=[];group.traverse(node=>{if(node.isMesh)authoredNames.push(node.name);});group.userData.authoredPartNames=authoredNames;
   function batchFixed(parent) {
     for(const child of [...parent.children])if(!child.isMesh||child===ptt)batchFixed(child);
@@ -223,7 +248,9 @@ export function buildRadioContactModel() {
     const point=new THREE.Vector3(.069,-.060,-.018).applyMatrix4(battery.matrix);
     controls.battery.position=point.toArray();
     const text=String(channel).padStart(2,'0');digits.forEach((segments,i)=>segments.forEach((mesh,s)=>{mesh.visible=!dead&&DIGITS[Number(text[i])][s]==='1';}));
-    display.visible=!dead;mat.screen.color.set(dead?'#344332':'#a2ad7d');
+    display.visible=!dead;mat.screen.color.set(dead?'#131b14':'#101c14');
+    mat.screen.emissiveIntensity=dead?0:.07;
+    mat.segment.emissiveIntensity=dead?0:1.8;
     const carrier=dead?'off':frame.carrier;
     const isTx=carrier==='tx'||(carrier===true&&pressure>.5), isRx=carrier==='rx'||(carrier===true&&pressure<=.5);
     mat.led.color.set(isTx?'#cc9062':isRx?'#b5ce8b':carrier==='weak'?'#6d7c50':'#1c291d');

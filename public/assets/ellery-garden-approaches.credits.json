@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "origin": "Project-authored construction and private derivatives extracted from delivered project packs. Existing material/texture provenance unchanged.",
+  "license": "Project source; copied material rights retained from original packs.",
+  "sourcePacks": {
+    "public/assets/conservatory-props.glb": {
+      "sha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
+      "bytes": 64730312
+    },
+    "public/assets/ellery-public-front.glb": {
+      "sha256": "350a707335e5af660bcd6497d8390aa43d10e661abe7d13d97eabcb1bf709ec5",
+      "bytes": 5094504
+    }
+  },
+  "sourceSha256": {
+    "tools/chunk_surfer/build-ellery-garden-approaches.mjs": "41ac2752e11b1ccd06367af025b4830a89f4c049d1770c0aa40b4ebae0ec9e46",
+    "tools/chunk_surfer/ellery-garden-approaches-geometry.mjs": "8e9229dfab58534c099ba2fc86781fa156363b66efcb1a14291cfcaa92b2e91f",
+    "src/data/ellery-garden-approaches.js": "0a4ea6f2a35ec6e142cdd948ee548967faa359711b3e9fb667717c614611f96f",
+    "src/data/atrium-circulation.js": "aac03b29a28d63fca4cb4c14058a3aa87cfe2be6458316ed93a15c6e6e3cf73c",
+    "tools/chunk_surfer/exterior-stationers-geometry.mjs": "8f75bc41256f63caa1de03151cf5f6f17bfb88102ed94082bbecef5a657e5d43",
+    "tools/chunk_surfer/build-exterior-collision.mjs": "0e782bc451304594022ec0122fe21d68f0176ecae24bdaa0196cb11c33f70325",
+    "tools/chunk_surfer/rebuild-tree-crowns.mjs": "32c5cf47512c20f7d7789062d86c6ed8372d851cb7fa553cb89afd390df4f1a1"
+  },
+  "geometry": "Actual-room copies clipped to the public approaches. The maintenance ledge moves two metres. The chapel belfry and fly-tower tank sit lower in the street skyline. The pack includes the perforated baths roof, turning service landing, eight stair treads, masonry setbacks, parked gates, paving and rainwater joints.",
+  "scope": "Ordinary Ellery. Source and the opening overture retain their original shared geometry.",
+  "pack": {
+    "bytes": 3532292,
+    "sha256": "0f37bf6d43f920133a4aae73065fb6d8ebac83480fc6507f9368dfb6e8816487"
+  },
+  "pending": [
+    "Native reciprocal greenhouse sightlines and real roof gaps",
+    "Ordinary route/body/door and final dither acceptance",
+    "Uninstrumented performance and participant observations"
+  ]
+}

@@ -32,7 +32,7 @@ export function combatOperatingFacts(state) {
 export const BATTLE_OPERATING_COPY = Object.freeze({
   light:{detail:'EXPOSE uses no battery. WHITEOUT spends charge and battery when its patch is fitted.',move:'EXPOSE'},
   recorder:{detail:'MONITOR captures a hostile broadcast. PLAYBACK spends that loaded combat take. Collected recordings stay in the case.',move:'MONITOR / PLAYBACK'},
-  interface:{detail:'INVERT spends the loaded combat take to return a loop. A wrong read can waste the take.',move:'INVERT'},
+  interface:{detail:'INVERT uses the loaded battle take to turn a loop back. If there is no loop, the take stays loaded.',move:'INVERT'},
   'tuning-fork':{detail:'TUNE is free and holds your read for this movement. A muted broadcast passes after one beat. Once per movement.',move:'TUNE'},
   radio:{detail:`THROW VOICE spends ${chargeCost(A.RADIO_DECOY)} charge. Earn charge to use it again. It makes the adversary decide again and gives protection.`,move:'THROW VOICE'},
   coffee:{detail:'STEADY HANDS restores composure. The cup is consumed.',move:'STEADY HANDS'},

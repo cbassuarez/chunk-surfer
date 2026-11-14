@@ -119,7 +119,7 @@ export function createHushAudioRuntime({
       onHeard?.({ event: enriched, propagation, audition: structuredClone(audition) });
       return;
     }
-    presence?.offerSoundTarget?.({
+    const targetAccepted = presence?.offerSoundTarget?.({
       position: enriched.spatial.position,
       level: Math.max(0, Math.min(1, (propagation.effectiveLevelDb - policy.hearingThresholdDb) / 24)),
       confidence: Math.max(0, 1 - propagation.uncertainty),
@@ -127,8 +127,8 @@ export function createHushAudioRuntime({
       priority: .65,
       reason: 'ACOUSTIC_EVENT',
       eventKind: enriched.kind,
-    });
-    onHeard?.({ event: enriched, propagation, audition: structuredClone(audition) });
+    }) === true;
+    onHeard?.({ event: enriched, propagation, audition: structuredClone(audition), targetAccepted });
   });
 
   function tick(dt) {

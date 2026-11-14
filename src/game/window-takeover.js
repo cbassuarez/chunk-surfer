@@ -15,6 +15,7 @@
 // It never traps. Waiting ends it, a long press ends it, anything that matters more
 // ends it, and there is a hard limit under all of those.
 import {windowMediaAsset} from '../platform/window-composition.js';
+import {HAYSTACK_PAPER,createHaystackPaperSurface} from '../render/haystack-paper.js';
 
 export const WINDOW_TAKEOVER=Object.freeze({
   sceneId:'takeover:memory',
@@ -98,61 +99,86 @@ function mediaElement(documentApi,mediaId,reducedMotion){
 
 /** One takeover at a time, on its own clock, so a stalled game loop still lets go of the picture. */
 export function createWindowTakeover({documentApi=globalThis.document,shouldYield=()=>false,showNativePane=async()=>false,hideNativePane=()=>{},
-  frame=globalThis.requestAnimationFrame?.bind(globalThis),cancelFrame=globalThis.cancelAnimationFrame?.bind(globalThis),now=()=>globalThis.performance.now(),gamepads=()=>globalThis.navigator?.getGamepads?.()||[]}={}){
-  let active=null,layer=null,pane=null,prompt=null,raf=null,last=0,native=false;
+  createPaperSurface=createHaystackPaperSurface,frame=globalThis.requestAnimationFrame?.bind(globalThis),cancelFrame=globalThis.cancelAnimationFrame?.bind(globalThis),now=()=>globalThis.performance.now(),gamepads=()=>globalThis.navigator?.getGamepads?.()||[]}={}){
+  let active=null,layer=null,pane=null,prompt=null,raf=null,last=0,native=false,pendingNative=false,generation=0,contentSurface=null;
+  let ready=true,preparedAt=0,episode=null;
   const held=new Set();
   const down=e=>{const k=String(e.key||'').toLowerCase();if(k==='e'||k==='enter'||k==='escape')held.add(k);};
   const up=e=>held.delete(String(e.key||'').toLowerCase());
   const padHeld=()=>{for(const pad of gamepads()||[])if(pad?.buttons?.some(b=>b?.pressed))return true;return false;};
-  function mount(mediaId,reducedMotion){
+  function mount(mediaId,reducedMotion,name){
     layer=documentApi.createElement('div');layer.className='window-takeover';layer.setAttribute('aria-hidden','true');
     layer.style.cssText='position:absolute;inset:0;z-index:30;pointer-events:none;overflow:hidden;';
     pane=documentApi.createElement('div');pane.style.cssText='position:absolute;overflow:hidden;background:#000;';
-    pane.append(mediaElement(documentApi,mediaId,reducedMotion));
+    if(mediaId===HAYSTACK_PAPER.id){contentSurface=createPaperSurface({documentApi,name});pane.append(contentSurface.element);ready=false;}
+    else{pane.append(mediaElement(documentApi,mediaId,reducedMotion));ready=true;}
     prompt=documentApi.createElement('div');prompt.textContent='HOLD E';
     prompt.style.cssText='position:absolute;left:0;right:0;bottom:6%;text-align:center;font:12px monospace;letter-spacing:.2em;color:#fff;opacity:0;text-shadow:0 0 3px #000;transition:opacity 1.2s;';
-    layer.append(pane,prompt);
-    (documentApi.querySelector?.('#wrap')||documentApi.body)?.append?.(layer);
+    layer.append(pane,prompt);(documentApi.querySelector?.('#wrap')||documentApi.body)?.append?.(layer);
     documentApi.addEventListener?.('keydown',down,{capture:true});documentApi.addEventListener?.('keyup',up,{capture:true});
   }
   function unmount(){
-    if(raf!=null)cancelFrame?.(raf);raf=null;
+    generation++;if(raf!=null)cancelFrame?.(raf);raf=null;
     documentApi.removeEventListener?.('keydown',down,{capture:true});documentApi.removeEventListener?.('keyup',up,{capture:true});held.clear();
-    pane?.querySelector?.('video')?.pause?.();layer?.remove?.();layer=pane=prompt=null;
+    pane?.querySelector?.('video')?.pause?.();contentSurface?.dispose?.();contentSurface=null;layer?.remove?.();layer=pane=prompt=null;
     if(native){native=false;hideNativePane();}
   }
   function paint(v,reducedMotion){
     if(!pane)return;
     const jitter=!reducedMotion&&v.fault>.35&&Math.random()<v.fault*.12?(Math.random()-.5)*v.fault*.012:0;
     pane.style.left=`${(v.rect.x+jitter)*100}%`;pane.style.top=`${v.rect.y*100}%`;pane.style.width=`${v.rect.w*100}%`;pane.style.height=`${v.rect.h*100}%`;
-    // A native pane is the first thing he sees: the frame stays clear until the cover starts.
-    pane.style.opacity=String(native&&v.phase==='pane'?0:v.opacity);
-    pane.style.filter=v.fault>0?`contrast(${1+v.fault*.7}) saturate(${1-v.fault*.65}) blur(${v.fault*1.1}px)`:'';
+    pane.style.opacity=String(!ready||pendingNative||native&&v.phase==='pane'?0:v.opacity);
+    // Paper already uses the shared recorded-media shader. CSS filters would
+    // re-encode its dither and soften the letters instead of the acquisition.
+    pane.style.filter=contentSurface?'':v.fault>0?`contrast(${1+v.fault*.7}) saturate(${1-v.fault*.65}) blur(${v.fault*1.1}px)`:'';
+    contentSurface?.paint?.();
     if(prompt)prompt.style.opacity=v.prompt?(v.pressing?'1':'.55'):'0';
+    if(episode&&!episode.shown&&ready&&!pendingNative&&v.phase!=='restore'&&(native||v.opacity>.01)){
+      episode.shown=true;try{episode.onShown();}catch(error){console.error('window takeover shown',error);}
+    }
+  }
+  function startNative(owner,mediaId,reducedMotion,name){
+    pendingNative=true;
+    void Promise.resolve().then(()=>{
+      if(owner!==generation||!active||shouldYield())return false;
+      return showNativePane(mediaId,{reducedMotion,name,isCurrent:()=>owner===generation&&!!active&&!shouldYield()});
+    }).then(ok=>{
+      pendingNative=false;
+      if(owner!==generation||!active){if(ok)hideNativePane();return;}
+      if(shouldYield()){if(ok)hideNativePane();active.cancel('yield');return;}
+      native=!!ok;last=now();paint(active.view(),reducedMotion);
+    },()=>{pendingNative=false;if(owner===generation&&active){native=false;last=now();paint(active.view(),reducedMotion);}});
   }
   function tick(reducedMotion){
     raf=null;if(!active)return;
     const t=now(),dt=(t-last)/1000;last=t;
-    const v=active.update(dt,{held:held.size>0||padHeld(),yieldNow:!!shouldYield()});
-    if(native&&v.phase!=='pane'){native=false;hideNativePane();}
-    paint(v,reducedMotion);
+    if(shouldYield()){active.restore('yield',C.yieldSeconds);}
+    if(!ready||pendingNative){
+      if(active.view().phase==='restore')active.cancel('yield');
+      else if(t-preparedAt>=8000)active.cancel('media-unavailable');
+    }else{
+      const v=active.update(dt,{held:held.size>0||padHeld(),yieldNow:!!shouldYield()});
+      if(native&&v.phase!=='pane'){native=false;hideNativePane();}
+      paint(v,reducedMotion);
+    }
     if(active)raf=frame?.(()=>tick(reducedMotion))??null;
   }
   return{
-    begin(mediaId,{mode='in-window',reducedMotion=false,seed,onDone=()=>{}}={}){
-      if(active||!documentApi?.createElement)return false;
-      const known=mediaId==='empty-field'||!!windowMediaAsset(mediaId);if(!known)return false;
-      active=createWindowTakeoverState({mediaId,mode,reducedMotion,seed,onDone:result=>{active=null;unmount();try{onDone(result);}catch(error){console.error('window takeover onDone',error);}}});
-      mount(mediaId,reducedMotion);
-      if(mode==='native'){
-        native=true;
-        void Promise.resolve().then(()=>showNativePane(mediaId,{reducedMotion})).then(ok=>{if(!ok&&native)native=false;},()=>{native=false;});
-      }
+    begin(mediaId,{mode='in-window',reducedMotion=false,name=null,seed,onShown=()=>{},onDone=()=>{}}={}){
+      if(active||pendingNative||!documentApi?.createElement||shouldYield())return false;
+      const known=mediaId===HAYSTACK_PAPER.id||mediaId==='empty-field'||!!windowMediaAsset(mediaId);if(!known)return false;
+      const owner=++generation,item={shown:false,onShown};episode=item;preparedAt=now();
+      active=createWindowTakeoverState({mediaId,mode,reducedMotion,seed,onDone:result=>{active=null;unmount();episode=null;try{onDone({...result,shown:item.shown});}catch(error){console.error('window takeover onDone',error);}}});
+      try{mount(mediaId,reducedMotion,name);}catch(_){active.cancel('media-unavailable');return false;}
+      const prepared=()=>{if(owner!==generation||!active)return;if(shouldYield()){active.cancel('yield');return;}ready=true;last=now();if(mode==='native')startNative(owner,mediaId,reducedMotion,name);else paint(active.view(),reducedMotion);};
+      if(contentSurface)Promise.resolve(contentSurface.ready).then(ok=>{if(owner!==generation||!active)return;if(ok)prepared();else active.cancel('media-unavailable');},()=>{if(owner===generation&&active)active.cancel('media-unavailable');});
+      else if(mode==='native')startNative(owner,mediaId,reducedMotion,name);
       last=now();paint(active.view(),reducedMotion);raf=frame?.(()=>tick(reducedMotion))??null;
       return true;
     },
-    active:()=>!!active,
-    view:()=>active?.view()||null,
+    active:()=>!!active||pendingNative,
+    // Diagnostic state deliberately contains no paper address or text.
+    view:()=>active?{...active.view(),shown:!!episode?.shown,preparing:!ready||pendingNative}:null,
     restore:why=>active?(active.restore(why),true):false,
     cancel:why=>active?active.cancel(why):false,
   };

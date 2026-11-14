@@ -57,11 +57,13 @@ assert.equal(chooseBellStem(manifest,{bell:8,stroke:'back',rowIndex:4,place:7}).
 
 const fetched=[];
 const decodedBuffer={sampleRate:48000,numberOfChannels:1,duration:12};
-const bank=await loadBellStemBankFromUrl({decodeAudioData:()=>Promise.resolve(decodedBuffer)},'https://audio.example/bells/manifest.json',{
+const stemBytes=readFileSync(new URL('../public/assets/audio/bell-tower/bell-01-hand-01.wav',import.meta.url));
+const encodedStem=()=>stemBytes.buffer.slice(stemBytes.byteOffset,stemBytes.byteOffset+stemBytes.byteLength);
+const bank=await loadBellStemBankFromUrl({sampleRate:48000,decodeAudioData:()=>Promise.resolve(decodedBuffer)},'https://audio.example/bells/manifest.json',{
   fetchImpl:async(url)=>{
     fetched.push(url);
     if(url.endsWith('/manifest.json'))return{ok:true,json:async()=>manifest};
-    return{ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};
+    return{ok:true,arrayBuffer:async()=>encodedStem()};
   },
 });
 assert.equal(bank.size,16);
@@ -95,7 +97,7 @@ const towerAudio=createBellTowerAudio({
   stemManifestUrl:null,
   fetchImpl:async()=>({
     ok:true,
-    arrayBuffer:async()=>new ArrayBuffer(8),
+    arrayBuffer:async()=>encodedStem(),
   }),
 });
 try{

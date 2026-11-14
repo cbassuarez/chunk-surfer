@@ -24,12 +24,12 @@ test('optional indoor pack starts without invisible new stock or partitions',()=
   const ids=new Set(GLASS_COURT_PROPS.map(p=>p.id));
   assert.equal(PROPS.renderInstances({inscriptions:false}).some(p=>ids.has(p.id)),false,
     'an old or incomplete pack cannot render unloaded court meshes');
-  assert.equal(clear(82.25,20.25),true,'the real planted band remains unblocked while the optional pack is absent');
-  assert.equal(PROPS.tallBlockingPropAt(...Object.values(point(82.25,20.25))),false);
+  assert.equal(clear(82.75,20.25),true,'the real planted band remains unblocked while the optional pack is absent');
+  assert.equal(PROPS.tallBlockingPropAt(...Object.values(point(82.75,20.25))),false);
   assert.equal(coverAt(83.25,20.25),null);
-  assert.equal(clear(86,22.25),true,'missing glass does not leave its physical wall behind');
+  assert.equal(clear(86,22.25),false,'the fixed glazed envelope is mandatory even when optional planting stock is absent');
   PROPS.setColliderGroupEnabled('glass-court',true);
-  assert.equal(clear(82.25,20.25),false);
+  assert.equal(clear(82.75,20.25),false);
   assert.equal(clear(86,22.25),false);
 });
 
@@ -52,12 +52,13 @@ test('the street profile, rain mix and original bin/bollard placements are resto
 
 test('real partition pieces retain both door apertures and at least 2.5m physical walking space',()=>{
   PROPS.setColliderGroupEnabled('glass-court',true);
-  assert.deepEqual(C.origin,{x:82,z:15});assert.equal(C.revision,3);assert.equal(C.roofAxis,'z');assert.equal(C.floor,0);
+  assert.deepEqual(C.origin,{x:82,z:15});assert.equal(C.revision,4);assert.equal(C.roofAxis,'z');assert.equal(C.floor,0);
   assert.deepEqual(glassCourtLogicalAt(94,30),{x:94,y:30});
   assert.ok(C.clearFaces.x1-C.clearFaces.x0>=C.minimumLaneWidth);
   assert.deepEqual(C.bodyLane,{x0:.85,x1:3.15});
   const bodies=GLASS_COURT_COLLIDERS;
-  assert.ok(bodies.every(c=>c.colliderGroup==='glass-court'));
+  assert.ok(bodies.every(c=>['glass-court','glass-court-envelope'].includes(c.colliderGroup)));
+  assert.ok(bodies.filter(c=>c.id.includes('greenhouse-side')).every(c=>c.colliderGroup==='glass-court-envelope'));
   for(const c of GLASS_COURT_PHYSICAL_COLLIDERS){
     const body=bodies.find(b=>b.id===`glass-court:${c.id}`);
     assert.equal(body.width,c.width+.4);assert.equal(body.depth,c.depth+.4);

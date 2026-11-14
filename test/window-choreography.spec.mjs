@@ -35,22 +35,18 @@ assert.match(nativeCastStep,/app\.emit_to\(&cast\.label, "fireball-cast-pointer"
   'pointer samples are targeted to their fixed carrier');
 assert.match(nativeCastStep,/Result<u8, String>/,'pointer delivery preserves the existing batched placement response');
 const castGeometry=rust.slice(rust.indexOf('fn base_center('),rust.indexOf('fn apply_placement('));
-assert.match(castGeometry,/main\.inner_position\(\)/,'carrier placement anchors to the actual client rectangle');
-assert.match(castGeometry,/main\.inner_size\(\)/);
-assert.doesNotMatch(castGeometry,/main\.outer_(?:position|size)\(\)/);
+assert.match(castGeometry,/main\.outer_position\(\)/,'an external carrier clears the entire game window, including its frame');
+assert.match(castGeometry,/main\.outer_size\(\)/);
+assert.match(castGeometry,/main\.current_monitor\(\)/,'placement uses the game window’s actual monitor and native scale');
+assert.match(castGeometry,/main\.is_fullscreen\(\)[\s\S]*simple_fullscreen_active\(\)[\s\S]*return Ok\(None\)/,
+  'both native fullscreen and simple fullscreen retain the in-game parry');
 assert.match(castGeometry,/carrier_slot_for_cast\(&client,\s*monitor\.work_area\(\),\s*scale,\s*cast\)/,
-  'peripheral placement receives the main client anchor and complete monitor work area');
-assert.match(rust,/fn logical_size\([^)]*\)\s*->\s*f64\s*\{\s*240\.0\s*\}/,
-  'the native input carrier has a fixed 240 logical pixel extent');
-const carrierSlot=rust.slice(rust.indexOf('fn carrier_slot_for_cast('),rust.indexOf('struct CarrierPlacement'));
-assert.match(carrierSlot,/peripheral_carrier_slot\(client,\s*work,\s*scale,\s*cast\.index,\s*cast\.count,\s*cast\.seed\)/,
+  'peripheral placement receives the complete main window and its monitor work area');
+const carrierSlot=rust.slice(rust.indexOf('fn carrier_slot_for_cast('),rust.indexOf('struct CarrierPointer'));
+assert.match(carrierSlot,/peripheral_carrier_slot\(main,\s*work,\s*scale,\s*cast\.index,\s*cast\.count,\s*cast\.seed\)/,
   'each original ray keeps its reserved peripheral slot for the complete cast');
 assert.doesNotMatch(carrierSlot,/progress|dodge|formation_progress|cursor|casts\.len/,
   'visible feints and changing live membership cannot move native input coverage');
-const carrierLayout=rust.slice(rust.indexOf('fn peripheral_carrier_slot('),rust.indexOf('fn carrier_slot_for_cast('));
-assert.match(carrierLayout,/\.clamp\(left,\s*right - side\)/,'peripheral columns remain within monitor work area');
-assert.match(carrierLayout,/\.clamp\(top,\s*bottom - height\)/,'each reserved column is clamped as a whole');
-assert.match(carrierLayout,/\.clamp\(left,\s*right - width\)/,'the fallback row is clamped as a whole');
 const castPlacement=rust.slice(rust.indexOf('fn apply_placement('),rust.indexOf('#[cfg(target_os = "macos")]\nfn show_cast_without_focus'));
 assert.match(castPlacement,/if surface\.inner_size\(\)\.ok\(\) != Some\(placement\.size\)/,
   'a settled carrier cannot repeatedly resize its webview');
@@ -85,7 +81,6 @@ assert.doesNotMatch(activation,/\.hide\(\)|hide_media/,
   'task switching cannot erase the native visibility state that must survive Alt-Tab');
 assert.doesNotMatch(effects,/chunk_window_media_hide_if_unfocused/);
 assert.match(effects,/ownsPointerTransfer:\(\)=>!!current&&/);
-assert.match(effects,/const size=240/,'the webview pool agrees with the native carrier extent');
 assert.match(effects,/let surface=await api\.WebviewWindow\.getByLabel\(label\)/);
 assert.match(effects,/surface=new api\.WebviewWindow\(label/);
 const mediaSurface=readFileSync(new URL('../src/window-media-surface.js',import.meta.url),'utf8');
@@ -134,6 +129,7 @@ const mediaDocument=readFileSync(new URL('../window-media.html',import.meta.url)
 assert.doesNotMatch(mediaDocument,/image-rendering:(?:pixelated|crisp-edges)/,
   'CSS cannot re-pixelate the full-resolution WebGL or fallback surface');
 const cast=readFileSync(new URL('../src/fireball-cast.js',import.meta.url),'utf8');
+assert.match(cast,/chase\.resize\(\{width,height\}\)/,'drawing and hits follow the actual native carrier viewport');
 assert.match(cast,/pointerdown[\s\S]{0,220}strike\(event\)/,
   'the physical press coordinates reach tile hit testing inside the input carrier');
 assert.doesNotMatch(cast,/addEventListener\(['"]focus['"]/,

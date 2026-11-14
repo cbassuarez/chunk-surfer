@@ -12,6 +12,11 @@ https://claude.ai/artifact/SFFb9j6DRES3kZRAVKEfxN
 - After a recording he checks it off, like a level-clear screen: a tick and a
   strike-through for a clean take, and notes in his own hand, legible, when the
   take went wrong or has to be done again.
+- **Recording rule, trial 2026-11-08:** ordinary quality faults stay on tape
+  until STOP or the normal finish. STOP remains available. Only the sheet
+  written afterward reveals that another take is needed. Immediate interruption
+  belongs to a specific authored beat, never every take in its room; getting
+  caught or Contact remains separate. The recording meter reads DANGER.
 - **The check-off happens in the live room.** The world keeps running while he
   writes. That is the vulnerability.
 - Difficulty must be clear, chosen in the van cab, among the first things you
@@ -62,16 +67,17 @@ cassette is chosen from everything he carries.
 |---|---|---|
 | Clean | Sixty seconds, nothing the client forbids on the tape | Tick, strike the room, `4 CLEAN` |
 | Rejected | Sixty seconds, but breath, handling, clothing or the presence is audible on it | No tick, `3 BREATH 0:41 - REJECT. REDO` |
-| Spoilt | The take died before sixty seconds | No tick, `2 SPOILT 0:23 HANDLING` |
+| Spoilt | A quality fault occurred; the transport may still reach sixty seconds | No tick, `2 SPOILT 0:23 HANDLING` |
 
 The rejection floor sits below the spoil trip and follows the shift's existing
 `recordingForgiveness`. A rejected take is still on its cassette.
 
-**The check-off.** After every take that ends, the sheet comes up low on one
-side, off the DA-1000's centre, and the pen writes in real time: tick, strike,
-note, cassette slash, a few seconds in all. The room stays live and HUSH can
-come. Lowering the sheet early is allowed; the ink is already on it next time.
-Reduced motion: the marks appear without the stroke animation.
+**The check-off.** Once the transport stops, the recorder gives the foreground
+to the sheet. A gentle dim and the paper's settling motion draw attention to
+the affected room. A clean take gets a tick and strike. A rejected one holds
+the diagnosis and finishes REDO. The cassette and the full note are already
+filed. The room and HUSH stay live, and a step or Escape lowers the sheet.
+Reduced motion presents the completed marks in a steady pose.
 
 **The ink layer.** His marks are drawn at runtime into a texture in page space,
 using his stroke hand moved into a shared module (with digits and `: - + / ?`
@@ -108,7 +114,7 @@ return report shows the sheet as he left it.
 | 2 | Sheet 1 in the bake | Built: `templateWorkOrderChecklist` from `src/data/work-order-sheet.js`; the instructions are sheets 2–4 |
 | 3 | Cassette ledger, saved and wired | Built: `save.cassettes`, signed at the lodge line, level check on cassette 1, every attempt filed in `stopTake` |
 | 4 | Clean / rejected / spoilt | Built: `src/game/take-acceptance.js`. **Proposed numbers:** rejected at 85% / 60% / 45% of the spoil line for pause / standard / strict forgiveness; a take called off in its first 2 s uses no cassette |
-| 5 | The check-off in the live room | Built: `src/game/work-order-checkoff.js`. The sheet comes up close on the left and follows the pen; world runs, walking waits until he lowers it |
+| 5 | The check-off in the live room | Built: `src/game/work-order-checkoff.js`. The sheet settles near centre as the room gently dims. The shared hand rig writes the decisive mark, with recorded paper and biro foley. A step or dismissal lowers the sheet while the room, look, and threat remain live |
 | 6 | The shift on the form in the cab | Built: reading the work order in the cab offers T TICK A SHIFT (the existing shift selector); the tick and the count go on in ink and the choice is locked. TAKE CASE finalises it. A run that skips the cab can still choose at the workbench; that shift is inked when TAKE CASE finalises it |
 | 7 | Contact and the B3 store | Built: being taken may lose a cassette (Story never, Contract 1 in 6, Night Shift and Dead Air 1 in 2), placed in a room and found by walking over it; a clean take on it stops counting until then (`lost` on the tape, saved). The B3 session flight case has two blanks in its lid pocket, once |
 | 8 | Recording over | Built: out of blanks, a picker lists every cassette he has, spoilt and rejected first, and says which room a clean one would erase; "Not yet" leaves the take unrolled |
@@ -116,3 +122,11 @@ return report shows the sheet as he left it.
 
 **The chapel finale** counts its room however the fight ends and now files that minute on a blank, or over a spoilt or rejected cassette; it never erases another room, and with nothing else left it uses no cassette.
 The paper bake now skips documents that have their own isolated edition (the two student-strike records); a full bake used to put them in the shared catalogue too.
+
+## Native sign-off verification
+
+Three Practice Wing captures in the isolated macOS Tauri QA build exercise a clean take, a breath-rejected take and Escape during writing. The fixture stages the spent tape time and the rejected take’s noise event. The game runs the final part of the take, stops the transport, classifies the result and commits the cassette before the gesture. The night clock advances, look changes during writing, and movement works after the drop in all three cases. Paper lift and drop reached the mixer on all three. Biro playback follows the recorded contact phases and cuts short with early dismissal. The files are under `artifacts/work-order-animation-study/native/`.
+
+The sheet now sits lower, with the dim concentrated behind it. The torch’s beam widens during the gesture so the room remains visible around the sheet. HUSH still attenuates the torch. In the native Practice Wing interruption capture, a staged HUSH starts outside contact range and advances under the normal game rules. Physical contact takes the sheet out of view, applies an injury and knocks the player back. The clean take stays filed, and the player can move afterward. See `artifacts/work-order-animation-study/native-interruption/` for the recording and trace. Human readability trials remain open.
+
+The hand pass fits a palm-down tripod grip with the barrel running through the thumb web. The support hand pinches the sheet below the active line and both jacket cuffs reach the wrists. The tick has its own beat, featured ink is heavier during sign-off, and the pen withdraws below the finished line. See `artifacts/work-order-animation-study/hand-motion/` for the final clean and rejected gestures rendered over a room still. The earlier native spoilt-take capture shows the revised grip before the cuff adjustment. The native capture stalled during the final cuff pass, so native visual verification of that adjustment remains open.

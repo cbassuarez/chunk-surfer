@@ -24,17 +24,33 @@ export const METRONOME_FIELD = Object.freeze({
 });
 
 export function createMetronomeFieldRuntime({ context, destination } = {}) {
-  if (!context || !destination) return { update() {}, sound() { return 0; }, stop() {} };
+  if (!context || !destination) return { update() {}, sound() { return 0; }, silenceVoice() {}, stop() {} };
 
   const voices = PRACTICE_METRONOMES.map(() => {
     const gain = context.createGain();
     gain.gain.value = 0;
     const pan = context.createStereoPanner ? context.createStereoPanner() : null;
     if (pan) { gain.connect(pan); pan.connect(destination); } else gain.connect(destination);
-    return { gain, pan };
+    return { gain, pan, live: new Set() };
   });
 
   let stopped = false;
+  function prune(voice, now) {
+    for (const node of voice.live) if (node.until <= now) {
+      try { node.env.disconnect(); } catch (_) {}
+      voice.live.delete(node);
+    }
+  }
+  function silenceVoice(index, now = context.currentTime) {
+    const voice = voices[index]; if (!voice) return;
+    for (const node of voice.live) {
+      try { node.osc.stop(now); } catch (_) {}
+      try { node.env.disconnect(); } catch (_) {}
+    }
+    voice.live.clear();
+    voice.gain.gain.cancelScheduledValues(now);
+    voice.gain.gain.setValueAtTime(0, now);
+  }
 
   return {
     // Levels only: `{ voices: [{ gain, pan }] }`, one entry per metronome.
@@ -42,6 +58,8 @@ export function createMetronomeFieldRuntime({ context, destination } = {}) {
       if (stopped) return;
       voices.forEach((voice, index) => {
         const target = frame.voices?.[index] || {};
+        prune(voice, now);
+        if (!frame.active || target.running === false || target.held === true) { silenceVoice(index, now); return; }
         voice.gain.gain.cancelScheduledValues(now);
         voice.gain.gain.linearRampToValueAtTime(clamp(target.gain, 0, 1), now + 0.2);
         if (voice.pan) {
@@ -57,22 +75,27 @@ export function createMetronomeFieldRuntime({ context, destination } = {}) {
       let placed = 0;
       for (const tick of ticks) {
         const target = frame.voices?.[tick.index];
-        if (!(Number(target?.gain) > 0) || target.running === false) continue;
-        const at = now + METRONOME_FIELD.lookahead - Math.max(0, Number(tick.ago) || 0);
-        const out = voices[tick.index]?.gain;
-        if (!out) continue;
-        practiceClickTick(context, out, at, { hz: PRACTICE_CLICK.hz, decay: PRACTICE_CLICK.decay, gain: 1 });
-        practiceClickTick(context, out, at + PRACTICE_RETURN_LAG_MS / 1000, {
+        if (!(Number(target?.gain) > 0) || target.running === false || target.held === true) continue;
+        const voice = voices[tick.index]; if (!voice) continue;
+        const at = Math.max(now, Number.isFinite(tick.audioAt) ? tick.audioAt
+          : now + METRONOME_FIELD.lookahead - Math.max(0, Number(tick.ago) || 0));
+        const out = voice.gain; prune(voice, now);
+        const primary = practiceClickTick(context, out, at, { hz: PRACTICE_CLICK.hz, decay: PRACTICE_CLICK.decay, gain: 1 });
+        const returned = practiceClickTick(context, out, at + PRACTICE_RETURN_LAG_MS / 1000, {
           hz: PRACTICE_CLICK.returnHz, decay: PRACTICE_CLICK.returnDecay, gain: PRACTICE_CLICK.returnGain,
         });
+        voice.live.add({ ...primary, until: at + PRACTICE_CLICK.decay + .02 });
+        voice.live.add({ ...returned, until: at + PRACTICE_RETURN_LAG_MS / 1000 + PRACTICE_CLICK.returnDecay + .02 });
         placed += 1;
       }
       return placed;
     },
+    silenceVoice,
     stop() {
       if (stopped) return;
       stopped = true;
-      for (const voice of voices) {
+      for (const [index, voice] of voices.entries()) {
+        silenceVoice(index);
         try { voice.gain.disconnect(); } catch (_) {}
         try { voice.pan?.disconnect(); } catch (_) {}
       }

@@ -42,8 +42,11 @@ assert.equal(service.archetype,DOOR_ARCHETYPE.SERVICE_WIRED_PAIR);
 
 const cardinal=[[1,0],[-1,0],[0,1],[0,-1]];
 const adjacentZones=(door)=>new Set(door.cells.flatMap(({x,y})=>cardinal.map(([dx,dy])=>FP.zoneAt(x+dx,y+dy))));
-assert.ok(adjacentZones(foyer).has(ZONE.getIn));
-assert.ok(adjacentZones(foyer).has(ZONE.foyer),'FOH leaf touches both named rooms directly');
+assert.ok(adjacentZones(foyer).has(ZONE.civicCourt),'the retained atrium leaf now opens to a real public garden gap');
+const gardenService=doorById('dock-garden-service');
+assert.ok(adjacentZones(gardenService).has(ZONE.getIn));
+assert.ok(adjacentZones(gardenService).has(ZONE.civicCourt));
+assert.ok(adjacentZones(foyer).has(ZONE.foyer),'FOH leaf remains on the atrium side of the actual gap');
 assert.ok(adjacentZones(service).has(ZONE.getIn),'freight pair lives in the Scene Dock south wall');
 
 for(let y=16;y<=22;y+=.5){
@@ -54,10 +57,10 @@ for(let y=16;y<=22;y+=.5){
     assert.equal(Boolean(FP.flagsAt(point.x,point.y)&F.BRICKED),false);
   }
 }
-assert.equal(FP.zoneAt(...Object.values(FP.toRuntimePoint({x:70,y:4},{center:false}))),ZONE.getIn);
-assert.equal(FP.isSolid(...Object.values(FP.toRuntimePoint({x:71,y:4},{center:false}))),true,'northeast wall steps inward');
-assert.equal(FP.isSolid(...Object.values(FP.toRuntimePoint({x:72,y:5},{center:false}))),true,'services pocket has a second shallower step');
-assert.equal(FP.zoneAt(...Object.values(FP.toRuntimePoint({x:72,y:6},{center:false}))),ZONE.getIn,'the step releases back into the room');
+assert.equal(FP.zoneAt(...Object.values(FP.toRuntimePoint({x:69,y:4},{center:false}))),ZONE.getIn);
+assert.equal(FP.isSolid(...Object.values(FP.toRuntimePoint({x:70,y:4},{center:false}))),true,'northeast wall steps inward');
+assert.equal(FP.isSolid(...Object.values(FP.toRuntimePoint({x:70,y:5},{center:false}))),true,'services pocket has a second shallower step');
+assert.equal(FP.zoneAt(...Object.values(FP.toRuntimePoint({x:69,y:6},{center:false}))),ZONE.getIn,'the step releases back into the room');
 
 for(const name of ['scene_dock_roof_structure','scene_dock_sign_services'])assert.ok(PROP_MESH[name]);
 for(const id of ['dock-scene-roof','dock-sign-studios-plant'])assert.ok(CONSERVATORY_PROPS.some((prop)=>prop.id===id));

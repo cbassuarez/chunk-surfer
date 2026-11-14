@@ -4,5 +4,10 @@
   "package": "@webxr-input-profiles/assets@1.0.20",
   "license": "MIT",
   "copyright": "Copyright (c) 2019 Amazon",
-  "use": "Anatomical base mesh and 25 joint bind skeleton; game-specific hierarchical rig, contact solver, skin shading, nails and performance."
+  "use": "Anatomical base mesh and 25 joint bind skeleton; game-specific hierarchical rig, contact solver, skin shading, nails and performance.",
+  "derivative": {
+    "asset": "recordist.glb",
+    "generator": "tools/chunk_surfer/build-recordist-hands.mjs",
+    "changes": "Refined hand surface, knuckle and tendon relief, and five pose corrections. Original bind skeleton retained."
+  }
 }

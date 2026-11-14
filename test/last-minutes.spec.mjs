@@ -150,11 +150,12 @@ test('a meaning line only lands on a prop someone read: true of the real props, 
   const lantern=meaningLineFor('acq-chapel-lantern-nave',.5).text;assert.doesNotMatch(lantern,/on all night/);
   assert.match(readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),/meaning=usingSpecialSpace\(\)\?null:meaningLineFor\(/,'and never in Source');
 });
-test('none of this is in Source: every entry point says so',()=>{
-  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),body=name=>{const at=main.indexOf(`function ${name}(`);return main.slice(at,main.indexOf('\nfunction ',at+10));};
-  for(const name of['maybeMemorySeep','swallowDeadVerb','tickCabBleed','runFaculty'])assert.match(body(name),/usingSpecialSpace\(\)/,name);
+test('continuous world treatment stays outside Source and retired random interruptions have no main entry',()=>{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.match(main,/function runFaculty\(\)\{return storyMode&&!usingSpecialSpace\(\)/);
+  for(const name of ['maybeMemorySeep','swallowDeadVerb','tickCabBleed'])assert.doesNotMatch(main,new RegExp('function '+name+'\\('));
   const runtime=readFileSync(new URL('../src/game/source-space-runtime.js',import.meta.url),'utf8');
-  assert.doesNotMatch(runtime,/mf_hero|the_bag_|the-daisies|memory-field/,'and Source has no idea');
+  assert.doesNotMatch(runtime,/mf_hero|the_bag_|the-daisies|memory-field/,'Source keeps its own environment rather than a random field owner');
 });
 test('the transition: the film fogs, it goes white, focus comes back last, and the sun stays on his eye',()=>{
   const at=(kind,t,o)=>neuralFrame(kind,t,o);

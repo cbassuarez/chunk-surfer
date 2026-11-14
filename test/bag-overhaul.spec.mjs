@@ -112,8 +112,9 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
   });
   for(const id of ['gear:light','gear:radio','gear:plant-spanner']){
     const verbs=bagEntry(model,'kit',id).actionList.map((action)=>action.verb);
-    assert.ok(verbs[0]==='set'||verbs[0]==='unset');
-    assert.deepEqual(verbs.slice(1,4),['use','drop','inspect']);
+    assert.ok(verbs[0]==='hold'||verbs[0]==='lower');
+    assert.ok(verbs[1]==='set'||verbs[1]==='unset');
+    assert.deepEqual(verbs.slice(2,5),['use','drop','inspect']);
   }
   const radioDrop=bagEntry(model,'kit','gear:radio').actionList.find((action)=>action.verb==='drop');
   assert.equal(radioDrop.enabled,true);assert.ok(radioDrop.confirm);assert.equal(radioDrop.exitPolicy,'close');
@@ -122,14 +123,13 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
   const lightDrop=bagEntry(model,'kit','gear:light').actionList.find((action)=>action.verb==='drop');
   assert.equal(lightDrop.enabled,false);assert.equal(lightDrop.reason,"CAN'T LEAVE THIS ITEM BEHIND");
   // The spanner is battle gear now — ours, out of the van, and the only blunt
-  // thing in the case (BATTLE_GEAR in combat-loadout.js). It used to be this
-  // test's example of a thing you cannot take into a fight; the marble eyes are
-  // that example now, and they are a better one, because nothing will ever make
-  // them useful in a fight.
+  // thing in the case (BATTLE_GEAR in combat-loadout.js). The eyes can occupy
+  // a reachable bay without granting a combat move.
   const spannerSet=bagEntry(model,'kit','gear:plant-spanner').actionList.find((action)=>action.verb==='set');
   assert.equal(spannerSet.enabled,true,'the spanner can be set in a quick slot');
   const eyesSet=bagEntry(model,'kit','gear:marble-eyes').actionList.find((action)=>action.verb==='set');
-  assert.equal(eyesSet.enabled,false);assert.equal(eyesSet.reason,'NOT USED IN A FIGHT');
+  assert.equal(eyesSet.enabled,true);assert.equal(eyesSet.reason,'');
+  assert.equal(bagEntry(model,'kit','gear:marble-eyes').battleCapable,false);
 });
 
 test('numbered ready slots replace storage gear and swap already-ready gear',()=>{

@@ -39,7 +39,7 @@ export function bagTabRegions(model, layout) {
   });
 }
 
-export function bagTabButtonState(tab, activeSection) {
+export function bagTabButtonState(tab, activeSection, { hovered = false, focused = false } = {}) {
   const active = tab.sectionId === activeSection;
   return {
     legend: tab.label,
@@ -47,6 +47,9 @@ export function bagTabButtonState(tab, activeSection) {
     controlId: tab.controlId,
     lit: active,
     selected: active,
+    active,
+    focused: hovered || focused,
+    illumination: 'powered',
     latched: false,
     enabled: true,
   };

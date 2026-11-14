@@ -5,6 +5,8 @@ import vm from 'node:vm';
 import {createFootContactClock,resolveFootContact} from '../src/audio/foot-contact.js';
 import {resolveSourceFootingTreatment} from '../src/audio/source-footing-treatment.js';
 import { SOURCE_BRAIDED_DIVIDE, sourceDivideDepth } from '../src/data/source-braided-divide.js';
+import { recordNightClockTravel } from '../src/game/night-clock-travel.js';
+import { createRecorderRigMotion } from '../src/render/recorder-rig-motion.js';
 import {MATERIAL,ZONE} from '../src/data/floorplan/legend.js';
 
 const source=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
@@ -22,11 +24,11 @@ function harness(){
   const geometry={cellAt:()=>({material:model.material,zone:ZONE.hall,sourceDivide:model.divide,sourceEdgeApron:model.apron}),materialAt:()=>model.material};
   const context=vm.createContext({MATERIAL,ZONE,CELL:.5,resolveFootContact,resolveSourceFootingTreatment,SOURCE_BRAIDED_DIVIDE,sourceDivideDepth,createFootContactClock,
     playerFootClock:createFootContactClock(),playerFootTravel:[],playerFootOwner:null,playerFootIndex:0,
-    playerFootHeld:false,playerFootPrepareKey:null,
+    playerFootHeld:false,playerFootPrepareKey:null,recordNightClockTravel,recorderRigMotion:createRecorderRigMotion(),recorderTraveling:false,
     px:0,py:0,depth:0,planName:'test',storyMode:true,inRogue:true,paused:false,
     performance:{now:()=>1000},document:{hidden:false},
     sourceContinuationScene:null,coastalMemoryScene:null,sourceDriveSession:null,sourcePubScene:null,
-    sourceReturnFlashbackScene:null,getInDriveTeaserScene:null,
+    sourceReturnFlashbackScene:null,getInDriveTeaserScene:null,stationFieldScene:null,
     usingSourceSpace:()=>model.source,usingSpecialSpace:()=>model.source,usingStairAnomaly:()=>false,usingPlan:()=>true,
     activeGeometry:()=>geometry,physicalPointFor:(x,y)=>({x,z:y}),
     chunkSurfRuntime:{state:()=>model.state,horizonFrame:()=>model.horizon,sourceShoreFrame:()=>model.shore,
@@ -174,6 +176,16 @@ test('real textile footprints and interior station floors override broad wall/re
   h.model.source=true;h.model.material=MATERIAL.sourceVoid;h.model.realm={world:'whiteout',stage:'outside'};
   assert.equal(h.context.playerFootingAt().surface,'snow');
   h.model.realm.stage='inside';assert.equal(h.context.playerFootingAt().surface,'wood');
+});
+
+test('the occupied home grounds retain outdoor snow and local acoustic contact coordinates',()=>{
+  const h=harness();h.model.source=true;
+  h.model.realm={world:'whiteout',stage:'inside',home:{eligible:true},pose:{x:5.3,z:40}};
+  const descriptor=h.context.playerFootingAt();
+  assert.equal(descriptor.surface,'snow');
+  assert.equal(descriptor.room,'none');
+  assert.equal(descriptor.position.x,5.3);
+  assert.equal(descriptor.position.z,40);
 });
 
 test('explicit scene contacts retain Source IV glazed and coast physical identities',()=>{

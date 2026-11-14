@@ -36,7 +36,8 @@ test('health bars preserve exact ratios and embodied injury thresholds', () => {
   assert.equal(combatInjuryStage({ composure: 8, maxComposure: 8 }), 'steady');
   assert.equal(combatInjuryStage({ composure: 4, maxComposure: 8 }), 'wounded');
   assert.equal(combatInjuryStage({ composure: 2, maxComposure: 8 }), 'critical');
-  assert.equal(combatInjuryStage({ composure: 8, maxComposure: 8, injuries: 2 }), 'wounded');
+  assert.equal(combatInjuryStage({ composure: 8, maxComposure: 8, injuries: 2 }), 'steady');
+  assert.equal(combatInjuryStage({ composure: 20, maxComposure: 20, injuries: 4 }), 'steady');
 });
 
 test('combat health uses a fixed sixteen-element VFD scale', () => {

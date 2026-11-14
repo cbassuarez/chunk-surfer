@@ -231,12 +231,12 @@ test('the real opening host reads visual, motion and dread settings at call time
   const expression = owner.slice(begin, end).trim().replace(/,$/, '');
   const state = { visual: true, shake: 'full', rendererReduce: false, settings: { reduceDread: false } };
   const getter = vm.runInNewContext('(' + expression + ')', {
-    visualEffectsEnabled: () => state.visual, shakeMode: () => state.shake,
+    visualEffectsEnabled: () => state.visual, shakeMode: () => state.shake,flashMode:()=>state.visual?'full':'off',protectedPresentationAudio:()=>false,
     getSave: () => ({ settings: state.settings }), R3: { r3dPixelMeshStatus: () => ({ settings: { reduceMotion: state.rendererReduce } }) },
   });
   const values = () => JSON.parse(JSON.stringify(getter()));
-  assert.deepEqual(values(), { effectsMode: 'full', reducedMotion: false, reducedDread: false });
+  assert.deepEqual(values(), { effectsMode: 'full',flashMode:'full',protectedAudio:false, reducedMotion: false, reducedDread: false });
   state.visual = false; state.shake = 'reduced'; state.settings.reduceDread = true;
-  assert.deepEqual(values(), { effectsMode: 'off', reducedMotion: true, reducedDread: true });
+  assert.deepEqual(values(), { effectsMode: 'off',flashMode:'off',protectedAudio:false, reducedMotion: true, reducedDread: true });
   state.shake = 'full'; state.rendererReduce = true; assert.equal(values().reducedMotion, true, 'renderer motion accessibility reaches the same host');
 });

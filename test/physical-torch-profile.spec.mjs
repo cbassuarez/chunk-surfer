@@ -2,12 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { applyPhysicalTorchProfile, resolveTorchLook } from '../src/render/lighting-model.js';
+import { applyPhysicalTorchProfile, applyWorkOrderTorchSpill, resolveTorchLook, workOrderRoomFill } from '../src/render/lighting-model.js';
 import { applyFieldKitTorchLook } from '../src/render/field-kit-torch.js';
 import { fieldKitEffects } from '../src/game/field-kit.js';
 import { applyHushTorchInterference } from '../src/game/hush-field.js';
 import { ZONE } from '../src/data/floorplan/legend.js';
-import {torchReceiveSample} from '../src/render/torch-optics.js';
+import {torchAngularSample, torchReceiveSample} from '../src/render/torch-optics.js';
+
+test('the Work Order leaves a usable penumbra while the lamp and HUSH retain authority', () => {
+  const lamp = resolveTorchLook({ battery: .8 });
+  const off = resolveTorchLook({ on: false });
+  assert.equal(applyWorkOrderTorchSpill(off, 1), off);
+  assert.equal(applyWorkOrderTorchSpill(lamp, 0), lamp);
+  const opened = applyWorkOrderTorchSpill(lamp, 1);
+  const side = Math.cos(35 * Math.PI / 180);
+  assert.ok(torchAngularSample({ ...opened, axis: side }) > 2 * torchAngularSample({ ...lamp, axis: side }));
+  for (const key of ['power', 'reach', 'health', 'band', 'color']) assert.equal(opened[key], lamp[key]);
+  const interfered = applyHushTorchInterference(opened, { active: true, absorption: { light: .8 } });
+  assert.ok(interfered.power < opened.power && interfered.reach < opened.reach && interfered.spill < opened.spill);
+  assert.equal(workOrderRoomFill(off, 1), 0);
+  assert.equal(workOrderRoomFill(opened, 0), 0);
+  assert.ok(workOrderRoomFill(opened, 1) > .1);
+  assert.ok(workOrderRoomFill(interfered, 1) < workOrderRoomFill(opened, 1) * .2);
+});
 
 test('physical interior beam preserves the real battery, fitted reach and HUSH absorption', () => {
   for (const battery of [0, .08, .3, .8]) for (const on of [false, true])

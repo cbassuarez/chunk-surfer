@@ -77,6 +77,51 @@ function decodeAudioData(context, bytes) {
   });
 }
 
+// Validate the recording before decodeAudioData consumes/detaches its bytes.
+// The encoded source remains 48kHz; Web Audio resamples its decoded buffer to
+// the context's rate. Those are separate contracts, not an asset failure.
+function sourceWavInfo(bytes, url) {
+  const invalid = (reason) => { throw new Error(`bell stem ${url} ${reason}`); };
+  if (!(bytes instanceof ArrayBuffer) || bytes.byteLength < 12) invalid('must be a complete RIFF/WAVE recording');
+  const view = new DataView(bytes);
+  const tag = (at) => String.fromCharCode(...new Uint8Array(bytes, at, 4));
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') invalid('must be a RIFF/WAVE recording');
+  const end = view.getUint32(4, true) + 8;
+  if (end < 12 || end > bytes.byteLength) invalid('has a truncated RIFF payload');
+  let format = null, dataBytes = null, cursor = 12;
+  while (cursor + 8 <= end) {
+    const id = tag(cursor), size = view.getUint32(cursor + 4, true), start = cursor + 8;
+    if (start + size > end) invalid(`has a truncated ${id} chunk`);
+    if (id === 'fmt ') {
+      if (format || size < 16) invalid('has an invalid format chunk');
+      let encoding = view.getUint16(start, true);
+      const channels = view.getUint16(start + 2, true), sampleRate = view.getUint32(start + 4, true);
+      const byteRate = view.getUint32(start + 8, true), blockAlign = view.getUint16(start + 12, true), bits = view.getUint16(start + 14, true);
+      if (encoding === 65534) {
+        if (size < 40 || view.getUint16(start + 16, true) < 22) invalid('has an incomplete extensible format');
+        const tail = [0,0,16,0,128,0,0,170,0,56,155,113];
+        if (!tail.every((value, i) => view.getUint8(start + 28 + i) === value)) invalid('has an unsupported extensible encoding');
+        encoding = view.getUint32(start + 24, true);
+      }
+      if (![1, 3].includes(encoding)) invalid('must contain uncompressed PCM or float samples');
+      if (channels !== 1) invalid('source must be mono');
+      if (sampleRate !== 48000) invalid('source sampleRate must equal 48000');
+      if (!(encoding === 1 ? [8,16,24,32] : [32,64]).includes(bits)
+        || blockAlign !== channels * bits / 8 || byteRate !== sampleRate * blockAlign) invalid('has inconsistent PCM frame metadata');
+      format = { sampleRate, channels, blockAlign };
+    }
+    if (id === 'data') {
+      if (dataBytes !== null) invalid('has duplicate audio payload chunks');
+      dataBytes = size;
+    }
+    cursor = start + size + (size & 1);
+  }
+  if (cursor !== end || !format || dataBytes === null || dataBytes % format.blockAlign) invalid('has incomplete WAV sample data');
+  const frames = dataBytes / format.blockAlign, duration = frames / format.sampleRate;
+  if (duration < 12) invalid('source must be at least 12 seconds');
+  return { ...format, frames, duration };
+}
+
 export async function loadBellStemBank(context, manifestValue, { fetchImpl = globalThis.fetch, baseUrl = null } = {}) {
   const manifest = normalizeBellStemManifest(resolveBellStemManifestUrls(manifestValue, baseUrl));
   if (typeof fetchImpl !== 'function') throw new Error('bell stem loading requires fetch');
@@ -84,10 +129,14 @@ export async function loadBellStemBank(context, manifestValue, { fetchImpl = glo
   await Promise.all(manifest.entries.map(async (entry) => {
     const response = await fetchImpl(entry.url);
     if (!response.ok) throw new Error(`bell stem ${entry.url} returned ${response.status}`);
-    const buffer = await decodeAudioData(context, await response.arrayBuffer());
-    if (buffer.sampleRate !== manifest.sampleRate) throw new Error(`bell stem ${entry.url} decoded at ${buffer.sampleRate} Hz`);
+    const bytes = await response.arrayBuffer(), source = sourceWavInfo(bytes, entry.url);
+    const buffer = await decodeAudioData(context, bytes);
+    // decodeAudioData's normative resampling step targets BaseAudioContext,
+    // not the file's original clock: https://www.w3.org/TR/webaudio/#dom-baseaudiocontext-decodeaudiodata
+    if (buffer.sampleRate !== context.sampleRate) throw new Error(`bell stem ${entry.url} decoded at ${buffer.sampleRate} Hz instead of context ${context.sampleRate} Hz`);
     if (buffer.numberOfChannels !== 1) throw new Error(`bell stem ${entry.url} must decode as mono`);
-    if (buffer.duration < 11.99) throw new Error(`bell stem ${entry.url} must be at least 12 seconds`);
+    if (!Number.isFinite(buffer.duration) || buffer.duration < 11.99) throw new Error(`bell stem ${entry.url} must be at least 12 seconds`);
+    if (Math.abs(buffer.duration - source.duration) > 2 / context.sampleRate) throw new Error(`bell stem ${entry.url} changed duration during decode`);
     bank.set(keyFor(entry.bell, entry.stroke, entry.variation), { ...entry, buffer });
   }));
   return {

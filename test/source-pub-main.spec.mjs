@@ -66,7 +66,15 @@ test('an ordinary explicit release preserves progress and cannot contaminate Sou
   assert.equal(h.data().sourcePub.status,'active');assert.equal(h.data().sourcePub.yaw,-2.3);
   assert.deepEqual(h.look(),{yaw:original.yaw,pitch:original.pitch});assert.equal(e.sourcePubScene,null);assert.equal(h.restores(),1);
   assert.match(main,/if\(sourcePubScene\)\{commitSourcePub\(\);releaseSourcePub\(\);\}/,'return to title preserves this resumable side leg before restoring Source');
-  assert.match(main,/if\(!paused&&\(sourcePubScene\|\|sourceContinuationScene\)\)SPEECH\.updateSpeech\(dt\)/,'Iona speech keeps its shared owner while Source audio is suspended');
+  const speechGuard=main.match(/if\(!paused&&\(([^\r\n]+)\)\)SPEECH\.updateSpeech\(dt\)/);
+  assert.ok(speechGuard,'owned scene speech advances while ordinary Source audio is suspended');
+  const speechActive=Function('paused','sourcePubScene','sourceContinuationScene','coastalMemoryScene','sixNothingnessScene','horizonApproachScene',`return !paused&&!!(${speechGuard[1]});`);
+  const speechFor=({paused=false,pub=false,continuation=false,coast=false,six=false,horizon=false}={})=>speechActive(paused,pub,continuation,coast,()=>six,()=>horizon);
+  for(const owner of ['pub','continuation','coast','six','horizon']){
+    assert.equal(speechFor({[owner]:true}),true,`${owner} alone advances its speech`);
+    assert.equal(speechFor({[owner]:true,paused:true}),false,`pause suspends ${owner} speech`);
+  }
+  assert.equal(speechFor(),false,'no special scene leaves ordinary speech ownership unchanged');
   const guard=main.match(/function updateAudio\(\)\{\s*if\(([^)]+)\)\{silenceSampleField\(\);return;\}/);
   assert.ok(guard,'special scenes return before ordinary sample-field playback');
   const owners=guard[1].split('||');

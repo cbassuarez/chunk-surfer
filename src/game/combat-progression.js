@@ -54,9 +54,8 @@ function normalizeTutorialGrant(value, context = null) {
   return { schema: 1, combatAssistance: context.combatAssistance };
 }
 
-// Where leads come from. Beyond the two original calibration encounters, the
-// first clear of each regular battle and a collectible lead (a set save flag)
-// each grant one — so acquisition is no longer two fixed fights.
+// These are the additional finds and fight rewards. The first clean B3 take
+// earns one lead independently of the drill, fights and optional finds.
 export const CALIBRATION_ENCOUNTERS = Object.freeze(['recording-2', 'pre-recording-4']);
 export const PIN_SOURCES = Object.freeze({
   // Real encounter clear-ids (see openEncounterBattle): the two calibration
@@ -116,26 +115,32 @@ export const TECHNIQUE_DEFS = Object.freeze([
 
   // TORCH — the regular that carries the fight, and the way to burn it out.
   Object.freeze({ id: TECHNIQUE.AFTERIMAGE, track: 'flat', branch: 'torch', tier: 1, label: 'AFTERIMAGE', detail: 'EXPOSED leaves twice the residue for the next PLAYBACK.' }),
-  Object.freeze({ id: TECHNIQUE.WHITEOUT, track: 'tool', branch: 'torch', tier: 2, requires: TECHNIQUE.AFTERIMAGE, label: 'WHITEOUT', detail: 'SPECIAL — 2 charge and a bite of battery: it lands whatever they do, clears a set guard, breaks Conceal or Silence.', active: Object.freeze({ actionId: 'whiteout', tool: 'torch', timing: 'select' }), special: true }),
+  Object.freeze({ id: TECHNIQUE.WHITEOUT, track: 'tool', branch: 'torch', tier: 2, requires: TECHNIQUE.AFTERIMAGE, label: 'WHITEOUT', detail: 'SPECIAL — 2 charge + battery. Hits through Conceal or Silence and clears the target’s guard.', active: Object.freeze({ actionId: 'whiteout', tool: 'torch', timing: 'select' }), special: true }),
   Object.freeze({ id: TECHNIQUE.OVEREXPOSE, track: 'tool', branch: 'torch', tier: 3, requires: TECHNIQUE.WHITEOUT, label: 'OVEREXPOSE', detail: 'EXPOSED leaves a stronger residue still: the next PLAYBACK gains another point on top.' }),
 
   // RECORDER — listening closely, and the one take that settles it.
   Object.freeze({ id: TECHNIQUE.PUNCH_IN, track: 'flat', branch: 'recorder', tier: 1, label: 'PUNCH IN', detail: 'MONITOR chips twice as hard — every capture, not once a movement.' }),
   Object.freeze({ id: TECHNIQUE.MASTER_TAKE, track: 'tool', branch: 'recorder', tier: 2, requires: TECHNIQUE.PUNCH_IN, label: 'MASTER TAKE', detail: 'SPECIAL — 2 charge: the definitive capture. Never a graze, and it leaves a strong take loaded.', active: Object.freeze({ actionId: 'master-take', tool: 'recorder', timing: 'select' }), special: true }),
   Object.freeze({ id: TECHNIQUE.MULTITRACK, track: 'tool', branch: 'recorder', tier: 3, requires: TECHNIQUE.MASTER_TAKE, label: 'MULTITRACK', detail: 'PLAYBACK keeps a light residual Take once per movement — no rig needed.' }),
-  Object.freeze({ id: TECHNIQUE.ROOM_TONE, track: 'flat', branch: 'recorder', tier: 4, label: 'ROOM TONE', detail: 'Begin every encounter with an ambient Take already loaded.' }),
+  Object.freeze({ id: TECHNIQUE.ROOM_TONE, track: 'flat', branch: 'recorder', tier: 4, label: 'ROOM TONE', detail: 'Before REC, the deck shows room level and the client limit. Start combat with an ambient take loaded.' }),
 
-  // BENT RIG — the only branch that needs equipment the bag may not have.
+  // SERVICE INTERFACE — the only branch that needs equipment the bag may not have.
   Object.freeze({ id: TECHNIQUE.OVERDUB, track: 'tool', branch: 'rig', tier: 1, requiresRig: true, label: 'OVERDUB', detail: 'Once per movement, PLAYBACK leaves a light residual Take.' }),
-  Object.freeze({ id: TECHNIQUE.RUNAWAY_FEEDBACK, track: 'tool', branch: 'rig', tier: 2, requires: TECHNIQUE.OVERDUB, requiresRig: true, label: 'RUNAWAY FEEDBACK', detail: 'SPECIAL — 3 charge: the loop eats itself. It reaches the whole room, and the room loses its next beat.', active: Object.freeze({ actionId: 'runaway-feedback', tool: 'rig', timing: 'select' }), special: true }),
-  Object.freeze({ id: TECHNIQUE.FEEDBACK_LOOP, track: 'tool', branch: 'rig', tier: 3, requires: TECHNIQUE.RUNAWAY_FEEDBACK, requiresRig: true, label: 'FEEDBACK LOOP', detail: 'Once per encounter, INVERT retains the Take and returns more.' }),
+  Object.freeze({ id: TECHNIQUE.RUNAWAY_FEEDBACK, track: 'tool', branch: 'rig', tier: 2, requires: TECHNIQUE.OVERDUB, requiresRig: true, label: 'RUNAWAY FEEDBACK', detail: 'SPECIAL — 3 charge: empties the take slot and skips the next enemy beat. Hits up to two Hall apparitions.', active: Object.freeze({ actionId: 'runaway-feedback', tool: 'rig', timing: 'select' }), special: true }),
+  Object.freeze({ id: TECHNIQUE.FEEDBACK_LOOP, track: 'tool', branch: 'rig', tier: 3, requires: TECHNIQUE.RUNAWAY_FEEDBACK, requiresRig: true, label: 'FEEDBACK LOOP', detail: 'Once per encounter, INVERT retains the take and returns more. RUNAWAY FEEDBACK can hit all three Hall apparitions.' }),
   Object.freeze({ id: TECHNIQUE.TAPE_ECHO, track: 'tool', branch: 'rig', tier: 4, requires: TECHNIQUE.FEEDBACK_LOOP, requiresRig: true, label: 'TAPE ECHO', detail: 'A retained INVERT returns more still.' }),
+
+  Object.freeze({
+    id: TECHNIQUE.RETURN_BRIDGE, track: 'tool', branch: 'rig', tier: 5, requires: TECHNIQUE.OVERDUB, requiresRig: true,
+    label: 'LIMITER BYPASS', circuitBend: true,
+    detail: 'INVERT hits harder. If the wire arcs, the recorder replaces the loaded take and the attack gets through.',
+  }),
 
   // NERVE — the body you bring. Every rung is flat: no tool, no prerequisite
   // chain to commit to, useful the moment a lead is patched. This is the column a
   // player buys when they do not want to bet on a tool surviving the night.
   Object.freeze({ id: TECHNIQUE.DEEP_RESERVE, track: 'flat', branch: 'nerve', tier: 1, label: 'DEEP RESERVE', detail: 'More composure in every encounter.' }),
-  Object.freeze({ id: TECHNIQUE.BRACE, track: 'flat', branch: 'nerve', tier: 2, label: 'BRACE', detail: 'HOLD prevents more, every time.' }),
+  Object.freeze({ id: TECHNIQUE.BRACE, track: 'flat', branch: 'nerve', tier: 2, label: 'BRACE', detail: 'Settled in cover, your breath softens. In the Hall and Chapel, enter SILENCE with HOLD against OVERLOAD to guard harder and hit back once per movement. Elsewhere HOLD guards harder.' }),
   Object.freeze({ id: TECHNIQUE.STEADY_NERVE, track: 'flat', branch: 'nerve', tier: 3, label: 'STEADY NERVE', detail: 'COMPOSE restores more composure.' }),
   Object.freeze({ id: TECHNIQUE.RIPOSTE, track: 'flat', branch: 'nerve', tier: 4, requires: TECHNIQUE.STEADY_NERVE, label: 'RIPOSTE', detail: 'PARRY reflects more coherence on a blow you meet.' }),
   Object.freeze({ id: TECHNIQUE.SECOND_WIND, track: 'flat', branch: 'nerve', tier: 5, requires: TECHNIQUE.RIPOSTE, label: 'SECOND WIND', detail: 'Every perfect counter also restores a little composure.' }),
@@ -148,7 +153,7 @@ export const TECHNIQUE_DEFS = Object.freeze([
   Object.freeze({ id: TECHNIQUE.HEADROOM, track: 'flat', branch: 'fork', tier: 3, label: 'HEADROOM', detail: '+2 maximum charge: room to hold a louder special.' }),
 
   // RADIO — misdirection, and a decoy with teeth in it.
-  Object.freeze({ id: TECHNIQUE.MISDIRECTION, track: 'flat', branch: 'radio', tier: 1, label: 'MISDIRECTION', detail: 'THROW VOICE guards more.' }),
+  Object.freeze({ id: TECHNIQUE.MISDIRECTION, track: 'flat', branch: 'radio', tier: 1, label: 'MISDIRECTION', detail: 'A deployment pulse keeps HUSH investigating the dropped radio longer if heard. THROW VOICE gives more guard.' }),
   Object.freeze({ id: TECHNIQUE.DEAD_AIR, track: 'tool', branch: 'radio', tier: 2, requires: TECHNIQUE.MISDIRECTION, label: 'DEAD AIR', detail: 'SPECIAL — THROW VOICE bites whatever the intent, not only a broadcast or a loop.', special: true }),
 ]);
 
@@ -156,12 +161,13 @@ const IDS = new Set(TECHNIQUE_DEFS.map((entry) => entry.id));
 const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter((value) => typeof value === 'string' && value))];
 
 export function freshCombatBuild() {
-  return { schema: 1, tutorialGrant: null, rewardedEncounters: [], rewardedFlags: [], techniques: [], pinsEarned: 0, pinsSpent: 0, unspent: 0 };
+  return { schema: 1, tutorialGrant: null, b3LeadEarned: false, rewardedEncounters: [], rewardedFlags: [], techniques: [], pinsEarned: 0, pinsSpent: 0, unspent: 0 };
 }
 
-export function normalizeCombatBuild(value = null, clearedEncounters = [], flags = null, tutorialContext = null) {
+export function normalizeCombatBuild(value = null, clearedEncounters = [], flags = null, context = null) {
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  const tutorialGrant = normalizeTutorialGrant(source.tutorialGrant, tutorialContext);
+  const tutorialGrant = normalizeTutorialGrant(source.tutorialGrant, context);
+  const b3LeadEarned = source.b3LeadEarned === true || context?.b3TakeAccepted === true;
   const rewarded = unique(source.rewardedEncounters).filter((id) => PIN_SOURCES.encounters.includes(id));
   for (const id of unique(clearedEncounters)) {
     if (PIN_SOURCES.encounters.includes(id) && !rewarded.includes(id)) rewarded.push(id);
@@ -186,11 +192,12 @@ export function normalizeCombatBuild(value = null, clearedEncounters = [], flags
     return true;
   });
   const tutorialCables = tutorialGrant ? TUTORIAL_CABLE_GRANTS[tutorialGrant.combatAssistance] : 0;
-  const pinsEarned = Math.min(MAX_PINS, tutorialCables + rewarded.length + rewardedFlags.length);
+  const pinsEarned = Math.min(MAX_PINS, tutorialCables + Number(b3LeadEarned) + rewarded.length + rewardedFlags.length);
   const pinsSpent = Math.min(pinsEarned, techniques.length);
   return {
     schema: 1,
     tutorialGrant,
+    b3LeadEarned,
     rewardedEncounters: rewarded.slice(0, PIN_SOURCES.encounters.length),
     rewardedFlags,
     techniques,
@@ -229,7 +236,7 @@ export function techniqueAvailability(value, id, { hasRig = false } = {}) {
   }
   const shut = { enabled: false, learned: false, patched: false, pullable: false, pulls: [] };
   if (definition.requires && !build.techniques.includes(definition.requires)) return { ...shut, reason: 'NO CONTINUITY' };
-  if (definition.requiresRig && !hasRig) return { ...shut, reason: 'BENT RIG REQUIRED' };
+  if (definition.requiresRig && !hasRig) return { ...shut, reason: 'SERVICE INTERFACE REQUIRED' };
   if (build.unspent <= 0) return { ...shut, reason: 'NO SPARE LEAD' };
   return { enabled: true, learned: false, patched: false, pullable: false, pulls: [], reason: '' };
 }
