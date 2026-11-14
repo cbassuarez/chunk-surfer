@@ -93,16 +93,19 @@ export function memoryFieldRenderFrame(state,visit,{reducedMotion=false,reducedD
       for(const part of['grass','white','yellow'])props.push(instance(`mf_far_${variant}_${part}`,`f${x}:${z}:${part}`,translate(wx,0,wz),{cullRadius:F*.8}));
     }
   }
+  // A bare field (the station's crash field) has the grass, the hills and its
+  // door, and nothing else standing in it.
+  const bare=visit.bare===true;
   // The fence runs on, and goes before the grass does. The poles go before it.
-  if(decay<.72){
+  if(decay<.72&&!bare){
     const span=48,start=Math.floor(dz/span)*span;
     for(let k=-3;k<=3;k++){
       const z=start+k*span;
       props.push(instance('mf_fence_post',`fence-post-${k}`,translate(-14,0,z)),instance('mf_fence_wire',`fence-wire-${k}`,translate(-14,0,z)));
     }
   }
-  if(decay<.58)for(let k=-5;k<=5;k++){const z=Math.floor(dz/60)*60+k*60;props.push(instance('mf_pole',`pole-${k}`,translate(58,0,z)));}
-  if(decay<.46)props.push(instance('mf_tree_trunk','tree-trunk',translate(-92,0,-160)),instance('mf_tree_crown','tree-crown',translate(-92,0,-160)));
+  if(decay<.58&&!bare)for(let k=-5;k<=5;k++){const z=Math.floor(dz/60)*60+k*60;props.push(instance('mf_pole',`pole-${k}`,translate(58,0,z)));}
+  if(decay<.46&&!bare)props.push(instance('mf_tree_trunk','tree-trunk',translate(-92,0,-160)),instance('mf_tree_crown','tree-crown',translate(-92,0,-160)));
   // The few nearest daisies, whole, which can turn. They face the sun, as daisies do,
   // and as it gets later they stop doing that and face him.
   const facing=reducedDread?0:smooth(.3,.8,decay);
@@ -152,7 +155,7 @@ export function memoryFieldRenderFrame(state,visit,{reducedMotion=false,reducedD
   const bag=memoryFieldBagPose(visit.bag,state,{reducedMotion});
   if(bag)props.push(instance(`the_bag_${((bag.frame%4)+4)%4}`,'bag',yawed(bag.x,bag.y,bag.z,bag.yaw,bag.scale),{cullRadius:bag.scale}));
   // What the world is made of, starting to show. The same faults as Source.
-  if(decay>.22&&!reducedDread){
+  if(decay>.22&&!reducedDread&&!bare){
     const amount=Math.floor(smooth(.22,1,decay)*6);
     const rows=memoryFieldGeometry().filter(row=>row.fault);
     for(let k=0;k<rows.length&&k<amount;k++)props.push(instance(rows[k].name,`fault-${k}`,translate(Math.floor(dx/28)*28+7,0,Math.floor(dz/28)*28-12),{cullRadius:40,sourceAmbientFault:true}));

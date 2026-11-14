@@ -43,6 +43,7 @@
     "relics.bag",
     "home.door",
     "home.walk",
+    "home.arrive",
     "home.window",
     "home.stay",
     "home.jumper",
@@ -150,6 +151,14 @@
         "relics.bag",
         "home.door",
         "home.walk",
+        "home.arrive",
+        "home.arrive.lines",
+        "home.arrive.window",
+        "home.arrive.tree",
+        "home.arrive.houses",
+        "home.arrive.ridge",
+        "home.arrive.still",
+        "home.arrive.end",
         "home.window",
         "home.stay",
         "home.jumper",
@@ -660,6 +669,261 @@
           "text": "Snow to the edge of sight, power lines, and one lit window a long way off. He walks at it. It gets no nearer."
         }
       ]
+    },
+    "home.arrive": {
+      "id": "home.arrive",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.1",
+          "who": "tape",
+          "text": "White to the edge of everything. No horizon to line up on."
+        },
+        {
+          "id": "home.arrive.2",
+          "who": "tape",
+          "text": "There was always something to walk toward. What was it?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.toward-lines",
+          "text": "The power lines.",
+          "goto": "home.arrive.lines",
+          "arrive": "lines"
+        },
+        {
+          "id": "home.arrive.toward-window",
+          "text": "One lit window.",
+          "goto": "home.arrive.window",
+          "arrive": "window"
+        },
+        {
+          "id": "home.arrive.toward-tree",
+          "text": "The bare tree on the lane.",
+          "goto": "home.arrive.tree",
+          "arrive": "tree"
+        }
+      ]
+    },
+    "home.arrive.lines": {
+      "id": "home.arrive.lines",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.lines.1",
+          "who": "ears",
+          "text": "They hum in the cold. You heard them before you saw them, every winter."
+        },
+        {
+          "id": "home.arrive.lines.2",
+          "who": "tape",
+          "text": "Where did they take you?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.lines-houses",
+          "text": "Down to the houses.",
+          "goto": "home.arrive.houses",
+          "arrive": "houses"
+        },
+        {
+          "id": "home.arrive.lines-ridge",
+          "text": "Over the ridge, where I wasn’t allowed.",
+          "goto": "home.arrive.ridge",
+          "arrive": "ridge"
+        },
+        {
+          "id": "home.arrive.lines-nowhere",
+          "text": "Nowhere. I stopped here.",
+          "goto": "home.arrive.still"
+        }
+      ]
+    },
+    "home.arrive.window": {
+      "id": "home.arrive.window",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.window.1",
+          "who": "tape",
+          "text": "Somebody always left it on. You never asked who it was for."
+        },
+        {
+          "id": "home.arrive.window.2",
+          "who": "tape",
+          "text": "What was between you and it?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.window-houses",
+          "text": "The other houses.",
+          "goto": "home.arrive.houses",
+          "arrive": "houses"
+        },
+        {
+          "id": "home.arrive.window-hill",
+          "text": "The whole hill.",
+          "goto": "home.arrive.ridge",
+          "arrive": "ridge"
+        },
+        {
+          "id": "home.arrive.window-snow",
+          "text": "Nothing. Just snow.",
+          "goto": "home.arrive.still"
+        }
+      ]
+    },
+    "home.arrive.tree": {
+      "id": "home.arrive.tree",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.tree.1",
+          "who": "hands",
+          "text": "Bark under your nails. You climbed it once, and came down faster."
+        },
+        {
+          "id": "home.arrive.tree.2",
+          "who": "tape",
+          "text": "What could you see from the top?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.tree-roofs",
+          "text": "The roofs.",
+          "goto": "home.arrive.houses",
+          "arrive": "houses"
+        },
+        {
+          "id": "home.arrive.tree-ridge",
+          "text": "The ridge.",
+          "goto": "home.arrive.ridge",
+          "arrive": "ridge"
+        },
+        {
+          "id": "home.arrive.tree-shut",
+          "text": "Nothing. I kept my eyes shut.",
+          "goto": "home.arrive.still"
+        }
+      ]
+    },
+    "home.arrive.houses": {
+      "id": "home.arrive.houses",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.houses.1",
+          "who": "tape",
+          "text": "You could name who lived under every one of those roofs."
+        },
+        {
+          "id": "home.arrive.houses.2",
+          "who": "tape",
+          "text": "Which one was yours?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.houses-lit",
+          "text": "The one with the light on.",
+          "goto": "home.arrive.end",
+          "arrive": [
+            "window",
+            "all"
+          ]
+        },
+        {
+          "id": "home.arrive.houses-far",
+          "text": "The one at the far end.",
+          "goto": "home.arrive.end",
+          "arrive": "all"
+        },
+        {
+          "id": "home.arrive.houses-none",
+          "text": "None of them. Not really.",
+          "goto": "home.arrive.end",
+          "arrive": "all"
+        }
+      ]
+    },
+    "home.arrive.ridge": {
+      "id": "home.arrive.ridge",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.ridge.1",
+          "who": "ears",
+          "text": "The wind comes over the top of it and drops straight into the valley."
+        },
+        {
+          "id": "home.arrive.ridge.2",
+          "who": "tape",
+          "text": "Did you ever go over?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.ridge-once",
+          "text": "Once. I was back before dark.",
+          "goto": "home.arrive.end",
+          "arrive": "all"
+        },
+        {
+          "id": "home.arrive.ridge-looked",
+          "text": "No. I only looked.",
+          "goto": "home.arrive.end",
+          "arrive": "all"
+        },
+        {
+          "id": "home.arrive.ridge-trying",
+          "text": "I’m still trying to.",
+          "goto": "home.arrive.end",
+          "arrive": "all"
+        }
+      ]
+    },
+    "home.arrive.still": {
+      "id": "home.arrive.still",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.still.1",
+          "who": "tape",
+          "text": "Then stand here. Nobody’s calling you in yet."
+        }
+      ],
+      "choices": [
+        {
+          "id": "home.arrive.still-stand",
+          "text": "(Stand still.)",
+          "goto": "home.arrive.end",
+          "arrive": "all"
+        }
+      ]
+    },
+    "home.arrive.end": {
+      "id": "home.arrive.end",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.arrive.end.1",
+          "who": "hands",
+          "text": "Your hands are in your sleeves. They always were, out here."
+        }
+      ],
+      "goto": "home.walk"
     },
     "home.window": {
       "id": "home.window",

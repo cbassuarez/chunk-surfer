@@ -38,17 +38,17 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Foam, carpet, a dead ceiling; glass divides the live floor from a dark control desk. This is by far the quietest room in the building.",
+          "text": "Foam, carpet, a dead ceiling, and what you presume is a non-zero amount of paranormal activity; glass divides the live floor from a dark control desk. This is by far the quietest room in the building.",
           "id": "start.line.1"
         },
         {
           "who": "direction",
-          "text": "You put the rig down and start unwinding cables, an almost instinctive motion engrained after years of concerts, performances, and recordings. You think about the life the cables have lived, the people, places, and things they've recorded. These walls as well have lived quite the tale, hosting galants, pedagogues, savants, just the cutest little tots-in-training you ever did see, board members, parents, audiences (in ranges of thrilled to mixed to just plain confused), and the not-as-rare-as-one-would-have-hoped performances of installations involving full-frontal nudity.  ",
+          "text": "You put the rig down and start unwinding cables, an almost instinctive motion engrained after years of concerts, performances, and recordings. You think about the life those cables have lived, the people, places, and things they've recorded. These walls as well have lived quite the tale, hosting galants, pedagogues, savants, just the cutest little tots-in-training you ever did see, board members, parents, audiences (in ranges of thrilled to mixed to just plain confused), ten years of weekly recitals contracted out to you from nearby universities, and the not-as-rare-as-one-would-have-hoped performances of contemporary installations involving full-frontal nudity. ",
           "id": "start.line.2"
         },
         {
-          "who": "you",
-          "text": "...",
+          "who": "direction",
+          "text": "... In defense of contemporary installations, those cables had also seen their fair share of normal experimental contemporary art (you once used them to capture geological sounds deep within the earth for a friends' noise show - unfortunately largely unattended), but that would not have been as surprising to mention. ",
           "id": "start.line.3"
         },
         {
@@ -82,12 +82,12 @@
         },
         {
           "who": "direction",
-          "text": "That is why the case has four gum rubber risers on it. Silicone under those. It cost more than the microphone.",
+          "text": "That is why the case has four gum rubber risers on it. Silicone under those. Four of them and two spares ended up costing more than the microphone.",
           "id": "floor.so.line.2"
         },
         {
           "who": "direction",
-          "text": "You have known that since your first week with the rig, but you're nervous, making excuses.",
+          "text": "You have known to isolate your recording setup since your first week with the rig, but you're nervous, making excuses.",
           "id": "floor.so.line.3"
         }
       ],

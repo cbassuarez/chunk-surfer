@@ -2490,6 +2490,8 @@ export function renderSourcePortals({camX,camY,camZ,yaw,pitch=0,portals=[],timeS
   bindValleySignAtlas(PU,nearest.some(({portal})=>Number(portal.variant)===5));
   gl.uniformMatrix4fv(PU('uView'),false,viewMatrix);gl.uniformMatrix4fv(PU('uProj'),false,projection);
   gl.uniform3fv(PU('uEye'),eye);gl.uniform1f(PU('uTime'),reducedMotion?0:Number(timeSec)||0);gl.uniform1f(PU('uCalm'),reducedMotion?1:0);gl.uniform1f(PU('uStormFlash'),Number(stormFlash)||0);gl.uniform1f(PU('uMarksPhysical'),marksReady?1:0);
+  // Through the open snow door there is only the whiteout he walks into.
+  gl.uniform4f(PU('uHomeArrival'),1,0,0,0);gl.uniform4f(PU('uHomeArrivalNamed'),0,0,0,0);
   gl.bindVertexArray(portalVao);gl.bindBuffer(gl.ARRAY_BUFFER,portalBuffer);
   gl.bufferData(gl.ARRAY_BUFFER,data.subarray(0,vertices*16),gl.DYNAMIC_DRAW);
   gl.drawArrays(gl.TRIANGLES,0,vertices);gl.bindVertexArray(null);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
@@ -2759,6 +2761,10 @@ export function renderSourceCrossing({framebuffer=null,width:targetW=1,height:ta
     angel?.body?clamp01(angel.body.sweep):imprint?1:0);
   gl.uniform3fv(CU('uHomeActivityEye'),realmEye);
   gl.uniform3f(CU('uHomeRest'),clamp01(rest?.settle),clamp01(rest?.commit),clamp01(rest?.frost));
+  // The walk in: whiteout, and what he has named so far (game/home-arrival.js).
+  const arrival=home.eligible?homePresentation?.arrival:null;
+  gl.uniform4f(CU('uHomeArrival'),clamp01(arrival?.whiteout),clamp01(arrival?.rest),clamp01(arrival?.tree),clamp01(arrival?.window));
+  gl.uniform4f(CU('uHomeArrivalNamed'),clamp01(arrival?.lines),clamp01(arrival?.houses),clamp01(arrival?.ridge),0);
   gl.uniform1f(CU('uHomeRoll'),reducedMotion?0:Number(activity?.camera?.roll)||0);
   gl.bindVertexArray(crossingVao);gl.drawArrays(gl.TRIANGLES,0,3);gl.bindVertexArray(null);
   gl.disable(gl.BLEND);

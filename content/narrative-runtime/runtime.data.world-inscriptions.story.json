@@ -330,73 +330,73 @@
           "id": "WORLD_INSCRIPTIONS.l51",
           "who": "job",
           "text": "HEADER 3 — ISOLATION",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l52",
           "who": "job",
           "text": "Back nut, then gland, then handwheel,",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l53",
           "who": "job",
           "text": "in that order, all three home before",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l54",
           "who": "job",
           "text": "the line is dead. Clockwise to close.",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l55",
           "who": "job",
           "text": "the bypass cock feeds the return and",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l56",
           "who": "job",
           "text": "is NOT part of this header.",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l57",
           "who": "thought",
           "text": "HEADER 3 — ISOLATION",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l58",
           "who": "thought",
           "text": "Back nut, then gland, then handwheel,",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l59",
           "who": "thought",
           "text": "in that order, all three home before",
-          "source": "src/data/world-inscriptions.js:112"
+          "source": "src/data/world-inscriptions.js:108"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l60",
           "who": "thought",
           "text": "the line is dead. Clockwise to close.",
-          "source": "src/data/world-inscriptions.js:113"
+          "source": "src/data/world-inscriptions.js:109"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l61",
           "who": "thought",
           "text": "the bypass cock feeds the return and",
-          "source": "src/data/world-inscriptions.js:113"
+          "source": "src/data/world-inscriptions.js:109"
         },
         {
           "id": "WORLD_INSCRIPTIONS.l62",
           "who": "thought",
           "text": "is NOT part of this header.",
-          "source": "src/data/world-inscriptions.js:113"
+          "source": "src/data/world-inscriptions.js:109"
         }
       ],
       "source": "src/data/world-inscriptions.js:42"

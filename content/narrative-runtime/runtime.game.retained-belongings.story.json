@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.retained-belongings",
+  "title": "Runtime · game/retained-belongings.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "RETAINED_BELONGINGS.b3-session-card",
+  "entries": [
+    "RETAINED_BELONGINGS.b3-session-card",
+    "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-channels",
+    "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-margin",
+    "RETAINED_BELONGINGS.vale-guarantor-slip",
+    "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-zero",
+    "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-twelve",
+    "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-sixty-one",
+    "RETAINED_BELONGINGS.lyle-music-box",
+    "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.handle-box",
+    "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.remember-gift",
+    "retainedBelongingPrompt"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/retained-belongings.js",
+  "notes": "Generated from src/game/retained-belongings.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "RETAINED_BELONGINGS.b3-session-card": {
+      "id": "RETAINED_BELONGINGS.b3-session-card",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.b3-session-card.l0",
+          "who": "direction",
+          "text": "A session card on the console. One: voice. Two: room. Three has been carefully crossed out, but its fader is still set.",
+          "source": "src/game/retained-belongings.js:12"
+        },
+        {
+          "id": "RETAINED_BELONGINGS.b3-session-card.l1",
+          "who": "direction",
+          "text": "In the margin, two chairs and fine lines to the glass.",
+          "source": "src/game/retained-belongings.js:13"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:12"
+    },
+    "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-channels": {
+      "id": "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-channels",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-channels.l0",
+          "who": "direction",
+          "text": "One: voice. Two: room. Three has been carefully crossed out.",
+          "source": "src/game/retained-belongings.js:16"
+        },
+        {
+          "id": "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-channels.l1",
+          "who": "you",
+          "text": "The crossing-out is on the card. Its fader was still set when I picked it up.",
+          "source": "src/game/retained-belongings.js:16"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:16"
+    },
+    "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-margin": {
+      "id": "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-margin",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.b3-session-card.inspectionActions.read-margin.l0",
+          "who": "direction",
+          "text": "Two chairs and fine lines to the glass. The sketch is on the same card as the channel list.",
+          "source": "src/game/retained-belongings.js:17"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:17"
+    },
+    "RETAINED_BELONGINGS.vale-guarantor-slip": {
+      "id": "RETAINED_BELONGINGS.vale-guarantor-slip",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.vale-guarantor-slip.l0",
+          "who": "direction",
+          "text": "A narrow maintenance slip is folded beneath the chamber piano bench. It was kept under the seat rather than filed with the school accounts.",
+          "source": "src/game/retained-belongings.js:24"
+        },
+        {
+          "id": "RETAINED_BELONGINGS.vale-guarantor-slip.l1",
+          "who": "direction",
+          "text": "The dates are separated by decades. The handwriting belongs to the same person throughout.",
+          "source": "src/game/retained-belongings.js:25"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:24"
+    },
+    "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-zero": {
+      "id": "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-zero",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-zero.l0",
+          "who": "direction",
+          "text": "SEAL, YEAR 0. M. VALE, CLEANER. I have been told that I will stay inside the grounds for one hundred years. I am signing while I can still walk away.",
+          "source": "src/game/retained-belongings.js:28"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:28"
+    },
+    "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-twelve": {
+      "id": "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-twelve",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-twelve.l0",
+          "who": "direction",
+          "text": "YEAR 12. My daughter married on Saturday. Ren brought the photograph on Monday. I knew I would miss the day. I did not know how much of it would fit in one picture.",
+          "source": "src/game/retained-belongings.js:29"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:29"
+    },
+    "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-sixty-one": {
+      "id": "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-sixty-one",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.vale-guarantor-slip.inspectionActions.year-sixty-one.l0",
+          "who": "direction",
+          "text": "YEAR 61. The chamber roof leaked again. I changed the bucket before class. The seal kept the crews from taking the room. It never mended it for us.",
+          "source": "src/game/retained-belongings.js:30"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:30"
+    },
+    "RETAINED_BELONGINGS.lyle-music-box": {
+      "id": "RETAINED_BELONGINGS.lyle-music-box",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.lyle-music-box.l0",
+          "who": "direction",
+          "text": "The music box is broken now. It is still the one Lyle gave you.",
+          "source": "src/game/retained-belongings.js:37"
+        },
+        {
+          "id": "RETAINED_BELONGINGS.lyle-music-box.l1",
+          "who": "you",
+          "text": "Lyle gave me this before his big break. So I’d have something to remember him by.",
+          "source": "src/game/retained-belongings.js:38"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:37"
+    },
+    "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.handle-box": {
+      "id": "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.handle-box",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.handle-box.l0",
+          "who": "direction",
+          "text": "The case stays closed. The oval winding key belongs to the same small object as the cream shell and dark rear plate.",
+          "source": "src/game/retained-belongings.js:42"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:42"
+    },
+    "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.remember-gift": {
+      "id": "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.remember-gift",
+      "type": "line",
+      "lines": [
+        {
+          "id": "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.remember-gift.l0",
+          "who": "you",
+          "text": "Lyle gave me this before his big break. So I’d have something to remember him by.",
+          "source": "src/game/retained-belongings.js:43"
+        },
+        {
+          "id": "RETAINED_BELONGINGS.lyle-music-box.inspectionActions.remember-gift.l1",
+          "who": "direction",
+          "text": "His note read: For the part that wouldn’t play. — L.",
+          "source": "src/game/retained-belongings.js:44"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:43"
+    },
+    "retainedBelongingPrompt": {
+      "id": "retainedBelongingPrompt",
+      "type": "line",
+      "lines": [
+        {
+          "id": "retainedBelongingPrompt.l0",
+          "who": "you",
+          "text": "Already in my case.",
+          "source": "src/game/retained-belongings.js:67"
+        }
+      ],
+      "source": "src/game/retained-belongings.js:67"
+    }
+  }
+}

@@ -17,6 +17,7 @@ import { CHILDHOOD_VALLEY_SITES_GLSL } from './childhood-valley-sites.js';
 import { CHILDHOOD_VALLEY_MOUNTAINS_GLSL } from './childhood-valley-mountains.js';
 import { CHILDHOOD_VALLEY_FOREST_GLSL } from './childhood-valley-forest.js';
 import { CHILDHOOD_VALLEY_WEATHER_GLSL } from './childhood-valley-weather.js';
+import { HOME_ARRIVAL_GLSL } from './home-arrival-glsl.js';
 import { CHILDHOOD_VALLEY_ACTIVITY_GLSL } from './childhood-valley-activities.js';
 import { HOME_BEDROOM } from '../data/childhood-bedroom.js';
 import { STATION_FIELD_PREVIEW_GLSL } from './station-field-preview-glsl.js';
@@ -61,6 +62,7 @@ float ewCapsule(vec3 p,vec3 a,vec3 b,float radius){vec3 pa=p-a,ba=b-a;return len
 
 ${CHILDHOOD_BEDROOM_GLSL}
 ${CHILDHOOD_VALLEY_WEATHER_GLSL}
+${HOME_ARRIVAL_GLSL}
 ${CHILDHOOD_VALLEY_ACTIVITY_GLSL}
 ${CHILDHOOD_GROUNDS_GLSL}
 ${CHILDHOOD_VALLEY_SITES_GLSL}
@@ -735,6 +737,13 @@ vec3 elsewhereSceneDepth(vec3 ro,vec3 rd,int v,float seed,float key,float t,floa
     float nearWindow=1.0-smoothstep(2.0,7.0,length(ro.xz-vec2(${glf(HOME_WINDOW.x)},${glf(HOME_WINDOW.z)})));
     float looking=pow(max(0.0,rd.z),6.0);
     if(m<19.5||(m>39.5&&m<49.5))col=mix(col,col*vec3(.79,.77,.74),uHomeState.z*nearWindow*looking*.45);
+    // The walk in (home-arrival-glsl.js). Where the whiteout still stands the
+    // surface gives up its depth and print too, so no edge is engraved there.
+    float arrivalWhite=ewHomeArrivalWhite(ro,rd,surfaceHit,t);
+    if(arrivalWhite>0.0){
+      col=mix(col,ewHomeArrivalSnow(ro,rd),arrivalWhite);
+      if(arrivalWhite>.5){surfaceHit=460.0;surfacePrint=vec2(0.0);}
+    }
     col=ewHomeFallingSnow(ro,rd,col,hit,t,homeWeather);
     // Rest only changes the air around the seated body. The terminal cut
     // takes over after this frost has crossed the occupied valley.

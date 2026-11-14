@@ -70,12 +70,15 @@ test('returning leaves only the tower route and still never decides from waiting
   assert.equal(stepHorizonApproach(outside,{dt:.1}).state.decided,null);
   assert.equal(stepHorizonApproach(outside,{dt:0,forward:1}).state.decided,null);
 });
-test('a route cannot commit before its evidence finishes, but movement and look remain free',async()=>{
+test('a route cannot commit before its evidence finishes, and he cannot walk out on it; look stays free',async()=>{
   let enabled=false;const scene=createHorizonApproachScene({occupant:'lyle',condition:true,renderer:{initialize:()=>true,render:()=>true},decisionsEnabled:()=>enabled});
   await scene.initialize();const V=C.variants.closed,road=Math.round(HORIZON_TOWER_BEARING/(Math.PI*2/V.roads))*(Math.PI*2/V.roads);
-  scene.place({arrived:true,offerOpen:true});scene.placeAt(6.9,road,{yaw:Math.PI-road});
-  const before=scene.serialize();scene.walk(.2);
-  assert.equal(scene.view().state.decided,null);assert.ok(scene.view().distance>6.9);assert.equal(scene.lookBy(.1,.05),true);
+  scene.place({arrived:true,offerOpen:true});scene.placeAt(1,road,{yaw:Math.PI-road});
+  scene.walk(3);
+  assert.equal(scene.view().state.decided,null);assert.ok(scene.view().distance>1,'he can walk about at the object');
+  assert.ok(scene.view().distance<=C.station.reach+1e-6,`but not past it while it speaks: ${scene.view().distance}`);
+  assert.equal(scene.lookBy(.1,.05),true);
+  scene.placeAt(6.9,road,{yaw:Math.PI-road});const before=scene.serialize();
   enabled=true;scene.update(.1);assert.equal(scene.view().state.decided,null,'enabling decisions is not a choice');
   scene.setLook({yaw:Math.PI-road,pitch:0});scene.walk(.1);assert.equal(scene.view().state.decided,'accepted');assert.notDeepEqual(scene.serialize().frame,before.frame);
 });

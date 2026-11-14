@@ -31,7 +31,7 @@ const production = [
   section('function cancelRecordingPressureAudio(){','\nfunction recordingPressureFrame('),
   section('function clearSourceRuntime(', '\nfunction usingStairAnomaly('),
   section('let elsewhereBeds=null;', '\n// PUT BACK WRONG.'),
-  section('var stationEdgeBed=null;', '\n// A DOOR, LOOKED AT'),
+  section('var stationEdgeBed=null;', '\n// THINGS IN THE DOOR FIELD, LOOKED AT'),
   section('function resetRunAudio(', '\nfunction enterStory('),
   section('function tickSourceSpace(dt){', '\nlet stairAnomalyEnteredAt='),
   section('function step(dx,dy){', '\nfunction teleport('),

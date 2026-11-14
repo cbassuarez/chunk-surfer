@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {HORIZON_APPROACH as C,horizonApproachVariantIds,HORIZON_DEBRIS_KINDS,horizonDebrisField,horizonDebrisMeshes,spaceIdentity,spaceMultiply,spaceTranslation,spaceInverse,spaceAtMap,spaceMapOf,spaceDistance,spaceEyeUniform,apparentAngle,
   horizonOccupantConditions,horizonOccupantLeaning,chooseHorizonOccupant,horizonDaisyWord} from '../src/data/horizon-approach.js';
-import {freshHorizonApproach,stepHorizonApproach,horizonApproachDistance,horizonApproachOnGround,horizonApproachNear,horizonApproachMap,pluckHorizonApproachPetal,HORIZON_APPROACH_EVENT as E,HORIZON_TOWER_BEARING} from '../src/game/horizon-approach-scene.js';
-import {horizonApproachGeometry,HORIZON_APPROACH_MESHES,circleLimitTiles} from '../src/render/horizon-approach-models.js';
+import {freshHorizonApproach,stepHorizonApproach,horizonApproachDistance,horizonApproachOnGround,horizonApproachNear,horizonApproachMap,pluckHorizonApproachPetal,HORIZON_APPROACH_EVENT as E,HORIZON_TOWER_BEARING,HORIZON_TOWER_SECTOR,horizonTowerBearing,horizonTowerRoad,horizonApproachOfferPending} from '../src/game/horizon-approach-scene.js';
+import {horizonApproachGeometry,HORIZON_APPROACH_MESHES,HORIZON_TOWER_ROAD,circleLimitTiles} from '../src/render/horizon-approach-models.js';
 import {horizonApproachRenderFrame,horizonApproachObjectProps,horizonDebrisProps,HORIZON_ANT_MESH,HORIZON_CHURCH_MESH,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY,HORIZON_SLAB_MESHES} from '../src/render/horizon-approach-frame.js';
 import {CURVED_SPACE_GLSL,CURVED_SPACE_OFF,curvedSpaceUniforms} from '../src/render/curved-space.js';
 
 const close=(a,b,e=1e-6)=>Math.abs(a-b)<=e;
 const TAU=Math.PI*2;
+const wrapAngle=a=>a-TAU*Math.floor(a/TAU+.5);
 const apply=(m,v)=>[0,1,2,3].map(r=>m[r*4]*v[0]+m[r*4+1]*v[1]+m[r*4+2]*v[2]+m[r*4+3]*v[3]);
 const sameMatrix=(a,b,e=1e-9)=>a.every((v,k)=>close(v,b[k],e));
 function walk(state,seconds,input={forward:1},dt=1/30){
@@ -201,6 +202,60 @@ test('walking on declines, and it is the chapel; past it on St Brendan\'s bearin
   // Walking out before he has been there at all commits nothing.
   const{state}=walk(freshHorizonApproach({variant:'circle-limit'}),.5);assert.equal(state.decided,null);
 });
+test('walking past it is not a way round the offer',()=>{
+  const V=C.variants.closed,tower=horizonTowerBearing('closed'),spacing=TAU/V.roads;
+  // The daisy, petals still on it: every road out stops at arm's reach, however long he walks.
+  for(let k=0;k<V.roads;k++){
+    const{state,events}=walk(goingOut(freshHorizonApproach({occupant:'daisy'}),k*spacing),12);
+    assert.ok(horizonApproachOfferPending(state),`road ${k}: the offer is still to come`);
+    assert.ok(horizonApproachNear(state),`road ${k}: still in reach of it, ${horizonApproachDistance(state)}`);
+    assert.equal(state.decided,null);assert.equal(events.some(e=>e.type===E.DECLINED||e.type===E.ACCEPTED),false);
+  }
+  // Bare, it is offered, and then the roads are open: the pale one is the tower.
+  let s=goingOut(freshHorizonApproach({occupant:'daisy'}),tower);
+  for(let k=0;k<C.daisy.petals;k++)s=pluckHorizonApproachPetal(s).state;
+  assert.equal(s.offerOpen,true);assert.equal(horizonApproachOfferPending(s),false);
+  assert.equal(walk(s,5).state.decided,'accepted');
+  assert.equal(walk(goingOut(s,tower+spacing*3),5).state.decided,'declined');
+  // While whoever is there is still speaking, the same: no road out until it is said.
+  const speaking=walk(goingOut({...freshHorizonApproach({occupant:'lyle',condition:true}),offerOpen:true},tower),12,{forward:1,decisionsEnabled:false}).state;
+  assert.ok(horizonApproachDistance(speaking)<=C.station.reach+1e-6);assert.equal(speaking.decided,null);
+  assert.equal(walk(speaking,5).state.decided,'accepted');
+  // Someone who could never make the offer keeps nobody: walking on is the chapel.
+  assert.equal(walk(goingOut(freshHorizonApproach({occupant:'sarah'}),tower),5).state.decided,'declined');
+  // A save from before this, already out on a road with the petals on: he can walk
+  // back, and walking does not decide anything on the way.
+  const out={...freshHorizonApproach({occupant:'daisy'}),arrived:true,frame:spaceAtMap(V.sign,V.radius,20,0),yaw:0};
+  const back=walk(out,2);assert.ok(horizonApproachDistance(back.state)<20);assert.equal(back.state.decided,null);
+  assert.ok(sameMatrix(walk({...out,yaw:Math.PI},1).state.frame,out.frame),'and no further out');
+});
+test('the tower road is the one pale road, once it is offered, and St Brendan\'s is at its end',()=>{
+  const V=C.variants.closed,road=horizonTowerRoad('closed'),bearing=horizonTowerBearing('closed');
+  assert.equal(road,Math.round(HORIZON_TOWER_BEARING/(TAU/V.roads)));
+  assert.ok(Math.abs(bearing-HORIZON_TOWER_BEARING)<HORIZON_TOWER_SECTOR,'still St Brendan\'s bearing');
+  assert.equal(horizonTowerBearing('relativity'),HORIZON_TOWER_BEARING);assert.equal(horizonTowerRoad('circle-limit'),null);
+  const rows=new Map(horizonApproachGeometry().map(r=>[r.name,r])),luma=r=>r.base[0]+r.base[1]+r.base[2]+(r.emissive||[0,0,0]).reduce((a,b)=>a+b,0);
+  const{plain,negative}=HORIZON_TOWER_ROAD.closed,[road0,line0]=plain.map(n=>rows.get(n)),[road1,line1]=negative.map(n=>rows.get(n));
+  // The same ground either way; only the ink is swapped.
+  assert.deepEqual(road1.p,road0.p);assert.deepEqual(line1.p,line0.p);
+  assert.equal(luma(road0),luma(rows.get('ha_closed_road')));assert.equal(luma(line0),luma(rows.get('ha_closed_line')));
+  assert.equal(luma(road1),luma(rows.get('ha_closed_line')),'the road is as pale as the lines were');
+  assert.equal(luma(line1),luma(rows.get('ha_closed_road')),'and edged as dark as the roads are');
+  // Laid along the tower's bearing, and nowhere else.
+  const end=Math.PI*V.radius,between=(x,z)=>{const r=Math.hypot(x,z);return r>V.hub+2&&r<end-V.hub-2;};
+  for(let k=0;k<road1.p.length;k+=3){const x=road1.p[k],z=road1.p[k+2];if(!between(x,z))continue;
+    assert.ok(Math.abs(wrapAngle(Math.atan2(x,z)-bearing))<.5,`${x},${z}`);}
+  // The other roads no longer carry it.
+  const others=rows.get('ha_closed_road');
+  for(let k=0;k<others.p.length;k+=3)if(between(others.p[k],others.p[k+2]))assert.ok(Math.abs(wrapAngle(Math.atan2(others.p[k],others.p[k+2])-bearing))>.3);
+  const meshes=state=>new Set(horizonApproachRenderFrame(state).props.map(p=>p.mesh)),before=meshes(freshHorizonApproach({occupant:'lyle'})),after=meshes({...freshHorizonApproach({occupant:'lyle'}),offerOpen:true});
+  for(const m of plain){assert.ok(before.has(m));assert.ok(!after.has(m));}
+  for(const m of negative){assert.ok(!before.has(m),'not before it is offered');assert.ok(after.has(m));}
+  const church=horizonApproachRenderFrame(freshHorizonApproach({occupant:'lyle'})).props.find(p=>p.mesh===HORIZON_CHURCH_MESH);
+  assert.ok(Math.abs(wrapAngle(Math.atan2(church.x,church.z)-bearing))<1e-6,'St Brendan\'s stands on the road');
+  // The open road through the house of stairs is laid the same way.
+  assert.ok(luma(rows.get('ha_side'))>luma(rows.get('ha_side_line')));
+});
 test('the daisy: an odd number of petals, one at a time, at the object, and the last says loves me',()=>{
   assert.equal(C.daisy.petals%2,1);assert.equal(horizonDaisyWord(C.daisy.petals),'loves me');assert.equal(horizonDaisyWord(C.daisy.petals-1),'loves me not');
   const away=freshHorizonApproach({occupant:'daisy'});assert.equal(horizonApproachNear(away),false);assert.equal(pluckHorizonApproachPetal(away),null,'not from the far side of the space');
@@ -213,7 +268,7 @@ test('the daisy: an odd number of petals, one at a time, at the object, and the 
   assert.equal(petals(0),C.daisy.petals);assert.equal(petals(5),C.daisy.petals-5);assert.equal(petals(C.daisy.petals),0);
 });
 test('everything that stands there is the game\'s own',()=>{
-  const fieldRows=readFileSync(new URL('../src/render/memory-field-models.js',import.meta.url),'utf8');
+  const fieldRows=['memory-field-models.js','memory-field-slab.js'].map(f=>readFileSync(new URL('../src/render/'+f,import.meta.url),'utf8')).join('\n');
   for(const mesh of['mf_hero_disc','mf_hero_stem','mf_ant_slab_top','mf_ant_slab_side','mf_ant_slab_crack'])assert.ok(fieldRows.includes(mesh),`${mesh} is the field's`);
   const sarah=horizonApproachObjectProps({occupant:'sarah'})[0],lyle=horizonApproachObjectProps({occupant:'lyle'})[0];
   assert.equal(sarah.mesh,HORIZON_FIGURES.sarah.mesh);assert.equal(sarah.apparitionVariant,15);

@@ -1198,6 +1198,12 @@
           "who": "direction",
           "text": "RETURN is missing from too many pages. Something could still be saved, but not cleanly.",
           "source": "src/data/conservatory-script.js:1621"
+        },
+        {
+          "id": "endingChoice.l2",
+          "who": "direction",
+          "text": "The service interface has enough of the source to feed the signal back into itself.",
+          "source": "src/data/conservatory-script.js:1622"
         }
       ],
       "source": "src/data/conservatory-script.js:1616"

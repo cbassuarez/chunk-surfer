@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.childhood-valley-rest",
+  "title": "Runtime · game/childhood-valley-rest.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "offer",
+  "entries": [
+    "offer",
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival",
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house",
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench",
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish",
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning",
+    "homeValleyRestStory.nodes.arrival"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/childhood-valley-rest.js",
+  "notes": "Generated from src/game/childhood-valley-rest.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "offer": {
+      "id": "offer",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "offer.c0",
+          "text": "What if I stayed here?",
+          "source": "src/game/childhood-valley-rest.js:60",
+          "choiceId": "stay",
+          "targetName": "warning"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:60"
+    },
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival": {
+      "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.l0",
+          "who": "other",
+          "text": "Brush the snow off that end. It is drier underneath.",
+          "source": "src/game/childhood-valley-rest.js:67"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.l1",
+          "who": "you",
+          "text": "Were you waiting for me?",
+          "source": "src/game/childhood-valley-rest.js:68"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.l2",
+          "who": "other",
+          "text": "I was sitting here. Then you came up.",
+          "source": "src/game/childhood-valley-rest.js:69"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.l3",
+          "who": "other",
+          "text": "You can stop here a while.",
+          "source": "src/game/childhood-valley-rest.js:70"
+        }
+      ],
+      "choices": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.c0",
+          "text": "Can you see the house from here?",
+          "source": "src/game/childhood-valley-rest.js:73",
+          "choiceId": "house",
+          "goto": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.c1",
+          "text": "I have sat here before.",
+          "source": "src/game/childhood-valley-rest.js:74",
+          "choiceId": "bench",
+          "goto": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.arrival.c2",
+          "text": "I have not finished what I came for.",
+          "source": "src/game/childhood-valley-rest.js:75",
+          "choiceId": "finish",
+          "goto": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:67"
+    },
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house": {
+      "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house.l0",
+          "who": "other",
+          "text": "I can see its roof. I cannot see into the room.",
+          "source": "src/game/childhood-valley-rest.js:81"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house.l1",
+          "who": "you",
+          "text": "Then how do I know it is the one?",
+          "source": "src/game/childhood-valley-rest.js:82"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house.l2",
+          "who": "other",
+          "text": "You knew before you sat down. You are allowed to leave it at that.",
+          "source": "src/game/childhood-valley-rest.js:83"
+        }
+      ],
+      "choices": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.house.c0",
+          "text": "I wanted one more look.",
+          "source": "src/game/childhood-valley-rest.js:85",
+          "choiceId": "more",
+          "goto": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:81"
+    },
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench": {
+      "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench.l0",
+          "who": "other",
+          "text": "Keep your coat clear of that join. It catches.",
+          "source": "src/game/childhood-valley-rest.js:89"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench.l1",
+          "who": "you",
+          "text": "So did the other one.",
+          "source": "src/game/childhood-valley-rest.js:90"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench.l2",
+          "who": "other",
+          "text": "You caught your coat on something. You remember it because you had to stop.",
+          "source": "src/game/childhood-valley-rest.js:91"
+        }
+      ],
+      "choices": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.bench.c0",
+          "text": "I meant to keep going.",
+          "source": "src/game/childhood-valley-rest.js:93",
+          "choiceId": "finish",
+          "goto": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:89"
+    },
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish": {
+      "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish.l0",
+          "who": "other",
+          "text": "What was the last thing you meant to do?",
+          "source": "src/game/childhood-valley-rest.js:97"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish.l1",
+          "who": "you",
+          "text": "I was going to find out what was left.",
+          "source": "src/game/childhood-valley-rest.js:98"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.finish.l2",
+          "who": "other",
+          "text": "There will always be something left. The road is still there if you want it.",
+          "source": "src/game/childhood-valley-rest.js:99"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:97"
+    },
+    "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning": {
+      "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning.l0",
+          "who": "other",
+          "text": "It will get harder to feel your feet. Then you will stop noticing the cold.",
+          "source": "src/game/childhood-valley-rest.js:105"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning.l1",
+          "who": "you",
+          "text": "And in the morning?",
+          "source": "src/game/childhood-valley-rest.js:106"
+        },
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning.l2",
+          "who": "other",
+          "text": "If you stay, you will die here. You can get up now.",
+          "source": "src/game/childhood-valley-rest.js:107"
+        }
+      ],
+      "choices": [
+        {
+          "id": "HOME_VALLEY_REST_STORY.childhood-valley-rest.nodes.warning.c0",
+          "text": "Stay here and die. End this run.",
+          "source": "src/game/childhood-valley-rest.js:111",
+          "choiceId": "remain"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:105"
+    },
+    "homeValleyRestStory.nodes.arrival": {
+      "id": "homeValleyRestStory.nodes.arrival",
+      "type": "line",
+      "lines": [
+        {
+          "id": "homeValleyRestStory.nodes.arrival.l0",
+          "who": "other",
+          "text": "Leave it there. The wood will keep. / Get up slowly. It comes off the back of your coat in sheets.",
+          "source": "src/game/childhood-valley-rest.js:124"
+        },
+        {
+          "id": "homeValleyRestStory.nodes.arrival.l1",
+          "who": "you",
+          "text": "There is more to split. / It used to look bigger.",
+          "source": "src/game/childhood-valley-rest.js:125"
+        },
+        {
+          "id": "homeValleyRestStory.nodes.arrival.l2",
+          "who": "other",
+          "text": "Somebody can split it tomorrow. / You used to be smaller.",
+          "source": "src/game/childhood-valley-rest.js:126"
+        },
+        {
+          "id": "homeValleyRestStory.nodes.arrival.l3",
+          "who": "other",
+          "text": "You can stop here a while.",
+          "source": "src/game/childhood-valley-rest.js:127"
+        }
+      ],
+      "source": "src/game/childhood-valley-rest.js:124"
+    }
+  }
+}

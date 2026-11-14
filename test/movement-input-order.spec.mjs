@@ -41,3 +41,20 @@ test('onKey records a movement key BEFORE it prevents its default', () => {
   }
   assert.ok(seen >= 2, `both movement branches keep their fallback (found ${seen})`);
 });
+
+test('a story run never reaches the pre-story debug keys', () => {
+  // THE BUG THIS EXISTS TO CATCH. A bare Space that nothing in a story run
+  // claimed (the chapel and tower door fields, the snow valley) fell through to
+  // the old field's `case ' ': togglePause()`, which silenced the whole mix and
+  // put no menu on screen. L and O leaked the same way.
+  const start = main.indexOf('function onKey(e){');
+  const end = main.indexOf('function onKeyUp(e){', start);
+  assert.ok(start >= 0 && end > start, 'onKey is present');
+  const onKey = main.slice(start, end);
+  const legacy = onKey.indexOf("case ' ':");
+  assert.ok(legacy > 0, 'the legacy switch is present');
+  const guard = onKey.lastIndexOf('if(storyMode){', legacy);
+  assert.ok(guard > 0, 'a story-mode return sits in front of the legacy switch');
+  const between = onKey.slice(guard, legacy);
+  assert.match(between, /^if\(storyMode\)\{[^}]*return;\}\s*switch\(e\.key\)\{\s*$/, 'nothing but the guard separates them');
+});

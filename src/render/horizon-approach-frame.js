@@ -2,9 +2,9 @@
 // takes it from here: nothing in this file knows the space is curved.
 import {EYE,ZONE} from '../data/floorplan/legend.js';
 import {HORIZON_APPROACH as C,HORIZON_DEBRIS_KINDS,horizonDebrisField,spaceEyeUniform} from '../data/horizon-approach.js';
-import {HORIZON_TOWER_BEARING} from '../game/horizon-approach-scene.js';
+import {HORIZON_TOWER_BEARING,horizonTowerBearing} from '../game/horizon-approach-scene.js';
 import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
-import {horizonStairsMeshes} from './horizon-approach-models.js';
+import {horizonStairsMeshes,HORIZON_TOWER_ROAD} from './horizon-approach-models.js';
 import {SOURCE_ESCHER_EXTENT} from './source-continuation-escher.js';
 
 const TAU=Math.PI*2;
@@ -85,7 +85,9 @@ function relativityLandscape(){
 }
 function destinations(variant){
   const V=C.variants[variant],closed=variant==='closed',far=closed?Math.PI*V.radius*.84:variant==='relativity'?V.roadEnd:V.radius*3.4,s=variant==='circle-limit'?.16:closed?.55:1;
-  const props=[inst(HORIZON_CHURCH_MESH,'church',standing(far,HORIZON_TOWER_BEARING,{scale:s,turn:Math.PI}),{structural:true})];
+  // St Brendan's stands at the end of the tower's own road, so the road and the
+  // church are read as one direction.
+  const props=[inst(HORIZON_CHURCH_MESH,'church',standing(far,horizonTowerBearing(variant),{scale:s,turn:Math.PI}),{structural:true})];
   for(const[k,side]of[[0,-1],[1,1],[2,-1],[3,1]])props.push(inst(HORIZON_MASONRY.buttress,`chapel:${k}`,standing(far,(variant==='relativity'?Math.PI:-HORIZON_TOWER_BEARING)+side*.09+k*.02,{scale:.6*s,turn:Math.PI/2*side})));
   return props;
 }
@@ -105,6 +107,9 @@ const LANDSCAPE=Object.freeze({closed:closedLandscape,'circle-limit':circleLimit
 export function horizonApproachRenderFrame(state,{reducedMotion=false}={}){
   const V=C.variants[state.variant],I=translate(0,0,0),props=[];
   for(const mesh of GROUND[state.variant])props.push(inst(mesh,mesh,I));
+  // The tower's road, as the others are until the tower is offered; in negative from then on.
+  const tower=HORIZON_TOWER_ROAD[state.variant];
+  if(tower)for(const mesh of state.offerOpen?tower.negative:tower.plain)props.push(inst(mesh,mesh,I));
   if(state.variant==='relativity'&&state.offerOpen)props.push(inst('ha_side','side',I),inst('ha_side_line','side-line',I));
   if(state.variant==='closed')props.push(...horizonDebrisProps(state.elapsed,{reducedMotion}));
   props.push(...LANDSCAPE[state.variant](),...destinations(state.variant),...horizonApproachObjectProps(state));

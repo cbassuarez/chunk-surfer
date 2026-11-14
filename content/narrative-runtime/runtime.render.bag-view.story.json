@@ -24,10 +24,10 @@
           "id": "drawStorageSlot.badge.l0",
           "who": "storageBadge",
           "text": "IN BAG",
-          "source": "src/render/bag-view.js:284"
+          "source": "src/render/bag-view.js:339"
         }
       ],
-      "source": "src/render/bag-view.js:284"
+      "source": "src/render/bag-view.js:339"
     }
   }
 }

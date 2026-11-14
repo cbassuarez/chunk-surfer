@@ -3548,30 +3548,9 @@ export function createSourceSpaceRuntime({
       return { handled: true, text: room.inspect, source: exactLine(focus.sector, 0) };
     }
 
-    if (focus.kind === 'outskirt-door') {
-      const piece = doorFieldPieces().find((entry) => entry.id === focus.id);
-      if (piece && homeDoorEligible(piece) && !homeDoorsLooked.has(piece.id)) {
-        homeDoorsLooked.add(piece.id);
-        return { handled: true, event: 'door-field-look', id: focus.id, archetype: piece.assembly.archetype,
-          world: 'whiteout', home: true, opened: doorOpened(piece), shut: false, text: '' };
-      }
-      if (piece && (!piece.door.route || piece.door.route === 'chapel') && !doorsLooked.has(focus.id)) {
-        doorsLooked.add(focus.id);
-        const destination = piece.door.destination;
-        return {
-          handled: true, event: 'door-field-look', id: focus.id, archetype: piece.assembly.archetype,
-          world: destination?.kind === 'field' ? `field:${destination.fieldId}` : ELSEWHERE_WORLDS[piece.door.variant]?.id || null,
-          destination: destination ? { ...destination } : null, fieldId: destination?.fieldId || null,
-          connectionId: destination?.connectionId || null, opened: doorOpened(piece), shut: !!piece.door.shut,
-          line: destination?.connectionNumber ? `The plate bears ${destination.connectionNumber === 1 ? 'one notch' : 'two notches'}, matching a bolt on the tower door. Beyond it is the field. A connection that returns here.`
-            : destination?.kind === 'field' ? 'Grass. The same field, at a different hour. An open way back stands just beyond the threshold.'
-              : destination?.kind === 'coastal' ? 'A bank above the sea. Something small keeps turning there.'
-                : destination?.kind === 'home' ? 'A house in snow. The handle is cold. It does not turn yet.' : undefined,
-          text: '',
-        };
-      }
-      return { ...openDoorFieldDoor(focus.id), text: '' };
-    }
+    // [e] on a door tries it. There is no look first: on both roads its
+    // exposition put a panel of text between the press and the opening.
+    if (focus.kind === 'outskirt-door') return { ...openDoorFieldDoor(focus.id), text: '' };
     if (focus.kind === 'land-piece') return { handled: true, event: 'door-field-look', id: focus.id, land: focus.look, text: '' };
     if (focus.kind === 'land-door') return { handled: true, event: 'door-field-look', id: focus.id, land: focus.look, text: '' };
     if (focus.kind === 'station-service') return { handled: true, event: 'door-field-look', id: focus.id, service: focus.look, text: '' };
@@ -7264,10 +7243,6 @@ export function createSourceSpaceRuntime({
       focusPriority: 3, focusRadius: 16,
     }));
   }
-  // A door is looked at before it is tried: the first press looks, the next tries.
-  var doorsLooked = new Set();
-  const homeDoorsLooked = new Set();
-
   // What each opened door shows, for the renderer: its opening in world metres,
   // and which way is its front. See renderSourcePortals.
   function outskirtPortals(px = player.x, py = player.y) {
@@ -7707,13 +7682,12 @@ export function createSourceSpaceRuntime({
     if (!route) return [];
     return doorFieldPieces(route)
       .filter((piece) => (piece.door.route
-        ? (piece.door.route === 'tower' && !towerDoorUnlocked()) || (piece.door.route === 'chapel' && !doorsLooked.has(piece.id))
-        : !doorErased(piece) && (piece.door.shut || !doorOpened(piece) || (homeDoorEligible(piece) && !homeDoorsLooked.has(piece.id)))))
+        ? piece.door.route === 'tower' && !towerDoorUnlocked()
+        : !doorErased(piece) && (piece.door.shut || !doorOpened(piece))))
       .map((piece) => {
         const [a, b] = piece.opening.threshold;
         return {
           kind: 'outskirt-door', id: piece.id, index: Math.max(0, piece.i), route: piece.door.route || null,
-          looked: homeDoorEligible(piece) ? homeDoorsLooked.has(piece.id) : piece.door.route === 'tower' || doorsLooked.has(piece.id),
           home: homeDoorEligible(piece),
           x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, focusPriority: 8, focusRadius: 5,
         };

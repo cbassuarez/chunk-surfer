@@ -28,2050 +28,2050 @@
           "id": "CONSERVATORY_PROPS.inspect.l0",
           "who": "inspect",
           "text": "Switchgear, dead, with the isolator handles all thrown the same way and a strip of tape across them somebody wrote on in 1994.",
-          "source": "src/data/conservatory-props.js:581"
+          "source": "src/data/conservatory-props.js:584"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l1",
           "who": "inspect",
           "text": "(again) Dead switchgear. Tape, and a date, and a hand that is not yours.",
-          "source": "src/data/conservatory-props.js:581"
+          "source": "src/data/conservatory-props.js:584"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l2",
           "who": "inspect",
           "text": "DEMOLITION NOTICE. Works commence 06:00 Thursday. The contractor is a name you have never heard of and the client is W. ELLERY HOLDINGS, which is the name on your work order.",
-          "source": "src/data/conservatory-props.js:722"
+          "source": "src/data/conservatory-props.js:725"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l3",
           "who": "inspect",
           "text": "(again) Six on Thursday. The board beside it still counts down in fourteens, and stopped being changed some time in March.",
-          "source": "src/data/conservatory-props.js:722"
+          "source": "src/data/conservatory-props.js:725"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l4",
           "who": "inspect",
           "text": "A piano lid, snapped across the hinge. Hymn books, swollen to twice their thickness. A lane rope from a pool that has been dry longer than you have been doing this.",
-          "source": "src/data/conservatory-props.js:730"
+          "source": "src/data/conservatory-props.js:733"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l5",
           "who": "inspect",
           "text": "(again) The building, in the order somebody decided it could be thrown away.",
-          "source": "src/data/conservatory-props.js:730"
+          "source": "src/data/conservatory-props.js:733"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l6",
           "who": "inspect",
           "text": "Forty stacking chairs under a tarpaulin, banded and labelled for collection. Somebody catalogued these. Nobody came.",
-          "source": "src/data/conservatory-props.js:737"
+          "source": "src/data/conservatory-props.js:740"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l7",
           "who": "inspect",
           "text": "(again) Still banded. Still labelled. Still here.",
-          "source": "src/data/conservatory-props.js:737"
+          "source": "src/data/conservatory-props.js:740"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l8",
           "who": "inspect",
           "text": "{range.use.replace(/^./,(c)=>c.toUpperCase())}. The {range.year} work is still legible under every later patch.",
-          "source": "src/data/conservatory-props.js:960"
+          "source": "src/data/conservatory-props.js:963"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l9",
           "who": "inspect",
           "text": "(again) The {range.year} range still gives the larger building its scale.",
-          "source": "src/data/conservatory-props.js:960"
+          "source": "src/data/conservatory-props.js:963"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l10",
           "who": "inspect",
           "text": "St Brendan’s Cathedral. Rubble stone, slate, a crossing tower and a west door with no exterior handle. Older than the conservatoire and outliving it.",
-          "source": "src/data/conservatory-props.js:972"
+          "source": "src/data/conservatory-props.js:975"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l11",
           "who": "inspect",
           "text": "(again) St Brendan’s Cathedral. Intact, disused, and shut from this side.",
-          "source": "src/data/conservatory-props.js:972"
+          "source": "src/data/conservatory-props.js:975"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l12",
           "who": "inspect",
           "text": "A short oak pew. The aisle end is dark with old hands; the rest has gone grey with dust.",
-          "source": "src/data/conservatory-props.js:978"
+          "source": "src/data/conservatory-props.js:981"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l13",
           "who": "inspect",
           "text": "(again) Dust in the mouldings. No service sheet.",
-          "source": "src/data/conservatory-props.js:978"
+          "source": "src/data/conservatory-props.js:981"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l14",
           "who": "inspect",
           "text": "The matching pew has a warped kneeler and a numbered brass plate.",
-          "source": "src/data/conservatory-props.js:979"
+          "source": "src/data/conservatory-props.js:982"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l15",
           "who": "inspect",
           "text": "(again) A number for a congregation that is not here.",
-          "source": "src/data/conservatory-props.js:979"
+          "source": "src/data/conservatory-props.js:982"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l16",
           "who": "inspect",
           "text": "Choir stalls under misericords blackened by age.",
-          "source": "src/data/conservatory-props.js:982"
+          "source": "src/data/conservatory-props.js:985"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l17",
           "who": "inspect",
           "text": "(again) The seat lifts. The carving underneath is worn smooth.",
-          "source": "src/data/conservatory-props.js:982"
+          "source": "src/data/conservatory-props.js:985"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l18",
           "who": "inspect",
           "text": "Choir stalls facing the empty centre line.",
-          "source": "src/data/conservatory-props.js:983"
+          "source": "src/data/conservatory-props.js:986"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l19",
           "who": "inspect",
           "text": "(again) No books. No cushions. No recent dust broken.",
-          "source": "src/data/conservatory-props.js:983"
+          "source": "src/data/conservatory-props.js:986"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l20",
           "who": "inspect",
           "text": "Louvre boards and their frame, down across the turret mouth. The stair behind them is full to the roof.",
-          "source": "src/data/conservatory-props.js:991"
+          "source": "src/data/conservatory-props.js:994"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l21",
           "who": "inspect",
           "text": "(again) Nobody is getting down this one.",
-          "source": "src/data/conservatory-props.js:991"
+          "source": "src/data/conservatory-props.js:994"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l22",
           "who": "inspect",
           "text": "Rubble from the turret vault, packed into the stair mouth to the ceiling.",
-          "source": "src/data/conservatory-props.js:992"
+          "source": "src/data/conservatory-props.js:995"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l23",
           "who": "inspect",
           "text": "(again) Not this way down.",
-          "source": "src/data/conservatory-props.js:992"
+          "source": "src/data/conservatory-props.js:995"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l24",
           "who": "inspect",
           "text": "An open stone pulpitum. Two flights of pierced tracery leave the centre passage clear.",
-          "source": "src/data/conservatory-props.js:994"
+          "source": "src/data/conservatory-props.js:997"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l25",
           "who": "inspect",
           "text": "(again) A screen that divides without sealing.",
-          "source": "src/data/conservatory-props.js:994"
+          "source": "src/data/conservatory-props.js:997"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l26",
           "who": "inspect",
           "text": "A battered octagonal font. The bowl is dry except for plaster grit.",
-          "source": "src/data/conservatory-props.js:995"
+          "source": "src/data/conservatory-props.js:998"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l27",
           "who": "inspect",
           "text": "(again) Stone dust in the bowl.",
-          "source": "src/data/conservatory-props.js:995"
+          "source": "src/data/conservatory-props.js:998"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l28",
           "who": "inspect",
           "text": "A brass lectern gone green at the joints. The service book is gone.",
-          "source": "src/data/conservatory-props.js:996"
+          "source": "src/data/conservatory-props.js:999"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l29",
           "who": "inspect",
           "text": "(again) The ribbon remains, marking air.",
-          "source": "src/data/conservatory-props.js:996"
+          "source": "src/data/conservatory-props.js:999"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l30",
           "who": "inspect",
           "text": "The altar stands one step above the choir. Linen and vessels were removed carefully.",
-          "source": "src/data/conservatory-props.js:997"
+          "source": "src/data/conservatory-props.js:1000"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l31",
           "who": "inspect",
           "text": "(again) Bare stone and four pale footmarks.",
-          "source": "src/data/conservatory-props.js:997"
+          "source": "src/data/conservatory-props.js:1000"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l32",
           "who": "inspect",
           "text": "A wall monument with its face and dates abraded before the cathedral closed.",
-          "source": "src/data/conservatory-props.js:998"
+          "source": "src/data/conservatory-props.js:1001"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l33",
           "who": "inspect",
           "text": "(again) The name was removed deliberately.",
-          "source": "src/data/conservatory-props.js:998"
+          "source": "src/data/conservatory-props.js:1001"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l34",
           "who": "inspect",
           "text": "A chest tomb pressed into the sacristy wall. Bird lime has found it even here.",
-          "source": "src/data/conservatory-props.js:999"
+          "source": "src/data/conservatory-props.js:1002"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l35",
           "who": "inspect",
           "text": "(again) A stone sleeper under dust and feathers.",
-          "source": "src/data/conservatory-props.js:999"
+          "source": "src/data/conservatory-props.js:1002"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l36",
           "who": "inspect",
           "text": "A visitor desk abandoned under dust. Its shallow drawers contain rubber bands, a pencil worn to the ferrule, and no money.",
-          "source": "src/data/conservatory-props.js:1002"
+          "source": "src/data/conservatory-props.js:1005"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l37",
           "who": "inspect",
           "text": "(again) The visitor desk keeps the shape of its last closing.",
-          "source": "src/data/conservatory-props.js:1002"
+          "source": "src/data/conservatory-props.js:1005"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l38",
           "who": "inspect",
           "text": "Guidebooks to St Brendan's, their tower diagram printed before the bell frame acquired this much dust.",
-          "source": "src/data/conservatory-props.js:1003"
+          "source": "src/data/conservatory-props.js:1006"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l39",
           "who": "inspect",
           "text": "(again) The same crossing, reduced to a clean black plan.",
-          "source": "src/data/conservatory-props.js:1003"
+          "source": "src/data/conservatory-props.js:1006"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l40",
           "who": "inspect",
           "text": "A dead donation till. The paper roll reads THANK YOU FOR HELPING US KEEP THE BELLS SOUNDING.",
-          "source": "src/data/conservatory-props.js:1004"
+          "source": "src/data/conservatory-props.js:1007"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l41",
           "who": "inspect",
           "text": "(again) No power. The last receipt remains uncut.",
-          "source": "src/data/conservatory-props.js:1004"
+          "source": "src/data/conservatory-props.js:1007"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l42",
           "who": "inspect",
           "text": "Postcards fade in a wire display: west front, crossing tower, eight bells, cold glass.",
-          "source": "src/data/conservatory-props.js:1005"
+          "source": "src/data/conservatory-props.js:1008"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l43",
           "who": "inspect",
           "text": "(again) Every card shows an entrance. None shows this way out.",
-          "source": "src/data/conservatory-props.js:1005"
+          "source": "src/data/conservatory-props.js:1008"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l44",
           "who": "inspect",
           "text": "A scarred dispatch desk, its pigeonholes still holding the previous shift. Somebody meant to come back to it.",
-          "source": "src/data/conservatory-props.js:1081"
+          "source": "src/data/conservatory-props.js:1084"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l45",
           "who": "inspect",
           "text": "(again) The open drawer is still waiting for the rest of its shift.",
-          "source": "src/data/conservatory-props.js:1081"
+          "source": "src/data/conservatory-props.js:1084"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l46",
           "who": "inspect",
           "text": "Your job is clipped over somebody else’s unfinished leaving.",
-          "source": "src/data/conservatory-props.js:1089"
+          "source": "src/data/conservatory-props.js:1092"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l47",
           "who": "inspect",
           "text": "(again) The last line is still waiting to be crossed out.",
-          "source": "src/data/conservatory-props.js:1089"
+          "source": "src/data/conservatory-props.js:1092"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l48",
           "who": "inspect",
           "text": "The route remains. The names beside it have been rubbed away.",
-          "source": "src/data/conservatory-props.js:1093"
+          "source": "src/data/conservatory-props.js:1096"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l49",
           "who": "inspect",
           "text": "(again) Three places and nobody assigned to walk between them.",
-          "source": "src/data/conservatory-props.js:1093"
+          "source": "src/data/conservatory-props.js:1096"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l50",
           "who": "inspect",
           "text": "A work lamp with its back open and its battery gone. An honestly dead thing.",
-          "source": "src/data/conservatory-props.js:1099"
+          "source": "src/data/conservatory-props.js:1102"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l51",
           "who": "inspect",
           "text": "(again) Click. Nothing. Good.",
-          "source": "src/data/conservatory-props.js:1099"
+          "source": "src/data/conservatory-props.js:1102"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l52",
           "who": "inspect",
           "text": "A hand truck tied up neatly before it ever carried the load.",
-          "source": "src/data/conservatory-props.js:1107"
+          "source": "src/data/conservatory-props.js:1110"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l53",
           "who": "inspect",
           "text": "(again) FRAME FIRST, still chalked across its foot.",
-          "source": "src/data/conservatory-props.js:1107"
+          "source": "src/data/conservatory-props.js:1110"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l54",
           "who": "inspect",
           "text": "Three empty crates. Everything in the room had somewhere to go except the chandelier.",
-          "source": "src/data/conservatory-props.js:1111"
+          "source": "src/data/conservatory-props.js:1114"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l55",
           "who": "inspect",
           "text": "(again) The empty boxes still smell of rain and hot dust.",
-          "source": "src/data/conservatory-props.js:1111"
+          "source": "src/data/conservatory-props.js:1114"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l56",
           "who": "inspect",
           "text": "A chandelier locked inside a wheeled cage. Its wire ends in open air.",
-          "source": "src/data/conservatory-props.js:1143"
+          "source": "src/data/conservatory-props.js:1146"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l57",
           "who": "inspect",
           "text": "(again) Too carefully held for rubbish. Too dead to be a lamp.",
-          "source": "src/data/conservatory-props.js:1143"
+          "source": "src/data/conservatory-props.js:1146"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l58",
           "who": "inspect",
           "text": "One chapel pew never made it upstairs. A paper removal tag is still tied to it.",
-          "source": "src/data/conservatory-props.js:1154"
+          "source": "src/data/conservatory-props.js:1157"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l59",
           "who": "inspect",
           "text": "(again) The tag says RETURN TO CHAPEL.",
-          "source": "src/data/conservatory-props.js:1154"
+          "source": "src/data/conservatory-props.js:1157"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l60",
           "who": "inspect",
           "text": "A percussion cart with one wheel wired straight.",
-          "source": "src/data/conservatory-props.js:1155"
+          "source": "src/data/conservatory-props.js:1158"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l61",
           "who": "inspect",
           "text": "(again) It will only travel in a circle.",
-          "source": "src/data/conservatory-props.js:1155"
+          "source": "src/data/conservatory-props.js:1158"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l62",
           "who": "inspect",
           "text": "Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.",
-          "source": "src/data/conservatory-props.js:1156"
+          "source": "src/data/conservatory-props.js:1159"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l63",
           "who": "inspect",
           "text": "(again) The sitter keeps looking past the entrance.",
-          "source": "src/data/conservatory-props.js:1156"
+          "source": "src/data/conservatory-props.js:1159"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l64",
           "who": "inspect",
           "text": "El Greco. Portrait of an Old Man. Someone has polished the glass more often than the frame.",
-          "source": "src/data/conservatory-props.js:1157"
+          "source": "src/data/conservatory-props.js:1160"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l65",
           "who": "inspect",
           "text": "(again) His eyes catch the corridor light first.",
-          "source": "src/data/conservatory-props.js:1157"
+          "source": "src/data/conservatory-props.js:1160"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l66",
           "who": "inspect",
           "text": "PUBLIC ENTRANCE. The glazed pair is chained under the closure order; the service entrance is around the block.",
-          "source": "src/data/conservatory-props.js:1160"
+          "source": "src/data/conservatory-props.js:1163"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l67",
           "who": "inspect",
           "text": "(again) PUBLIC ENTRANCE — CLOSED.",
-          "source": "src/data/conservatory-props.js:1160"
+          "source": "src/data/conservatory-props.js:1163"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l68",
           "who": "inspect",
-          "text": "The ticket counter was built to keep a queue outside and cash inside. The grille is still locked down.",
-          "source": "src/data/conservatory-props.js:1173"
+          "text": "Oak worn pale at the ticket slot. The fixed grille and closed sliding panes leave a view into the little office, but no way through.",
+          "source": "src/data/conservatory-props.js:1182"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l69",
           "who": "inspect",
-          "text": "(again) Nothing has been sold here for years.",
-          "source": "src/data/conservatory-props.js:1173"
+          "text": "(again) The brass scoop between you and the clerk is empty. Nothing has been sold here for years.",
+          "source": "src/data/conservatory-props.js:1182"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l70",
           "who": "inspect",
-          "text": "The staff desk is squared to the ticket window. A blotter has been pressed flat by damp.",
-          "source": "src/data/conservatory-props.js:1174"
+          "text": "A proper clerking desk behind the hatch: shallow drawers to one side, a clear space for knees, and the cable still threaded through its back.",
+          "source": "src/data/conservatory-props.js:1184"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l71",
           "who": "inspect",
           "text": "(again) Front of house, stopped mid-week.",
-          "source": "src/data/conservatory-props.js:1174"
+          "source": "src/data/conservatory-props.js:1184"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l72",
           "who": "inspect",
-          "text": "A staff chair tucked under the ticket desk, not abandoned in the queue path.",
-          "source": "src/data/conservatory-props.js:1175"
+          "text": "The clerk’s chair has been drawn back from the desk. The narrow working space around it has been kept clear.",
+          "source": "src/data/conservatory-props.js:1185"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l73",
           "who": "inspect",
-          "text": "(again) Its casters have made a small grey ring.",
-          "source": "src/data/conservatory-props.js:1175"
+          "text": "(again) Its feet have made a small grey ring.",
+          "source": "src/data/conservatory-props.js:1185"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l74",
           "who": "inspect",
           "text": "A stack of folded programmes for a season that never opened.",
-          "source": "src/data/conservatory-props.js:1176"
+          "source": "src/data/conservatory-props.js:1186"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l75",
           "who": "inspect",
           "text": "(again) The top programme has curled at both corners.",
-          "source": "src/data/conservatory-props.js:1176"
+          "source": "src/data/conservatory-props.js:1186"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l76",
           "who": "inspect",
-          "text": "A dead card terminal beside a cash drawer. The receipt paper is still threaded.",
-          "source": "src/data/conservatory-props.js:1177"
+          "text": "A dead card terminal beside the brass ticket scoop. The receipt paper is still threaded.",
+          "source": "src/data/conservatory-props.js:1187"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l77",
           "who": "inspect",
           "text": "(again) No signal. No float.",
-          "source": "src/data/conservatory-props.js:1177"
+          "source": "src/data/conservatory-props.js:1187"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l78",
           "who": "inspect",
           "text": "A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.",
-          "source": "src/data/conservatory-props.js:1178"
+          "source": "src/data/conservatory-props.js:1188"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l79",
           "who": "inspect",
           "text": "(again) CHAPEL. REPLACEMENT LOCK. C-17.",
-          "source": "src/data/conservatory-props.js:1178"
+          "source": "src/data/conservatory-props.js:1188"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l80",
           "who": "inspect",
           "text": "A key cabinet with the door off. Three rings left on a board cut for a dozen, each with a tag on it.",
-          "source": "src/data/conservatory-props.js:1186"
+          "source": "src/data/conservatory-props.js:1196"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l81",
           "who": "inspect",
           "text": "(again) The empty hooks are labelled too. Whoever kept this expected the keys back.",
-          "source": "src/data/conservatory-props.js:1186"
+          "source": "src/data/conservatory-props.js:1196"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l82",
           "who": "inspect",
           "text": "Tag: CH-04. CHAPEL — MAIN, stamped into the brass. The stamp is older than the ring.",
-          "source": "src/data/conservatory-props.js:1200"
+          "source": "src/data/conservatory-props.js:1210"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l83",
           "who": "inspect",
           "text": "(again) CH-04. The chapel door this was cut for is still there. The lock in it is not.",
-          "source": "src/data/conservatory-props.js:1200"
+          "source": "src/data/conservatory-props.js:1210"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l84",
           "who": "inspect",
           "text": "Tag: C-17. A cabinet number in biro, written over a scratched-out one.",
-          "source": "src/data/conservatory-props.js:1210"
+          "source": "src/data/conservatory-props.js:1220"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l85",
           "who": "inspect",
           "text": "(again) C-17. Newer than the ring it is on, and nobody has stamped it yet.",
-          "source": "src/data/conservatory-props.js:1210"
+          "source": "src/data/conservatory-props.js:1220"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l86",
           "who": "inspect",
           "text": "Tag: FOH-M. FRONT OF HOUSE — MASTER. Worn smooth on both faces.",
-          "source": "src/data/conservatory-props.js:1219"
+          "source": "src/data/conservatory-props.js:1229"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l87",
           "who": "inspect",
           "text": "(again) FOH-M. It opens everything on this side of the doors and nothing past them.",
-          "source": "src/data/conservatory-props.js:1219"
+          "source": "src/data/conservatory-props.js:1229"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l88",
           "who": "inspect",
           "text": "Programmes, float envelopes, and ticket stock boxed by week.",
-          "source": "src/data/conservatory-props.js:1224"
+          "source": "src/data/conservatory-props.js:1234"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l89",
           "who": "inspect",
           "text": "(again) The labels are more orderly than the room.",
-          "source": "src/data/conservatory-props.js:1224"
+          "source": "src/data/conservatory-props.js:1234"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l90",
           "who": "inspect",
           "text": "A notice board with staffing rotas, emergency contacts, and one hand-written refund policy.",
-          "source": "src/data/conservatory-props.js:1225"
+          "source": "src/data/conservatory-props.js:1235"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l91",
           "who": "inspect",
           "text": "(again) The refund policy is underlined twice.",
-          "source": "src/data/conservatory-props.js:1225"
+          "source": "src/data/conservatory-props.js:1235"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l92",
           "who": "inspect",
           "text": "A brass queue post with its rope still clipped in.",
-          "source": "src/data/conservatory-props.js:1228"
+          "source": "src/data/conservatory-props.js:1238"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l93",
           "who": "inspect",
           "text": "(again) The rope sags towards the ticket window.",
-          "source": "src/data/conservatory-props.js:1228"
+          "source": "src/data/conservatory-props.js:1238"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l94",
           "who": "inspect",
           "text": "A poster still in its frame: the last thing that was on. A Sunday, and nothing after it.",
-          "source": "src/data/conservatory-props.js:1248"
+          "source": "src/data/conservatory-props.js:1256"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l95",
           "who": "inspect",
           "text": "(again) Nobody took it down. There was no Monday to take it down on.",
-          "source": "src/data/conservatory-props.js:1248"
+          "source": "src/data/conservatory-props.js:1256"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l96",
           "who": "inspect",
           "text": "A price list under glass. Stalls, circle, restricted view, and a concessions line with three conditions on it.",
-          "source": "src/data/conservatory-props.js:1249"
+          "source": "src/data/conservatory-props.js:1257"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l97",
           "who": "inspect",
           "text": "(again) Restricted view is the cheapest seat and the only one that says what it is.",
-          "source": "src/data/conservatory-props.js:1249"
+          "source": "src/data/conservatory-props.js:1257"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l98",
           "who": "inspect",
           "text": "A bin by the doors, lined and never used. Someone put the bag in and that was the last of it.",
-          "source": "src/data/conservatory-props.js:1250"
+          "source": "src/data/conservatory-props.js:1258"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l99",
           "who": "inspect",
           "text": "(again) Clean, which out of everything in here is the strange part.",
-          "source": "src/data/conservatory-props.js:1250"
+          "source": "src/data/conservatory-props.js:1258"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l100",
           "who": "inspect",
           "text": "A roll of unsold tickets, still joined, still numbered. It stops in the middle of a Sunday.",
-          "source": "src/data/conservatory-props.js:1253"
+          "source": "src/data/conservatory-props.js:1261"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l101",
           "who": "inspect",
           "text": "(again) The tear is clean. Nobody hurried at the end of it.",
-          "source": "src/data/conservatory-props.js:1253"
+          "source": "src/data/conservatory-props.js:1261"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l102",
           "who": "inspect",
           "text": "The seating plan, drawn by hand and photocopied until the back rows went to grey.",
-          "source": "src/data/conservatory-props.js:1256"
+          "source": "src/data/conservatory-props.js:1264"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l103",
           "who": "inspect",
           "text": "(again) Two seats in the circle are inked out. No note as to why, and the ink is older than the copy.",
-          "source": "src/data/conservatory-props.js:1256"
+          "source": "src/data/conservatory-props.js:1264"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l104",
           "who": "inspect",
           "text": "A staffing rota for a fortnight that did not happen. Four names, one of them written in twice.",
-          "source": "src/data/conservatory-props.js:1257"
+          "source": "src/data/conservatory-props.js:1265"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l105",
           "who": "inspect",
           "text": "(again) The doubled name is down for both halves of the last night.",
-          "source": "src/data/conservatory-props.js:1257"
+          "source": "src/data/conservatory-props.js:1265"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l106",
           "who": "inspect",
           "text": "A till reconciliation, unsigned. It balances.",
-          "source": "src/data/conservatory-props.js:1258"
+          "source": "src/data/conservatory-props.js:1266"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l107",
           "who": "inspect",
           "text": "(again) Somebody counted it, agreed with it, and did not put their name to it.",
-          "source": "src/data/conservatory-props.js:1258"
+          "source": "src/data/conservatory-props.js:1266"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l108",
           "who": "inspect",
           "text": "A tray stencilled RETURNS, with nothing in it. The word came with the tray.",
-          "source": "src/data/conservatory-props.js:1259"
+          "source": "src/data/conservatory-props.js:1267"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l109",
           "who": "inspect",
           "text": "(again) RETURNED is the column the work order will not close without. Different building, same word.",
-          "source": "src/data/conservatory-props.js:1259"
+          "source": "src/data/conservatory-props.js:1267"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l110",
           "who": "inspect",
           "text": "A municipal waiting bench beside the ticket window. Its varnish is worn at regular shoulder-width intervals.",
-          "source": "src/data/conservatory-props.js:1265"
+          "source": "src/data/conservatory-props.js:1273"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l111",
           "who": "inspect",
           "text": "(again) People waited here facing the ticket window.",
-          "source": "src/data/conservatory-props.js:1265"
+          "source": "src/data/conservatory-props.js:1273"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l112",
           "who": "inspect",
           "text": "PUBLIC ROOMS: HALL, BATHS, CHAPEL, PRACTICE WING. Several arrows have been amended in three different hands.",
-          "source": "src/data/conservatory-props.js:1271"
+          "source": "src/data/conservatory-props.js:1279"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l113",
           "who": "inspect",
           "text": "(again) The building kept changing after the sign was made.",
-          "source": "src/data/conservatory-props.js:1271"
+          "source": "src/data/conservatory-props.js:1279"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l114",
           "who": "inspect",
           "text": "A glazed closure notice lists refunds, archive access, and a final public meeting that was cancelled.",
-          "source": "src/data/conservatory-props.js:1274"
+          "source": "src/data/conservatory-props.js:1282"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l115",
           "who": "inspect",
           "text": "(again) The cancellation is the newest paper in the case.",
-          "source": "src/data/conservatory-props.js:1274"
+          "source": "src/data/conservatory-props.js:1282"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l116",
           "who": "inspect",
           "text": "A wool rug under the waiting suite, and the reason it is still here is written across the middle of it in a stain nobody could lift.",
-          "source": "src/data/conservatory-props.js:1296"
+          "source": "src/data/conservatory-props.js:1304"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l117",
           "who": "inspect",
           "text": "(again) Ellery cleared this building to the walls. This stayed because it was worth less than the labour of rolling it.",
-          "source": "src/data/conservatory-props.js:1296"
+          "source": "src/data/conservatory-props.js:1304"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l118",
           "who": "inspect",
           "text": "Hessian drugget, tacked down the length of the room over the sprung maple. Somebody means to lift these boards before the machines come.",
-          "source": "src/data/conservatory-props.js:1325"
+          "source": "src/data/conservatory-props.js:1333"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l119",
           "who": "inspect",
           "text": "(again) Under it the floor is still a drum. Over it, walking is only walking.",
-          "source": "src/data/conservatory-props.js:1325"
+          "source": "src/data/conservatory-props.js:1333"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l120",
           "who": "inspect",
           "text": "A square of drugget upstage, rucked where something heavy was dragged across it and never straightened.",
-          "source": "src/data/conservatory-props.js:1333"
+          "source": "src/data/conservatory-props.js:1341"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l121",
           "who": "inspect",
           "text": "(again) The stage boards under it are unmarked. Everything either side of it is not.",
-          "source": "src/data/conservatory-props.js:1333"
+          "source": "src/data/conservatory-props.js:1341"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l122",
           "who": "inspect",
           "text": "A worsted runner fitted around the curved treads, with bound edges and a thin, compressed strip up the middle. The brass nosings remain exposed either side.",
-          "source": "src/data/conservatory-props.js:1342"
+          "source": "src/data/conservatory-props.js:1350"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l123",
           "who": "inspect",
           "text": "(again) The same central line of feet has thinned the wool. The edges kept their pile.",
-          "source": "src/data/conservatory-props.js:1342"
+          "source": "src/data/conservatory-props.js:1350"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l124",
           "who": "inspect",
           "text": "A corridor runner, rucked halfway along where a door has been dragged over it for years.",
-          "source": "src/data/conservatory-props.js:1350"
+          "source": "src/data/conservatory-props.js:1358"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l125",
           "who": "inspect",
           "text": "(again) It stops short of both ends. Whoever laid it measured once.",
-          "source": "src/data/conservatory-props.js:1350"
+          "source": "src/data/conservatory-props.js:1358"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l126",
           "who": "inspect",
           "text": "A runner up the centre of the nave, woven in quatrefoils to match the tracery it lies under.",
-          "source": "src/data/conservatory-props.js:1359"
+          "source": "src/data/conservatory-props.js:1367"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l127",
           "who": "inspect",
           "text": "(again) Everything else portable has gone from this room. Nobody has touched this.",
-          "source": "src/data/conservatory-props.js:1359"
+          "source": "src/data/conservatory-props.js:1367"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l128",
           "who": "inspect",
           "text": "A rug rolled and stood on end against the wall, tied twice and tagged at the top.",
-          "source": "src/data/conservatory-props.js:1368"
+          "source": "src/data/conservatory-props.js:1376"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l129",
           "who": "inspect",
           "text": "(again) The tag is a props number, not an inventory line. It came in for a production and never went out.",
-          "source": "src/data/conservatory-props.js:1368"
+          "source": "src/data/conservatory-props.js:1376"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l130",
           "who": "inspect",
           "text": "A pale foyer sofa from the formal front-of-house suite. FOH/F-01 is stamped beneath the centre rail; one cushion was rebuilt in a slightly firmer foam.",
-          "source": "src/data/conservatory-props.js:1381"
+          "source": "src/data/conservatory-props.js:1389"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l131",
           "who": "inspect",
           "text": "(again) FOH/F-01. The replacement cushion still sits higher than the others.",
-          "source": "src/data/conservatory-props.js:1381"
+          "source": "src/data/conservatory-props.js:1389"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l132",
           "who": "inspect",
           "text": "The first armchair of the foyer suite. FOH/F-02 remains on the rear rail, beside a hand-stitched repair where the public-facing arm wore through.",
-          "source": "src/data/conservatory-props.js:1385"
+          "source": "src/data/conservatory-props.js:1393"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l133",
           "who": "inspect",
           "text": "(again) FOH/F-02. The repaired arm has gone smooth again.",
-          "source": "src/data/conservatory-props.js:1385"
+          "source": "src/data/conservatory-props.js:1393"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l134",
           "who": "inspect",
           "text": "The matching armchair, FOH/F-03. Two dark blocks under the front feet are later than the chair and exactly the right height.",
-          "source": "src/data/conservatory-props.js:1389"
+          "source": "src/data/conservatory-props.js:1397"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l135",
           "who": "inspect",
           "text": "(again) FOH/F-03. A matched chair on unmatched blocks.",
-          "source": "src/data/conservatory-props.js:1389"
+          "source": "src/data/conservatory-props.js:1397"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l136",
           "who": "inspect",
           "text": "An armchair from the front-of-house suite, FOH/F-06, faced into the corner. The stamp matches the two still out in the atrium through this wall.",
-          "source": "src/data/conservatory-props.js:1408"
+          "source": "src/data/conservatory-props.js:1416"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l137",
           "who": "inspect",
           "text": "(again) FOH/F-06. It has been sat in since it was put here.",
-          "source": "src/data/conservatory-props.js:1408"
+          "source": "src/data/conservatory-props.js:1416"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l138",
           "who": "inspect",
           "text": "A tall-backed chair with dark green paint worn down to the wood. It belongs to no set: older than the suite and half a head higher, and somebody put it here facing the same way as the armchair, as though the two of them were waiting together.",
-          "source": "src/data/conservatory-props.js:1412"
+          "source": "src/data/conservatory-props.js:1420"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l139",
           "who": "inspect",
           "text": "(again) FOH/F-07. Two chairs, one conversation, nobody in either.",
-          "source": "src/data/conservatory-props.js:1412"
+          "source": "src/data/conservatory-props.js:1420"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l140",
           "who": "inspect",
           "text": "The last console of the suite, FOH/F-08, pushed against the atrium wall. The drawer is swollen shut and has been forced before — the lip is bright where somebody worked at it.",
-          "source": "src/data/conservatory-props.js:1417"
+          "source": "src/data/conservatory-props.js:1425"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l141",
           "who": "inspect",
           "text": "(again) FOH/F-08. Bright wood where the drawer was forced.",
-          "source": "src/data/conservatory-props.js:1417"
+          "source": "src/data/conservatory-props.js:1425"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l142",
           "who": "inspect",
           "text": "A large canvas, hung high on a picture rail that has no business being in a service corridor. It is the atrium's rail — the panelling comes through the wall here, half a metre of plaster between this room and the public one. The painting has been given the better half.",
-          "source": "src/data/conservatory-props.js:1425"
+          "source": "src/data/conservatory-props.js:1433"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l143",
           "who": "inspect",
           "text": "(again) Too big for the room and hung too high, on somebody else's rail.",
-          "source": "src/data/conservatory-props.js:1425"
+          "source": "src/data/conservatory-props.js:1433"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l144",
           "who": "inspect",
           "text": "A chandelier, in a corridor, over two chairs and a table. Nothing about this room was planned; all of it was moved here. Somebody went to the trouble of wiring it.",
-          "source": "src/data/conservatory-props.js:1431"
+          "source": "src/data/conservatory-props.js:1439"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l145",
           "who": "inspect",
           "text": "(again) It is still on the front-of-house circuit.",
-          "source": "src/data/conservatory-props.js:1431"
+          "source": "src/data/conservatory-props.js:1439"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l146",
           "who": "inspect",
           "text": "The west console of the foyer suite, FOH/F-04. A long pale tide mark follows the wall side; the inventory stamp is dry beneath it.",
-          "source": "src/data/conservatory-props.js:1436"
+          "source": "src/data/conservatory-props.js:1444"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l147",
           "who": "inspect",
           "text": "(again) FOH/F-04. Water above, old ink below.",
-          "source": "src/data/conservatory-props.js:1436"
+          "source": "src/data/conservatory-props.js:1444"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l148",
           "who": "inspect",
           "text": "The matching east console, FOH/F-05. Its top was refinished without touching the carved apron, leaving two different ages of varnish.",
-          "source": "src/data/conservatory-props.js:1441"
+          "source": "src/data/conservatory-props.js:1449"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l149",
           "who": "inspect",
           "text": "(again) FOH/F-05. The new varnish ends at the carving.",
-          "source": "src/data/conservatory-props.js:1441"
+          "source": "src/data/conservatory-props.js:1449"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l150",
           "who": "inspect",
           "text": "A small bronze horse study, accession ACC-41. The older paper label names no maker and records only that it arrived before the card catalogue.",
-          "source": "src/data/conservatory-props.js:1447"
+          "source": "src/data/conservatory-props.js:1455"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l151",
           "who": "inspect",
           "text": "(again) ACC-41. An object with a number and no useful beginning.",
-          "source": "src/data/conservatory-props.js:1447"
+          "source": "src/data/conservatory-props.js:1455"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l152",
           "who": "inspect",
           "text": "A marble bust, accession ACC-73. A clean steel pin through the old base says more about its history here than the blank sitter line.",
-          "source": "src/data/conservatory-props.js:1453"
+          "source": "src/data/conservatory-props.js:1461"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l153",
           "who": "inspect",
           "text": "(again) ACC-73. The sitter is still blank; the repair is fully documented.",
-          "source": "src/data/conservatory-props.js:1453"
+          "source": "src/data/conservatory-props.js:1461"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l154",
           "who": "inspect",
           "text": "CONCERT HALL — STALLS / GALLERIES. The gilt house lettering survives above the acoustic pair.",
-          "source": "src/data/conservatory-props.js:1485"
+          "source": "src/data/conservatory-props.js:1493"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l155",
           "who": "inspect",
           "text": "(again) CONCERT HALL.",
-          "source": "src/data/conservatory-props.js:1485"
+          "source": "src/data/conservatory-props.js:1493"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l156",
           "who": "inspect",
           "text": "A glazed programme case: winter concerts, municipal orchestras, school prize nights. The last season is crossed through in red pencil.",
-          "source": "src/data/conservatory-props.js:1489"
+          "source": "src/data/conservatory-props.js:1497"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l157",
           "who": "inspect",
           "text": "(again) The last season never opened.",
-          "source": "src/data/conservatory-props.js:1489"
+          "source": "src/data/conservatory-props.js:1497"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l158",
           "who": "inspect",
           "text": "Dry soil in a stone planter, packed hard and full of old leaf. Something black is coiled half down in it.",
-          "source": "src/data/conservatory-props.js:1502"
+          "source": "src/data/conservatory-props.js:1510"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l159",
           "who": "inspect",
           "text": "(again) The soil keeps the shape your hand left in it.",
-          "source": "src/data/conservatory-props.js:1502"
+          "source": "src/data/conservatory-props.js:1510"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l160",
           "who": "inspect",
           "text": "A flight case for the session microphones. The tape on its lid is marked with the room and the date they meant to come back. There is a pocket in the lid for blank stock.",
-          "source": "src/data/conservatory-props.js:1665"
+          "source": "src/data/conservatory-props.js:1673"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l161",
           "who": "inspect",
           "text": "(again) Packed properly. Not taken away.",
-          "source": "src/data/conservatory-props.js:1665"
+          "source": "src/data/conservatory-props.js:1673"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l162",
           "who": "inspect",
           "text": "A boom stand left at working height, its microphone still in the clip. The cable ends loose on the floor.",
-          "source": "src/data/conservatory-props.js:1666"
+          "source": "src/data/conservatory-props.js:1674"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l163",
           "who": "inspect",
           "text": "(again) Everything in place except the connection.",
-          "source": "src/data/conservatory-props.js:1666"
+          "source": "src/data/conservatory-props.js:1674"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l164",
           "who": "inspect",
           "text": "The numbered stage box and its heavy multicore, coiled for the control room. The free end is unplugged.",
-          "source": "src/data/conservatory-props.js:1669"
+          "source": "src/data/conservatory-props.js:1677"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l165",
           "who": "inspect",
           "text": "(again) They meant to wire it up again.",
-          "source": "src/data/conservatory-props.js:1669"
+          "source": "src/data/conservatory-props.js:1677"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l166",
           "who": "inspect",
           "text": "A Soundcraft Series 600, the sixteen-input version. Eight groups, a separate bank of tape monitors and a bridge of dark bar meters above the faders. The twin VU windows face the engineer.",
-          "source": "src/data/conservatory-props.js:1670"
+          "source": "src/data/conservatory-props.js:1678"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l167",
           "who": "inspect",
           "text": "(again) No pilot lights. No mains. The positions still mean something.",
-          "source": "src/data/conservatory-props.js:1670"
+          "source": "src/data/conservatory-props.js:1678"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l168",
           "who": "inspect",
           "text": "The rack is powered down. Three channels are still labelled in pencil.",
-          "source": "src/data/conservatory-props.js:1677"
+          "source": "src/data/conservatory-props.js:1685"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l169",
           "who": "inspect",
           "text": "(again) No mains. No pilot lights.",
-          "source": "src/data/conservatory-props.js:1677"
+          "source": "src/data/conservatory-props.js:1685"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l170",
           "who": "inspect",
           "text": "A closed metal spares tin on the shelf beneath the console, labelled for torch cells. One usable cell is inside.",
-          "source": "src/data/conservatory-props.js:1679"
+          "source": "src/data/conservatory-props.js:1687"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l171",
           "who": "inspect",
           "text": "(again) The spares tin under the console.",
-          "source": "src/data/conservatory-props.js:1679"
+          "source": "src/data/conservatory-props.js:1687"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l172",
           "who": "inspect",
           "text": "A session card on the console. One: voice. Two: room. Three has been carefully crossed out, but its fader is still set. In the margin, two chairs and fine lines to the glass.",
-          "source": "src/data/conservatory-props.js:1681"
+          "source": "src/data/conservatory-props.js:1689"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l173",
           "who": "inspect",
           "text": "(again) The third channel is crossed out. Its fader is still set.",
-          "source": "src/data/conservatory-props.js:1681"
+          "source": "src/data/conservatory-props.js:1689"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l174",
           "who": "inspect",
           "text": "A nearfield monitor with its cone pushed in and pulled back out.",
-          "source": "src/data/conservatory-props.js:1682"
+          "source": "src/data/conservatory-props.js:1690"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l175",
           "who": "inspect",
           "text": "(again) The cone remembers a thumb.",
-          "source": "src/data/conservatory-props.js:1682"
+          "source": "src/data/conservatory-props.js:1690"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l176",
           "who": "inspect",
           "text": "(again) It eats everything above four hundred hertz. Which is why the only thing left on the take is me.",
-          "source": "src/data/conservatory-props.js:1687"
+          "source": "src/data/conservatory-props.js:1695"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l177",
           "who": "inspect",
           "text": "A patchbay with every cable pulled, coiled and hung beside it. Somebody left this room tidy.",
-          "source": "src/data/conservatory-props.js:1694"
+          "source": "src/data/conservatory-props.js:1702"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l178",
           "who": "inspect",
           "text": "(again) You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.",
-          "source": "src/data/conservatory-props.js:1694"
+          "source": "src/data/conservatory-props.js:1702"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l179",
           "who": "inspect",
           "text": "The engineer’s chair, facing the mixing desk and the room beyond the glass.",
-          "source": "src/data/conservatory-props.js:1696"
+          "source": "src/data/conservatory-props.js:1704"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l180",
           "who": "inspect",
           "text": "(again) Somebody worked in here for a long time, and then one day they did not come back.",
-          "source": "src/data/conservatory-props.js:1696"
+          "source": "src/data/conservatory-props.js:1704"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l181",
           "who": "inspect",
           "text": "A music stand, folded down and leant into the corner.",
-          "source": "src/data/conservatory-props.js:1706"
+          "source": "src/data/conservatory-props.js:1714"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l182",
           "who": "inspect",
           "text": "(again) Folded. You fold a stand you mean to come back for.",
-          "source": "src/data/conservatory-props.js:1706"
+          "source": "src/data/conservatory-props.js:1714"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l183",
           "who": "inspect",
           "text": "The mirrored wall, and the room in it is not quite the room. The sections are out of plane by a degree or so, so the far corner arrives twice.",
-          "source": "src/data/conservatory-props.js:1709"
+          "source": "src/data/conservatory-props.js:1717"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l184",
           "who": "inspect",
           "text": "(again) Two corners. One of them is the real one.",
-          "source": "src/data/conservatory-props.js:1709"
+          "source": "src/data/conservatory-props.js:1717"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l185",
           "who": "inspect",
           "text": "The long barre. Somebody has wound gaffer round a cracked bracket rather than replace it.",
-          "source": "src/data/conservatory-props.js:1712"
+          "source": "src/data/conservatory-props.js:1720"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l186",
           "who": "inspect",
           "text": "(again) The tape is older than the crack.",
-          "source": "src/data/conservatory-props.js:1712"
+          "source": "src/data/conservatory-props.js:1720"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l187",
           "who": "inspect",
           "text": "A stool at the height somebody left it.",
-          "source": "src/data/conservatory-props.js:1715"
+          "source": "src/data/conservatory-props.js:1723"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l188",
           "who": "inspect",
           "text": "(again) Still at their height.",
-          "source": "src/data/conservatory-props.js:1715"
+          "source": "src/data/conservatory-props.js:1723"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l189",
           "who": "inspect",
           "text": "A timetable in a wall frame, gone the colour of weak tea. Grades one to six, Tuesday and Thursday, and a note about outdoor shoes.",
-          "source": "src/data/conservatory-props.js:1719"
+          "source": "src/data/conservatory-props.js:1727"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l190",
           "who": "inspect",
           "text": "(again) Tuesday and Thursday, and nobody at all.",
-          "source": "src/data/conservatory-props.js:1719"
+          "source": "src/data/conservatory-props.js:1727"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l191",
           "who": "inspect",
           "text": "Chairs stacked four high in the short leg of the room, where they are out of the way of a class.",
-          "source": "src/data/conservatory-props.js:1720"
+          "source": "src/data/conservatory-props.js:1728"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l192",
           "who": "inspect",
           "text": "(again) Out of the way of a class.",
-          "source": "src/data/conservatory-props.js:1720"
+          "source": "src/data/conservatory-props.js:1728"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l193",
           "who": "inspect",
           "text": "A mirrored wall with a long diagonal crack across two sections, taped on the back so it holds together.",
-          "source": "src/data/conservatory-props.js:1723"
+          "source": "src/data/conservatory-props.js:1731"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l194",
           "who": "inspect",
           "text": "(again) Taped, and holding.",
-          "source": "src/data/conservatory-props.js:1723"
+          "source": "src/data/conservatory-props.js:1731"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l195",
           "who": "inspect",
           "text": "The barre here has been taken down at one end and left hanging, so it runs at an angle no dancer could use.",
-          "source": "src/data/conservatory-props.js:1724"
+          "source": "src/data/conservatory-props.js:1732"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l196",
           "who": "inspect",
           "text": "(again) Somebody started taking this room apart and stopped.",
-          "source": "src/data/conservatory-props.js:1724"
+          "source": "src/data/conservatory-props.js:1732"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l197",
           "who": "inspect",
           "text": "Rolls of sprung-floor vinyl stood on end in the corner, taller than you, taped at the top and furred with dust.",
-          "source": "src/data/conservatory-props.js:1725"
+          "source": "src/data/conservatory-props.js:1733"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l198",
           "who": "inspect",
           "text": "(again) Enough floor for a room nobody is going to lay it in.",
-          "source": "src/data/conservatory-props.js:1725"
+          "source": "src/data/conservatory-props.js:1733"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l199",
           "who": "inspect",
           "text": "A barre along the whole north wall, and the wall behind it is scuffed to shoulder height in one continuous band.",
-          "source": "src/data/conservatory-props.js:1728"
+          "source": "src/data/conservatory-props.js:1736"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l200",
           "who": "inspect",
           "text": "(again) The band is exactly where a hand steadies itself.",
-          "source": "src/data/conservatory-props.js:1728"
+          "source": "src/data/conservatory-props.js:1736"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l201",
           "who": "inspect",
           "text": "The mirror in here has been taken off the wall and stood facing it, so what is hung on the room is four feet of grey backing board.",
-          "source": "src/data/conservatory-props.js:1729"
+          "source": "src/data/conservatory-props.js:1737"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l202",
           "who": "inspect",
           "text": "(again) Somebody turned the mirror around. That is a decision, and it was made in here.",
-          "source": "src/data/conservatory-props.js:1729"
+          "source": "src/data/conservatory-props.js:1737"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l203",
           "who": "inspect",
           "text": "Chairs, stacked, in a room with the mirror facing the wall.",
-          "source": "src/data/conservatory-props.js:1730"
+          "source": "src/data/conservatory-props.js:1738"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l204",
           "who": "inspect",
           "text": "(again) Stacked, and waiting on a room that has been turned off.",
-          "source": "src/data/conservatory-props.js:1730"
+          "source": "src/data/conservatory-props.js:1738"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l205",
           "who": "inspect",
           "text": "A costume rail under dust sheets. Whatever is on it has kept its shape, which after this long means it was hung properly by somebody who cared.",
-          "source": "src/data/conservatory-props.js:1733"
+          "source": "src/data/conservatory-props.js:1741"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l206",
           "who": "inspect",
           "text": "(again) Hung properly, and left.",
-          "source": "src/data/conservatory-props.js:1733"
+          "source": "src/data/conservatory-props.js:1741"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l207",
           "who": "inspect",
           "text": "A dressmaker’s pin is caught in the chair lining. The seam beneath it is fresh.",
-          "source": "src/data/conservatory-props.js:1737"
+          "source": "src/data/conservatory-props.js:1745"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l208",
           "who": "inspect",
           "text": "(again) The pin is still caught in the lining. I am not putting a hand under there again.",
-          "source": "src/data/conservatory-props.js:1737"
+          "source": "src/data/conservatory-props.js:1745"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l209",
           "who": "inspect",
           "text": "B3, stencilled on the blockwork beside the opening. The work order in your pocket says the same thing.",
-          "source": "src/data/conservatory-props.js:1745"
+          "source": "src/data/conservatory-props.js:1753"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l210",
           "who": "inspect",
           "text": "(again) B3. The one they picked.",
-          "source": "src/data/conservatory-props.js:1745"
+          "source": "src/data/conservatory-props.js:1753"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l211",
           "who": "inspect",
           "text": "A Bronzino study, silverpoint and chalk. It looks unfinished because it is.",
-          "source": "src/data/conservatory-props.js:1760"
+          "source": "src/data/conservatory-props.js:1768"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l212",
           "who": "inspect",
           "text": "(again) The paper is paler than the wall.",
-          "source": "src/data/conservatory-props.js:1760"
+          "source": "src/data/conservatory-props.js:1768"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l213",
           "who": "inspect",
           "text": "Portrait of a Woman, Florentine, mid-sixteenth century. The brass plate gives no donor.",
-          "source": "src/data/conservatory-props.js:1761"
+          "source": "src/data/conservatory-props.js:1769"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l214",
           "who": "inspect",
           "text": "(again) No donor, only accession numbers.",
-          "source": "src/data/conservatory-props.js:1761"
+          "source": "src/data/conservatory-props.js:1769"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l215",
           "who": "inspect",
           "text": "The west hall chandelier, H/L-01, dark with the rest of the building. Its bottom chain links are newer than the matched fitting across the stalls.",
-          "source": "src/data/conservatory-props.js:1766"
+          "source": "src/data/conservatory-props.js:1774"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l216",
           "who": "inspect",
           "text": "(again) H/L-01. New chain, old fitting, no supply.",
-          "source": "src/data/conservatory-props.js:1766"
+          "source": "src/data/conservatory-props.js:1774"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l217",
           "who": "inspect",
           "text": "The matching east chandelier, H/L-02. Dust keeps the original suspension legible all the way to the ceiling rose.",
-          "source": "src/data/conservatory-props.js:1772"
+          "source": "src/data/conservatory-props.js:1780"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l218",
           "who": "inspect",
           "text": "(again) H/L-02. The pair was maintained separately and bought together.",
-          "source": "src/data/conservatory-props.js:1772"
+          "source": "src/data/conservatory-props.js:1780"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l219",
           "who": "inspect",
           "text": "A black Chesterfield at the rear cross aisle, H/S-01. Its machine-stamped plate is much later than the hand-marked foyer furniture.",
-          "source": "src/data/conservatory-props.js:1777"
+          "source": "src/data/conservatory-props.js:1785"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l220",
           "who": "inspect",
           "text": "(again) H/S-01. Newer stock, already worn at the aisle end.",
-          "source": "src/data/conservatory-props.js:1777"
+          "source": "src/data/conservatory-props.js:1785"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l221",
           "who": "inspect",
           "text": "The matching rear-aisle sofa, H/S-02. A square of unfaded leather marks where an information folder sat for years.",
-          "source": "src/data/conservatory-props.js:1782"
+          "source": "src/data/conservatory-props.js:1790"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l222",
           "who": "inspect",
           "text": "(again) H/S-02. The missing folder left its own label.",
-          "source": "src/data/conservatory-props.js:1782"
+          "source": "src/data/conservatory-props.js:1790"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l223",
           "who": "inspect",
           "text": "A stacking chair, set out and never stacked.",
-          "source": "src/data/conservatory-props.js:1785"
+          "source": "src/data/conservatory-props.js:1793"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l224",
           "who": "inspect",
           "text": "(again) Still facing the stage.",
-          "source": "src/data/conservatory-props.js:1785"
+          "source": "src/data/conservatory-props.js:1793"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l225",
           "who": "inspect",
           "text": "A music stand at sitting height.",
-          "source": "src/data/conservatory-props.js:1786"
+          "source": "src/data/conservatory-props.js:1794"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l226",
           "who": "inspect",
           "text": "(again) No part on it.",
-          "source": "src/data/conservatory-props.js:1786"
+          "source": "src/data/conservatory-props.js:1794"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l227",
           "who": "inspect",
-          "text": "A metronome on the lid, still going.",
-          "source": "src/data/conservatory-props.js:1825"
+          "text": "A wooden metronome on the lid. A brass weight against an engraved scale.",
+          "source": "src/data/conservatory-props.js:1835"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l228",
           "who": "inspect",
-          "text": "(again) Still going.",
-          "source": "src/data/conservatory-props.js:1825"
+          "text": "(again) The brass weight and the pendulum.",
+          "source": "src/data/conservatory-props.js:1835"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l229",
           "who": "inspect",
-          "text": "A metronome on the lid, still going.",
-          "source": "src/data/conservatory-props.js:1826"
+          "text": "A wooden metronome on the lid. A brass weight against an engraved scale.",
+          "source": "src/data/conservatory-props.js:1836"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l230",
           "who": "inspect",
-          "text": "(again) Still going.",
-          "source": "src/data/conservatory-props.js:1826"
+          "text": "(again) The brass weight and the pendulum.",
+          "source": "src/data/conservatory-props.js:1836"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l231",
           "who": "inspect",
-          "text": "A metronome on the lid, still going.",
-          "source": "src/data/conservatory-props.js:1827"
+          "text": "A wooden metronome on the lid. A brass weight against an engraved scale.",
+          "source": "src/data/conservatory-props.js:1837"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l232",
           "who": "inspect",
-          "text": "(again) Still going.",
-          "source": "src/data/conservatory-props.js:1827"
+          "text": "(again) The brass weight and the pendulum.",
+          "source": "src/data/conservatory-props.js:1837"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l233",
           "who": "inspect",
-          "text": "A metronome on the lid, still going.",
-          "source": "src/data/conservatory-props.js:1828"
+          "text": "A wooden metronome on the lid. A brass weight against an engraved scale.",
+          "source": "src/data/conservatory-props.js:1838"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l234",
           "who": "inspect",
-          "text": "(again) Still going.",
-          "source": "src/data/conservatory-props.js:1828"
+          "text": "(again) The brass weight and the pendulum.",
+          "source": "src/data/conservatory-props.js:1838"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l235",
           "who": "inspect",
-          "text": "A metronome on the lid, still going.",
-          "source": "src/data/conservatory-props.js:1829"
+          "text": "A wooden metronome on the lid. A brass weight against an engraved scale.",
+          "source": "src/data/conservatory-props.js:1839"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l236",
           "who": "inspect",
-          "text": "(again) Still going.",
-          "source": "src/data/conservatory-props.js:1829"
+          "text": "(again) The brass weight and the pendulum.",
+          "source": "src/data/conservatory-props.js:1839"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l237",
           "who": "inspect",
-          "text": "A metronome on the lid, still going.",
-          "source": "src/data/conservatory-props.js:1830"
+          "text": "A wooden metronome on the lid. A brass weight against an engraved scale.",
+          "source": "src/data/conservatory-props.js:1840"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l238",
           "who": "inspect",
-          "text": "(again) Still going.",
-          "source": "src/data/conservatory-props.js:1830"
+          "text": "(again) The brass weight and the pendulum.",
+          "source": "src/data/conservatory-props.js:1840"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l239",
           "who": "inspect",
           "text": "A green practice-room chair from the eight-chair order. {assetTag} is stamped underneath; {entry.state}.",
-          "source": "src/data/conservatory-props.js:1846"
+          "source": "src/data/conservatory-props.js:1856"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l240",
           "who": "inspect",
           "text": "(again) {assetTag}. One of eight, altered by this room.",
-          "source": "src/data/conservatory-props.js:1846"
+          "source": "src/data/conservatory-props.js:1856"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l241",
           "who": "inspect",
           "text": "A teaching desk waiting at the stair landing for somebody to claim it.",
-          "source": "src/data/conservatory-props.js:1908"
+          "source": "src/data/conservatory-props.js:1918"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l242",
           "who": "inspect",
           "text": "(again) Still waiting, safely out of the route.",
-          "source": "src/data/conservatory-props.js:1908"
+          "source": "src/data/conservatory-props.js:1918"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l243",
           "who": "inspect",
           "text": "The matching desk has been pushed alongside it, drawers to the wall.",
-          "source": "src/data/conservatory-props.js:1909"
+          "source": "src/data/conservatory-props.js:1919"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l244",
           "who": "inspect",
           "text": "(again) Two desks parked for collection.",
-          "source": "src/data/conservatory-props.js:1909"
+          "source": "src/data/conservatory-props.js:1919"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l245",
           "who": "inspect",
           "text": "A short pew, polished at the aisle end by hands.",
-          "source": "src/data/conservatory-props.js:1913"
+          "source": "src/data/conservatory-props.js:1923"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l246",
           "who": "inspect",
           "text": "(again) The aisle end is darker.",
-          "source": "src/data/conservatory-props.js:1913"
+          "source": "src/data/conservatory-props.js:1923"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l247",
           "who": "inspect",
           "text": "A matching pew, one kneeler missing.",
-          "source": "src/data/conservatory-props.js:1914"
+          "source": "src/data/conservatory-props.js:1924"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l248",
           "who": "inspect",
           "text": "(again) The empty brackets remain.",
-          "source": "src/data/conservatory-props.js:1914"
+          "source": "src/data/conservatory-props.js:1924"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l249",
           "who": "inspect",
           "text": "A painted sign over a gap in the east wall: TOWER — RINGING CHAMBER — NO ADMITTANCE TO THE PUBLIC.",
-          "source": "src/data/conservatory-props.js:1930"
+          "source": "src/data/conservatory-props.js:1940"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l250",
           "who": "inspect",
           "text": "(again) Somebody has added BELLS UP underneath it, in a different hand and a different decade.",
-          "source": "src/data/conservatory-props.js:1930"
+          "source": "src/data/conservatory-props.js:1940"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l251",
           "who": "inspect",
           "text": "The same sign at the chancel end, pointing back the way the stair comes down.",
-          "source": "src/data/conservatory-props.js:1937"
+          "source": "src/data/conservatory-props.js:1947"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l252",
           "who": "inspect",
           "text": "(again) The arrow was repainted at some point. It used to point the other way.",
-          "source": "src/data/conservatory-props.js:1937"
+          "source": "src/data/conservatory-props.js:1947"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l253",
           "who": "inspect",
           "text": "An electronics rack with the patch leads removed but every label left behind.",
-          "source": "src/data/conservatory-props.js:1946"
+          "source": "src/data/conservatory-props.js:1956"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l254",
           "who": "inspect",
           "text": "(again) The labels name feeds that are not here.",
-          "source": "src/data/conservatory-props.js:1946"
+          "source": "src/data/conservatory-props.js:1956"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l255",
           "who": "inspect",
           "text": "A plain altar table. The linen was removed; four pale rectangles show where its feet stood before it was shifted.",
-          "source": "src/data/conservatory-props.js:1947"
+          "source": "src/data/conservatory-props.js:1957"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l256",
           "who": "inspect",
           "text": "(again) Shifted, not deconsecrated.",
-          "source": "src/data/conservatory-props.js:1947"
+          "source": "src/data/conservatory-props.js:1957"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l257",
           "who": "inspect",
           "text": "A lectern with the service book removed and the ribbon left behind.",
-          "source": "src/data/conservatory-props.js:1948"
+          "source": "src/data/conservatory-props.js:1958"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l258",
           "who": "inspect",
           "text": "(again) The ribbon marks nothing.",
-          "source": "src/data/conservatory-props.js:1948"
+          "source": "src/data/conservatory-props.js:1958"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l259",
           "who": "inspect",
           "text": "The hymn board still reads 17 · 44 · 91. Nobody cleared the last service.",
-          "source": "src/data/conservatory-props.js:1950"
+          "source": "src/data/conservatory-props.js:1960"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l260",
           "who": "inspect",
           "text": "(again) 17 · 44 · 91.",
-          "source": "src/data/conservatory-props.js:1950"
+          "source": "src/data/conservatory-props.js:1960"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l261",
           "who": "inspect",
           "text": "Piero del Pollaiuolo. Portrait of a Woman. Profile in tempera; gold remains along the edge.",
-          "source": "src/data/conservatory-props.js:1951"
+          "source": "src/data/conservatory-props.js:1961"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l262",
           "who": "inspect",
           "text": "(again) Her profile is exact and unreachable.",
-          "source": "src/data/conservatory-props.js:1951"
+          "source": "src/data/conservatory-props.js:1961"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l263",
           "who": "inspect",
           "text": "Portrait of a Woman, Netherlandish or French. The old label cannot decide.",
-          "source": "src/data/conservatory-props.js:1952"
+          "source": "src/data/conservatory-props.js:1962"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l264",
           "who": "inspect",
           "text": "(again) The frame can decide nothing either.",
-          "source": "src/data/conservatory-props.js:1952"
+          "source": "src/data/conservatory-props.js:1962"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l265",
           "who": "inspect",
           "text": "The first chapel lantern, EC/C-01, hangs dark. One pane is flatter and clearer than the rest, but the 1908 frame has never left its hook.",
-          "source": "src/data/conservatory-props.js:1957"
+          "source": "src/data/conservatory-props.js:1967"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l266",
           "who": "inspect",
           "text": "(again) EC/C-01. One new pane in an old, unpowered fitting.",
-          "source": "src/data/conservatory-props.js:1957"
+          "source": "src/data/conservatory-props.js:1967"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l267",
           "who": "inspect",
           "text": "The second lantern, EC/C-02. Its original rippled glass makes the torch break into narrow, unmoving lines.",
-          "source": "src/data/conservatory-props.js:1963"
+          "source": "src/data/conservatory-props.js:1973"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l268",
           "who": "inspect",
           "text": "(again) EC/C-02. Original glass, dead cable.",
-          "source": "src/data/conservatory-props.js:1963"
+          "source": "src/data/conservatory-props.js:1973"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l269",
           "who": "inspect",
           "text": "The third lantern, EC/C-03, was lowered by two chain links when the ceiling above the back pews was altered. The old links remain wired to the rose.",
-          "source": "src/data/conservatory-props.js:1969"
+          "source": "src/data/conservatory-props.js:1979"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l270",
           "who": "inspect",
           "text": "(again) EC/C-03. The alteration was retained instead of concealed.",
-          "source": "src/data/conservatory-props.js:1969"
+          "source": "src/data/conservatory-props.js:1979"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l271",
           "who": "inspect",
           "text": "The presider chair, EC/C-06: the one deliberate singleton in the 1908 chapel order. Wear reaches the finials but not the high centre panel.",
-          "source": "src/data/conservatory-props.js:1973"
+          "source": "src/data/conservatory-props.js:1983"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l272",
           "who": "inspect",
           "text": "(again) EC/C-06. Commissioned as one, recorded as one.",
-          "source": "src/data/conservatory-props.js:1973"
+          "source": "src/data/conservatory-props.js:1983"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l273",
           "who": "inspect",
           "text": "J. VALE & SONS — CAST FOR ELLERY COLLEGIATE CHAPEL — 1908. Eight bells. Tenor: 2,200 kg.",
-          "source": "src/data/conservatory-props.js:1979"
+          "source": "src/data/conservatory-props.js:1989"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l274",
           "who": "inspect",
           "text": "(again) Ellery Collegiate Chapel. 1908. No county is given.",
-          "source": "src/data/conservatory-props.js:1979"
+          "source": "src/data/conservatory-props.js:1989"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l275",
           "who": "inspect",
           "text": "The tenor sally hangs at the covering position. Seven bells are changing above it; this one is waiting for a hand.",
-          "source": "src/data/conservatory-props.js:1990"
+          "source": "src/data/conservatory-props.js:2000"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l276",
           "who": "inspect",
           "text": "(again) TENOR — 2,200 kg. Cover every row.",
-          "source": "src/data/conservatory-props.js:1990"
+          "source": "src/data/conservatory-props.js:2000"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l277",
           "who": "inspect",
           "text": "A full-circle rope, tied off above the sally. The bell above is down.",
-          "source": "src/data/conservatory-props.js:1991"
+          "source": "src/data/conservatory-props.js:2001"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l278",
           "who": "inspect",
           "text": "(again) Still tied. Still down.",
-          "source": "src/data/conservatory-props.js:1991"
+          "source": "src/data/conservatory-props.js:2001"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l279",
           "who": "inspect",
           "text": "A ringing bench polished by coats and waiting hands.",
-          "source": "src/data/conservatory-props.js:1996"
+          "source": "src/data/conservatory-props.js:2006"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l280",
           "who": "inspect",
           "text": "(again) Eight places. No ringers.",
-          "source": "src/data/conservatory-props.js:1996"
+          "source": "src/data/conservatory-props.js:2006"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l281",
           "who": "inspect",
           "text": "The second bench leaves the rope circle entirely clear.",
-          "source": "src/data/conservatory-props.js:1997"
+          "source": "src/data/conservatory-props.js:2007"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l282",
           "who": "inspect",
           "text": "(again) Nothing is stored inside the circle.",
-          "source": "src/data/conservatory-props.js:1997"
+          "source": "src/data/conservatory-props.js:2007"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l283",
           "who": "inspect",
           "text": "ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908. A touch, not a peal.",
-          "source": "src/data/conservatory-props.js:1998"
+          "source": "src/data/conservatory-props.js:2008"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l284",
           "who": "inspect",
           "text": "(again) The gilt names have gone brown.",
-          "source": "src/data/conservatory-props.js:1998"
+          "source": "src/data/conservatory-props.js:2008"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l285",
           "who": "inspect",
           "text": "CLOCK HAMMER ISOLATOR. A red lever, mechanically linked.",
-          "source": "src/data/conservatory-props.js:2000"
+          "source": "src/data/conservatory-props.js:2010"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l286",
           "who": "inspect",
           "text": "(again) ISOLATE / SERVICE.",
-          "source": "src/data/conservatory-props.js:2000"
+          "source": "src/data/conservatory-props.js:2010"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l287",
           "who": "inspect",
           "text": "RINGING ROOM. The enamel letters are older than the electrical conduit.",
-          "source": "src/data/conservatory-props.js:2003"
+          "source": "src/data/conservatory-props.js:2013"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l288",
           "who": "inspect",
           "text": "(again) RINGING ROOM.",
-          "source": "src/data/conservatory-props.js:2003"
+          "source": "src/data/conservatory-props.js:2013"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l289",
           "who": "inspect",
           "text": "BELLS — AUTHORISED ACCESS. The final word has been underlined by hand.",
-          "source": "src/data/conservatory-props.js:2027"
+          "source": "src/data/conservatory-props.js:2037"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l290",
           "who": "inspect",
           "text": "(again) BELLS — AUTHORISED ACCESS.",
-          "source": "src/data/conservatory-props.js:2027"
+          "source": "src/data/conservatory-props.js:2037"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l291",
           "who": "inspect",
           "text": "The shutter winch is taking the whole frame through its pawl.",
-          "source": "src/data/conservatory-props.js:2034"
+          "source": "src/data/conservatory-props.js:2044"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l292",
           "who": "inspect",
           "text": "(again) Under load.",
-          "source": "src/data/conservatory-props.js:2034"
+          "source": "src/data/conservatory-props.js:2044"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l293",
           "who": "inspect",
           "text": "The west score cabinet, EC/C-04. Its replacement lock is square and recent against the 1908 ironwork; the key number is C-17.",
-          "source": "src/data/conservatory-props.js:2050"
+          "source": "src/data/conservatory-props.js:2060"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l294",
           "who": "inspect",
           "text": "(again) EC/C-04. New lock, old cabinet, C-17.",
-          "source": "src/data/conservatory-props.js:2050"
+          "source": "src/data/conservatory-props.js:2060"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l295",
           "who": "inspect",
           "text": "The matching east score cabinet, EC/C-05. Its original lock has seized shut; the old ironwork is worn bright around the keyhole.",
-          "source": "src/data/conservatory-props.js:2055"
+          "source": "src/data/conservatory-props.js:2065"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l296",
           "who": "inspect",
           "text": "(again) EC/C-05. Original lock, seized shut.",
-          "source": "src/data/conservatory-props.js:2055"
+          "source": "src/data/conservatory-props.js:2065"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l297",
           "who": "inspect",
           "text": "ORGAN LOFT / NAVE. An arrow follows the service stair down.",
-          "source": "src/data/conservatory-props.js:2060"
+          "source": "src/data/conservatory-props.js:2070"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l298",
           "who": "inspect",
           "text": "(again) ORGAN LOFT / NAVE.",
-          "source": "src/data/conservatory-props.js:2060"
+          "source": "src/data/conservatory-props.js:2070"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l299",
           "who": "inspect",
           "text": "NAVE / CHAPEL EXIT. The route continues through the narthex to the public doors.",
-          "source": "src/data/conservatory-props.js:2072"
+          "source": "src/data/conservatory-props.js:2082"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l300",
           "who": "inspect",
           "text": "(again) NAVE / CHAPEL EXIT.",
-          "source": "src/data/conservatory-props.js:2072"
+          "source": "src/data/conservatory-props.js:2082"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l301",
           "who": "inspect",
           "text": "Municipal baths rules under wired glass: shower first, no outdoor shoes beyond the blue line, children accompanied. Closing time has been pasted over three times.",
-          "source": "src/data/conservatory-props.js:2091"
+          "source": "src/data/conservatory-props.js:2101"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l302",
           "who": "inspect",
           "text": "(again) Shower first. Outdoor shoes stop at the blue line.",
-          "source": "src/data/conservatory-props.js:2091"
+          "source": "src/data/conservatory-props.js:2101"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l303",
           "who": "inspect",
           "text": "A green first-aid cabinet beside the entrance. The inventory card still lists eye wash, foil blankets and a resuscitation mask; the seal is broken.",
-          "source": "src/data/conservatory-props.js:2095"
+          "source": "src/data/conservatory-props.js:2105"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l304",
           "who": "inspect",
           "text": "(again) First aid. Seal broken, card still signed.",
-          "source": "src/data/conservatory-props.js:2095"
+          "source": "src/data/conservatory-props.js:2105"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l305",
           "who": "inspect",
           "text": "The pool clock stopped at twenty-seven past. Chlorine has greened the screws but not moved the hands.",
-          "source": "src/data/conservatory-props.js:2101"
+          "source": "src/data/conservatory-props.js:2111"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l306",
           "who": "inspect",
           "text": "(again) Still twenty-seven past.",
-          "source": "src/data/conservatory-props.js:2101"
+          "source": "src/data/conservatory-props.js:2111"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l307",
           "who": "inspect",
           "text": "A cork lifebuoy repainted until its name has disappeared. The rope is stiff with old pool water.",
-          "source": "src/data/conservatory-props.js:2121"
+          "source": "src/data/conservatory-props.js:2131"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l308",
           "who": "inspect",
           "text": "(again) Layers of municipal red. No readable name.",
-          "source": "src/data/conservatory-props.js:2121"
+          "source": "src/data/conservatory-props.js:2131"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l309",
           "who": "inspect",
           "text": "A slatted changing bench, grey from chlorine.",
-          "source": "src/data/conservatory-props.js:2123"
+          "source": "src/data/conservatory-props.js:2133"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l310",
           "who": "inspect",
           "text": "(again) The grain has lifted around every brass screw.",
-          "source": "src/data/conservatory-props.js:2123"
+          "source": "src/data/conservatory-props.js:2133"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l311",
           "who": "inspect",
           "text": "A second bench set below the cubicles, close enough for bare feet and folded towels.",
-          "source": "src/data/conservatory-props.js:2124"
+          "source": "src/data/conservatory-props.js:2134"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l312",
           "who": "inspect",
           "text": "(again) No towel ever dried here.",
-          "source": "src/data/conservatory-props.js:2124"
+          "source": "src/data/conservatory-props.js:2134"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l313",
           "who": "inspect",
           "text": "A pool-maintenance cart parked by the service corner, not beside the basin. A sealed battery sleeve is clipped under the handle.",
-          "source": "src/data/conservatory-props.js:2127"
+          "source": "src/data/conservatory-props.js:2137"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l314",
           "who": "inspect",
           "text": "(again) The warning labels have run; the empty sleeve remains under the handle.",
-          "source": "src/data/conservatory-props.js:2127"
+          "source": "src/data/conservatory-props.js:2137"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l315",
           "who": "inspect",
           "text": "The pool cart carries M/L-01, one of two portable inspection lamps. Its replacement lens clamp is bright, but the disconnected lead ends at the cart.",
-          "source": "src/data/conservatory-props.js:2133"
+          "source": "src/data/conservatory-props.js:2143"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l316",
           "who": "inspect",
           "text": "(again) M/L-01. A repaired lamp with nowhere to draw power.",
-          "source": "src/data/conservatory-props.js:2133"
+          "source": "src/data/conservatory-props.js:2143"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l317",
           "who": "inspect",
           "text": "A lifeguard chair on the east deck, facing across the pool.",
-          "source": "src/data/conservatory-props.js:2135"
+          "source": "src/data/conservatory-props.js:2145"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l318",
           "who": "inspect",
           "text": "(again) The rescue tube is gone.",
-          "source": "src/data/conservatory-props.js:2135"
+          "source": "src/data/conservatory-props.js:2145"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l319",
           "who": "inspect",
           "text": "A lane-line reel staged beside the starting end, one cracked float still wound onto it.",
-          "source": "src/data/conservatory-props.js:2136"
+          "source": "src/data/conservatory-props.js:2146"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l320",
           "who": "inspect",
           "text": "(again) The handle turns half a revolution.",
-          "source": "src/data/conservatory-props.js:2136"
+          "source": "src/data/conservatory-props.js:2146"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l321",
           "who": "inspect",
           "text": "A starting block, its number plate removed.",
-          "source": "src/data/conservatory-props.js:2137"
+          "source": "src/data/conservatory-props.js:2147"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l322",
           "who": "inspect",
           "text": "(again) Four bolt heads and a paler rectangle.",
-          "source": "src/data/conservatory-props.js:2137"
+          "source": "src/data/conservatory-props.js:2147"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l323",
           "who": "inspect",
           "text": "A basin drain furred white with old pool salts.",
-          "source": "src/data/conservatory-props.js:2138"
+          "source": "src/data/conservatory-props.js:2148"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l324",
           "who": "inspect",
           "text": "(again) The salts trace every slot.",
-          "source": "src/data/conservatory-props.js:2138"
+          "source": "src/data/conservatory-props.js:2148"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l325",
           "who": "inspect",
           "text": "The natatorium distribution panel, S/P-02, matches the plant-room and front-of-house boxes. Chlorine has lifted the paint beneath its lower lip; every breaker is open.",
-          "source": "src/data/conservatory-props.js:2144"
+          "source": "src/data/conservatory-props.js:2154"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l326",
           "who": "inspect",
           "text": "(again) S/P-02. Same installation, different air, no live circuit.",
-          "source": "src/data/conservatory-props.js:2144"
+          "source": "src/data/conservatory-props.js:2154"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l327",
           "who": "inspect",
           "text": "The front-of-house panel, S/P-03. Its typed circuit card lists the Scene Dock, foyer and box office; the main isolator is down.",
-          "source": "src/data/conservatory-props.js:2170"
+          "source": "src/data/conservatory-props.js:2180"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l328",
           "who": "inspect",
           "text": "(again) S/P-03. A neat card for three dead circuits.",
-          "source": "src/data/conservatory-props.js:2170"
+          "source": "src/data/conservatory-props.js:2180"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l329",
           "who": "inspect",
           "text": "The practice-floor panel, S/P-04. Room numbers have been pencilled over a typed teaching-wing schedule; every breaker is open.",
-          "source": "src/data/conservatory-props.js:2177"
+          "source": "src/data/conservatory-props.js:2187"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l330",
           "who": "inspect",
           "text": "(again) S/P-04. The pencil is newer than the dead ballast.",
-          "source": "src/data/conservatory-props.js:2177"
+          "source": "src/data/conservatory-props.js:2187"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l331",
           "who": "inspect",
           "text": "The academic-floor panel, S/P-05, is fixed to the loggia wall where the stair arrives. Gallery and classroom banks are listed separately; every breaker is open.",
-          "source": "src/data/conservatory-props.js:2184"
+          "source": "src/data/conservatory-props.js:2194"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l332",
           "who": "inspect",
           "text": "(again) S/P-05. Last in the numbered run, nearest the way down.",
-          "source": "src/data/conservatory-props.js:2184"
+          "source": "src/data/conservatory-props.js:2194"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l333",
           "who": "inspect",
           "text": "The plant-room distribution panel, S/P-01. It begins the same numbered installation as the later boxes upstairs; two typed labels have been corrected in pencil.",
-          "source": "src/data/conservatory-props.js:2192"
+          "source": "src/data/conservatory-props.js:2202"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l334",
           "who": "inspect",
           "text": "(again) S/P-01. The oldest corrections are still the clearest instructions.",
-          "source": "src/data/conservatory-props.js:2192"
+          "source": "src/data/conservatory-props.js:2202"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l335",
           "who": "inspect",
-          "text": "A heating pipe running the length of the wall, and one isolation valve on it shivering under the load. Steam is getting out somewhere behind the wheel, in a thin continuous note.",
-          "source": "src/data/conservatory-props.js:2272"
+          "text": "A heating pipe runs the length of the wall. A gauge sits above its isolation valve.",
+          "source": "src/data/conservatory-props.js:2280"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l336",
           "who": "inspect",
-          "text": "(again) Still hissing. The gauge needle is hard against its stop.",
-          "source": "src/data/conservatory-props.js:2272"
+          "text": "(again) The service card is beside the pipe.",
+          "source": "src/data/conservatory-props.js:2280"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l337",
           "who": "inspect",
           "text": "HEADER 3 — ISOLATION. Back nut, then gland, then handwheel, in that order, all three home before the line is dead. Clockwise to close, and the card is emphatic about it.",
-          "source": "src/data/conservatory-props.js:2283"
+          "source": "src/data/conservatory-props.js:2291"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l338",
           "who": "inspect",
           "text": "(again) The last line is in a different hand: the bypass cock feeds the return and is NOT part of this header. Somebody learned that the hard way.",
-          "source": "src/data/conservatory-props.js:2283"
+          "source": "src/data/conservatory-props.js:2291"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l339",
           "who": "inspect",
           "text": "A Stillson nearly two metres long, left across the maintenance rack.",
-          "source": "src/data/conservatory-props.js:2294"
+          "source": "src/data/conservatory-props.js:2302"
         },
         {
           "id": "CONSERVATORY_PROPS.inspect.l340",
           "who": "inspect",
           "text": "(again) Too large for the field case. It will have to travel on the floor.",
-          "source": "src/data/conservatory-props.js:2294"
+          "source": "src/data/conservatory-props.js:2302"
         }
       ],
-      "source": "src/data/conservatory-props.js:581"
+      "source": "src/data/conservatory-props.js:584"
     },
     "CONSERVATORY_PROPS.aftermathInspect": {
       "id": "CONSERVATORY_PROPS.aftermathInspect",
@@ -2081,28 +2081,28 @@
           "id": "CONSERVATORY_PROPS.aftermathInspect.l0",
           "who": "inspect",
           "text": "The work lamp is still dead. It is the only light in the room that behaved.",
-          "source": "src/data/conservatory-props.js:1100"
+          "source": "src/data/conservatory-props.js:1103"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.l1",
           "who": "inspect",
           "text": "(again) Click. Nothing. Somehow that is comforting now.",
-          "source": "src/data/conservatory-props.js:1100"
+          "source": "src/data/conservatory-props.js:1103"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.l2",
           "who": "inspect",
           "text": "Black bulbs. Bright glass. Every wheel still locked.",
-          "source": "src/data/conservatory-props.js:1144"
+          "source": "src/data/conservatory-props.js:1147"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.l3",
           "who": "inspect",
           "text": "(again) The cage never moved. The thing inside it changed anyway.",
-          "source": "src/data/conservatory-props.js:1144"
+          "source": "src/data/conservatory-props.js:1147"
         }
       ],
-      "source": "src/data/conservatory-props.js:1100"
+      "source": "src/data/conservatory-props.js:1103"
     },
     "CONSERVATORY_PROPS.aftermathInspect.unheard": {
       "id": "CONSERVATORY_PROPS.aftermathInspect.unheard",
@@ -2112,40 +2112,40 @@
           "id": "CONSERVATORY_PROPS.aftermathInspect.unheard.l0",
           "who": "inspect",
           "text": "The case is not quite where you remember it. You never touched it, so memory gets the last word.",
-          "source": "src/data/conservatory-props.js:1119"
+          "source": "src/data/conservatory-props.js:1122"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.unheard.l1",
           "who": "inspect",
           "text": "(again) A small distance. A large uncertainty.",
-          "source": "src/data/conservatory-props.js:1119"
+          "source": "src/data/conservatory-props.js:1122"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.unheard.l2",
           "who": "inspect",
           "text": "The handle seems to have moved. You never marked it, so “seems” is all you own.",
-          "source": "src/data/conservatory-props.js:1128"
+          "source": "src/data/conservatory-props.js:1131"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.unheard.l3",
           "who": "inspect",
           "text": "(again) One tooth past certainty.",
-          "source": "src/data/conservatory-props.js:1128"
+          "source": "src/data/conservatory-props.js:1131"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.unheard.l4",
           "who": "inspect",
           "text": "The bar hums under your hand. You never knocked it before.",
-          "source": "src/data/conservatory-props.js:1137"
+          "source": "src/data/conservatory-props.js:1140"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.unheard.l5",
           "who": "inspect",
           "text": "(again) The shutter is still. Something in it is not.",
-          "source": "src/data/conservatory-props.js:1137"
+          "source": "src/data/conservatory-props.js:1140"
         }
       ],
-      "source": "src/data/conservatory-props.js:1119"
+      "source": "src/data/conservatory-props.js:1122"
     },
     "CONSERVATORY_PROPS.aftermathInspect.heard": {
       "id": "CONSERVATORY_PROPS.aftermathInspect.heard",
@@ -2155,40 +2155,40 @@
           "id": "CONSERVATORY_PROPS.aftermathInspect.heard.l0",
           "who": "inspect",
           "text": "The case stayed here. Its little metal cough came from across the room.",
-          "source": "src/data/conservatory-props.js:1120"
+          "source": "src/data/conservatory-props.js:1123"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.heard.l1",
           "who": "inspect",
           "text": "(again) One sound. Two places. Keep them separate.",
-          "source": "src/data/conservatory-props.js:1120"
+          "source": "src/data/conservatory-props.js:1123"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.heard.l2",
           "who": "inspect",
           "text": "The handle did not turn. The click still came from behind the desk.",
-          "source": "src/data/conservatory-props.js:1129"
+          "source": "src/data/conservatory-props.js:1132"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.heard.l3",
           "who": "inspect",
           "text": "(again) You know what you heard. You do not know what heard you.",
-          "source": "src/data/conservatory-props.js:1129"
+          "source": "src/data/conservatory-props.js:1132"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.heard.l4",
           "who": "inspect",
           "text": "Your knock returned from above the chandelier, where there is no steel to carry it.",
-          "source": "src/data/conservatory-props.js:1138"
+          "source": "src/data/conservatory-props.js:1141"
         },
         {
           "id": "CONSERVATORY_PROPS.aftermathInspect.heard.l5",
           "who": "inspect",
           "text": "(again) The room knew the sound well enough to put it somewhere else.",
-          "source": "src/data/conservatory-props.js:1138"
+          "source": "src/data/conservatory-props.js:1141"
         }
       ],
-      "source": "src/data/conservatory-props.js:1120"
+      "source": "src/data/conservatory-props.js:1123"
     },
     "CONSERVATORY_PROPS": {
       "id": "CONSERVATORY_PROPS",
@@ -2198,88 +2198,88 @@
           "id": "CONSERVATORY_PROPS.l0",
           "who": "inspect",
           "text": "Open scales and a marked examination piece cover the upright. The metronome stopped one click before the bar line.",
-          "source": "src/data/conservatory-props.js:1797"
+          "source": "src/data/conservatory-props.js:1805"
         },
         {
           "id": "CONSERVATORY_PROPS.l1",
           "who": "inspect",
           "text": "(again) The examination piece is still open at the bad bar.",
-          "source": "src/data/conservatory-props.js:1797"
+          "source": "src/data/conservatory-props.js:1805"
         },
         {
           "id": "CONSERVATORY_PROPS.l2",
           "who": "inspect",
           "text": "An upright turned slightly towards two offset chairs. The lesson stopped before anybody put the cello away.",
-          "source": "src/data/conservatory-props.js:1798"
+          "source": "src/data/conservatory-props.js:1806"
         },
         {
           "id": "CONSERVATORY_PROPS.l3",
           "who": "inspect",
           "text": "(again) The piano is still angled towards the absent student.",
-          "source": "src/data/conservatory-props.js:1798"
+          "source": "src/data/conservatory-props.js:1806"
         },
         {
           "id": "CONSERVATORY_PROPS.l4",
           "who": "inspect",
           "text": "The fallboard is off and the action has been interrupted halfway out. A service lead trails under the bench.",
-          "source": "src/data/conservatory-props.js:1799"
+          "source": "src/data/conservatory-props.js:1807"
         },
         {
           "id": "CONSERVATORY_PROPS.l5",
           "who": "inspect",
           "text": "(again) The action remains halfway out.",
-          "source": "src/data/conservatory-props.js:1799"
+          "source": "src/data/conservatory-props.js:1807"
         },
         {
           "id": "CONSERVATORY_PROPS.l6",
           "who": "inspect",
           "text": "A plain teaching piano with somebody’s coat and bag occupying the useful half of the room.",
-          "source": "src/data/conservatory-props.js:1800"
+          "source": "src/data/conservatory-props.js:1808"
         },
         {
           "id": "CONSERVATORY_PROPS.l7",
           "who": "inspect",
           "text": "(again) The coat and bag make the room feel briefly claimed.",
-          "source": "src/data/conservatory-props.js:1800"
+          "source": "src/data/conservatory-props.js:1808"
         },
         {
           "id": "CONSERVATORY_PROPS.l8",
           "who": "inspect",
           "text": "The upright has been pulled into a small rehearsal arc. Three parts disagree about where the first repeat begins.",
-          "source": "src/data/conservatory-props.js:1801"
+          "source": "src/data/conservatory-props.js:1809"
         },
         {
           "id": "CONSERVATORY_PROPS.l9",
           "who": "inspect",
           "text": "(again) The rehearsal arc still points at the piano.",
-          "source": "src/data/conservatory-props.js:1801"
+          "source": "src/data/conservatory-props.js:1809"
         },
         {
           "id": "CONSERVATORY_PROPS.l10",
           "who": "inspect",
           "text": "Copied parts have spread from the upright to the stand, chair, floor, and wastebasket.",
-          "source": "src/data/conservatory-props.js:1802"
+          "source": "src/data/conservatory-props.js:1810"
         },
         {
           "id": "CONSERVATORY_PROPS.l11",
           "who": "inspect",
           "text": "(again) Every copy has a different pencil correction.",
-          "source": "src/data/conservatory-props.js:1802"
+          "source": "src/data/conservatory-props.js:1810"
         },
         {
           "id": "CONSERVATORY_PROPS.l12",
           "who": "inspect",
           "text": "The upright is square to the wall. Everything else is skewed towards the door, as if the room left in a hurry.",
-          "source": "src/data/conservatory-props.js:1803"
+          "source": "src/data/conservatory-props.js:1811"
         },
         {
           "id": "CONSERVATORY_PROPS.l13",
           "who": "inspect",
           "text": "(again) Only the piano kept its place.",
-          "source": "src/data/conservatory-props.js:1803"
+          "source": "src/data/conservatory-props.js:1811"
         }
       ],
-      "source": "src/data/conservatory-props.js:1797"
+      "source": "src/data/conservatory-props.js:1805"
     }
   }
 }

@@ -93,7 +93,7 @@
         {
           "id": "nodes.start.l0",
           "who": "direction",
-          "text": "You have been driving for a long time. It is raining on the road. The wipers go.",
+          "text": "You have been on this motorway for quite some time. It's been raining on the road for longer, and it's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go.",
           "source": "src/data/opening-prologue.js:74"
         },
         {
@@ -105,13 +105,13 @@
         {
           "id": "nodes.start.l2",
           "who": "direction",
-          "text": "It is a long blink.",
+          "text": "It is a long blink, you think.",
           "source": "src/data/opening-prologue.js:76"
         },
         {
           "id": "nodes.start.l3",
           "who": "direction",
-          "text": "Your thumb is resting on the seam of the steering wheel. You can feel the join in the leather.",
+          "text": "Your thumb rests on the seam of the steering wheel; you can feel the join in the leather.",
           "source": "src/data/opening-prologue.js:77"
         }
       ],
@@ -131,13 +131,13 @@
         {
           "id": "nodes.there.l1",
           "who": "direction",
-          "text": "It is a voice, and it is not in the van. It arrives the way a room arrives when the fridge cuts out.",
+          "text": "A deep voice bellows from outside the van, but you can hear it so, so well. It comes at you the way a room fades into earshot when the fridge cuts out.",
           "source": "src/data/opening-prologue.js:81"
         },
         {
           "id": "nodes.there.l2",
           "who": "unknown",
-          "text": "I kept your place.",
+          "text": "I have been waiting for you to get here. I have been waiting for ages. What took you so long?",
           "source": "src/data/opening-prologue.js:82"
         }
       ],
@@ -176,13 +176,13 @@
         {
           "id": "nodes.l1",
           "who": "unknown",
-          "text": "Nobody you would have on the form. I keep late hours. I have been the cough in a slow movement, and the string that goes in the last eight bars.",
+          "text": "Nobody you would know, and everyone you've ever met. I keep late hours. I have been the cough in a slow movement, and the string that goes in the last eight bars. I am the sound that leaves your breath as you think of them.",
           "source": "src/data/opening-prologue.js:86"
         },
         {
           "id": "nodes.l2",
           "who": "unknown",
-          "text": "I have been the chair that creaks on the only good take. I am very well thought of. Nobody has ever once asked me to leave.",
+          "text": "I have been the chair that creaks on the only good take. I am very much thought about; rarely ever acknowledged.",
           "source": "src/data/opening-prologue.js:87"
         }
       ],
@@ -202,13 +202,13 @@
         {
           "id": "nodes.driving.l1",
           "who": "unknown",
-          "text": "You are! Beautifully. Both hands. This will not take a moment. It never takes a moment; that is what I like about it.",
+          "text": "You are! Beautifully. Both hands, ten and two!",
           "source": "src/data/opening-prologue.js:91"
         },
         {
           "id": "nodes.driving.l2",
           "who": "direction",
-          "text": "The wipers have not come back across. You notice that they have not come back across.",
+          "text": "The wipers move so beautifully; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.",
           "source": "src/data/opening-prologue.js:92"
         }
       ],
@@ -222,7 +222,7 @@
         {
           "id": "nodes.quiet.l0",
           "who": "direction",
-          "text": "You say nothing. You are good at it. It is on your invoice.",
+          "text": "You say nothing. You're pretty good at it.",
           "source": "src/data/opening-prologue.js:95"
         },
         {
@@ -230,6 +230,12 @@
           "who": "unknown",
           "text": "Good. Do not start talking now. You would only have to stop again at the door.",
           "source": "src/data/opening-prologue.js:96"
+        },
+        {
+          "id": "nodes.quiet.l2",
+          "who": "direction",
+          "text": "At some point you will have to stop pretending you're not seeing things.",
+          "source": "src/data/opening-prologue.js:97"
         }
       ],
       "source": "src/data/opening-prologue.js:95",
@@ -242,49 +248,49 @@
         {
           "id": "nodes.look.l0",
           "who": "direction",
-          "text": "Three wheels have torn away from one another and gone on turning, round a hole in nothing. The wheels are full of eyes.",
-          "source": "src/data/opening-prologue.js:100"
+          "text": "Three wheels have torn away from one another and gone on turning, round a hole in nothing. The wheels are full of eyes, full of eyes, full of eyes eyes eyes eye see youyouyouyouyouyouyouyou.",
+          "source": "src/data/opening-prologue.js:101"
         },
         {
           "id": "nodes.look.l1",
           "who": "unknown",
-          "text": "Before the job. Shall we see what you can keep still?",
-          "source": "src/data/opening-prologue.js:101"
+          "text": "Before you reach your destination, I want to play a game. Are yourhands on the wheel?",
+          "source": "src/data/opening-prologue.js:102"
         }
       ],
       "choices": [
         {
           "id": "nodes.look.c0",
           "text": "\"What am I looking at?\"",
-          "source": "src/data/opening-prologue.js:106",
+          "source": "src/data/opening-prologue.js:107",
           "goto": "nodes.interval-eyes"
         },
         {
           "id": "nodes.look.c1",
           "text": "\"I'm keeping my hands on the wheel.\"",
-          "source": "src/data/opening-prologue.js:107",
+          "source": "src/data/opening-prologue.js:108",
           "goto": "nodes.interval-wheel"
         },
         {
           "id": "nodes.look.c2",
           "text": "(look away)",
-          "source": "src/data/opening-prologue.js:108",
+          "source": "src/data/opening-prologue.js:109",
           "goto": "nodes.interval-avert"
         },
         {
           "id": "nodes.look.c3",
           "text": "(say nothing)",
-          "source": "src/data/opening-prologue.js:109",
+          "source": "src/data/opening-prologue.js:110",
           "goto": "nodes.interval-silent"
         },
         {
           "id": "nodes.look.c4",
-          "text": "(refuse the test)",
-          "source": "src/data/opening-prologue.js:110",
+          "text": "(refuse the game)",
+          "source": "src/data/opening-prologue.js:111",
           "goto": "nodes.interval-refuse"
         }
       ],
-      "source": "src/data/opening-prologue.js:100"
+      "source": "src/data/opening-prologue.js:101"
     },
     "nodes.look.revisitLines": {
       "id": "nodes.look.revisitLines",
@@ -294,16 +300,16 @@
           "id": "nodes.look.revisitLines.l0",
           "who": "direction",
           "text": "Your hands have not moved. The eyes have.",
-          "source": "src/data/opening-prologue.js:103"
+          "source": "src/data/opening-prologue.js:104"
         },
         {
           "id": "nodes.look.revisitLines.l1",
           "who": "unknown",
           "text": "Still here. You may ask another, or we can get on with the job.",
-          "source": "src/data/opening-prologue.js:104"
+          "source": "src/data/opening-prologue.js:105"
         }
       ],
-      "source": "src/data/opening-prologue.js:103"
+      "source": "src/data/opening-prologue.js:104"
     },
     "nodes.interval-refuse": {
       "id": "nodes.interval-refuse",
@@ -312,29 +318,23 @@
         {
           "id": "nodes.interval-refuse.l0",
           "who": "me",
-          "text": "No. I am not doing a test for you.",
-          "source": "src/data/opening-prologue.js:113"
+          "text": "No. I am not playing a game for you.",
+          "source": "src/data/opening-prologue.js:114"
         },
         {
           "id": "nodes.interval-refuse.l1",
           "who": "unknown",
-          "text": "Of course not. Keep your hands where you want them. I will keep mine.",
-          "source": "src/data/opening-prologue.js:114"
+          "text": "Of course not. Keep your hands where you want them. I will keep mine where I want 'em.",
+          "source": "src/data/opening-prologue.js:115"
         },
         {
           "id": "nodes.interval-refuse.l2",
           "who": "direction",
           "text": "One eye shuts. The wheels go on turning.",
-          "source": "src/data/opening-prologue.js:115"
-        },
-        {
-          "id": "nodes.interval-refuse.l3",
-          "who": "unknown",
-          "text": "There. That is an answer too.",
           "source": "src/data/opening-prologue.js:116"
         }
       ],
-      "source": "src/data/opening-prologue.js:113",
+      "source": "src/data/opening-prologue.js:114",
       "goto": "nodes.kept"
     },
     "nodes.interval-eyes": {
@@ -350,7 +350,7 @@
         {
           "id": "nodes.interval-eyes.l1",
           "who": "unknown",
-          "text": "I do not think I am on your side of that question.",
+          "text": "I do'nt think you'd want the answer to that question.",
           "source": "src/data/opening-prologue.js:120"
         },
         {
@@ -362,7 +362,7 @@
         {
           "id": "nodes.interval-eyes.l3",
           "who": "unknown",
-          "text": "There. One each. I will not look away if you do not.",
+          "text": "Holy...",
           "source": "src/data/opening-prologue.js:122"
         }
       ],
@@ -447,27 +447,39 @@
         {
           "id": "nodes.interval-wheel.l1",
           "who": "direction",
-          "text": "You can still feel the seam under your thumb. The thumb is steady. The seam makes one complete turn.",
+          "text": "You can still feel the seam under your thumb. As your vision blurs every now and then (maybe the tear in your eye, maybe something else) you use that seam to guide you back to the roadway.",
           "source": "src/data/opening-prologue.js:136"
         },
         {
           "id": "nodes.interval-wheel.l2",
           "who": "unknown",
-          "text": "Keep the hands. They are yours. The position is the doubtful part.",
+          "text": "And somehow it simply won't make a difference, I'm sorry to say.",
           "source": "src/data/opening-prologue.js:137"
+        },
+        {
+          "id": "nodes.interval-wheel.l3",
+          "who": "me",
+          "text": "What? But I'm doing so well!",
+          "source": "src/data/opening-prologue.js:138"
+        },
+        {
+          "id": "nodes.interval-wheel.l4",
+          "who": "unknown",
+          "text": "That you are. But sometimes it is not enough. You can keep your hands on the wheel, and you can keep your eyes on the road, and still somehow the road gives out, and still somehow the job is not complete, and somehow your love is not who you thought they were, and somehow it all comes crashing down. It's all rather unfortunate; it usually is.",
+          "source": "src/data/opening-prologue.js:139"
         }
       ],
       "choices": [
         {
           "id": "nodes.interval-wheel.c0",
           "text": "(tighten your grip)",
-          "source": "src/data/opening-prologue.js:138",
+          "source": "src/data/opening-prologue.js:140",
           "goto": "nodes.interval-hold"
         },
         {
           "id": "nodes.interval-wheel.c1",
           "text": "(open your hands)",
-          "source": "src/data/opening-prologue.js:138",
+          "source": "src/data/opening-prologue.js:140",
           "goto": "nodes.interval-release"
         }
       ],
@@ -480,17 +492,11 @@
         {
           "id": "nodes.interval-hold.l0",
           "who": "direction",
-          "text": "Three eyes close, one after another. The seam stops moving. You have not moved your hands.",
-          "source": "src/data/opening-prologue.js:140"
-        },
-        {
-          "id": "nodes.interval-hold.l1",
-          "who": "unknown",
-          "text": "That will do. You can keep a position. They will like that about you.",
-          "source": "src/data/opening-prologue.js:141"
+          "text": "Three eyes close, one after another. The seam stops moving. You have not moved your hands in what seems like an eternity.",
+          "source": "src/data/opening-prologue.js:142"
         }
       ],
-      "source": "src/data/opening-prologue.js:140",
+      "source": "src/data/opening-prologue.js:142",
       "goto": "nodes.kept"
     },
     "nodes.interval-release": {
@@ -500,17 +506,17 @@
         {
           "id": "nodes.interval-release.l0",
           "who": "direction",
-          "text": "You spread your fingers. The seam stays against your thumb anyway.",
-          "source": "src/data/opening-prologue.js:144"
+          "text": "You splay your fingers around the wheel. The seam stays against your thumb anyway. There's not much keeping you awake but the road, the radio, and the giant talking hole in the sky. As it is, even this combo is not enough to keep you from drifting.",
+          "source": "src/data/opening-prologue.js:145"
         },
         {
           "id": "nodes.interval-release.l1",
           "who": "unknown",
-          "text": "Excellent. You are not doing it, then.",
-          "source": "src/data/opening-prologue.js:145"
+          "text": "Eyes, my dear. You have to keep your eyes on the road.",
+          "source": "src/data/opening-prologue.js:146"
         }
       ],
-      "source": "src/data/opening-prologue.js:144",
+      "source": "src/data/opening-prologue.js:145",
       "goto": "nodes.kept"
     },
     "nodes.interval-avert": {
@@ -521,30 +527,30 @@
           "id": "nodes.interval-avert.l0",
           "who": "direction",
           "text": "You turn from the wheels. The dark is exactly as deep on this side.",
-          "source": "src/data/opening-prologue.js:148"
+          "source": "src/data/opening-prologue.js:149"
         },
         {
           "id": "nodes.interval-avert.l1",
           "who": "unknown",
           "text": "Better? I can wait. The road cannot.",
-          "source": "src/data/opening-prologue.js:149"
+          "source": "src/data/opening-prologue.js:150"
         }
       ],
       "choices": [
         {
           "id": "nodes.interval-avert.c0",
           "text": "(keep looking away)",
-          "source": "src/data/opening-prologue.js:150",
+          "source": "src/data/opening-prologue.js:151",
           "goto": "nodes.interval-wait"
         },
         {
           "id": "nodes.interval-avert.c1",
           "text": "(look back)",
-          "source": "src/data/opening-prologue.js:150",
+          "source": "src/data/opening-prologue.js:151",
           "goto": "nodes.interval-return"
         }
       ],
-      "source": "src/data/opening-prologue.js:148"
+      "source": "src/data/opening-prologue.js:149"
     },
     "nodes.interval-wait": {
       "id": "nodes.interval-wait",
@@ -554,16 +560,16 @@
           "id": "nodes.interval-wait.l0",
           "who": "direction",
           "text": "You wait for something to arrive at the edge of your sight. Nothing does.",
-          "source": "src/data/opening-prologue.js:152"
+          "source": "src/data/opening-prologue.js:153"
         },
         {
           "id": "nodes.interval-wait.l1",
           "who": "unknown",
           "text": "You are remarkably good at this. Are you sure this is your first night?",
-          "source": "src/data/opening-prologue.js:153"
+          "source": "src/data/opening-prologue.js:154"
         }
       ],
-      "source": "src/data/opening-prologue.js:152",
+      "source": "src/data/opening-prologue.js:153",
       "goto": "nodes.kept"
     },
     "nodes.interval-return": {
@@ -574,10 +580,10 @@
           "id": "nodes.interval-return.l0",
           "who": "direction",
           "text": "The wheels are where you left them. You have the unpleasant thought that you have come back on a different side.",
-          "source": "src/data/opening-prologue.js:156"
+          "source": "src/data/opening-prologue.js:157"
         }
       ],
-      "source": "src/data/opening-prologue.js:156",
+      "source": "src/data/opening-prologue.js:157",
       "goto": "nodes.kept"
     },
     "nodes.interval-silent": {
@@ -587,29 +593,17 @@
         {
           "id": "nodes.interval-silent.l0",
           "who": "direction",
-          "text": "You give it no answer. The eyes shut in order, as though a name is being read against each one.",
-          "source": "src/data/opening-prologue.js:159"
+          "text": "You give it no answer. The eyes shut in order, as though a name is being read for each one.",
+          "source": "src/data/opening-prologue.js:160"
         },
         {
           "id": "nodes.interval-silent.l1",
           "who": "unknown",
-          "text": "No. That was not empty. You were waiting for me to fill it.",
-          "source": "src/data/opening-prologue.js:160"
-        },
-        {
-          "id": "nodes.interval-silent.l2",
-          "who": "direction",
-          "text": "You stop waiting. You cannot tell whether that is different.",
+          "text": "For someone heading off to such quiet grounds, I advise you to use your words. You'll face some time without being able to speak.",
           "source": "src/data/opening-prologue.js:161"
-        },
-        {
-          "id": "nodes.interval-silent.l3",
-          "who": "unknown",
-          "text": "Keep that one. You may need it in a room.",
-          "source": "src/data/opening-prologue.js:162"
         }
       ],
-      "source": "src/data/opening-prologue.js:159",
+      "source": "src/data/opening-prologue.js:160",
       "goto": "nodes.kept"
     },
     "nodes.kept": {
@@ -619,17 +613,17 @@
         {
           "id": "nodes.kept.l0",
           "who": "direction",
-          "text": "The wheels go on turning. One eye has stayed shut. It does not open when you stop looking.",
-          "source": "src/data/opening-prologue.js:165"
+          "text": "The wheels go on turning. One eye has stayed shut; for every minute that passes, its steadfastness in staying closed frightens you more and more.",
+          "source": "src/data/opening-prologue.js:164"
         },
         {
           "id": "nodes.kept.l1",
           "who": "unknown",
-          "text": "There. You have changed the view. You can do that. The job will require rather more of you.",
-          "source": "src/data/opening-prologue.js:166"
+          "text": "If it's any indication of your commitment to the job, I'd say you're doing very well.",
+          "source": "src/data/opening-prologue.js:165"
         }
       ],
-      "source": "src/data/opening-prologue.js:165",
+      "source": "src/data/opening-prologue.js:164",
       "goto": "nodes.job"
     },
     "nodes.job": {
@@ -640,36 +634,36 @@
           "id": "nodes.job.l0",
           "who": "me",
           "text": "Ask me about the job.",
-          "source": "src/data/opening-prologue.js:170"
+          "source": "src/data/opening-prologue.js:169"
         },
         {
           "id": "nodes.job.l1",
           "who": "unknown",
-          "text": "Tell me about the job. Go on. I love how people tell it.",
-          "source": "src/data/opening-prologue.js:171"
+          "text": "Tell me about the job. Go on, I love how people tell it.",
+          "source": "src/data/opening-prologue.js:170"
         }
       ],
       "choices": [
         {
           "id": "nodes.job.c0",
-          "text": "\"Five rooms. A clean minute of each.\"",
-          "source": "src/data/opening-prologue.js:172",
+          "text": "\"Five rooms. One clean minute of each.\"",
+          "source": "src/data/opening-prologue.js:171",
           "goto": "nodes.job-rooms"
         },
         {
           "id": "nodes.job.c1",
-          "text": "\"Four hundred quid.\"",
-          "source": "src/data/opening-prologue.js:172",
+          "text": "\"Well, it's four hundred quid.\"",
+          "source": "src/data/opening-prologue.js:171",
           "goto": "nodes.job-money"
         },
         {
           "id": "nodes.job.c2",
-          "text": "\"It's just a job.\"",
-          "source": "src/data/opening-prologue.js:172",
+          "text": "\"It's just a job, like any other.\"",
+          "source": "src/data/opening-prologue.js:171",
           "goto": "nodes.job-just"
         }
       ],
-      "source": "src/data/opening-prologue.js:170"
+      "source": "src/data/opening-prologue.js:169"
     },
     "nodes.job-rooms": {
       "id": "nodes.job-rooms",
@@ -678,23 +672,23 @@
         {
           "id": "nodes.job-rooms.l0",
           "who": "me",
-          "text": "Five rooms. A clean minute of each.",
-          "source": "src/data/opening-prologue.js:174"
+          "text": "Five rooms. One clean minute of each.",
+          "source": "src/data/opening-prologue.js:173"
         },
         {
           "id": "nodes.job-rooms.l1",
           "who": "unknown",
           "text": "With nothing in it.",
-          "source": "src/data/opening-prologue.js:175"
+          "source": "src/data/opening-prologue.js:174"
         },
         {
           "id": "nodes.job-rooms.l2",
           "who": "me",
-          "text": "With nothing in it. A studio, the pool, the concert hall, the practice wing and the chapel.",
-          "source": "src/data/opening-prologue.js:176"
+          "text": "With nothing in it. A basement studio, the pool, the concert hall, one of the practice rooms in the practice wing and the chapel. Kinda creepy old school, but I've been dying to hear the reverb in the pool.",
+          "source": "src/data/opening-prologue.js:175"
         }
       ],
-      "source": "src/data/opening-prologue.js:174",
+      "source": "src/data/opening-prologue.js:173",
       "goto": "nodes.job-sheet"
     },
     "nodes.job-money": {
@@ -704,17 +698,17 @@
         {
           "id": "nodes.job-money.l0",
           "who": "me",
-          "text": "Four hundred quid.",
-          "source": "src/data/opening-prologue.js:179"
+          "text": "Well, it's four hundred quid.",
+          "source": "src/data/opening-prologue.js:178"
         },
         {
           "id": "nodes.job-money.l1",
           "who": "unknown",
-          "text": "To stand very still in five rooms and not be there. I have known people do it for nothing. I have known people do it for years.",
-          "source": "src/data/opening-prologue.js:180"
+          "text": "To stand very still in five rooms and not make a sound. I have seen many people do it for nothing, known people do it for years.",
+          "source": "src/data/opening-prologue.js:179"
         }
       ],
-      "source": "src/data/opening-prologue.js:179",
+      "source": "src/data/opening-prologue.js:178",
       "goto": "nodes.job-sheet"
     },
     "nodes.job-just": {
@@ -724,17 +718,17 @@
         {
           "id": "nodes.job-just.l0",
           "who": "me",
-          "text": "It's just a job.",
-          "source": "src/data/opening-prologue.js:183"
+          "text": "It's just a job, like any other.",
+          "source": "src/data/opening-prologue.js:182"
         },
         {
           "id": "nodes.job-just.l1",
           "who": "unknown",
-          "text": "It is a lovely job. They ring a man who does not ask, and he does not ask. That is why they have your number.",
-          "source": "src/data/opening-prologue.js:184"
+          "text": "It is a lovely job. They ring up a person whose whole job is to listen and stand still. But you're known in the business, or so I see; your recordings are pristine, beautifully empty. Practically zero extra noise. That's why they've your number.",
+          "source": "src/data/opening-prologue.js:183"
         }
       ],
-      "source": "src/data/opening-prologue.js:183",
+      "source": "src/data/opening-prologue.js:182",
       "goto": "nodes.job-sheet"
     },
     "nodes.job-sheet": {
@@ -744,35 +738,35 @@
         {
           "id": "nodes.job-sheet.l0",
           "who": "direction",
-          "text": "The sheet is on the passenger seat. Ellery Conservatoire of Music, condemned. Demolition begins 06:00 Thursday. Bring a light.",
-          "source": "src/data/opening-prologue.js:187"
+          "text": "The sheet sits in the passenger seat. Ellery Conservatoire of Music, condemned. Demolition begins 06:00 Thursday. Bring a light.",
+          "source": "src/data/opening-prologue.js:186"
         },
         {
           "id": "nodes.job-sheet.l1",
           "who": "direction",
           "text": "One clean minute of each, with nothing in it. No handling noise, no clothing, no breath.",
-          "source": "src/data/opening-prologue.js:188"
+          "source": "src/data/opening-prologue.js:187"
         },
         {
           "id": "nodes.job-sheet.l2",
           "who": "unknown",
-          "text": "No breath! Read me the next bit. I could hear it all night. I do.",
-          "source": "src/data/opening-prologue.js:189"
+          "text": "No breath, can you believe it! Read me the next bit. I could hear it all night. I love it.",
+          "source": "src/data/opening-prologue.js:188"
         },
         {
           "id": "nodes.job-sheet.l3",
           "who": "direction",
-          "text": "If you can hear yourself on the take, the take is not the room, and we will not accept it.",
-          "source": "src/data/opening-prologue.js:190"
+          "text": "If you can hear yourself on the take, that's not the room, and we won't accept it.",
+          "source": "src/data/opening-prologue.js:189"
         },
         {
           "id": "nodes.job-sheet.l4",
           "who": "unknown",
-          "text": "Who wants a minute of an empty room, do you suppose?",
-          "source": "src/data/opening-prologue.js:191"
+          "text": "Who wants a minute of an empty room, d'you suppose?",
+          "source": "src/data/opening-prologue.js:190"
         }
       ],
-      "source": "src/data/opening-prologue.js:187",
+      "source": "src/data/opening-prologue.js:186",
       "goto": "nodes.last-one"
     },
     "nodes.client": {
@@ -783,28 +777,28 @@
           "id": "nodes.client.l0",
           "who": "me",
           "text": "Who signed for W. Ellery Holdings?",
-          "source": "src/data/opening-prologue.js:194"
+          "source": "src/data/opening-prologue.js:193"
         },
         {
           "id": "nodes.client.l1",
           "who": "unknown",
           "text": "A good question.",
-          "source": "src/data/opening-prologue.js:195"
+          "source": "src/data/opening-prologue.js:194"
         },
         {
           "id": "nodes.client.l2",
           "who": "direction",
           "text": "The signature is illegible. The authorising officer's field is blank under every carbon.",
-          "source": "src/data/opening-prologue.js:196"
+          "source": "src/data/opening-prologue.js:195"
         },
         {
           "id": "nodes.client.l3",
           "who": "unknown",
           "text": "There. Now you have asked, and it cost you nothing. It is a very old firm.",
-          "source": "src/data/opening-prologue.js:197"
+          "source": "src/data/opening-prologue.js:196"
         }
       ],
-      "source": "src/data/opening-prologue.js:194",
+      "source": "src/data/opening-prologue.js:193",
       "goto": "nodes.file"
     },
     "nodes.no-ask": {
@@ -815,16 +809,16 @@
           "id": "nodes.no-ask.l0",
           "who": "me",
           "text": "I don't ask.",
-          "source": "src/data/opening-prologue.js:200"
+          "source": "src/data/opening-prologue.js:199"
         },
         {
           "id": "nodes.no-ask.l1",
           "who": "unknown",
-          "text": "No. Neither did the last one.",
-          "source": "src/data/opening-prologue.js:201"
+          "text": "No you don't. Neither did the last one.",
+          "source": "src/data/opening-prologue.js:200"
         }
       ],
-      "source": "src/data/opening-prologue.js:200",
+      "source": "src/data/opening-prologue.js:199",
       "goto": "nodes.file"
     },
     "nodes.last-one": {
@@ -834,11 +828,11 @@
         {
           "id": "nodes.last-one.l0",
           "who": "direction",
-          "text": "The prior contractor delivered four accepted room tones. The packet was settled for four. The account remains open.",
-          "source": "src/data/opening-prologue.js:204"
+          "text": "The prior contractor delivered four accepted room tones; the verdict remains open on what happened to the fifth take, but it's the reason you're here, driving to this posh, derelict school for less than the cost of one of their students' weekly allowance.",
+          "source": "src/data/opening-prologue.js:203"
         }
       ],
-      "source": "src/data/opening-prologue.js:204",
+      "source": "src/data/opening-prologue.js:203",
       "goto": "nodes.ellery"
     },
     "nodes.fifth": {
@@ -849,16 +843,16 @@
           "id": "nodes.fifth.l0",
           "who": "me",
           "text": "What happened to the fifth?",
-          "source": "src/data/opening-prologue.js:207"
+          "source": "src/data/opening-prologue.js:206"
         },
         {
           "id": "nodes.fifth.l1",
           "who": "unknown",
-          "text": "It is still undelivered. It is a very patient invoice. \"When five clean minutes are received, the account is satisfied.\" That is the one sentence on the sheet I would call sincere.",
-          "source": "src/data/opening-prologue.js:208"
+          "text": "Who knows? Or maybe I do know, and just won't tell you. If you see a cow in the road which happens to be cardboard, but there was a cow behind it, does it matter that the first cow was cardboard?",
+          "source": "src/data/opening-prologue.js:207"
         }
       ],
-      "source": "src/data/opening-prologue.js:207",
+      "source": "src/data/opening-prologue.js:206",
       "goto": "nodes.file"
     },
     "nodes.him": {
@@ -869,16 +863,16 @@
           "id": "nodes.him.l0",
           "who": "me",
           "text": "What happened to him?",
-          "source": "src/data/opening-prologue.js:211"
+          "source": "src/data/opening-prologue.js:210"
         },
         {
           "id": "nodes.him.l1",
           "who": "unknown",
-          "text": "He is nearly finished. Ask him. He has been nearly finished for some time.",
-          "source": "src/data/opening-prologue.js:212"
+          "text": "Well, that would be quite the spoiler now, wouldn't it?",
+          "source": "src/data/opening-prologue.js:211"
         }
       ],
-      "source": "src/data/opening-prologue.js:211",
+      "source": "src/data/opening-prologue.js:210",
       "goto": "nodes.file"
     },
     "nodes.not-mine": {
@@ -889,16 +883,16 @@
           "id": "nodes.not-mine.l0",
           "who": "me",
           "text": "Not my problem.",
-          "source": "src/data/opening-prologue.js:215"
+          "source": "src/data/opening-prologue.js:214"
         },
         {
           "id": "nodes.not-mine.l1",
           "who": "unknown",
-          "text": "No. It is your job. There is a difference, and you have about eight hours to find out what it is.",
-          "source": "src/data/opening-prologue.js:216"
+          "text": "No, but it soon might just be.",
+          "source": "src/data/opening-prologue.js:215"
         }
       ],
-      "source": "src/data/opening-prologue.js:215",
+      "source": "src/data/opening-prologue.js:214",
       "goto": "nodes.file"
     },
     "nodes.ellery": {
@@ -909,48 +903,48 @@
           "id": "nodes.ellery.l0",
           "who": "unknown",
           "text": "You have not asked what it was. They never do. Have a look.",
-          "source": "src/data/opening-prologue.js:220"
+          "source": "src/data/opening-prologue.js:219"
         },
         {
           "id": "nodes.ellery.l1",
           "who": "direction",
           "text": "There is a below, it turns out. Wet tarmac, railings, a tree somebody planted on purpose. A long front with its power off.",
-          "source": "src/data/opening-prologue.js:221"
+          "source": "src/data/opening-prologue.js:220"
         },
         {
           "id": "nodes.ellery.l2",
           "who": "unknown",
-          "text": "Public baths, to begin with. 1912, blue tile, people went in to get clean. Then a school bought the baths, and the pub, and half the street.",
-          "source": "src/data/opening-prologue.js:222"
+          "text": "Public baths, to begin with. Over a century old, with this beautiful aqua tile (you'll seriously love it), people went in to get clean. Then a school bought the baths, and the pub came with it, and so half the street.",
+          "source": "src/data/opening-prologue.js:221"
         },
         {
           "id": "nodes.ellery.l3",
           "who": "unknown",
           "text": "It never stopped being about getting clean.",
-          "source": "src/data/opening-prologue.js:223"
+          "source": "src/data/opening-prologue.js:222"
         }
       ],
       "choices": [
         {
           "id": "nodes.ellery.c0",
           "text": "\"What kind of school?\"",
-          "source": "src/data/opening-prologue.js:224",
+          "source": "src/data/opening-prologue.js:223",
           "goto": "nodes.school"
         },
         {
           "id": "nodes.ellery.c1",
           "text": "\"Did you go there?\"",
-          "source": "src/data/opening-prologue.js:224",
+          "source": "src/data/opening-prologue.js:223",
           "goto": "nodes.attended"
         },
         {
           "id": "nodes.ellery.c2",
           "text": "(say nothing)",
-          "source": "src/data/opening-prologue.js:224",
+          "source": "src/data/opening-prologue.js:223",
           "goto": "nodes.school-quiet"
         }
       ],
-      "source": "src/data/opening-prologue.js:220"
+      "source": "src/data/opening-prologue.js:219"
     },
     "nodes.file": {
       "id": "nodes.file",
@@ -959,67 +953,67 @@
         {
           "id": "nodes.file.l0",
           "who": "unknown",
-          "text": "There is more on the file. You can ask, or leave it there.",
-          "source": "src/data/opening-prologue.js:228"
+          "text": "I've got more. You can ask, or leave it there.",
+          "source": "src/data/opening-prologue.js:227"
         }
       ],
       "choices": [
         {
           "id": "nodes.file.c0",
           "text": "\"Who signed for the client?\"",
-          "source": "src/data/opening-prologue.js:230",
+          "source": "src/data/opening-prologue.js:229",
           "goto": "nodes.client"
         },
         {
           "id": "nodes.file.c1",
           "text": "\"What happened to the fifth room?\"",
-          "source": "src/data/opening-prologue.js:230",
+          "source": "src/data/opening-prologue.js:229",
           "goto": "nodes.fifth"
         },
         {
           "id": "nodes.file.c2",
           "text": "\"What happened to the last recordist?\"",
-          "source": "src/data/opening-prologue.js:231",
+          "source": "src/data/opening-prologue.js:230",
           "goto": "nodes.him"
         },
         {
           "id": "nodes.file.c3",
           "text": "\"What happened to the boy?\"",
-          "source": "src/data/opening-prologue.js:231",
+          "source": "src/data/opening-prologue.js:230",
           "goto": "nodes.boy"
         },
         {
           "id": "nodes.file.c4",
           "text": "\"What was his name?\"",
-          "source": "src/data/opening-prologue.js:232",
+          "source": "src/data/opening-prologue.js:231",
           "goto": "nodes.boy-name"
         },
         {
           "id": "nodes.file.c5",
           "text": "\"What happened in the tower?\"",
-          "source": "src/data/opening-prologue.js:232",
+          "source": "src/data/opening-prologue.js:231",
           "goto": "nodes.tower"
         },
         {
           "id": "nodes.file.c6",
           "text": "\"I don't ask.\"",
-          "source": "src/data/opening-prologue.js:233",
+          "source": "src/data/opening-prologue.js:232",
           "goto": "nodes.no-ask"
         },
         {
           "id": "nodes.file.c7",
           "text": "\"Not my problem.\"",
-          "source": "src/data/opening-prologue.js:233",
+          "source": "src/data/opening-prologue.js:232",
           "goto": "nodes.not-mine"
         },
         {
           "id": "nodes.file.c8",
           "text": "\"What does that leave me to hear?\"",
-          "source": "src/data/opening-prologue.js:234",
+          "source": "src/data/opening-prologue.js:233",
           "goto": "nodes.hearing"
         }
       ],
-      "source": "src/data/opening-prologue.js:228"
+      "source": "src/data/opening-prologue.js:227"
     },
     "nodes.file.revisitLines": {
       "id": "nodes.file.revisitLines",
@@ -1029,10 +1023,10 @@
           "id": "nodes.file.revisitLines.l0",
           "who": "unknown",
           "text": "What else?",
-          "source": "src/data/opening-prologue.js:229"
+          "source": "src/data/opening-prologue.js:228"
         }
       ],
-      "source": "src/data/opening-prologue.js:229"
+      "source": "src/data/opening-prologue.js:228"
     },
     "nodes.hearing": {
       "id": "nodes.hearing",
@@ -1042,16 +1036,16 @@
           "id": "nodes.hearing.l0",
           "who": "me",
           "text": "What does that leave me to hear?",
-          "source": "src/data/opening-prologue.js:237"
+          "source": "src/data/opening-prologue.js:236"
         },
         {
           "id": "nodes.hearing.l1",
           "who": "unknown",
           "text": "By midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of.",
-          "source": "src/data/opening-prologue.js:238"
+          "source": "src/data/opening-prologue.js:237"
         }
       ],
-      "source": "src/data/opening-prologue.js:237",
+      "source": "src/data/opening-prologue.js:236",
       "goto": "nodes.margin"
     },
     "nodes.hearing-quiet": {
@@ -1062,16 +1056,16 @@
           "id": "nodes.hearing-quiet.l0",
           "who": "direction",
           "text": "You say nothing. The notice has not been answered. Your work order has.",
-          "source": "src/data/opening-prologue.js:241"
+          "source": "src/data/opening-prologue.js:240"
         },
         {
           "id": "nodes.hearing-quiet.l1",
           "who": "unknown",
           "text": "Five clean minutes. You see the difficulty.",
-          "source": "src/data/opening-prologue.js:242"
+          "source": "src/data/opening-prologue.js:241"
         }
       ],
-      "source": "src/data/opening-prologue.js:241",
+      "source": "src/data/opening-prologue.js:240",
       "goto": "nodes.margin"
     },
     "nodes.school": {
@@ -1082,10 +1076,10 @@
           "id": "nodes.school.l0",
           "who": "me",
           "text": "What kind of school?",
-          "source": "src/data/opening-prologue.js:244"
+          "source": "src/data/opening-prologue.js:243"
         }
       ],
-      "source": "src/data/opening-prologue.js:244",
+      "source": "src/data/opening-prologue.js:243",
       "goto": "nodes.school-told"
     },
     "nodes.attended": {
@@ -1096,16 +1090,16 @@
           "id": "nodes.attended.l0",
           "who": "me",
           "text": "Did you go there?",
-          "source": "src/data/opening-prologue.js:246"
+          "source": "src/data/opening-prologue.js:245"
         },
         {
           "id": "nodes.attended.l1",
           "who": "unknown",
           "text": "I attended. Every lesson, every night, every year, the best seat in the house. You will not find me on a register. I have looked.",
-          "source": "src/data/opening-prologue.js:247"
+          "source": "src/data/opening-prologue.js:246"
         }
       ],
-      "source": "src/data/opening-prologue.js:246",
+      "source": "src/data/opening-prologue.js:245",
       "goto": "nodes.school-told"
     },
     "nodes.school-quiet": {
@@ -1116,10 +1110,10 @@
           "id": "nodes.school-quiet.l0",
           "who": "direction",
           "text": "You keep quiet. It tells you anyway.",
-          "source": "src/data/opening-prologue.js:249"
+          "source": "src/data/opening-prologue.js:248"
         }
       ],
-      "source": "src/data/opening-prologue.js:249",
+      "source": "src/data/opening-prologue.js:248",
       "goto": "nodes.school-told"
     },
     "nodes.school-told": {
@@ -1129,29 +1123,29 @@
         {
           "id": "nodes.school-told.l0",
           "who": "unknown",
-          "text": "They take a child who can hear, and correct it. Reference listening. The same bar, the same small fault. Again. Again.",
-          "source": "src/data/opening-prologue.js:251"
+          "text": "They take a child with a dream of being a musician, a performer, dancer, harpsichordist, composer, revolutionary ... and correct it. Reference listening, over and over and over and over. Again. Again. Another sonata, another mistake, another recording. The same bar, the same small fault, until their ears begin to scream for silence. Again. Again. More exercises, more method books, more practice, more lessons, more listening, until their fingers are bent and their hands are twisted and their eyes are red and their ears can't stop hearing every little perturbation in the world. Again. Again. Again. Again. Again.",
+          "source": "src/data/opening-prologue.js:250"
         },
         {
           "id": "nodes.school-told.l1",
           "who": "unknown",
           "text": "Until you can hear a wrong note through a wall, in your sleep, in your mother saying your name.",
-          "source": "src/data/opening-prologue.js:252"
+          "source": "src/data/opening-prologue.js:251"
         },
         {
           "id": "nodes.school-told.l2",
           "who": "direction",
-          "text": "You have worked with people who came out of Ellery. They flinch at fridges.",
-          "source": "src/data/opening-prologue.js:253"
+          "text": "You have worked with people who came out of Ellery. They flinch at fridges, and they can all tell you what note their toilet flushes produce.",
+          "source": "src/data/opening-prologue.js:252"
         },
         {
           "id": "nodes.school-told.l3",
           "who": "unknown",
-          "text": "One got very good. He could hear everything. Then he stopped coming down to lessons.",
-          "source": "src/data/opening-prologue.js:254"
+          "text": "One got very good. He could hear everything. Then he stopped coming down to lessons. He stopped eating. He just kept... listening. Harder and harder, until his body became nothing, and he became sound itself.",
+          "source": "src/data/opening-prologue.js:253"
         }
       ],
-      "source": "src/data/opening-prologue.js:251",
+      "source": "src/data/opening-prologue.js:250",
       "goto": "nodes.coverup"
     },
     "nodes.coverup": {
@@ -1161,23 +1155,23 @@
         {
           "id": "nodes.coverup.l0",
           "who": "unknown",
-          "text": "The boy was recovered from a chamber room upstairs. The public register still calls him missing.",
-          "source": "src/data/opening-prologue.js:257"
+          "text": "The classmates say the boy was recovered from a chamber room upstairs, but the public account of the incident tells a different story.",
+          "source": "src/data/opening-prologue.js:256"
         },
         {
           "id": "nodes.coverup.l1",
           "who": "direction",
-          "text": "Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: not attached.",
-          "source": "src/data/opening-prologue.js:258"
+          "text": "Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: inconclusive.",
+          "source": "src/data/opening-prologue.js:257"
         },
         {
           "id": "nodes.coverup.l2",
           "who": "unknown",
-          "text": "The others knew. They would not play over it.",
-          "source": "src/data/opening-prologue.js:259"
+          "text": "The others knew. They would not dare play over it with sounds of practice or performance. They, too, fell silent. It was the quietest period in the building since its construction. At first, some outlets thought the students were postmodernists trying to make a statement with a new performance art piece, and then some of them broke their vows and ran to the news.",
+          "source": "src/data/opening-prologue.js:258"
         }
       ],
-      "source": "src/data/opening-prologue.js:257",
+      "source": "src/data/opening-prologue.js:256",
       "goto": "nodes.notice"
     },
     "nodes.boy-name": {
@@ -1187,17 +1181,17 @@
         {
           "id": "nodes.boy-name.l0",
           "who": "me",
-          "text": "What was his name?",
-          "source": "src/data/opening-prologue.js:262"
+          "text": "What was the kid's name?",
+          "source": "src/data/opening-prologue.js:261"
         },
         {
           "id": "nodes.boy-name.l1",
           "who": "unknown",
-          "text": "Now that is a question. Nobody asks it. It is the only thing in that building still correctly filed, and you will not get it from me.",
-          "source": "src/data/opening-prologue.js:263"
+          "text": "The other students decided to call him nothing, out of respect for his initial vow of silence.",
+          "source": "src/data/opening-prologue.js:262"
         }
       ],
-      "source": "src/data/opening-prologue.js:262",
+      "source": "src/data/opening-prologue.js:261",
       "goto": "nodes.file"
     },
     "nodes.boy": {
@@ -1208,10 +1202,10 @@
           "id": "nodes.boy.l0",
           "who": "me",
           "text": "What happened to the boy?",
-          "source": "src/data/opening-prologue.js:265"
+          "source": "src/data/opening-prologue.js:264"
         }
       ],
-      "source": "src/data/opening-prologue.js:265",
+      "source": "src/data/opening-prologue.js:264",
       "goto": "nodes.boy-told"
     },
     "nodes.boy-told": {
@@ -1221,35 +1215,35 @@
         {
           "id": "nodes.boy-told.l0",
           "who": "unknown",
-          "text": "He is missing. Look, it says so.",
-          "source": "src/data/opening-prologue.js:267"
+          "text": "He is missing. Look, the official school report says so.",
+          "source": "src/data/opening-prologue.js:266"
         },
         {
           "id": "nodes.boy-told.l1",
           "who": "direction",
-          "text": "The public register says MISSING, in a clean hand.",
-          "source": "src/data/opening-prologue.js:268"
+          "text": "The public register says MISSING, its telex type likely rushed in a series of quick communiques to the public.",
+          "source": "src/data/opening-prologue.js:267"
         },
         {
           "id": "nodes.boy-told.l2",
           "who": "unknown",
-          "text": "The body is a separate matter. They took that out of a chamber room on the third floor.",
-          "source": "src/data/opening-prologue.js:269"
+          "text": "The recovered body is a separate matter. They took that out of a chamber room on the third floor.",
+          "source": "src/data/opening-prologue.js:268"
         },
         {
           "id": "nodes.boy-told.l3",
           "who": "direction",
-          "text": "Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: not attached.",
-          "source": "src/data/opening-prologue.js:270"
+          "text": "Recovery entered on the internal sheet. External register to retain MISSING. Medical finding: inconclusive.",
+          "source": "src/data/opening-prologue.js:269"
         },
         {
           "id": "nodes.boy-told.l4",
           "who": "unknown",
-          "text": "And the others knew. They are musicians. You cannot hide a missing boy from people who can hear which floor he is not on.",
-          "source": "src/data/opening-prologue.js:271"
+          "text": "And the others knew. They are musicians. You cannot hide a missing boy from people who can hear which floor he is not practicing on.",
+          "source": "src/data/opening-prologue.js:270"
         }
       ],
-      "source": "src/data/opening-prologue.js:267",
+      "source": "src/data/opening-prologue.js:266",
       "goto": "nodes.file"
     },
     "nodes.notice": {
@@ -1259,55 +1253,55 @@
         {
           "id": "nodes.notice.l0",
           "who": "direction",
-          "text": "A notice went up. It is the one clear thing anybody there ever wrote down.",
-          "source": "src/data/opening-prologue.js:274"
+          "text": "The students collectively put up a poster denouncing the school administration, demanding that the school acknowledge that the boy's body was recovered from the ringing room.",
+          "source": "src/data/opening-prologue.js:273"
         },
         {
           "id": "nodes.notice.l1",
           "who": "direction",
           "text": "Acknowledge that his body was recovered here. Until that acknowledgment is made, we will not rehearse or perform. We will not play over what happened.",
-          "source": "src/data/opening-prologue.js:275"
+          "source": "src/data/opening-prologue.js:274"
         },
         {
           "id": "nodes.notice.l2",
           "who": "direction",
-          "text": "RECEIVED BY THE OFFICE. NO REPLY FILED.",
-          "source": "src/data/opening-prologue.js:276"
+          "text": "The school, in turn, hired a firm to represent their best interests. Following their suggestions, the administration pushed the issue over the summer and into the fall, using meetings and the endless proposal of scheme after scheme, forcing the students to forget about the issue and quietly return to their studies. Most students who cared deeply ended up graduating that summer, and those who remained were haunted by the silence. The school has not acknowledged that the boy's body was recovered from the ringing room.",
+          "source": "src/data/opening-prologue.js:275"
         }
       ],
       "choices": [
         {
           "id": "nodes.notice.c0",
-          "text": "\"Good for them.\"",
-          "source": "src/data/opening-prologue.js:277",
+          "text": "\"Good for them for trying.\"",
+          "source": "src/data/opening-prologue.js:276",
           "goto": "nodes.good"
         },
         {
           "id": "nodes.notice.c1",
           "text": "\"What did the school say?\"",
-          "source": "src/data/opening-prologue.js:277",
+          "source": "src/data/opening-prologue.js:276",
           "goto": "nodes.office"
         },
         {
           "id": "nodes.notice.c2",
           "text": "\"What else is in the file?\"",
-          "source": "src/data/opening-prologue.js:278",
+          "source": "src/data/opening-prologue.js:277",
           "goto": "nodes.file"
         },
         {
           "id": "nodes.notice.c3",
           "text": "\"What does that leave me to hear?\"",
-          "source": "src/data/opening-prologue.js:278",
+          "source": "src/data/opening-prologue.js:277",
           "goto": "nodes.hearing"
         },
         {
           "id": "nodes.notice.c4",
           "text": "(say nothing)",
-          "source": "src/data/opening-prologue.js:278",
+          "source": "src/data/opening-prologue.js:277",
           "goto": "nodes.hearing-quiet"
         }
       ],
-      "source": "src/data/opening-prologue.js:274"
+      "source": "src/data/opening-prologue.js:273"
     },
     "nodes.good": {
       "id": "nodes.good",
@@ -1316,17 +1310,17 @@
         {
           "id": "nodes.good.l0",
           "who": "me",
-          "text": "Good for them.",
-          "source": "src/data/opening-prologue.js:280"
+          "text": "Good for them for trying.",
+          "source": "src/data/opening-prologue.js:279"
         },
         {
           "id": "nodes.good.l1",
           "who": "unknown",
           "text": "Is it not? Every room in the place silent, for the first time since it opened. You have no idea how lovely that was.",
-          "source": "src/data/opening-prologue.js:281"
+          "source": "src/data/opening-prologue.js:280"
         }
       ],
-      "source": "src/data/opening-prologue.js:280",
+      "source": "src/data/opening-prologue.js:279",
       "goto": "nodes.file"
     },
     "nodes.office": {
@@ -1337,16 +1331,16 @@
           "id": "nodes.office.l0",
           "who": "me",
           "text": "What did the school say?",
-          "source": "src/data/opening-prologue.js:284"
+          "source": "src/data/opening-prologue.js:283"
         },
         {
           "id": "nodes.office.l1",
           "who": "unknown",
-          "text": "They are still not answering. It is the longest piece anyone has ever performed there.",
-          "source": "src/data/opening-prologue.js:285"
+          "text": "They are still not answering. It is the longest piece anyone has ever performed there; the school administration had always wanted a performance they can rest their legacy on, and in the handling of this incident, it found one.",
+          "source": "src/data/opening-prologue.js:284"
         }
       ],
-      "source": "src/data/opening-prologue.js:284",
+      "source": "src/data/opening-prologue.js:283",
       "goto": "nodes.file"
     },
     "nodes.tower": {
@@ -1356,49 +1350,49 @@
         {
           "id": "nodes.tower.l0",
           "who": "unknown",
-          "text": "So nobody played. Some stopped eating. And some went up the tower, to the ringing room, where it is quiet.",
-          "source": "src/data/opening-prologue.js:288"
+          "text": "So nobody played. Some stopped eating. And some went up the tower, to the ringing room, where it was most quiet for some time. Out of respect for the boy, the student bellringers of both the school chapel and the surrounding cathedral towers refused to ring the square's bells.",
+          "source": "src/data/opening-prologue.js:287"
         },
         {
           "id": "nodes.tower.l1",
           "who": "direction",
-          "text": "Transfer receipts. Students' bodies, removed from the ringing room. The names checked against the register.",
-          "source": "src/data/opening-prologue.js:289"
+          "text": "Transfer receipts. Students' bodies, removed from the ringing room en masse. Administration had a last-minute meeting internally to discuss enrollment after this incident; they found that losing 5% of your enrollment in one go is not ideal for the c-suite, and something had to be done. Out goes another press release, and another firm was hired to revamp the school's image. A new logo was proposed.",
+          "source": "src/data/opening-prologue.js:288"
         },
         {
           "id": "nodes.tower.l2",
           "who": "direction",
-          "text": "Cause of death: not entered on this copy. Rehearsal status: suspended.",
-          "source": "src/data/opening-prologue.js:290"
+          "text": "You should have seen the internal memoranda on the subject. The school's lawyers have their own special 1.5m cubed little compartment in hell.",
+          "source": "src/data/opening-prologue.js:289"
         },
         {
           "id": "nodes.tower.l3",
           "who": "unknown",
-          "text": "\"Refusal to rehearse is not a medical finding.\" Somebody sat down and typed that.",
-          "source": "src/data/opening-prologue.js:291"
+          "text": "\"Refusal to rehearse is not a medical finding.\" Somebody seriously sat down and typed that.",
+          "source": "src/data/opening-prologue.js:290"
         }
       ],
       "choices": [
         {
           "id": "nodes.tower.c0",
           "text": "\"Did you do that?\"",
-          "source": "src/data/opening-prologue.js:292",
+          "source": "src/data/opening-prologue.js:291",
           "goto": "nodes.did"
         },
         {
           "id": "nodes.tower.c1",
           "text": "\"Why are you telling me?\"",
-          "source": "src/data/opening-prologue.js:292",
+          "source": "src/data/opening-prologue.js:291",
           "goto": "nodes.why"
         },
         {
           "id": "nodes.tower.c2",
           "text": "(say nothing)",
-          "source": "src/data/opening-prologue.js:292",
+          "source": "src/data/opening-prologue.js:291",
           "goto": "nodes.tower-quiet"
         }
       ],
-      "source": "src/data/opening-prologue.js:288"
+      "source": "src/data/opening-prologue.js:287"
     },
     "nodes.did": {
       "id": "nodes.did",
@@ -1408,28 +1402,28 @@
           "id": "nodes.did.l0",
           "who": "me",
           "text": "Did you do that?",
-          "source": "src/data/opening-prologue.js:294"
+          "source": "src/data/opening-prologue.js:293"
         },
         {
           "id": "nodes.did.l1",
           "who": "unknown",
           "text": "Look at me. I am a hole. I have never so much as lifted a bow.",
-          "source": "src/data/opening-prologue.js:295"
+          "source": "src/data/opening-prologue.js:294"
         },
         {
           "id": "nodes.did.l2",
           "who": "me",
           "text": "That isn't a no.",
-          "source": "src/data/opening-prologue.js:296"
+          "source": "src/data/opening-prologue.js:295"
         },
         {
           "id": "nodes.did.l3",
           "who": "unknown",
-          "text": "No, it is not. They told me you were cheap. They did not say you were quick.",
-          "source": "src/data/opening-prologue.js:297"
+          "text": "It is not. They told me you were cheap. They did not say you were quick.",
+          "source": "src/data/opening-prologue.js:296"
         }
       ],
-      "source": "src/data/opening-prologue.js:294",
+      "source": "src/data/opening-prologue.js:293",
       "goto": "nodes.file"
     },
     "nodes.why": {
@@ -1440,16 +1434,16 @@
           "id": "nodes.why.l0",
           "who": "me",
           "text": "Why are you telling me?",
-          "source": "src/data/opening-prologue.js:300"
+          "source": "src/data/opening-prologue.js:299"
         },
         {
           "id": "nodes.why.l1",
           "who": "unknown",
-          "text": "Because by midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of.",
-          "source": "src/data/opening-prologue.js:301"
+          "text": "Because by midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of, whose legacy you will be standing on, and what it cost them to become atoms of air in your little recording. You deserve to know where you stand in all of this.",
+          "source": "src/data/opening-prologue.js:300"
         }
       ],
-      "source": "src/data/opening-prologue.js:300",
+      "source": "src/data/opening-prologue.js:299",
       "goto": "nodes.file"
     },
     "nodes.tower-quiet": {
@@ -1460,16 +1454,16 @@
           "id": "nodes.tower-quiet.l0",
           "who": "direction",
           "text": "You say nothing. You have a professional reason.",
-          "source": "src/data/opening-prologue.js:304"
+          "source": "src/data/opening-prologue.js:303"
         },
         {
           "id": "nodes.tower-quiet.l1",
           "who": "unknown",
-          "text": "That is it. That is exactly what they all did. You will fit right in.",
-          "source": "src/data/opening-prologue.js:305"
+          "text": "That is it. That is exactly what they all did. Looks like you'll fit right in.",
+          "source": "src/data/opening-prologue.js:304"
         }
       ],
-      "source": "src/data/opening-prologue.js:304",
+      "source": "src/data/opening-prologue.js:303",
       "goto": "nodes.file"
     },
     "nodes.margin": {
@@ -1479,43 +1473,43 @@
         {
           "id": "nodes.margin.l0",
           "who": "direction",
-          "text": "The school tips. Your hands have corrected for a bend you cannot see.",
-          "source": "src/data/opening-prologue.js:308"
+          "text": "The road dips. Your hands have corrected for a bend you cannot see.",
+          "source": "src/data/opening-prologue.js:307"
         },
         {
           "id": "nodes.margin.l1",
           "who": "unknown",
           "text": "Good. You are still driving.",
-          "source": "src/data/opening-prologue.js:309"
+          "source": "src/data/opening-prologue.js:308"
         },
         {
           "id": "nodes.margin.l2",
           "who": "unknown",
           "text": "Do you want me to put the next bit back where it was?",
-          "source": "src/data/opening-prologue.js:310"
+          "source": "src/data/opening-prologue.js:309"
         }
       ],
       "choices": [
         {
           "id": "nodes.margin.c0",
           "text": "\"What next bit?\"",
-          "source": "src/data/opening-prologue.js:311",
+          "source": "src/data/opening-prologue.js:310",
           "goto": "nodes.margin-next"
         },
         {
           "id": "nodes.margin.c1",
           "text": "\"Leave the road alone.\"",
-          "source": "src/data/opening-prologue.js:311",
+          "source": "src/data/opening-prologue.js:310",
           "goto": "nodes.margin-road"
         },
         {
           "id": "nodes.margin.c2",
           "text": "(say nothing)",
-          "source": "src/data/opening-prologue.js:311",
+          "source": "src/data/opening-prologue.js:310",
           "goto": "nodes.margin-quiet"
         }
       ],
-      "source": "src/data/opening-prologue.js:308"
+      "source": "src/data/opening-prologue.js:307"
     },
     "nodes.margin-next": {
       "id": "nodes.margin-next",
@@ -1525,16 +1519,16 @@
           "id": "nodes.margin-next.l0",
           "who": "me",
           "text": "What next bit?",
-          "source": "src/data/opening-prologue.js:313"
+          "source": "src/data/opening-prologue.js:312"
         },
         {
           "id": "nodes.margin-next.l1",
           "who": "unknown",
-          "text": "The bit where you decide to go in. People are very particular about the order.",
-          "source": "src/data/opening-prologue.js:314"
+          "text": "The next bit up the road. Or we can play another game.",
+          "source": "src/data/opening-prologue.js:313"
         }
       ],
-      "source": "src/data/opening-prologue.js:313",
+      "source": "src/data/opening-prologue.js:312",
       "goto": "nodes.fate"
     },
     "nodes.margin-road": {
@@ -1544,23 +1538,23 @@
         {
           "id": "nodes.margin-road.l0",
           "who": "me",
-          "text": "Leave the road alone.",
-          "source": "src/data/opening-prologue.js:317"
+          "text": "Please leave the road alone.",
+          "source": "src/data/opening-prologue.js:316"
         },
         {
           "id": "nodes.margin-road.l1",
           "who": "unknown",
-          "text": "I have not touched it. You brought the bend with you.",
-          "source": "src/data/opening-prologue.js:318"
+          "text": "Alright, me, the floating hole in the sky, will leave the road alone.",
+          "source": "src/data/opening-prologue.js:317"
         },
         {
           "id": "nodes.margin-road.l2",
           "who": "direction",
-          "text": "Nothing in the picture straightens. You keep your hands where the road would need them.",
-          "source": "src/data/opening-prologue.js:319"
+          "text": "Nothing straightens. You think you should keep your hands where the road might need them.",
+          "source": "src/data/opening-prologue.js:318"
         }
       ],
-      "source": "src/data/opening-prologue.js:317",
+      "source": "src/data/opening-prologue.js:316",
       "goto": "nodes.fate"
     },
     "nodes.margin-quiet": {
@@ -1571,16 +1565,16 @@
           "id": "nodes.margin-quiet.l0",
           "who": "direction",
           "text": "You keep the small correction in your hands.",
-          "source": "src/data/opening-prologue.js:322"
+          "source": "src/data/opening-prologue.js:321"
         },
         {
           "id": "nodes.margin-quiet.l1",
           "who": "unknown",
           "text": "I will put you down as still driving. That gives us something to start from.",
-          "source": "src/data/opening-prologue.js:323"
+          "source": "src/data/opening-prologue.js:322"
         }
       ],
-      "source": "src/data/opening-prologue.js:322",
+      "source": "src/data/opening-prologue.js:321",
       "goto": "nodes.fate"
     },
     "nodes.fate": {
@@ -1590,73 +1584,73 @@
         {
           "id": "nodes.fate.l0",
           "who": "unknown",
-          "text": "Now. You. I have been looking forward to you.",
-          "source": "src/data/opening-prologue.js:327"
+          "text": "Now. On you. I have been looking forward to you.",
+          "source": "src/data/opening-prologue.js:326"
         },
         {
           "id": "nodes.fate.l1",
           "who": "direction",
           "text": "More of the eyes have turned this way than you would have thought it had left.",
-          "source": "src/data/opening-prologue.js:328"
+          "source": "src/data/opening-prologue.js:327"
         },
         {
           "id": "nodes.fate.l2",
           "who": "unknown",
           "text": "I have seen this night a good many ways. They are all very well made. Ask me one.",
-          "source": "src/data/opening-prologue.js:329"
+          "source": "src/data/opening-prologue.js:328"
         }
       ],
       "choices": [
         {
           "id": "nodes.fate.c0",
-          "text": "\"I'll finish the job and go home.\"",
-          "source": "src/data/opening-prologue.js:331",
+          "text": "\"The one where I finish the job and go home.\"",
+          "source": "src/data/opening-prologue.js:330",
           "goto": "nodes.f-home"
         },
         {
           "id": "nodes.fate.c1",
-          "text": "\"Then I stop whatever this is.\"",
-          "source": "src/data/opening-prologue.js:332",
+          "text": "\"The one where I stop whatever this is.\"",
+          "source": "src/data/opening-prologue.js:331",
           "goto": "nodes.f-seal"
         },
         {
           "id": "nodes.fate.c2",
-          "text": "\"Somebody will help me.\"",
-          "source": "src/data/opening-prologue.js:333",
+          "text": "\"The one where somebody helps me.\"",
+          "source": "src/data/opening-prologue.js:332",
           "goto": "nodes.f-help"
         },
         {
           "id": "nodes.fate.c3",
-          "text": "\"There's always another way out.\"",
-          "source": "src/data/opening-prologue.js:334",
+          "text": "\"The one where there's  another way out.\"",
+          "source": "src/data/opening-prologue.js:333",
           "goto": "nodes.f-door"
         },
         {
           "id": "nodes.fate.c4",
-          "text": "\"I could get the last one out.\"",
-          "source": "src/data/opening-prologue.js:335",
+          "text": "\"The one where I get the last recorder out.\"",
+          "source": "src/data/opening-prologue.js:334",
           "goto": "nodes.f-carry"
         },
         {
           "id": "nodes.fate.c5",
-          "text": "\"I could just stop, and listen.\"",
-          "source": "src/data/opening-prologue.js:336",
+          "text": "\"The one where I just stop and listen.\"",
+          "source": "src/data/opening-prologue.js:335",
           "goto": "nodes.f-bench"
         },
         {
           "id": "nodes.fate.c6",
           "text": "\"Is there one where I'm all right?\"",
-          "source": "src/data/opening-prologue.js:337",
+          "source": "src/data/opening-prologue.js:336",
           "goto": "nodes.f-none"
         },
         {
           "id": "nodes.fate.c7",
           "text": "\"That's enough.\"",
-          "source": "src/data/opening-prologue.js:338",
+          "source": "src/data/opening-prologue.js:337",
           "goto": "nodes.f-enough"
         }
       ],
-      "source": "src/data/opening-prologue.js:327"
+      "source": "src/data/opening-prologue.js:326"
     },
     "nodes.fate.revisitLines": {
       "id": "nodes.fate.revisitLines",
@@ -1666,10 +1660,10 @@
           "id": "nodes.fate.revisitLines.l0",
           "who": "unknown",
           "text": "Another?",
-          "source": "src/data/opening-prologue.js:330"
+          "source": "src/data/opening-prologue.js:329"
         }
       ],
-      "source": "src/data/opening-prologue.js:330"
+      "source": "src/data/opening-prologue.js:329"
     },
     "nodes.f-home": {
       "id": "nodes.f-home",
@@ -1679,28 +1673,28 @@
           "id": "nodes.f-home.l0",
           "who": "me",
           "text": "I'll finish the job and go home.",
-          "source": "src/data/opening-prologue.js:341"
+          "source": "src/data/opening-prologue.js:340"
         },
         {
           "id": "nodes.f-home.l1",
           "who": "unknown",
           "text": "You might! A car park. Morning. Nothing wrong with the light at all. A cup of coffee the guard gave you, gone cold.",
-          "source": "src/data/opening-prologue.js:342"
+          "source": "src/data/opening-prologue.js:341"
         },
         {
           "id": "nodes.f-home.l2",
           "who": "unknown",
           "text": "You might listen back. Five clean minutes. Perhaps there is something on them. Perhaps you have just learned to hear it.",
-          "source": "src/data/opening-prologue.js:343"
+          "source": "src/data/opening-prologue.js:342"
         },
         {
           "id": "nodes.f-home.l3",
           "who": "unknown",
           "text": "A perfectly ordinary morning. I would hate to be the one who made you doubt it.",
-          "source": "src/data/opening-prologue.js:344"
+          "source": "src/data/opening-prologue.js:343"
         }
       ],
-      "source": "src/data/opening-prologue.js:341"
+      "source": "src/data/opening-prologue.js:340"
     },
     "nodes.f-seal": {
       "id": "nodes.f-seal",
@@ -1710,22 +1704,22 @@
           "id": "nodes.f-seal.l0",
           "who": "me",
           "text": "Then I stop whatever this is.",
-          "source": "src/data/opening-prologue.js:347"
+          "source": "src/data/opening-prologue.js:346"
         },
         {
           "id": "nodes.f-seal.l1",
           "who": "unknown",
           "text": "You might. Suppose it closes. Suppose it works, even. People do like a job that stays done.",
-          "source": "src/data/opening-prologue.js:348"
+          "source": "src/data/opening-prologue.js:347"
         },
         {
           "id": "nodes.f-seal.l2",
           "who": "unknown",
           "text": "You would be on the inside, mind. Your own torch would be the last thing to go out.",
-          "source": "src/data/opening-prologue.js:349"
+          "source": "src/data/opening-prologue.js:348"
         }
       ],
-      "source": "src/data/opening-prologue.js:347"
+      "source": "src/data/opening-prologue.js:346"
     },
     "nodes.f-help": {
       "id": "nodes.f-help",
@@ -1735,22 +1729,22 @@
           "id": "nodes.f-help.l0",
           "who": "me",
           "text": "Somebody will help me.",
-          "source": "src/data/opening-prologue.js:352"
+          "source": "src/data/opening-prologue.js:351"
         },
         {
           "id": "nodes.f-help.l1",
           "who": "unknown",
           "text": "Somebody will. There is a man on the gate, and he is kind, and I am not being funny. He tries. They file it under what he tried.",
-          "source": "src/data/opening-prologue.js:353"
+          "source": "src/data/opening-prologue.js:352"
         },
         {
           "id": "nodes.f-help.l2",
           "who": "unknown",
           "text": "It is the same ending, with a witness.",
-          "source": "src/data/opening-prologue.js:354"
+          "source": "src/data/opening-prologue.js:353"
         }
       ],
-      "source": "src/data/opening-prologue.js:352"
+      "source": "src/data/opening-prologue.js:351"
     },
     "nodes.f-door": {
       "id": "nodes.f-door",
@@ -1760,22 +1754,22 @@
           "id": "nodes.f-door.l0",
           "who": "me",
           "text": "There's always another way out.",
-          "source": "src/data/opening-prologue.js:357"
+          "source": "src/data/opening-prologue.js:356"
         },
         {
           "id": "nodes.f-door.l1",
           "who": "unknown",
           "text": "There is! It is not on the drawings. It is grey, and it opens, and you are so pleased.",
-          "source": "src/data/opening-prologue.js:358"
+          "source": "src/data/opening-prologue.js:357"
         },
         {
           "id": "nodes.f-door.l2",
           "who": "unknown",
           "text": "I will not spoil what is behind it. There is a great deal more of it than you would think, and then another grey door.",
-          "source": "src/data/opening-prologue.js:359"
+          "source": "src/data/opening-prologue.js:358"
         }
       ],
-      "source": "src/data/opening-prologue.js:357"
+      "source": "src/data/opening-prologue.js:356"
     },
     "nodes.f-carry": {
       "id": "nodes.f-carry",
@@ -1785,22 +1779,22 @@
           "id": "nodes.f-carry.l0",
           "who": "me",
           "text": "I could get the last one out.",
-          "source": "src/data/opening-prologue.js:362"
+          "source": "src/data/opening-prologue.js:361"
         },
         {
           "id": "nodes.f-carry.l1",
           "who": "unknown",
           "text": "You would, too. Down the service road, into the morning, the two of you.",
-          "source": "src/data/opening-prologue.js:363"
+          "source": "src/data/opening-prologue.js:362"
         },
         {
           "id": "nodes.f-carry.l2",
           "who": "unknown",
           "text": "He will thank you. Do listen to who is doing the thanking.",
-          "source": "src/data/opening-prologue.js:364"
+          "source": "src/data/opening-prologue.js:363"
         }
       ],
-      "source": "src/data/opening-prologue.js:362"
+      "source": "src/data/opening-prologue.js:361"
     },
     "nodes.f-bench": {
       "id": "nodes.f-bench",
@@ -1810,22 +1804,22 @@
           "id": "nodes.f-bench.l0",
           "who": "me",
           "text": "I could just stop, and listen.",
-          "source": "src/data/opening-prologue.js:367"
+          "source": "src/data/opening-prologue.js:366"
         },
         {
           "id": "nodes.f-bench.l1",
           "who": "unknown",
           "text": "There is a bench. I would like that. There is a piece I want you to hear.",
-          "source": "src/data/opening-prologue.js:368"
+          "source": "src/data/opening-prologue.js:367"
         },
         {
           "id": "nodes.f-bench.l2",
           "who": "unknown",
           "text": "You sit. It holds your weight. There is no waking up farther along the corridor, and you will not mind as much as you should.",
-          "source": "src/data/opening-prologue.js:369"
+          "source": "src/data/opening-prologue.js:368"
         }
       ],
-      "source": "src/data/opening-prologue.js:367"
+      "source": "src/data/opening-prologue.js:366"
     },
     "nodes.f-none": {
       "id": "nodes.f-none",
@@ -1835,28 +1829,28 @@
           "id": "nodes.f-none.l0",
           "who": "me",
           "text": "Is there one where I'm all right?",
-          "source": "src/data/opening-prologue.js:372"
+          "source": "src/data/opening-prologue.js:371"
         },
         {
           "id": "nodes.f-none.l1",
           "who": "direction",
           "text": "All of the eyes that are left look at you.",
-          "source": "src/data/opening-prologue.js:373"
+          "source": "src/data/opening-prologue.js:372"
         },
         {
           "id": "nodes.f-none.l2",
           "who": "unknown",
           "text": "Who knows? Nothing is ever for certain.",
-          "source": "src/data/opening-prologue.js:374"
+          "source": "src/data/opening-prologue.js:373"
         },
         {
           "id": "nodes.f-none.l3",
           "who": "unknown",
           "text": "You could always just drive off. People have. They never write.",
-          "source": "src/data/opening-prologue.js:375"
+          "source": "src/data/opening-prologue.js:374"
         }
       ],
-      "source": "src/data/opening-prologue.js:372",
+      "source": "src/data/opening-prologue.js:371",
       "goto": "nodes.off"
     },
     "nodes.f-enough": {
@@ -1867,16 +1861,16 @@
           "id": "nodes.f-enough.l0",
           "who": "me",
           "text": "That's enough.",
-          "source": "src/data/opening-prologue.js:378"
+          "source": "src/data/opening-prologue.js:377"
         },
         {
           "id": "nodes.f-enough.l1",
           "who": "unknown",
           "text": "It is. You have a bend coming up.",
-          "source": "src/data/opening-prologue.js:379"
+          "source": "src/data/opening-prologue.js:378"
         }
       ],
-      "source": "src/data/opening-prologue.js:378",
+      "source": "src/data/opening-prologue.js:377",
       "goto": "nodes.off"
     },
     "nodes.off": {
@@ -1886,29 +1880,29 @@
         {
           "id": "nodes.off.l0",
           "who": "unknown",
-          "text": "Last thing. In there, with the red light on and the needle at nothing: hold your breath.",
-          "source": "src/data/opening-prologue.js:382"
+          "text": "Last thing. In there, take your time. It's not worth it if you don't enjoy it. I hope you enjoy it.",
+          "source": "src/data/opening-prologue.js:381"
         },
         {
           "id": "nodes.off.l1",
           "who": "unknown",
-          "text": "You will want the practice.",
-          "source": "src/data/opening-prologue.js:383"
+          "text": "I can't tell you everything here, I just can't. But I'll tell you it was beautiful. It was beautiful, and it was quiet, and it was the best thing you've ever heard.",
+          "source": "src/data/opening-prologue.js:382"
         },
         {
           "id": "nodes.off.l2",
           "who": "direction",
           "text": "All the eyes shut. The hole still seems to be looking.",
-          "source": "src/data/opening-prologue.js:384"
+          "source": "src/data/opening-prologue.js:383"
         },
         {
           "id": "nodes.off.l3",
           "who": "unknown",
-          "text": "When it gets quiet, do not hurry to be the next thing in it.",
-          "source": "src/data/opening-prologue.js:385"
+          "text": "When it gets quiet, give yourself in for a moment. Bathe in the silence.",
+          "source": "src/data/opening-prologue.js:384"
         }
       ],
-      "source": "src/data/opening-prologue.js:382",
+      "source": "src/data/opening-prologue.js:381",
       "goto": "nodes.wipers"
     },
     "nodes.wipers": {
@@ -1919,22 +1913,22 @@
           "id": "nodes.wipers.l0",
           "who": "direction",
           "text": "The wipers come back across.",
-          "source": "src/data/opening-prologue.js:388"
+          "source": "src/data/opening-prologue.js:387"
         },
         {
           "id": "nodes.wipers.l1",
           "who": "direction",
           "text": "You are nearly there. You have been nearly there for some time.",
-          "source": "src/data/opening-prologue.js:389"
+          "source": "src/data/opening-prologue.js:388"
         },
         {
           "id": "nodes.wipers.l2",
           "who": "direction",
-          "text": "Your thumb is still on the seam. You do not remember checking which side of it.",
-          "source": "src/data/opening-prologue.js:390"
+          "text": "Your thumb is still on the seam. You're wearing in the leather more and more with every rub of the joinery.",
+          "source": "src/data/opening-prologue.js:389"
         }
       ],
-      "source": "src/data/opening-prologue.js:388",
+      "source": "src/data/opening-prologue.js:387",
       "targetName": "card"
     }
   }

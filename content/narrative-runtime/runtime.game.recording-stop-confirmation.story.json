@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.recording-stop-confirmation",
+  "title": "Runtime · game/recording-stop-confirmation.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "recordingStopPrompt.start",
+  "entries": [
+    "recordingStopPrompt.start"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/recording-stop-confirmation.js",
+  "notes": "Generated from src/game/recording-stop-confirmation.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "recordingStopPrompt.start": {
+      "id": "recordingStopPrompt.start",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "recordingStopPrompt.start.l0",
+          "who": "you",
+          "text": "Only {take.elapsed.toFixed(1)} seconds. This setup needs {take.minimum.toFixed(1)} for a usable take.",
+          "source": "src/game/recording-stop-confirmation.js:12"
+        }
+      ],
+      "choices": [
+        {
+          "id": "recordingStopPrompt.start.c0",
+          "text": "Keep recording.",
+          "source": "src/game/recording-stop-confirmation.js:14",
+          "targetName": "done"
+        },
+        {
+          "id": "recordingStopPrompt.start.c1",
+          "text": "Stop. Discard this take.",
+          "source": "src/game/recording-stop-confirmation.js:15",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/game/recording-stop-confirmation.js:12"
+    }
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.childhood-valley-signs",
+  "title": "Runtime · data/childhood-valley-signs.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "worksNotice",
+  "entries": [
+    "worksNotice",
+    "HOME_VALLEY_SIGN_PRINTS"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/childhood-valley-signs.js",
+  "notes": "Generated from src/data/childhood-valley-signs.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "worksNotice": {
+      "id": "worksNotice",
+      "type": "line",
+      "lines": [
+        {
+          "id": "worksNotice.l0",
+          "who": "line",
+          "text": "GEMEINDEWERK",
+          "source": "src/data/childhood-valley-signs.js:18"
+        },
+        {
+          "id": "worksNotice.l1",
+          "who": "line",
+          "text": "Schneeräumung",
+          "source": "src/data/childhood-valley-signs.js:19"
+        },
+        {
+          "id": "worksNotice.l2",
+          "who": "line",
+          "text": "Zufahrt zum Laden",
+          "source": "src/data/childhood-valley-signs.js:20"
+        },
+        {
+          "id": "worksNotice.l3",
+          "who": "line",
+          "text": "bitte freihalten.",
+          "source": "src/data/childhood-valley-signs.js:21"
+        },
+        {
+          "id": "worksNotice.l4",
+          "who": "line",
+          "text": "Vielen Dank.",
+          "source": "src/data/childhood-valley-signs.js:22"
+        }
+      ],
+      "source": "src/data/childhood-valley-signs.js:18"
+    },
+    "HOME_VALLEY_SIGN_PRINTS": {
+      "id": "HOME_VALLEY_SIGN_PRINTS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l0",
+          "who": "line",
+          "text": "PostAuto",
+          "source": "src/data/childhood-valley-signs.js:70"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l1",
+          "who": "line",
+          "text": "Tannenried, Dorf",
+          "source": "src/data/childhood-valley-signs.js:71"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l2",
+          "who": "line",
+          "text": "Tannenried, Dorf",
+          "source": "src/data/childhood-valley-signs.js:77"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l3",
+          "who": "line",
+          "text": "WINTERFAHRPLAN",
+          "source": "src/data/childhood-valley-signs.js:80"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l4",
+          "who": "line",
+          "text": "Tannenried, Dorf · täglich",
+          "source": "src/data/childhood-valley-signs.js:81"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l5",
+          "who": "line",
+          "text": "Innertkirchen, Grimseltor",
+          "source": "src/data/childhood-valley-signs.js:82"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l6",
+          "who": "line",
+          "text": "06.42 12.42 17.26",
+          "source": "src/data/childhood-valley-signs.js:83"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l7",
+          "who": "line",
+          "text": "Guttannen, Dorf",
+          "source": "src/data/childhood-valley-signs.js:84"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l8",
+          "who": "line",
+          "text": "07.18 13.18 18.03",
+          "source": "src/data/childhood-valley-signs.js:85"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l9",
+          "who": "line",
+          "text": "Umsteigen in Innertkirchen",
+          "source": "src/data/childhood-valley-signs.js:86"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l10",
+          "who": "line",
+          "text": "Richtung Meiringen",
+          "source": "src/data/childhood-valley-signs.js:87"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l11",
+          "who": "line",
+          "text": "TANNENRIED",
+          "source": "src/data/childhood-valley-signs.js:95"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l12",
+          "who": "line",
+          "text": "ZU FUSS",
+          "source": "src/data/childhood-valley-signs.js:96"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l13",
+          "who": "line",
+          "text": "Aussichtspunkt",
+          "source": "src/data/childhood-valley-signs.js:97"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l14",
+          "who": "line",
+          "text": "Oberhalb der Weide",
+          "source": "src/data/childhood-valley-signs.js:98"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l15",
+          "who": "line",
+          "text": "dem Waldweg folgen.",
+          "source": "src/data/childhood-valley-signs.js:99"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l16",
+          "who": "line",
+          "text": "Kein Winterdienst",
+          "source": "src/data/childhood-valley-signs.js:100"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l17",
+          "who": "line",
+          "text": "Verkehrsverein Tannenried",
+          "source": "src/data/childhood-valley-signs.js:101"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l18",
+          "who": "line",
+          "text": "Dorfladen",
+          "source": "src/data/childhood-valley-signs.js:107"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l19",
+          "who": "line",
+          "text": "Kein Trinkwasser",
+          "source": "src/data/childhood-valley-signs.js:114"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l20",
+          "who": "line",
+          "text": "Bäckerei",
+          "source": "src/data/childhood-valley-signs.js:117"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l21",
+          "who": "line",
+          "text": "Öffnungszeiten",
+          "source": "src/data/childhood-valley-signs.js:122"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l22",
+          "who": "line",
+          "text": "Di–Sa",
+          "source": "src/data/childhood-valley-signs.js:123"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l23",
+          "who": "line",
+          "text": "07.00–12.00",
+          "source": "src/data/childhood-valley-signs.js:124"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l24",
+          "who": "line",
+          "text": "Montag",
+          "source": "src/data/childhood-valley-signs.js:125"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l25",
+          "who": "line",
+          "text": "geschlossen",
+          "source": "src/data/childhood-valley-signs.js:126"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l26",
+          "who": "line",
+          "text": "Skiwerkstatt",
+          "source": "src/data/childhood-valley-signs.js:131"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l27",
+          "who": "line",
+          "text": "Wachs und Kanten",
+          "source": "src/data/childhood-valley-signs.js:132"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l28",
+          "who": "line",
+          "text": "Aussichtspunkt",
+          "source": "src/data/childhood-valley-signs.js:137"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l29",
+          "who": "line",
+          "text": "Tannenried",
+          "source": "src/data/childhood-valley-signs.js:142"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l30",
+          "who": "line",
+          "text": "Tannenried",
+          "source": "src/data/childhood-valley-signs.js:147"
+        },
+        {
+          "id": "HOME_VALLEY_SIGN_PRINTS.l31",
+          "who": "line",
+          "text": "Rückweg geräumt.",
+          "source": "src/data/childhood-valley-signs.js:153"
+        }
+      ],
+      "source": "src/data/childhood-valley-signs.js:70"
+    }
+  }
+}

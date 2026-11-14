@@ -2,6 +2,7 @@
 // own straight lines. Everything that stands on it is the game's own: Source's
 // masonry, St Brendan's, the field's daisy and ant, the apparition bodies.
 import {HORIZON_APPROACH as C} from '../data/horizon-approach.js';
+import {horizonTowerRoad} from '../game/horizon-approach-scene.js';
 import {sourceContinuationEscherGeometryLibrary} from './source-continuation-escher.js';
 import {m62HeightAt} from '../data/m62-land.js';
 
@@ -16,15 +17,24 @@ const atMap=(r,phi,y=0)=>[r*Math.sin(phi),y,r*Math.cos(phi)];
 // Every road leaves the place he starts and arrives at the object, the way every
 // meridian leaves one pole for the other. They are the same width all the way, so
 // on the map they fan out and close again.
+//
+// The tower's road is laid on its own, so that once the tower is offered it can be
+// drawn in negative: the one pale road among the dark ones, edged in dark. Until
+// then it is the same as the rest.
+const DARK=Object.freeze({base:[.03,.032,.045,1]}),PALE=Object.freeze({base:[.82,.86,.94,1],emissive:[.62,.66,.74]});
+export const HORIZON_TOWER_ROAD=Object.freeze({
+  closed:Object.freeze({plain:Object.freeze(['ha_closed_tower_road','ha_closed_tower_line']),negative:Object.freeze(['ha_closed_tower_negative','ha_closed_tower_negative_line'])}),
+});
 function closedGround(){
   const V=C.variants.closed,R=V.radius,end=Math.PI*R,w=V.roadHalfWidth,road=target(),line=target(),hub=target(),N=72;
+  const tower=horizonTowerRoad('closed'),towerRoad=target(),towerLine=target();
   const half=(r,width)=>width/(R*Math.max(.02,Math.sin(r/R)));
   for(let k=0;k<V.roads;k++){
-    const phi=k/V.roads*TAU;
+    const phi=k/V.roads*TAU,surface=k===tower?towerRoad:road,edge=k===tower?towerLine:line;
     for(let j=0;j<N;j++){
       const a=V.hub+(end-2*V.hub)*j/N,b=V.hub+(end-2*V.hub)*(j+1)/N,da=half(a,w),db=half(b,w),ea=half(a,.09),eb=half(b,.09);
-      quad(road,atMap(a,phi-da),atMap(a,phi+da),atMap(b,phi+db),atMap(b,phi-db));
-      for(const s of[-1,1])quad(line,atMap(a,phi+s*da,.012),atMap(a,phi+s*(da-ea),.012),atMap(b,phi+s*(db-eb),.012),atMap(b,phi+s*db,.012));
+      quad(surface,atMap(a,phi-da),atMap(a,phi+da),atMap(b,phi+db),atMap(b,phi-db));
+      for(const s of[-1,1])quad(edge,atMap(a,phi+s*da,.012),atMap(a,phi+s*(da-ea),.012),atMap(b,phi+s*(db-eb),.012),atMap(b,phi+s*db,.012));
     }
   }
   // The two places they all meet.
@@ -37,10 +47,15 @@ function closedGround(){
       else quad(hub,atMap(r0,a),atMap(r1,a),atMap(r1,b),atMap(r0,b));
     }
   }
+  const[plainRoad,plainLine]=HORIZON_TOWER_ROAD.closed.plain,[negativeRoad,negativeLine]=HORIZON_TOWER_ROAD.closed.negative;
   return[
-    {name:'ha_closed_road',...road,base:[.03,.032,.045,1],roughness:1},
+    {name:'ha_closed_road',...road,...DARK,roughness:1},
     {name:'ha_closed_hub',...hub,base:[.1,.075,.05,1],emissive:[.1,.075,.045],roughness:1},
-    {name:'ha_closed_line',...line,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
+    {name:'ha_closed_line',...line,...PALE,roughness:1},
+    {name:plainRoad,...towerRoad,...DARK,roughness:1},
+    {name:plainLine,...towerLine,...PALE,roughness:1},
+    {name:negativeRoad,...towerRoad,...PALE,roughness:1},
+    {name:negativeLine,...towerLine,...DARK,roughness:1},
   ];
 }
 
@@ -97,7 +112,8 @@ function circleLimitGround(){
 }
 
 // ── THE ROAD THROUGH THE HOUSE OF STAIRS ─────────────────────────────────────
-// Straight on, and one way off to the side that is only there once it is offered.
+// Straight on, and one way off to the side that is only there once it is offered,
+// and is laid in negative, pale edged in dark, as the closed space's tower road is.
 // What hangs round it is the same construction Source II falls through.
 function relativityGround(){
   const V=C.variants.relativity,w=V.roadHalfWidth,E=V.roadEnd,road=target(),line=target(),side=target(),sideLine=target(),N=24;
@@ -117,8 +133,8 @@ function relativityGround(){
   return[
     {name:'ha_road',...road,base:[.03,.032,.045,1],roughness:1},
     {name:'ha_road_line',...line,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
-    {name:'ha_side',...side,base:[.03,.032,.045,1],roughness:1},
-    {name:'ha_side_line',...sideLine,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
+    {name:'ha_side',...side,...PALE,roughness:1},
+    {name:'ha_side_line',...sideLine,...DARK,roughness:1},
     {name:'ha_hub',...hub,base:[.3,.23,.15,1],emissive:[.1,.075,.045],roughness:1},
     ...rows,
   ];

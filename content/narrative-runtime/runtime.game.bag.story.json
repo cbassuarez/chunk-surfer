@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.bag",
+  "title": "Runtime · game/bag.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "SERVICE_TAG",
+  "entries": [
+    "SERVICE_TAG"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/bag.js",
+  "notes": "Generated from src/game/bag.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "SERVICE_TAG": {
+      "id": "SERVICE_TAG",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "SERVICE_TAG.c0",
+          "text": "“I needed one clean hit. With those two contacts tied together, it hits harder. I could have stopped there.”",
+          "source": "src/game/bag.js:65",
+          "choiceId": "why"
+        },
+        {
+          "id": "SERVICE_TAG.c1",
+          "text": "“I pressed INVERT. Heard the deck start recording. The thing still hit me. What I had loaded was gone. It had put a little piece of the attack in its place.”",
+          "source": "src/game/bag.js:66",
+          "choiceId": "arc"
+        },
+        {
+          "id": "SERVICE_TAG.c2",
+          "text": "“When it says HOT, give it a beat. HOLD will cool the wire. A strong take can still push it. Pull the lead if you need to know what will happen.”",
+          "source": "src/game/bag.js:67",
+          "choiceId": "cool"
+        },
+        {
+          "id": "SERVICE_TAG.c3",
+          "text": "“Only the one you have loaded for the fight. I played the filed tapes back twice to make sure.”",
+          "source": "src/game/bag.js:68",
+          "choiceId": "filed"
+        },
+        {
+          "id": "SERVICE_TAG.c4",
+          "text": "Fold the tag back",
+          "source": "src/game/bag.js:69",
+          "choiceId": "back"
+        }
+      ],
+      "source": "src/game/bag.js:65"
+    }
+  }
+}

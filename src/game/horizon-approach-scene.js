@@ -15,6 +15,18 @@ export const HORIZON_APPROACH_EVENT=Object.freeze({
 });
 // The bearing St Brendan's lies on, from the object. Anywhere else out is the chapel.
 export const HORIZON_TOWER_BEARING=Math.PI*.5,HORIZON_TOWER_SECTOR=.42;
+// Where the roads are only some bearings, the way to the tower is a road: the one
+// nearest St Brendan's bearing. Its index, or null where the ground is not roads.
+export function horizonTowerRoad(variant){
+  const V=C.variants[horizonApproachVariantId(variant)];
+  return V.roads?Math.round(HORIZON_TOWER_BEARING/(TAU/V.roads))%V.roads:null;
+}
+// The bearing the tower is taken on, and St Brendan's stands at the end of: down
+// the middle of the tower road where there is one.
+export function horizonTowerBearing(variant){
+  const V=C.variants[horizonApproachVariantId(variant)],road=horizonTowerRoad(variant);
+  return road===null?HORIZON_TOWER_BEARING:road*TAU/V.roads;
+}
 
 export function freshHorizonApproach({variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,phi=0,returning=false,defeats=0}={}){
   const id=horizonApproachVariantId(variant),V=C.variants[id],losses=Math.max(0,Math.floor(finite(defeats))),again=!!returning||losses>0,start=again?C.station.reach-.6:V.startMetres;
@@ -66,14 +78,26 @@ export function pluckHorizonApproachPetal(current){
   if(petalsPlucked===C.daisy.petals)openOffer(state,events);
   return{state,events};
 }
+// The offer is still to come: the daisy has petals left, and the last of them is
+// what opens it. Every other occupant opens it on arrival or never can.
+export const horizonApproachOfferPending=state=>!!state.arrived&&!state.decided&&!state.offerOpen
+  &&state.occupant==='daisy'&&state.petalsPlucked<C.daisy.petals;
+// How far from the object he can walk this frame. Once he is there, walking past
+// it is not a way round the offer: until it has been put to him and finished, no
+// road takes him further out than arm's reach. A hair inside it, so that what he
+// can do there ([E], a petal) stays in reach wherever he stops.
+export function horizonApproachTether(state,{decisionsEnabled=true}={}){
+  if(!state.arrived||state.decided)return Infinity;
+  return decisionsEnabled&&!horizonApproachOfferPending(state)?Infinity:C.station.reach-.01;
+}
 // Straight on, in the space's own sense of straight. A wall is met by sliding along it.
-function move(state,forward,strafe,distance){
+function move(state,forward,strafe,distance,tether=Infinity){
   const V=C.variants[state.variant],length=Math.hypot(forward,strafe);if(!length)return false;
   const heading=Math.atan2(strafe,forward)+state.yaw,centre=spaceIdentity(),now=spaceDistance(V.sign,V.radius,state.frame,centre);
   for(const[turn,share]of[[0,1],[.7,.7],[-.7,.7],[1.2,.35],[-1.2,.35]]){
     const a=heading+turn,frame=spaceMultiply(state.frame,spaceTranslation(V.sign,V.radius,[Math.sin(a),0,-Math.cos(a)],distance*share)),d=spaceDistance(V.sign,V.radius,frame,centre);
-    // He walks up to it, not through it.
-    if(!(d<C.station.standOff&&d<now)&&horizonApproachOnGround(state.variant,frame)){state.frame=frame;return true;}
+    // He walks up to it, not through it; and not away from it before it has spoken.
+    if(!(d<C.station.standOff&&d<now)&&!(d>tether&&d>now)&&horizonApproachOnGround(state.variant,frame)){state.frame=frame;return true;}
   }
   return false;
 }
@@ -83,16 +107,17 @@ export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=fals
   const step=Math.max(0,Math.min(C.maxFrameDelta,finite(dt)));
   state.elapsed+=step;
   const length=Math.hypot(forward,strafe);
-  const moved=length>0&&step>0&&move(state,forward/Math.max(1,length),strafe/Math.max(1,length),C.walk*step*Math.min(1,length));
+  const moved=length>0&&step>0&&move(state,forward/Math.max(1,length),strafe/Math.max(1,length),C.walk*step*Math.min(1,length),horizonApproachTether(state,{decisionsEnabled}));
   const near=horizonApproachNear(state);
   if(!state.arrived&&near){
     // The truth is given here, whoever it is, whatever he brought.
     state.arrived=true;events.push({type:state.returning?HORIZON_APPROACH_EVENT.RETURNED:HORIZON_APPROACH_EVENT.ARRIVED,occupant:state.occupant,lyleBox:state.lyleBox||null,condition:state.condition,defeats:state.defeats||0});
     if(state.condition&&(state.returning||state.occupant!=='daisy'))openOffer(state,events);
   }
-  // Standing there decides nothing. Walking on is the only thing that does.
-  if(state.arrived&&moved&&decisionsEnabled&&horizonApproachDistance(state)>C.commit){
-    const{phi}=horizonApproachMap(state),tower=state.offerOpen&&Math.abs(wrapAngle(phi-HORIZON_TOWER_BEARING))<HORIZON_TOWER_SECTOR;
+  // Standing there decides nothing. Walking on is the only thing that does, and
+  // only once there is nothing left for him to be offered.
+  if(state.arrived&&moved&&decisionsEnabled&&!horizonApproachOfferPending(state)&&horizonApproachDistance(state)>C.commit){
+    const{phi}=horizonApproachMap(state),tower=state.offerOpen&&Math.abs(wrapAngle(phi-horizonTowerBearing(state.variant)))<HORIZON_TOWER_SECTOR;
     if(state.returning&&!tower)return{state,events};
     state.decided=tower?'accepted':'declined';
     events.push({type:tower?HORIZON_APPROACH_EVENT.ACCEPTED:HORIZON_APPROACH_EVENT.DECLINED,occupant:state.occupant,exit:tower?'tower':'chapel'});

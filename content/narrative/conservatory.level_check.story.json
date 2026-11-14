@@ -58,11 +58,11 @@
       "lines": [
         {
           "who": "you",
-          "text": "Room tone. Sixty seconds of a room with nothing in it. ",
+          "text": "Room tone. Sixty seconds of the sound of a room.",
           "id": "what.line.1"
         },
         {
-          "who": "you",
+          "who": "direction",
           "text": "Not silence; there really is no such thing. They cut in this room noise under dialogue so a scene doesn't go dead between lines. Every room has one, and every one is different; nobody has ever really noticed a good one.",
           "id": "what.line.2"
         },
@@ -73,12 +73,12 @@
         },
         {
           "who": "direction",
-          "text": "You don't find any comfort in the quote in this place, however. You do ponder, though, just how much those words were presented, said, critiqued, and reanimated year after year in these halls. ",
+          "text": "You don't find any comfort in the quote in this place, however. You do ponder, though, just how much those words were presented, said, critiqued, and reanimated year after year in these halls, but even that thought turns to nought as you remember your earlier vision, and its omen about the many students who supposedly perished in these very rooms. Better not be this one.",
           "id": "what.line.3"
         },
         {
           "who": "you",
-          "text": "Why are these rooms so important? You're really telling me the last guy's files weren't up to snuff? Must be some proper bourgeoisie blokes running this place if they're paying for exit interviews with the walls.",
+          "text": "Why are these rooms so important? You're really telling me the last guy's files weren't up to snuff? Must be some proper bourgeois blokes running this place if they're paying for exit interviews with the walls.",
           "id": "what.line.4"
         }
       ],
@@ -96,7 +96,7 @@
         },
         {
           "who": "you",
-          "text": "Weird. Thought this place was quiet. Looks like my jacket, my knee, my breathing can all ruin this recording.",
+          "text": "Weird. Thought this place was quiet. Looks like my jacket, my knee, my breathing can all ruin this recording. Better not even think too loudly.",
           "id": "levels.line.2"
         }
       ],

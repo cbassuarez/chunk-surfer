@@ -17,6 +17,8 @@ import {createBoothTelevision} from './booth-tv.js';
 import { graphicsStartupError, verifyGraphicsStartup } from './graphics-startup.js';
 import {DRIVE_MEMORY_BREAK_GLSL,driveMemoryBreakUniforms} from './radio-dial-static.js';
 import { assetUrl } from '../platform/paths.js';
+import { filmLeakFrame } from '../game/film-leak.js';
+import { FILM_LEAK_ATLAS } from '../data/film-leak-atlas.js';
 import { HUSH_POSTURE_REVISION } from '../data/generated/hush-last-posture-support.js';
 import { CAB_RADIO_PACK } from '../data/cab-radio.js';
 import { CAB_DASH_PACK } from '../data/cab-dash.js';
@@ -3118,9 +3120,46 @@ uniform vec4 uLeak;         // leak, white, clock, seed
 uniform vec4 uLeakWave;     // origin (uv), front radius, band
 uniform vec4 uLeakLens;     // focus gone, after-image, after-image at (uv)
 uniform float uLeakShimmer;
+uniform sampler2D uLeakPlate;  // scanned Super 8 fog, one cell per frame (game/film-leak.js)
+uniform vec4 uLeakPlateFog;    // cell, next cell, between them (Reduce Flash), exposure
+uniform vec4 uLeakPlateBurn;   // the same, for the burned-through frames
+uniform vec4 uLeakPlateGrid;   // cols, rows, mirrored, grain step
+uniform float uLeakFilmOnly;
 out vec4 o;
 float leakHash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+34.5);return fract(p.x*p.y);}
 float leakNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(leakHash(i),leakHash(i+vec2(1,0)),f.x),mix(leakHash(i+vec2(0,1)),leakHash(i+vec2(1,1)),f.x),f.y);}
+// One scanned frame as exposure. The scan was levelled so unexposed film is 0 and burned-
+// through film is 1, so -log(1-x) is how much light reached it.
+vec3 leakPlateExposure(float cell,vec2 q){
+  vec2 grid=uLeakPlateGrid.xy,at=vec2(mod(cell,grid.x),floor(cell/grid.x)),texel=grid/vec2(textureSize(uLeakPlate,0));
+  q=clamp(q,texel,1.0-texel);
+  vec3 p=texture(uLeakPlate,vec2((at.x+q.x)/grid.x,(grid.y-at.y-1.0+q.y)/grid.y)).rgb;
+  return -log(1.0-.995*pow(p,vec3(2.2)));
+}
+vec3 leakPlateRun(vec4 run,vec2 q){
+  if(run.w<.0001)return vec3(0.0);
+  return mix(leakPlateExposure(run.x,q),leakPlateExposure(run.y,q),run.z)*run.w;
+}
+// leakHash repeats every ten cells, which tiles at grain scale. This one doesn't.
+float leakGrainHash(vec2 p){
+  uvec2 v=uvec2(ivec2(floor(p))+ivec2(65536));
+  v=v*1664525u+1013904223u;v.x+=v.y*1664525u;v.y+=v.x*1664525u;v^=v>>16u;
+  v.x+=v.y*1664525u;v.y+=v.x*1664525u;v^=v>>16u;
+  return float(v.x&0xffffffu)/16777215.0;
+}
+float leakGrain(vec2 p){
+  vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(leakGrainHash(i),leakGrainHash(i+vec2(1,0)),f.x),mix(leakGrainHash(i+vec2(0,1)),leakGrainHash(i+vec2(1,1)),f.x),f.y);
+}
+// The fog's exposure here. Grain is in the emulsion, so it shows only where the fog is
+// partly developed: nothing where no light came, nothing where it burned through.
+vec3 leakFilm(vec2 uv){
+  vec2 q=vec2(mix(uv.x,1.0-uv.x,uLeakPlateGrid.z),uv.y);
+  vec3 e=leakPlateRun(uLeakPlateFog,q)+leakPlateRun(uLeakPlateBurn,q);
+  vec2 shift=vec2(173.0,311.0)*uLeakPlateGrid.w;
+  float grain=(leakGrain(gl_FragCoord.xy/2.3+shift)-.5)+(leakGrain(gl_FragCoord.xy/1.1+shift*1.7)-.5)*.6;
+  return e*(1.0+grain*.5);
+}
 ${PRESSURE_IDENTITY_GLSL}
 uniform sampler2D uPressureInk;
 uniform float uPressureInkReady;
@@ -3283,9 +3322,11 @@ void main(){
   if(closed>.001)c*=1.0-smoothstep(mix(1.15,.03,closed),mix(1.7,.34,closed),closingAt);
   float lids=clamp(uPerceptionAt.z,0.0,1.0);
   if(lids>.001)c=mix(c,vec3(1.0,.34,.13)*(.34+.66*exp(-closingAt*1.35)),lids);
-  // LIGHT IN THE CAMERA. game/neural-transition.js says what this is. It sits on top of
-  // the print, unprinted, because it was never anything in the room: it happened to the
-  // film, or the lens, or the eye, and nothing here says which.
+  // LIGHT IN THE CAMERA. game/neural-transition.js says when; game/film-leak.js says which
+  // piece of film is in the gate. The fog is scanned Super 8, added to the frame's
+  // exposure rather than laid over it, so it lifts the dark first and leaves what was
+  // already bright. It sits on top of the print, unprinted, because it was never anything
+  // in the room: it happened to the film, or the lens, or the eye, and nothing says which.
   float leakAmount=clamp(uLeak.x,0.0,1.0),blinding=clamp(uLeak.y,0.0,1.0),lensGoing=clamp(uLeakLens.x,0.0,1.0),afterSun=clamp(uLeakLens.y,0.0,1.0);
   if(leakAmount>.001||blinding>.001||uLeakWave.z>.001||lensGoing>.001||afterSun>.001){
     // The transition's reduced white alone cannot tame the independent flare,
@@ -3293,11 +3334,18 @@ void main(){
     // every contribution from this effect; ordinary scene exposure is untouched.
     float cameraLightGain=mix(1.0,.25,clamp(uReduceFlash,0.0,1.0));
     blinding*=cameraLightGain;lensGoing*=cameraLightGain;afterSun*=cameraLightGain;
+    if(uLeakFilmOnly>.5){
+      // Film only. The fog and its own burn carry the whole crossing, and the picture's
+      // exposure goes up the way a camera's first frames do: what is bright clips first.
+      vec3 exposed=pow(clamp(c,0.0,1.0),vec3(2.2));
+      vec3 e=-log(max(1.0-exposed,vec3(1e-4)))*(1.0+blinding*blinding*6.0)+leakFilm(uv)*cameraLightGain;
+      c=pow(1.0-exp(-e),vec3(1.0/2.2));
+    }else{
+    // With the lens: the same fog, inside the lens going soft, the flare and the after-image.
     float leakAspect=uRes.x/uRes.y,leakSeed=uLeak.w;
     // A camera with a hand on it. Whatever happens to the film happens at twelve frames
     // a second. Reduce Flash runs it smooth.
     float leakClock=mix(uLeak.z,floor(uLeak.z*12.0)/12.0,uLeakShimmer);
-    vec2 leakAspectUv=uv*vec2(leakAspect,1.0);
     // The lens goes first: everything soft, every highlight swelling, and the same frame
     // exposed twice, a little out of register, the way an in-camera double exposure is.
     float melt=max(blinding,lensGoing);
@@ -3316,36 +3364,12 @@ void main(){
     }
     // Overexposed, not faded: what is already bright clips first, and the room burns out.
     c*=1.0+blinding*blinding*7.0;
-    if(leakAmount>.001){
-      // A light leak is the film fogging from the edge of the gate, and it has an order:
-      // deep red at its reach, then orange, yellow, and white where it is worst. It comes
-      // in as curtains, never as a shape, and they drift.
-      float side=step(.5,fract(leakSeed*3.7));
-      float across=mix(uv.x,1.0-uv.x,side);
-      float wander=leakNoise(vec2(uv.y*1.5+leakSeed*9.0,leakClock*.9))*.62+leakNoise(vec2(uv.y*4.6+leakSeed*3.0,leakClock*1.6))*.2;
-      float curtain=1.0-smoothstep(.0,max(.02,leakAmount*(.34+wander*.95)),across);
-      // A second, thinner burn from the far edge, later and weaker.
-      float farAcross=1.0-across+(uv.y-.5)*(fract(leakSeed*5.9)-.5)*.5;
-      float farWander=leakNoise(vec2(uv.y*2.2-leakSeed*5.0,leakClock*.7+3.0));
-      float second=(1.0-smoothstep(.0,max(.02,leakAmount*leakAmount*(.1+farWander*.55)),farAcross))*.8;
-      vec3 burn=vec3(0.0);
-      for(int k=0;k<2;k++){
-        float amount=k==0?curtain:second;
-        vec3 fog=mix(vec3(.82,.03,.02),vec3(1.0,.36,.05),smoothstep(.0,.3,amount));
-        fog=mix(fog,vec3(1.0,.78,.30),smoothstep(.28,.66,amount));
-        fog=mix(fog,vec3(1.0,.98,.90),smoothstep(.62,.98,amount));
-        burn=max(burn,fog*pow(amount,.72));
-      }
-      c=vec3(1.0)-(vec3(1.0)-clamp(c,0.0,1.0))*(vec3(1.0)-clamp(burn*min(1.0,leakAmount*1.7)*cameraLightGain,0.0,1.0));
-      // Out-of-focus light, drifting across the lens: soft discs, a little brighter at the rim.
-      for(int k=0;k<7;k++){
-        float id=float(k)+leakSeed*17.0;
-        vec2 spot=vec2(fract(id*.6180339)*leakAspect,fract(id*.7548776));
-        spot+=vec2(sin(leakClock*.31+id),cos(leakClock*.23+id*1.7))*.06;
-        float size=.045+.13*fract(id*.3819),away=length(leakAspectUv-spot);
-        float disc=(1.0-smoothstep(size*.86,size,away))*(.5+.5*smoothstep(size*.45,size*.92,away));
-        c+=mix(vec3(1.0,.46,.14),vec3(1.0,.84,.56),fract(id*.911))*disc*leakAmount*.2*cameraLightGain;
-      }
+    if(uLeakPlateFog.w>.0001){
+      // The film fogging from the edge of the gate: crimson at its reach, a cool white
+      // where it is worst, on the frame's exposure like any other light.
+      vec3 exposed=pow(clamp(c,0.0,1.0),vec3(2.2));
+      exposed=1.0-(1.0-exposed)*exp(-leakFilm(uv)*cameraLightGain);
+      c=pow(exposed,vec3(1.0/2.2));
     }
     if(uLeakWave.z>.001){
       // Light through the lens from one place, swelling. Each colour is focused a little
@@ -3365,6 +3389,7 @@ void main(){
       c=mix(c,c*vec3(.42,.52,1.0)+vec3(.02,.03,.13),disc*afterSun);
       c+=vec3(.34,.05,.42)*ring*afterSun*.34;
     }
+    } // with the lens
   }
   // THE CATCH. A flash photograph of the real body: the room blown white behind it,
   // then the same frame negative. On the finished frame, because the print stage
@@ -4621,6 +4646,7 @@ export function r3dChapelTapeDemandReady(){return chapelTapeDemandReady;}
 export function r3dChapelTapeDemandStatus(){return{ready:chapelTapeDemandReady,error:chapelTapeDemandError};}
 let academicGalleryReady=false,academicGalleryError=null;
 let progPressureFinish=null,pressureFinishTex=null,pressureFinishFbo=null,pressureIdentityTex=null;
+let filmLeakTex=null;
 let pressureFinishReady=false;
 let pressureSceneDepthReady=false;
 const pressureFinishUniformCache=new Map();
@@ -6592,6 +6618,8 @@ export function r3dInit(mapEl) {
   progWater = program(WATER_FRAG);
   progMarch = program(MARCH_FRAG);
   progPost = program(POST_FRAG);
+  // The scanned fog. Until it arrives a crossing still has its white, only no film.
+  loadDataTexture(assetUrl(FILM_LEAK_ATLAS.url)).then(t=>{filmLeakTex=t;}).catch(()=>{filmLeakTex=null;});
   progDepth = program(DEPTH_FRAG);
   progDatamosh = program(DATAMOSH_FRAG);
   progCopy = program(COPY_FRAG);
@@ -8210,6 +8238,14 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.uniform4f(postU('uLeakWave'),seen.origin[0],seen.origin[1],seen.waveRadius,seen.waveBand);
   gl.uniform4f(postU('uLeakLens'),seen.lens,seen.after,seen.afterAt[0],seen.afterAt[1]);
   gl.uniform1f(postU('uLeakShimmer'),seen.shimmer);
+  // Which frame of film is in the gate (game/film-leak.js). The transition's own shimmer
+  // says whether it steps or runs smooth, so Reduce Flash is decided once.
+  const film=filmLeakTex&&(seen.leak>.001||seen.white>.001)?filmLeakFrame({leak:seen.leak,white:seen.white,time:seen.time,seed:seen.seed,reducedFlash:!(seen.shimmer>.5)}):null;
+  gl.activeTexture(gl.TEXTURE11);gl.bindTexture(gl.TEXTURE_2D,filmLeakTex||sourceTex);gl.uniform1i(postU('uLeakPlate'),11);
+  gl.uniform4f(postU('uLeakPlateFog'),film?.fog.a||0,film?.fog.b||0,film?.fog.mix||0,film?.fog.scale||0);
+  gl.uniform4f(postU('uLeakPlateBurn'),film?.burn.a||0,film?.burn.b||0,film?.burn.mix||0,film?.burn.scale||0);
+  gl.uniform4f(postU('uLeakPlateGrid'),FILM_LEAK_ATLAS.cols,FILM_LEAK_ATLAS.rows,film?.mirrored?1:0,film?.grain||0);
+  gl.uniform1f(postU('uLeakFilmOnly'),film?.filmOnly?1:0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   // CPU submit receipt, not a claim of OS compositor/GPU presentation timing.
   if(presentationReceiptListener&&!presentTarget)presentationReceiptListener(performance.now());

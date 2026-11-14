@@ -572,6 +572,7 @@ import { setPayphoneTableauSink } from './render/payphone-view.js';
 import { payphoneInteriorPlane, payphoneInteriorPointer, payphoneInteriorBookPlane, payphoneInteriorBookPointer } from './render/payphone-interior.js';
 import { releaseChildhoodWindow } from './render/childhood-window.js';
 import { createStationHomeState, updateStationHome } from './game/station-home.js';
+import { HOME_ARRIVAL_FLAG, HOME_ARRIVAL_START, createHomeArrival, finishHomeArrival, homeArrivalFrame, nameHomeArrival } from './game/home-arrival.js';
 import { createHomeValleyActivities, homeValleyActivityFocus, homeValleyActivityPresentation, updateHomeValleyActivities } from './game/childhood-valley-activities.js';
 import { HOME_VALLEY_REST_END_SECONDS, HOME_VALLEY_REST_SITE, chooseHomeValleyRestLocus, homeValleyRestFocus, homeValleyRestFrame, homeValleyRestStory } from './game/childhood-valley-rest.js';
 import { makeSourceRestConversationScene } from './game/source-rest-conversation-scene.js';
@@ -11402,6 +11403,49 @@ function sayStationNode(id){
   const node=runtimeTree('source-space.door-field')[id];
   (node?.lines||[]).forEach((line,i)=>SPEECH.say({who:line.who||'direction',text:line.text},{id:`door-field:${id}:${i}`}));
 }
+// THE WALK IN (game/home-arrival.js). The snow valley opens in whiteout and
+// his faculties ask what he walked toward. Whatever he names is where the wind
+// parts the snow first, and the tree ends on the valley's own walk line. With
+// no thought presenter (?nothink) he arrives as before, the valley already there.
+let homeArrival=null;
+function beginHomeArrival(frame){
+  const key=`${frame.id}:${frame.realm?.startedAt??0}`;
+  if(homeArrival?.key===key)return true;
+  homeArrival=null;
+  if(flagTest(HOME_ARRIVAL_FLAG))return false;
+  const tree=runtimeTree('source-space.door-field');
+  if(!tree[HOME_ARRIVAL_START])return false;
+  homeArrival=createHomeArrival(key,stationTime());
+  const finish=()=>{
+    if(homeArrival?.key===key)homeArrival=finishHomeArrival(homeArrival,stationTime());
+    if(!flagTest(HOME_ARRIVAL_FLAG)){flagApply([HOME_ARRIVAL_FLAG]);saveCommit({flags:getSave().flags});}
+  };
+  // Low and unscrimmed: the white has to read as white, and the snow parts
+  // in the middle of the view, which a centred panel would cover.
+  const scene=think(`door-field:${HOME_ARRIVAL_START}`,tree,{startAt:HOME_ARRIVAL_START,force:!NO_THINK,anchor:'lower',scrim:0,
+    onChoice:(choice)=>{if(homeArrival?.key===key&&choice?.arrive)homeArrival=nameHomeArrival(homeArrival,choice.arrive,stationTime());},
+    onDone:finish,onCancel:finish});
+  if(!scene){homeArrival=null;return false;}
+  return true;
+}
+function homeArrivalPresentation(){
+  if(!homeArrival)return null;
+  const frame=homeArrivalFrame(homeArrival,stationTime());
+  if(!frame)homeArrival=null;
+  return frame;
+}
+// Open one field door and step through it, ending on its front side facing it.
+function crossStationFieldDoor(id){
+  if(!usingSourceSpace())return null;
+  const door=chunkSurfRuntime.doorFieldDoors().find((entry)=>entry.id===id);
+  if(!door||door.route)return null;
+  chunkSurfRuntime.openDoorFieldDoor(door.id);
+  const [a,b]=door.threshold,cx=(a.x+b.x)/2,cy=(a.y+b.y)/2,n=door.normal;
+  chunkSurfRuntime.onStep({x:cx+n[0]*1.5,y:cy+n[2]*1.5},{x:cx-n[0]*1.5,y:cy-n[2]*1.5});
+  chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
+  syncSourceRender({force:true});
+  return chunkSurfRuntime.doorFieldDoors().find((entry)=>entry.id===id)||null;
+}
 function syncStationErrand(frame){
   const rt=chunkSurfRuntime;
   if(!rt?.setStationHomeOpen)return frame;
@@ -11456,7 +11500,7 @@ function syncStationErrand(frame){
     const restored=rt.stationWalkState?.();
     if(frame.realm){
       stationWay.walk=null;
-      if(frame.home&&!frame.released&&!frame.realm.homeState?.recognized)sayStationNode('home.walk');
+      if(frame.home&&!frame.released&&!frame.realm.homeState?.recognized&&!beginHomeArrival(frame))sayStationNode('home.walk');
     }
     else if(frame.home&&!frame.released){
       stationWay.walk=restored?{...restored,thought:false}:{kind:'home',progress:0,windowAt:null,thought:false,done:false,forward:frame.forward};
@@ -11478,6 +11522,7 @@ function syncStationErrand(frame){
     return presentHomeValley(rt.doorCrossingFrame?.()||frame,homePresentation);
   }
   if(!frame&&stationWay.crossingId){
+    homeArrival=null;
     if(stationWay.walk)finishHomeWalk({released:false});
     const wasWrong=stationWay.wrong,seed=stationWay.crossingSeed;
     stationWay.crossingId=null;stationWay.world=null;stationWay.home=false;stationWay.wrong=false;
@@ -11659,7 +11704,7 @@ function presentHomeValley(frame,homePresentation){
   const camera=rest||activity.camera;
   return {...frame,realm:camera?{...realm,eyeHeight:camera.eyeHeight,
     pose:rest?.pose||{...realm.pose,yaw:camera.yaw,pitch:camera.pitch}}:realm,
-    homePresentation:{...homePresentation,activity,rest}};
+    homePresentation:{...homePresentation,activity,rest,arrival:homeArrivalPresentation()}};
 }
 function stationHomePresentationNow(){
   const realm=chunkSurfRuntime?.stationRealmFrame?.();
@@ -12009,30 +12054,18 @@ function syncStationEdgeSound(frame,{immediate=false}={}){
   }
 }
 
-// A DOOR, LOOKED AT (source-space.door-field). The door's own node, which of the
-// building's doors it was, joined to what is coming under it from its world; or,
-// for the doors nobody can reach, what they are and where they hang.
+// THINGS IN THE DOOR FIELD, LOOKED AT (source-space.door-field): the lands, the
+// service side, the edges, the scars, and the doors nobody can reach. A door he
+// can open is never looked at; [e] opens it.
 function openDoorFieldLook(result){
-  if(result?.destination&&result.line){
-    const node={start:{lines:[{who:'direction',text:result.line}]}};
-    if(!think(`door-field:${result.id||result.fieldId||result.destination}`,node,{startAt:'start',force:!NO_THINK}))
-      SPEECH.say({who:'direction',text:result.line},{id:`door-field:${result.id||result.fieldId||result.destination}`});
-    return true;
-  }
   const tree=runtimeTree('source-space.door-field');
   let startAt=null;
   if(result?.land)startAt=result.land;
   else if(result?.service==='ledger')return openDoorLedger();
   else if(result?.service)startAt=`service.${result.service}`;
   else if(result?.edge)startAt=`edge.${result.edge}`;
-  else if(result?.home)startAt='home.door';
   else if(result?.scar)startAt=`scar.${result.scar}`;
   else if(result?.extra)startAt=`extra.${result.extra}`;
-  else if(result?.archetype){
-    startAt=`door.${result.archetype}`;
-    const seep=result.opened?'seep.open':`seep.${result.world}`;
-    if(tree[startAt]&&tree[seep])tree[startAt].goto=seep;
-  }
   if(!startAt||!tree[startAt])return false;
   if(think(`door-field:${startAt}`,tree,{startAt,force:!NO_THINK}))return true;
   // No thoughts (?nothink): the same words, said.
@@ -14868,7 +14901,7 @@ function applyStoryChoice(choice){
 // ── thinking, over a corridor that has not stopped ──────────────────────────
 // Every thought tree goes through here, so they all get the same voice, the
 // same typewriter, the same clicks — and none of them stop the building.
-function think(id, nodes, { startAt='start', onChoice, onDone, onCancel, force=false, escapable=true, allowsLook=true }={}){
+function think(id, nodes, { startAt='start', onChoice, onDone, onCancel, force=false, escapable=true, allowsLook=true, anchor, scrim }={}){
   if(!storyMode) return null;
   // Thought trees are conservatory content, and they block input while they are
   // open. `?nothink=1` is how a mechanism suite presses [r] without being asked
@@ -14886,6 +14919,7 @@ function think(id, nodes, { startAt='start', onChoice, onDone, onCancel, force=f
     cue: fireCue,
     replay: createReplayService(`thought:${id}`),
     escapable, allowsLook, onCancel,
+    ...(anchor?{anchor}:{}),...(scrim!=null?{scrim}:{}),
     onChoice: (c)=>{ applyStoryChoice(c); onChoice?.(c); },
     onDone,
   }));
@@ -35580,6 +35614,22 @@ async function godCoastalMemory(){
   if(!stop||!await godEnterBells(stop.depth,stop.label))return false;
   return !!await beginCoastalMemoryJourney();
 }
+// The snow valley is the chapel field's fifth door, 'A house in the snow'. In
+// play its handle turns only after one finished field visit (or all five
+// relics). This opens it for this crossing only and steps through. No relics
+// are granted, and a house already visited is made walkable again.
+async function godSnowValley(){
+  const stop=CHAPEL_OUTSKIRTS_GOD_STOPS.find((entry)=>entry.id==='chapel-doors')||CHAPEL_OUTSKIRTS_GOD_STOPS[0];
+  if(!stop||!await godEnterChapelOutskirts(stop.depth,stop.label))return false;
+  godFlags([],['station.home.seen','station.home.departed',HOME_ARRIVAL_FLAG]);
+  chunkSurfRuntime?.setStationHomeOpen?.(true);
+  const door=chunkSurfRuntime?.doorFieldDoors?.().find((entry)=>!entry.route&&!entry.erased&&entry.destination?.kind==='home');
+  if(!door?.home){pushEvent('// god: the snow door is not in this field.');return false;}
+  crossStationFieldDoor(door.id);
+  if(!chunkSurfRuntime.stationRealmFrame?.()?.home?.eligible){pushEvent('// god: the snow door did not open.');return false;}
+  pushEvent('// god: the snow valley.');
+  return true;
+}
 async function godSourceEarthfall(){
   if(!await godEnsureTestRun())return false;
   while(buildingLoadPromise){if(!await buildingLoadPromise)return false;}
@@ -35818,6 +35868,7 @@ function godTabs(){
       {id:'source-normal-exit',label:'FINAL / NORMAL EXIT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT,{apertureComplete:true})},
       section('Journeys'),
       {id:'source-coastal-memory',label:'COASTAL MEMORY',value:'[ENTER]',closeMenu:true,activate:godCoastalMemory},
+      {id:'source-snow-valley',label:'SNOW VALLEY / A HOUSE IN THE SNOW',value:'[ENTER]',closeMenu:true,activate:godSnowValley},
       {id:'source-earthfall',label:'EARTHFALL',value:'[ENTER]',closeMenu:true,activate:godSourceEarthfall},
       {id:'source-pub-door',label:'THE PUB / AT THE DOOR',value:'[STAND]',closeMenu:true,activate:()=>sourcePubReviewFixture(null,{enter:false})},
       {id:'source-pub-inside',label:'THE PUB / INSIDE',value:'[ENTER]',closeMenu:true,activate:()=>sourcePubReviewFixture()},
@@ -38301,23 +38352,17 @@ function installProbe(){
       rest:valleyRest?{locus:valleyRest.locus,mode:valleyRest.mode,settle:valleyRest.settle,elapsed:valleyRest.elapsed,
         dialogue:valleyRest.dialogue?.view?.()||null}:null}),
     homeValleyMusic:()=>homeValleyMusic.snapshot(),
+    // The walk in: its state and this frame's reveal; 'skip' ends it for a capture.
+    homeArrival:(action=null)=>{
+      if(action==='skip'){homeArrival=null;scenes.remove?.(`thought:door-field:${HOME_ARRIVAL_START}`);flagApply([HOME_ARRIVAL_FLAG]);}
+      return {state:homeArrival?{...homeArrival,named:{...homeArrival.named}}:null,frame:homeArrival?homeArrivalFrame(homeArrival,stationTime()):null,now:stationTime()};
+    },
     stationField:()=>({session:chunkSurfRuntime?.stationFieldFrame?.()||null,view:stationFieldScene?.view?.()||null,renderer:stationFieldRenderer?.diagnostics?.()||null}),
     stationFieldCaptureAudio:()=>{if(!actx||!outGain)return null;const sink=actx.createMediaStreamDestination();outGain.connect(sink);return{stream:sink.stream,dispose:()=>{outGain.disconnect(sink);sink.stream.getTracks().forEach(track=>track.stop());}};},
     // Production movement in local metres, for authored path verification.
     realmMove:(dx=0,dz=0)=>{const moved=chunkSurfRuntime?.moveStationRealm?.({dx,dz});syncSourceRender();return moved||null;},
     homeWalkTo:(progress=1)=>{if(!stationWay.walk)return null;stationWay.walk.progress=Math.max(0,Math.min(1,Number(progress)||0));if(stationWay.walk.progress>=1&&stationWay.walk.windowAt==null)stationWay.walk.windowAt=stationTime();saveStationWalk();return {...stationWay.walk};},
-    // Open one field door and step through it, ending on its front side facing it.
-    crossFieldDoor:(id)=>{
-      if(!usingSourceSpace())return null;
-      const door=chunkSurfRuntime.doorFieldDoors().find((entry)=>entry.id===id);
-      if(!door||door.route)return null;
-      chunkSurfRuntime.openDoorFieldDoor(door.id);
-      const [a,b]=door.threshold,cx=(a.x+b.x)/2,cy=(a.y+b.y)/2,n=door.normal;
-      chunkSurfRuntime.onStep({x:cx+n[0]*1.5,y:cy+n[2]*1.5},{x:cx-n[0]*1.5,y:cy-n[2]*1.5});
-      chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
-      syncSourceRender({force:true});
-      return chunkSurfRuntime.doorFieldDoors().find((entry)=>entry.id===id)||null;
-    },
+    crossFieldDoor:(id)=>crossStationFieldDoor(id),
     // Walk the tower field's two key doors without walking the field.
     sourceTowerKeys:()=>{
       if(!usingSourceSpace())return null;
@@ -41455,6 +41500,11 @@ function onKey(e){
     }
     return;
   }
+  // Everything below is the pre-story field's debug surface. A story run must
+  // never reach it: a bare Space that nothing else claimed (the door fields,
+  // the snow valley, any quiet stretch) landed on togglePause and silenced
+  // the whole mix with no menu on screen. Pause in a story run is Escape.
+  if(storyMode){if(e.code==='Space'||e.key===' ')e.preventDefault();return;}
   switch(e.key){
     case ' ':
       e.preventDefault(); togglePause(); break;

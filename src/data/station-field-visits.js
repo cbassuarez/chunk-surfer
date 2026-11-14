@@ -1,6 +1,7 @@
 // Station occurrences borrow these actual field templates, never their canonical
 // night flags, take schedule or compulsory interruption timers.
 import {MEMORY_FIELD_VISIT,MEMORY_FIELD} from './memory-field.js';
+import {STATION_FIELD_CRASH} from './station-field-crash.js';
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 export const STATION_FIELD_IDS=Object.freeze(['first','second','third','fourth']);
 export const STATION_FIELD_WALK_METRES_PER_SECOND=2.4;
@@ -12,10 +13,16 @@ const landmarks={
  fourth:{id:'field-van-door',...MEMORY_FIELD_VISIT.fourth.door,height:1.1,label:'LOOK AT THE DOOR',text:'The door. All the weight of it.'},
 };
 const decays={first:0,second:.08,third:.42,fourth:.7};
+// The crash field keeps the same day, the same grass and the same door, and
+// nothing else: no bag, no jumper, no wheel, no fence, poles, tree or faults.
+// Its van is the only other thing that will ever be there.
+const memoryVisitOf=fieldId=>fieldId===STATION_FIELD_CRASH.fieldId
+ ?{...MEMORY_FIELD_VISIT[fieldId],bag:null,jumper:null,wheel:null,bare:true,crash:STATION_FIELD_CRASH}:MEMORY_FIELD_VISIT[fieldId];
 export const STATION_FIELD_VISITS=freeze(Object.fromEntries(STATION_FIELD_IDS.map(fieldId=>[fieldId,{
- id:`station-field:${fieldId}`,fieldId,memoryVisit:MEMORY_FIELD_VISIT[fieldId],spawn:{x:0,z:2.65,yaw:0,pitch:.04},snapshotDecay:decays[fieldId],
+ id:`station-field:${fieldId}`,fieldId,memoryVisit:memoryVisitOf(fieldId),spawn:{x:0,z:2.65,yaw:0,pitch:.04},snapshotDecay:decays[fieldId],
  returnDoor:{x:0,z:3,halfWidth:MEMORY_FIELD.door.halfWidth,height:MEMORY_FIELD.door.height,reach:2.2,open:true},
  landmark:{...landmarks[fieldId],reach:2.2},deformation:{warningSeconds:4,unmakeSeconds:24},
+ ...(fieldId===STATION_FIELD_CRASH.fieldId?{crash:STATION_FIELD_CRASH}:{}),
 }])));
 export function stationFieldVisit(fieldId,{connectionId='field-return'}={}){
  const visit=STATION_FIELD_VISITS[fieldId];if(!visit)return null;

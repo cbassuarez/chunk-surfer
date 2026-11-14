@@ -251,62 +251,116 @@
         {
           "id": "CREDITS.l38",
           "who": "thought",
-          "text": "Excerpted, layered, bitcrushed and placed",
-          "source": "src/data/credits.js:156"
+          "text": "D-minor suite, Prélude, Allemande and Courante — Andrej Jovanić (Nimbus Art Belgrade), Baroque guitar, theorbo and figured-bass realization.",
+          "source": "src/data/credits.js:155"
         },
         {
           "id": "CREDITS.l39",
           "who": "thought",
-          "text": "Adapted: excerpts, levelling, world placement and procedural room tail",
-          "source": "src/data/credits.js:191"
+          "text": "https://www.youtube.com/watch?v=CQ-p1S3dC-U",
+          "source": "src/data/credits.js:156"
         },
         {
           "id": "CREDITS.l40",
           "who": "thought",
-          "text": "Latin recitations and a recorded congregation; assembled fictional service",
-          "source": "src/data/credits.js:192"
+          "text": "https://www.youtube.com/watch?v=cPOqu4kaE-0",
+          "source": "src/data/credits.js:157"
         },
         {
           "id": "CREDITS.l41",
           "who": "thought",
-          "text": "https://freemusicarchive.org/music/The_Tudor_Consort/Renaissance_influences_-_Pizzetti_Messa_di_Requiem__Palestrina_Missa_Sicut_lilium_inter_spinas/02_Kyrie_-_Missa_Sicut_lilium_inter_spinas/",
-          "source": "src/data/credits.js:199"
+          "text": "https://www.youtube.com/watch?v=QiUbIZxIeI0",
+          "source": "src/data/credits.js:158"
         },
         {
           "id": "CREDITS.l42",
           "who": "thought",
-          "text": "https://creativecommons.org/licenses/by/3.0/",
-          "source": "src/data/credits.js:199"
+          "text": "La Montfermeil — Andrej Jovanić (Nimbus Art Belgrade), solo theorbo.",
+          "source": "src/data/credits.js:159"
         },
         {
           "id": "CREDITS.l43",
           "who": "thought",
-          "text": "Adapted: {CHAPEL_CHOIR_SOURCE.changes}",
-          "source": "src/data/credits.js:200"
+          "text": "https://www.youtube.com/watch?v=NlW5w3RH1pI",
+          "source": "src/data/credits.js:160"
         },
         {
           "id": "CREDITS.l44",
           "who": "thought",
-          "text": "Five-part recorded ensemble mix; independent six-part recording pending. Original gain treatment; not a performance or reproduction of Marcoll’s Amproprifications.",
-          "source": "src/data/credits.js:201"
+          "text": "Creative Commons Attribution (YouTube) — https://support.google.com/youtube/answer/2797468",
+          "source": "src/data/credits.js:161"
         },
         {
           "id": "CREDITS.l45",
           "who": "thought",
-          "text": "Contemporary material recordings; adapted foley, not a recording of this tower.",
-          "source": "src/data/credits.js:211"
+          "text": "https://creativecommons.org/licenses/by/3.0/ · https://creativecommons.org/licenses/by/4.0/",
+          "source": "src/data/credits.js:162"
         },
         {
           "id": "CREDITS.l46",
           "who": "thought",
-          "text": "cbassuarez.com",
-          "source": "src/data/credits.js:224"
+          "text": "Edited into looping phrases, made 5.5% faster at the original pitch, level matched, dithered and spatially filtered.",
+          "source": "src/data/credits.js:163"
         },
         {
           "id": "CREDITS.l47",
           "who": "thought",
+          "text": "Excerpted, layered, bitcrushed and placed",
+          "source": "src/data/credits.js:170"
+        },
+        {
+          "id": "CREDITS.l48",
+          "who": "thought",
+          "text": "Adapted: excerpts, levelling, world placement and procedural room tail",
+          "source": "src/data/credits.js:205"
+        },
+        {
+          "id": "CREDITS.l49",
+          "who": "thought",
+          "text": "Latin recitations and a recorded congregation; assembled fictional service",
+          "source": "src/data/credits.js:206"
+        },
+        {
+          "id": "CREDITS.l50",
+          "who": "thought",
+          "text": "https://freemusicarchive.org/music/The_Tudor_Consort/Renaissance_influences_-_Pizzetti_Messa_di_Requiem__Palestrina_Missa_Sicut_lilium_inter_spinas/02_Kyrie_-_Missa_Sicut_lilium_inter_spinas/",
+          "source": "src/data/credits.js:213"
+        },
+        {
+          "id": "CREDITS.l51",
+          "who": "thought",
+          "text": "https://creativecommons.org/licenses/by/3.0/",
+          "source": "src/data/credits.js:213"
+        },
+        {
+          "id": "CREDITS.l52",
+          "who": "thought",
+          "text": "Adapted: {CHAPEL_CHOIR_SOURCE.changes}",
+          "source": "src/data/credits.js:214"
+        },
+        {
+          "id": "CREDITS.l53",
+          "who": "thought",
+          "text": "Five-part recorded ensemble mix; independent six-part recording pending. Original gain treatment; not a performance or reproduction of Marcoll’s Amproprifications.",
+          "source": "src/data/credits.js:215"
+        },
+        {
+          "id": "CREDITS.l54",
+          "who": "thought",
+          "text": "Contemporary material recordings; adapted foley, not a recording of this tower.",
+          "source": "src/data/credits.js:225"
+        },
+        {
+          "id": "CREDITS.l55",
+          "who": "thought",
+          "text": "cbassuarez.com",
+          "source": "src/data/credits.js:238"
+        },
+        {
+          "id": "CREDITS.l56",
+          "who": "thought",
           "text": "© 2026 Sebastian Suarez-Solis. All rights reserved.",
-          "source": "src/data/credits.js:230"
+          "source": "src/data/credits.js:244"
         }
       ],
       "source": "src/data/credits.js:46"

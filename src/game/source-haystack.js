@@ -303,7 +303,7 @@ export function sourceFocusActionLabel(focus) {
   if (focus.kind === 'hush') return 'SPEAK';
   // A door standing in the outskirts. The verb is honest; the door is not.
   // Looked at first, then tried (docs/plans/door-field-station.md).
-  if (focus.kind === 'outskirt-door') return focus.looked === false ? 'LOOK AT THE DOOR' : 'OPEN DOOR';
+  if (focus.kind === 'outskirt-door') return 'OPEN DOOR';
   // A door hanging where nobody can reach it.
   if (focus.kind === 'door-extra') return 'LOOK';
   // Where a door stood, and what its world left.

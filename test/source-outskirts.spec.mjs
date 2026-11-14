@@ -276,14 +276,10 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   runtime.setPlayerPosition({ ...standing, facing });
   const focus = runtime.focusAt(standing.x, standing.y, facing, null);
   assert.equal(focus?.kind, 'outskirt-door', 'a closed door cannot be tried');
-  // A door is looked at before it is tried: the first press looks, the next opens it.
+  // The first press opens the door. No look and no panel of text comes first.
   let result;
   if (focus.id === door.id) {
-    assert.equal(sourceFocusActionLabel(focus), 'LOOK AT THE DOOR');
-    const look = runtime.inspectFocused(standing.x, standing.y, facing, null);
-    assert.equal(look.event, 'door-field-look', 'the first press on a door does not look at it');
-    assert.ok(look.archetype && look.world, 'looking at a door does not say which door or which world');
-    assert.equal(sourceFocusActionLabel(runtime.focusAt(standing.x, standing.y, facing, null)), 'OPEN DOOR');
+    assert.equal(sourceFocusActionLabel(focus), 'OPEN DOOR');
     result = runtime.inspectFocused(standing.x, standing.y, facing, null);
   } else result = runtime.openDoorFieldDoor(door.id);
   assert.equal(result.event, 'outskirt-door-opened', 'trying an unlocked door does not open it');

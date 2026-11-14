@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.render.haystack-paper",
+  "title": "Runtime · render/haystack-paper.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "HAYSTACK_PAPER.paper-close",
+  "entries": [
+    "HAYSTACK_PAPER.paper-close"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/render/haystack-paper.js",
+  "notes": "Generated from src/render/haystack-paper.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "HAYSTACK_PAPER.paper-close": {
+      "id": "HAYSTACK_PAPER.paper-close",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HAYSTACK_PAPER.paper-close.l0",
+          "who": "thought",
+          "text": "this isn’t going well",
+          "source": "src/render/haystack-paper.js:9"
+        },
+        {
+          "id": "HAYSTACK_PAPER.paper-close.l1",
+          "who": "thought",
+          "text": "is it?",
+          "source": "src/render/haystack-paper.js:9"
+        }
+      ],
+      "source": "src/render/haystack-paper.js:9"
+    }
+  }
+}
