@@ -9,7 +9,7 @@ import {SVGLoader} from 'three/addons/loaders/SVGLoader.js';
 import {mergeVertices,mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {vanKitModel} from '../src/data/van-kit-models.js';
 import {witnessModelInternals,witnessReplacementPlate} from './witness-model-details.mjs';
-import {benchAmplifier,benchFlashlight,benchFaceplate} from './bench-model-details.mjs';
+import {benchAmplifier,benchFlashlight,benchFaceplate,benchHeadlamp} from './bench-model-details.mjs';
 import {conformVectorLettering} from './curved-item-lettering.mjs';
 
 const out='public/assets/items',io=new NodeIO().registerExtensions([KHRMaterialsTransmission,KHRMaterialsIOR,KHRMaterialsVolume]);await mkdir(out,{recursive:true});
@@ -35,7 +35,7 @@ const colors={
   'amp-faceplate':['#b9beb4',.46,.7],'amp-low-draw':['#69785c',.57,.28],
   'amp-headroom':['#303a36',.49,.48],'flashlight-housing':['#48534b',.48,.46],
   'flashlight-reflector':['#dbe0d5',.12,.95],'flashlight-lens':['#e4eee5',.1,0],
-  'flashlight-emitter':['#d9c995',.6,0],
+  'flashlight-emitter':['#d9c995',.6,0],'headlamp-strap':['#2e3530',.92,0],
   'faceplate-aluminum':['#bfc2b5',.48,.68],'faceplate-black':['#303731',.52,.64],
   'faceplate-olive':['#77815b',.59,.25],
 };
@@ -515,4 +515,5 @@ for(const variant of['reference','closed','open'])await build(`headphones-${vari
 for(const variant of['reference','directional','wide'])await build(`microphone-${variant}`,g=>microphone(variant,g));
 for(const variant of['reference','low-draw','headroom'])await build(`amp-${variant}`,g=>benchAmplifier(variant,g));
 for(const variant of['reference','throw','flood'])await build(`flashlight-${variant}`,g=>benchFlashlight(variant,g));
+await build('flashlight-headlamp',benchHeadlamp);
 for(const finish of['aluminum','black','olive'])await build(`faceplate-${finish}`,g=>benchFaceplate(finish,g));

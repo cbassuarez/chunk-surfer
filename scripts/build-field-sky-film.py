@@ -5,9 +5,12 @@
 
 REELS_DIR (default ~/letgo_ingest_footage) has the lab's 4K scan of reel 5072. Its frames
 2664-3310 are a steady cumulus shot (it cuts to overcast at about 3313). The shot is cropped to
-the picture, time-lapsed 2x (every other frame, played at the camera's 18 fps), looped by
-dissolving its last second and a half into its first, and blended edge to edge so it tiles
-in both directions: the sky scrolls it, and a mirrored tile would slide its two sides apart.
+the picture and steadied: each frame's exposure is brought to the running level of the frames
+around it, because in the sky the blends magnify the film's own flicker and the print turns it
+into crawl. It is time-lapsed 2x by averaging each pair of frames, not dropping one, then
+softened frame to frame; played at the camera's 18 fps. It loops by dissolving its last second
+and a half into its first, and is blended edge to edge so it tiles in both directions: the sky
+scrolls it, and a mirrored tile would slide its two sides apart.
 Writes public/assets/field-sky-cumulus.mp4. Needs ffmpeg and numpy; nothing runs at game time.
 """
 import os, subprocess, sys
@@ -19,6 +22,7 @@ FIRST, LAST = 2664, 3310                # the cumulus shot, source frames
 CROP = 'crop=2800:2000:830:520'         # inside the picture: clear of the perforation and gate edge
 W, H = 640, 456                         # decode size
 EVERY, FPS = 2, 18                      # time-lapse, and the camera's own rate
+LEVEL_WINDOW = 25                       # source frames the exposure is steadied over (odd)
 DISSOLVE = 27                           # frames (1.5 s) of the end dissolved into the start
 OVER_X, OVER_Y = 112, 80                # edge overlap that makes it tile
 OUT = os.path.join(ROOT, 'public', 'assets', 'field-sky-cumulus.mp4')
@@ -27,7 +31,17 @@ def main():
     raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', REEL, '-vf',
                           f"trim=start_frame={FIRST}:end_frame={LAST},setpts=PTS-STARTPTS,{CROP},scale={W}:{H}:flags=area",
                           '-f', 'rawvideo', '-pix_fmt', 'rgb48le', '-'], capture_output=True, check=True).stdout
-    frames = np.frombuffer(raw, '<u2').reshape(-1, H, W, 3).astype(np.float32)[::EVERY] / 65535
+    source = np.frombuffer(raw, '<u2').reshape(-1, H, W, 3).astype(np.float32) / 65535
+    del raw
+    # Steady the exposure: each frame to the running level of the frames around it.
+    level = source.mean(axis=(1, 2, 3))
+    steady = np.convolve(np.pad(level, LEVEL_WINDOW // 2, mode='edge'), np.ones(LEVEL_WINDOW) / LEVEL_WINDOW, mode='valid')
+    source *= (steady / level).astype(np.float32)[:, None, None, None]
+    # Time-lapse by averaging each pair, then soften frame to frame (1-2-1).
+    pairs = len(source) // EVERY * EVERY
+    frames = source[:pairs].reshape(-1, EVERY, H, W, 3).mean(axis=1)
+    del source
+    frames = np.concatenate([frames[:1], .25 * frames[:-2] + .5 * frames[1:-1] + .25 * frames[2:], frames[-1:]])
     # Loop: the last frames dissolve into the first, so the end meets the start.
     n = len(frames) - DISSOLVE
     t = (np.arange(DISSOLVE, dtype=np.float32) / DISSOLVE)[:, None, None, None]

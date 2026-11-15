@@ -1151,8 +1151,13 @@ async function makeTexture(json,bin,textureIndex,{srgb=false,maxSize=Infinity,pi
   const t=textureGl.createTexture();textureGl.bindTexture(textureGl.TEXTURE_2D,t);textureGl.pixelStorei(textureGl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);textureGl.texImage2D(textureGl.TEXTURE_2D,0,srgb?textureGl.SRGB8_ALPHA8:textureGl.RGBA8,textureGl.RGBA,textureGl.UNSIGNED_BYTE,bmp);textureGl.generateMipmap(textureGl.TEXTURE_2D);textureGl.texParameteri(textureGl.TEXTURE_2D,textureGl.TEXTURE_MIN_FILTER,textureGl.LINEAR_MIPMAP_LINEAR);textureGl.texParameteri(textureGl.TEXTURE_2D,textureGl.TEXTURE_MAG_FILTER,textureGl.LINEAR);textureGl.texParameteri(textureGl.TEXTURE_2D,textureGl.TEXTURE_WRAP_S,wrap.wrapS);textureGl.texParameteri(textureGl.TEXTURE_2D,textureGl.TEXTURE_WRAP_T,wrap.wrapT);const anisotropy=textureGl.getExtension('EXT_texture_filter_anisotropic');if(anisotropy)textureGl.texParameterf(textureGl.TEXTURE_2D,anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,textureGl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT)||1));bmp.close?.();return t;
 }
 
-async function parsePropPack(url){
-  if(!gl)throw new Error('props3dInit first');const res=await fetch(url);if(!res.ok)throw new Error(`prop pack ${res.status}`);const ab=await res.arrayBuffer(),dv=new DataView(ab);if(dv.getUint32(0,true)!==0x46546c67||dv.getUint32(4,true)!==2)throw new Error('prop pack is not GLB 2');
+// A background load (sliceMs > 0) hands the frame back between primitives
+// once it has spent that long uploading, so a large pack never lands as one
+// long stall in a scene that is still being played. MessageChannel, not
+// setTimeout: nested timers are clamped to 4 ms and would starve the upload.
+const yieldUpload=()=>new Promise(resolve=>{const channel=new MessageChannel();channel.port1.onmessage=()=>{channel.port1.close();resolve();};channel.port2.postMessage(0);});
+async function parsePropPack(url,{sliceMs=0}={}){
+  if(!gl)throw new Error('props3dInit first');const context=gl;const res=await fetch(url);if(!res.ok)throw new Error(`prop pack ${res.status}`);const ab=await res.arrayBuffer(),dv=new DataView(ab);if(dv.getUint32(0,true)!==0x46546c67||dv.getUint32(4,true)!==2)throw new Error('prop pack is not GLB 2');
   let at=12,json=null,bin=null;while(at<ab.byteLength){const len=dv.getUint32(at,true),type=dv.getUint32(at+4,true),bytes=new Uint8Array(ab,at+8,len);if(type===0x4e4f534a)json=JSON.parse(new TextDecoder().decode(bytes));else if(type===0x004e4942)bin=bytes;at+=8+len;}
   if(!json||!bin)throw new Error('prop pack missing JSON/BIN');
   if(json.animations||json.skins||json.extensionsUsed?.length||json.extensionsRequired?.length)throw new Error('prop pack contains unsupported animation, skin or extension');
@@ -1162,8 +1167,13 @@ async function parsePropPack(url){
   const textures=await Promise.all((json.textures||[]).map((_,i)=>makeTexture(json,bin,i,{srgb:srgbTextures.has(i),pigmentCoverage:pigmentTextures.has(i)}))); 
   const nodeByMesh=new Map();for(const n of json.nodes||[])if(n.mesh!=null&&!nodeByMesh.has(n.mesh))nodeByMesh.set(n.mesh,nodeMatrix(n));
   const accessorCache=new Map();const accessor=index=>{if(!accessorCache.has(index))accessorCache.set(index,readAccessor(json,bin,index));return accessorCache.get(index);};
-  const catalog=new Map();
+  const catalog=new Map();let sliceStart=performance.now();
   for(let mi=0;mi<(json.meshes||[]).length;mi++){
+    if(sliceMs>0&&performance.now()-sliceStart>=sliceMs){
+      gl.bindVertexArray(null);await yieldUpload();
+      if(gl!==context)throw new Error('prop pack load interrupted by renderer re-init');
+      sliceStart=performance.now();
+    }
     const md=json.meshes[mi],entry={name:md.name||`mesh-${mi}`,nodeMatrix:nodeByMesh.get(mi)||identity(),extras:md.extras||{},primitives:[],instanceBuffer:gl.createBuffer(),cullBounds:null,cullBoundsValid:true};
     for(const pd of md.primitives||[]){
       if(pd.mode!=null&&pd.mode!==4)throw new Error(`${entry.name}: triangles only`);if(pd.indices==null)throw new Error(`${entry.name}: indices required`);if(pd.targets?.length)throw new Error(`${entry.name}: morph targets unsupported`);const pos=accessor(pd.attributes.POSITION),norm=pd.attributes.NORMAL!=null?accessor(pd.attributes.NORMAL):null,uv=pd.attributes.TEXCOORD_0!=null?accessor(pd.attributes.TEXCOORD_0):null,idx=accessor(pd.indices);
@@ -1187,8 +1197,16 @@ export async function loadPropPack(url){await ensureWorldLetteringFonts();pack=a
 // prop pack without rebuilding or flattening their embedded textures. Catalog
 // names remain the runtime contract, so instances do not care which GLB owns a
 // mesh.
-export async function addPropPack(url){
-  const extra=await parsePropPack(url);
+// One parse per pack at a time: a background preload and a scene that asks
+// for the same pack while it is in flight share one upload, not two.
+const propPackLoads=new Map();
+export async function addPropPack(url,{sliceMs=0}={}){
+  const key=String(url);let load=propPackLoads.get(key);
+  if(!load||load.context!==gl){
+    load={context:gl,promise:parsePropPack(url,{sliceMs})};propPackLoads.set(key,load);
+    const settled=()=>{if(propPackLoads.get(key)===load)propPackLoads.delete(key);};load.promise.then(settled,settled);
+  }
+  const extra=await load.promise;
   if(!pack){pack=extra;return pack;}
   for(const[name,entry]of extra.catalog)pack.catalog.set(name,entry);
   return pack;

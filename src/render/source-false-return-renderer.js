@@ -28,6 +28,21 @@ const copy = value => {
 // light sufficiently for a false return to read as Ellery before it unravels.
 export const SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE = 2.4;
 const matrix = (x, y, z, yaw = 0) => { const c = Math.cos(yaw), s = Math.sin(yaw); return new Float32Array([c,0,s,0,0,1,0,0,-s,0,c,0,x,y,z,1]); };
+
+// AHEAD OF TIME (game/source-preload.js). The asset half of initialize(): the
+// local HUSH body, the fault meshes and the packs the copied Ellery reads,
+// never the plan, the scene or the camera, so another scene can still own the
+// screen. initialize() repeats every step and finds it already done.
+export async function prewarmSourceFalseReturnAssets({ renderer = R3, props = P3, resolveAsset = assetUrl } = {}) {
+  const ready = renderer.r3dAuthoredPropsReady || renderer.r3dBasePropsReady;
+  if (await ready?.call(renderer) === false) return false;
+  if (await renderer.r3dPrepareHushBody?.() === false) return false;
+  if (props.installAuthoredPropMeshes?.(installSourceFalseReturnFaultMeshes) === false) return false;
+  const has = mesh => new Set(props.propMeshCatalog?.() || []).has(mesh);
+  if (THRESHOLD_GAG_MESHES.some(mesh => !has(mesh))) await props.addPropPack(resolveAsset('assets/ellery-threshold-gag.glb'));
+  if (!has('main_stair_wall_treatment')) { try { await props.addPropPack(resolveAsset('assets/conservatory-stair-walls.glb')); } catch { /* optional, as in initialize() */ } }
+  return THRESHOLD_GAG_MESHES.every(has);
+}
 const multiply = (a, b) => { const out = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) out[c*4+r] += a[k*4+r] * b[c*4+k]; return out; };
 const positionOf = instance => ({ x: finite(instance.matrix?.[12], instance.x), y: finite(instance.matrix?.[13], instance.y), z: finite(instance.matrix?.[14], instance.z) });
 const sourceIds = (layout, state) => [...new Set((state?.opened || []).length >= 5 ? layout.doors.map(d => d.id) : state?.sourceDoors || [])].filter(id => layout.doors.some(d => d.id === id)).sort();

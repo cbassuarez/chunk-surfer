@@ -24,7 +24,7 @@
       "id": "runtime.data.academic-floor-population",
       "path": "narrative-runtime/runtime.data.academic-floor-population.story.json",
       "module": "src/data/academic-floor-population.js",
-      "nodes": 5,
+      "nodes": 4,
       "lines": 8,
       "choices": 0,
       "sourceSha256": "97ef60fd072b050b620ed5bf348212ce13468bba6b6ed325f3eae16c4b157449"
@@ -123,7 +123,7 @@
       "id": "runtime.data.conservatory-script",
       "path": "narrative-runtime/runtime.data.conservatory-script.story.json",
       "module": "src/data/conservatory-script.js",
-      "nodes": 83,
+      "nodes": 81,
       "lines": 141,
       "choices": 14,
       "sourceSha256": "4f24c84cceeb051ee4c351cbe3ee4849c0cb0083352d85e7578997a8d44c039c"
@@ -204,7 +204,7 @@
       "id": "runtime.data.get-in-investigation",
       "path": "narrative-runtime/runtime.data.get-in-investigation.story.json",
       "module": "src/data/get-in-investigation.js",
-      "nodes": 80,
+      "nodes": 79,
       "lines": 152,
       "choices": 49,
       "sourceSha256": "d167a060f361a86fb66761161156508f1876919eac31cc958ec5136d2c7ac296"
@@ -213,7 +213,7 @@
       "id": "runtime.data.horizon-approach-dialogue",
       "path": "narrative-runtime/runtime.data.horizon-approach-dialogue.story.json",
       "module": "src/data/horizon-approach-dialogue.js",
-      "nodes": 14,
+      "nodes": 12,
       "lines": 28,
       "choices": 5,
       "sourceSha256": "6cfec7014b70ed7d6ec9d047449b187cc8cdee4bcaf1b423f28f293800924a48"
@@ -240,7 +240,7 @@
       "id": "runtime.data.opening-prologue",
       "path": "narrative-runtime/runtime.data.opening-prologue.story.json",
       "module": "src/data/opening-prologue.js",
-      "nodes": 68,
+      "nodes": 67,
       "lines": 174,
       "choices": 49,
       "sourceSha256": "f0138c7a4f7f2de82ee1f7e851db0e85783ac2c42f5030d3d68a2321bec06d6f"
@@ -258,7 +258,7 @@
       "id": "runtime.data.pub-dialogue",
       "path": "narrative-runtime/runtime.data.pub-dialogue.story.json",
       "module": "src/data/pub-dialogue.js",
-      "nodes": 25,
+      "nodes": 24,
       "lines": 82,
       "choices": 67,
       "sourceSha256": "b4c34a09e4e72fc36a293ed4089ddce4c72df66baa7083c92935d1385168fbff"
@@ -267,7 +267,7 @@
       "id": "runtime.data.pub-patrons",
       "path": "narrative-runtime/runtime.data.pub-patrons.story.json",
       "module": "src/data/pub-patrons.js",
-      "nodes": 12,
+      "nodes": 8,
       "lines": 31,
       "choices": 1,
       "sourceSha256": "8c0d3be7b193d0d1c5be7f713b433c3038f454d4d585279bf6c5e9685b7b6879"
@@ -321,7 +321,7 @@
       "id": "runtime.data.source-rest-conversation",
       "path": "narrative-runtime/runtime.data.source-rest-conversation.story.json",
       "module": "src/data/source-rest-conversation.js",
-      "nodes": 62,
+      "nodes": 60,
       "lines": 278,
       "choices": 51,
       "sourceSha256": "b9f2fba36aee64ec1411f99e842981ff8f6b80eaaf9046e1f1d9e0d97a80b33e"
@@ -330,7 +330,7 @@
       "id": "runtime.data.source-rest-couperin-conversation",
       "path": "narrative-runtime/runtime.data.source-rest-couperin-conversation.story.json",
       "module": "src/data/source-rest-couperin-conversation.js",
-      "nodes": 30,
+      "nodes": 29,
       "lines": 158,
       "choices": 13,
       "sourceSha256": "63bd59114225ce5acde98c7a4deb1e61603578af5deb802c0660c9160404a9db"
@@ -339,7 +339,7 @@
       "id": "runtime.data.source-rest-earthly",
       "path": "narrative-runtime/runtime.data.source-rest-earthly.story.json",
       "module": "src/data/source-rest-earthly.js",
-      "nodes": 16,
+      "nodes": 15,
       "lines": 44,
       "choices": 6,
       "sourceSha256": "c15a3ea4067fe218ee31c8815fd26116799ac3b434741c4f325c39785e098ce7"
@@ -348,7 +348,7 @@
       "id": "runtime.data.source-rest-questions",
       "path": "narrative-runtime/runtime.data.source-rest-questions.story.json",
       "module": "src/data/source-rest-questions.js",
-      "nodes": 51,
+      "nodes": 50,
       "lines": 130,
       "choices": 17,
       "sourceSha256": "df3399f7bfafcf90fd7116c33e4211851a416e6fa548ef9c1ee6bb4faa843ba1"
@@ -429,7 +429,7 @@
       "id": "runtime.game.bag-items",
       "path": "narrative-runtime/runtime.game.bag-items.story.json",
       "module": "src/game/bag-items.js",
-      "nodes": 16,
+      "nodes": 15,
       "lines": 32,
       "choices": 0,
       "sourceSha256": "2d7babc7fd74ed3ce1ec1f98b46ee776260ccd487c3bb2725f4eca78b9e09cdb"
@@ -456,7 +456,7 @@
       "id": "runtime.game.cathedral-descent",
       "path": "narrative-runtime/runtime.game.cathedral-descent.story.json",
       "module": "src/game/cathedral-descent.js",
-      "nodes": 8,
+      "nodes": 5,
       "lines": 2,
       "choices": 4,
       "sourceSha256": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b"
@@ -507,15 +507,6 @@
       "sourceSha256": "2ea3858103057594f59cb2b2874a6fc8fa912ccda3035b620ef1205451bbdfbd"
     },
     {
-      "id": "runtime.game.hush-contact",
-      "path": "narrative-runtime/runtime.game.hush-contact.story.json",
-      "module": "src/game/hush-contact.js",
-      "nodes": 1,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "d4e55db271d5e3b4df7904369d83ceda56e31299b7a6f082a5b16158ed1dca94"
-    },
-    {
       "id": "runtime.game.interruption-director",
       "path": "narrative-runtime/runtime.game.interruption-director.story.json",
       "module": "src/game/interruption-director.js",
@@ -537,7 +528,7 @@
       "id": "runtime.game.opening-credits",
       "path": "narrative-runtime/runtime.game.opening-credits.story.json",
       "module": "src/game/opening-credits.js",
-      "nodes": 3,
+      "nodes": 2,
       "lines": 8,
       "choices": 0,
       "sourceSha256": "127ad7f8b21d9c402161f5f9643aa15524c5afe160fb590a00390cdd2638b2aa"
@@ -561,19 +552,10 @@
       "sourceSha256": "b8a696961236955b5bb3f448245755a223a20f0cc6999272c0d965db820c65e4"
     },
     {
-      "id": "runtime.game.reception-conversation-presentation",
-      "path": "narrative-runtime/runtime.game.reception-conversation-presentation.story.json",
-      "module": "src/game/reception-conversation-presentation.js",
-      "nodes": 1,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "87d85cc5f3ff8810a948aaa1f6a0537a702d9385bc1e540bd81187e42caf0647"
-    },
-    {
       "id": "runtime.game.recording-stop-confirmation",
       "path": "narrative-runtime/runtime.game.recording-stop-confirmation.story.json",
       "module": "src/game/recording-stop-confirmation.js",
-      "nodes": 2,
+      "nodes": 1,
       "lines": 1,
       "choices": 2,
       "sourceSha256": "52c011a3246dead23f33883ec9904b2b113e042f4632f4ab6d5b477d7ce97b8f"
@@ -591,7 +573,7 @@
       "id": "runtime.game.source-contact",
       "path": "narrative-runtime/runtime.game.source-contact.story.json",
       "module": "src/game/source-contact.js",
-      "nodes": 2,
+      "nodes": 1,
       "lines": 6,
       "choices": 0,
       "sourceSha256": "3228ca98f3fa2c509f1f2dd26fa37bd9bbd15ddbf5f2d6706f68581f416e3acb"
@@ -609,19 +591,10 @@
       "id": "runtime.game.source-last-reception",
       "path": "narrative-runtime/runtime.game.source-last-reception.story.json",
       "module": "src/game/source-last-reception.js",
-      "nodes": 19,
+      "nodes": 18,
       "lines": 46,
       "choices": 0,
       "sourceSha256": "43b9064944bf1d6ba06f10cbe8fea802179b5c9145e8afec69cf2e932cc54f2f"
-    },
-    {
-      "id": "runtime.game.source-rest-conversation-scene",
-      "path": "narrative-runtime/runtime.game.source-rest-conversation-scene.story.json",
-      "module": "src/game/source-rest-conversation-scene.js",
-      "nodes": 2,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "f14874c1eb45fd04af067a16d6af1b4fcdf8cdee47f86f252d59ae0d428336e9"
     },
     {
       "id": "runtime.game.source-rest-runtime",
@@ -681,7 +654,7 @@
       "id": "runtime.game.van-return",
       "path": "narrative-runtime/runtime.game.van-return.story.json",
       "module": "src/game/van-return.js",
-      "nodes": 4,
+      "nodes": 3,
       "lines": 3,
       "choices": 2,
       "sourceSha256": "77139a61a9e5957b8b8ab1d6316d63f329b84c5fa3c3e0b8a3a7f1406ba6c3c0"
@@ -699,19 +672,10 @@
       "id": "runtime.main",
       "path": "narrative-runtime/runtime.main.story.json",
       "module": "src/main.js",
-      "nodes": 143,
+      "nodes": 134,
       "lines": 266,
       "choices": 15,
       "sourceSha256": "03949af03b2c0683fe194e5f77762738fc49412c567d3753f055cbcb4e962afd"
-    },
-    {
-      "id": "runtime.progression.schema",
-      "path": "narrative-runtime/runtime.progression.schema.story.json",
-      "module": "src/progression/schema.js",
-      "nodes": 2,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "93191637249597b2ec8e17907cf23fa6c0832cf49dcd50419016fa5c34a3c574"
     },
     {
       "id": "runtime.render.arrival-title-options",
@@ -732,15 +696,6 @@
       "sourceSha256": "eb8949a7a80d202cc1b66541666306fe665436b5cc3e88ef7e6017508db36d67"
     },
     {
-      "id": "runtime.render.childhood-house-inscription",
-      "path": "narrative-runtime/runtime.render.childhood-house-inscription.story.json",
-      "module": "src/render/childhood-house-inscription.js",
-      "nodes": 13,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "8c255aeb5b3753c503d90955e9233b4bf5e09e7c965369426a7d0ea12f7de134"
-    },
-    {
       "id": "runtime.render.haystack-paper",
       "path": "narrative-runtime/runtime.render.haystack-paper.story.json",
       "module": "src/render/haystack-paper.js",
@@ -748,24 +703,6 @@
       "lines": 2,
       "choices": 0,
       "sourceSha256": "1b687009f43802d3e88c2b4fa066b46188885ede213675072517b32abb2e03af"
-    },
-    {
-      "id": "runtime.render.radio-scene",
-      "path": "narrative-runtime/runtime.render.radio-scene.story.json",
-      "module": "src/render/radio-scene.js",
-      "nodes": 1,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "f85816e581c7e64d8e10d920d723449fcedce5a1a3bab0fcbb861dde8764d767"
-    },
-    {
-      "id": "runtime.render.student-strike-props",
-      "path": "narrative-runtime/runtime.render.student-strike-props.story.json",
-      "module": "src/render/student-strike-props.js",
-      "nodes": 1,
-      "lines": 0,
-      "choices": 0,
-      "sourceSha256": "d9aaa37a879a3d77c88a1dea64a66897a202d47460a579d692400ba9bcfaac71"
     },
     {
       "id": "runtime.world.corridor-dressing",

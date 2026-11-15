@@ -32,7 +32,7 @@
 // Pure, and takes the same small plan reader wall-contact.js does, so the rules
 // can be proved against a hand-built grid with no browser and no GPU.
 
-import { F, ZONE } from '../data/floorplan/legend.js';
+import { F, ZONE, isOutdoorZone } from '../data/floorplan/legend.js';
 import { wallFaces, yawFromNormal } from './wall-contact.js';
 import { physicalWallFaceHasHost } from './baseboard-hosting.js';
 import { CORRIDOR_SPACE_BY_DOOR_ID, LANDING_FITTINGS } from '../data/corridor-lettering.js';
@@ -131,6 +131,12 @@ export function corridorCells(plan) {
         ?? plan.logicalToPhysical?.(x, y)?.renderGroup ?? '';
       if (!CORRIDOR.GROUPS.includes(group)) continue;
       if (CORRIDOR.SKIP_ZONES.includes(plan.zoneAt(x, y))) continue;
+      // OUT OF DOORS IS NOT A CORRIDOR. The yard's lanes and the street in front
+      // of Ellery are long and narrow too, and they were being dressed with the
+      // indoor kit: exit signs hung at ceiling height over open ground, which
+      // read as dark boards floating in the rain. Open sky or an outdoor zone
+      // keeps nothing of this module's.
+      if (isOutdoorZone(plan.zoneAt(x, y)) || plan.hasFlag?.(x, y, F.SKY)) continue;
       // A STAIR IS NOT A CORRIDOR, even where it is corridor-shaped and runs
       // straight into one. The bare-circulation note names "stair flights,
       // landings, and their approach corridors" first, and it is right about the

@@ -203,3 +203,18 @@ assert.equal(flightDressing(FP, moved).length, 0,
   'a re-cut flight is refused rather than dressed with a mesh that no longer fits');
 
 console.log(`corridor dressing contracts passed (${dressing.length} placements, ${wings.size} wings, ${fittings.length} landings, ${flights.length} flight)`);
+
+// ── OUT OF DOORS IS NOT A CORRIDOR ──────────────────────────────────────────
+// Seb, 2026-11-14: dark boards floating in front of Ellery and round the yard.
+// They were this module's exit signs and notice boards, hung on the service
+// yard's lanes and the civic court because those are long and narrow too.
+{
+  const { isOutdoorZone, F: FLAGS } = await import('../src/data/floorplan/legend.js');
+  const pieces = corridorDressing(FP, { doors: FP.doorState(), landings: CONSERVATORY_LANDINGS, flights: CONSERVATORY_FLIGHTS });
+  assert.ok(pieces.length > 40, 'the indoor corridors keep their kit');
+  for (const piece of pieces) {
+    const cx = Math.floor(piece.x * 2), cy = Math.floor(piece.y * 2);
+    assert.ok(!isOutdoorZone(FP.zoneAt(cx, cy)), `${piece.id} stands out of doors`);
+    assert.ok(!FP.hasFlag(cx, cy, FLAGS.SKY), `${piece.id} stands under open sky`);
+  }
+}

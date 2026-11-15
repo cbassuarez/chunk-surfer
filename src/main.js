@@ -17,6 +17,7 @@ import {createHorizonApproachScene,HORIZON_APPROACH_EVENT,horizonApproachBearing
 import {HORIZON_TOWER_BELLS,horizonTowerBellBearing} from './data/horizon-tower-bells.js';
 import {createHorizonBellsAudio,horizonBellVoicing} from './audio/horizon-bells-audio.js';
 import {createHorizonApproachRenderer} from './render/horizon-approach-renderer.js';
+import {createSourcePreloader} from './game/source-preload.js';
 import {horizonApproachSelection,HORIZON_RECORD_FLAGS} from './game/horizon-approach-record.js';
 import {horizonApproachTruth,horizonApproachPetalLine,horizonApproachReturnLines,horizonApproachOfferLines,horizonApproachProposition} from './data/horizon-approach-dialogue.js';
 import {createThresholdGagAudio} from './audio/threshold-gag.js';
@@ -32,7 +33,7 @@ import {createMemoryFieldScene} from './game/memory-field-scene.js';
 import {createMemoryFieldRenderer} from './render/memory-field-renderer.js';
 import {createStationFieldScene} from './game/station-field-scene.js';
 import {stationFieldVisit} from './data/station-field-visits.js';
-import {createStationFieldRenderer} from './render/station-field-renderer.js';
+import {createStationFieldRenderer,prewarmStationFieldAssets} from './render/station-field-renderer.js';
 import {createMemoryFieldAudio} from './audio/memory-field-audio.js';
 import {MEMORY_FIELD_VISIT,memoryFieldFlag,memoryFieldForTake,HYPOXIA_TELL_LINES} from './data/memory-field.js';
 import {memoryFieldDeliveryAllowed} from './game/interruption-director.js';
@@ -112,12 +113,12 @@ import {makeOpeningCrashAftermathScene} from './game/opening-crash-aftermath-sce
 import {makeSourceReturnFlashbackScene,normalizeSourceReturnFlashbackCheckpoint} from './game/source-return-flashback-scene.js';
 import {createCoastalMemoryScene} from './game/coastal-memory-scene.js';
 import {createCoastalHandsScene} from './game/coastal-hands-scene.js';
-import {createCoastalMemoryRenderer} from './render/coastal-memory-renderer.js';
+import {createCoastalMemoryRenderer,prewarmCoastalMemoryAssets} from './render/coastal-memory-renderer.js';
 import {COASTAL_MEMORY_TAKE,COASTAL_MEMORY_CUE,COASTAL_MEMORY_SECONDS} from './game/coastal-memory.js';
 import {COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE,COASTAL_NOTE_THOUGHT,coastalWorldPoint,COASTAL_WORLD_FROM_LOCAL} from './data/coastal-memory.js';
 import {playCoastalMemoryRecording,playCoastalMusicBoxIntact,playCoastalMusicBoxRecording,COASTAL_MEMORY_BELLS} from './audio/coastal-memory.js';
 import {createSourcePubScene,normalizeSourcePubCheckpoint,sourcePubEntry} from './game/source-pub.js';
-import {createSourcePubRenderer} from './render/source-pub-renderer.js';
+import {createSourcePubRenderer,prewarmSourcePubAssets} from './render/source-pub-renderer.js';
 import {createSourceContinuationScene} from './game/source-continuation-scene.js';
 import {installSourceRest} from './game/source-rest-runtime.js';
 import {sourceRestMistakeImpactReceipt} from './game/source-rest-affliction.js';
@@ -138,7 +139,7 @@ import {stillnessRenderMode,setStillnessRenderMode} from './render/stillness-pre
 import {createSourceContinuationRenderer,prewarmSourceContinuationAssets} from './render/source-continuation-renderer.js';
 import {createSourceContinuationAudio} from './audio/source-continuation.js';
 import {createSourceEarthfallScene} from './game/source-earthfall-scene.js';
-import {createSourceEarthfallRenderer} from './render/source-earthfall-renderer.js';
+import {createSourceEarthfallRenderer,prewarmSourceEarthfallAssets} from './render/source-earthfall-renderer.js';
 import {createSourceEarthfallAudio} from './audio/source-earthfall.js';
 import {freshSourceEarthfall,normalizeSourceEarthfall} from './game/source-earthfall.js';
 import {resumeSourceContinuationHandoff} from './game/source-continuation-handoff.js';
@@ -161,7 +162,7 @@ import {endingSourceResume,endingSourceIVHandoff,endingSourceIVCanFinish} from '
 import {freshSourceFalseReturn,normalizeSourceFalseReturn,sourceFalseReturnNeeded} from './game/source-false-return.js';
 import {buildSourceFalseReturnLayout} from './game/source-false-return-layout.js';
 import {createSourceFalseReturnScene} from './game/source-false-return-scene.js';
-import {createSourceFalseReturnRenderer} from './render/source-false-return-renderer.js';
+import {createSourceFalseReturnRenderer,prewarmSourceFalseReturnAssets} from './render/source-false-return-renderer.js';
 import { createFakeElleryNoiseDetector } from './game/fake-ellery-noise.js';
 import { createFakeElleryContact } from './game/fake-ellery-contact.js';
 import { fakeElleryHushActor } from './render/fake-ellery-hush.js';
@@ -441,7 +442,8 @@ import { activeInventoryFrame, activeInventoryVisible, cycleHeldInventorySlot } 
 import { drawActiveInventory } from './render/active-inventory.js';
 import { drawFieldHeldItem, fieldHeldItemLayout, fieldHeldItemDiagnostics, warmFieldHeldItem } from './render/field-held-item.js';
 import { afterRecorderStopPress, cancelRecorderRigPress, clearRecorderRigPointer, noteRecorderRigPress, recorderRigPointer, warmRecorderRig } from './render/recorder-rig.js';
-import { createRecorderRigMotion, recorderBracketFrame } from './render/recorder-rig-motion.js';
+import { createRecorderRigMotion, BRACKET_PITCH } from './render/recorder-rig-motion.js';
+import { torchKind, torchReach, recorderRaiseCost, TORCH_HANDLING_NOISE, HEADLAMP_LAMP, handheldTorchLamp } from './game/torch-hands.js';
 import * as ENCOUNTERS from './game/encounters.js';
 import * as MIC from './game/mic.js';
 import { createRecordingScareSelector } from './game/recording-scare-policy.js';
@@ -5678,10 +5680,54 @@ function arrowDelta(){
 const playerFootClock=createFootContactClock();
 const recorderRigMotion=createRecorderRigMotion();
 let recorderRigPose=null,recorderTraveling=false;
-function recorderTorchAttached(){
-  return !itemLost('torch')&&(!flagTest('van.bench.v2')||flagTest('kit.fitted')||flagTest('van.packed.flashlight'));
+// HANDS AND THE LIGHT (game/torch-hands.js). There is no light on the
+// recorder: a torch is in a hand or, kitted out at the van, on your head. So
+// lighting up never brings the machine up with it, and the machine coming up
+// puts a handheld torch away.
+function recorderTorchAttached(){return false;}
+function carryingLitRecorder(){return false;}
+function currentTorchKind(){return torchKind(normalizeFieldKit(getSave().fieldKit));}
+// Both hands on the DA-1000: its scene is up, or a take or playback is rolling
+// with the deck raised.
+function recorderInHands(){
+  return scenes.has(RECORDER_SCENE_ID)||!!micCheck||((REC.isRecording()||PB.isPlaying())&&!liveTakeRecorderLowered());
 }
-function carryingLitRecorder(){return recorderTorchAttached()&&REC.recState().light;}
+// Both arms full: dragging the Surfer out of the cathedral.
+function armsFull(){return escape?.kind==='cathedral-carry'&&!!escape.drag?.gripped;}
+// The handheld torch is the held item while it burns, so the corner shows it.
+function holdTorchInHand(){
+  const slot=currentActiveInventory().slots.find(entry=>entry.toolId==='torch'&&entry.present);
+  if(!slot||slot.selected)return;
+  const result=selectHeldCombatSlot(getSave().bagLoadout,slot.index);
+  if(result.changed)saveCommit({bagLoadout:result.loadout});
+}
+// The machine comes up in both hands: a burning handheld torch goes back in
+// the pocket first. A headlamp stays on.
+function stowHandheldTorchForRecorder(){
+  if(recorderRaiseCost({kind:currentTorchKind(),lightOn:REC.lightOn()})!=='torch-away')return false;
+  REC.toggleLight({protectTake:true});
+  CUES.playCue(CUES.CUE.light,{gain:.45,rate:.92});
+  REC.emitNoise(TORCH_HANDLING_NOISE['torch-away'],px,py,'you pocketed the torch',{
+    spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'torch',playerGenerated:true,deliberate:true,
+  });
+  return true;
+}
+// The handheld beam swings with the walk on the same footfall spring as the
+// recorder; a headlamp goes where you look.
+const torchRigMotion=createRecorderRigMotion();
+let torchSway=[0,0,0];
+function tickTorchSway(now){
+  if(!REC.lightOn()||currentTorchKind()!=='handheld'){torchRigMotion.reset();torchSway=[0,0,0];return;}
+  const active=!paused&&!document.hidden&&gameplayInputLifecycleActive();
+  const frame=torchRigMotion.frame(now,{look:R3.r3dLookAngles(),moving:active&&(recorderTraveling||!!renderMove?.mainStair),
+    raised:false,visible:true,reducedMotion:shakeMode()!=='full',active});
+  const idle=-Math.PI/2-BRACKET_PITCH-7*Math.PI/180;
+  torchSway=[frame.rotation[0]-idle,frame.rotation[1],frame.rotation[2]];
+}
+function playerLampFrame(){
+  if(!REC.lightOn())return null;
+  return currentTorchKind()==='headlamp'?HEADLAMP_LAMP:handheldTorchLamp({sway:torchSway});
+}
 function recorderRigFrame(owner,{interactive=true}={}){
   if(!recorderRigPose)return null;
   const light=R3.r3dRecorderLighting();
@@ -5828,7 +5874,7 @@ function tickPlayerFootsteps(dt,rawGapMs=dt*1000){
     humanize:descriptor?.humanize,resistanceStrength:descriptor?.resistanceStrength});
   for(const plant of contacts){
     const event={...descriptor,...plant,plantIndex:playerFootIndex++};
-    recorderRigMotion.footfall(event,performance.now()/1000);
+    recorderRigMotion.footfall(event,performance.now()/1000);torchRigMotion.footfall(event,performance.now()/1000);
     RT.footstep(event.level,event);
     if(event.shoreAnswer)sourceShoreAudio?.footstep();
     if(event.stairEcho)scheduleStairStepEcho(event.level);
@@ -6006,7 +6052,7 @@ function advanceMainStairRenderMove(now=performance.now()){
   const pose=sampleMainStairMotion(move.mainStair,move.elapsedMs/move.durationMs);
   move.phase=pose.phase;
   if(active&&move.footfall&&mainStairContactCrossed(previous,pose.phase)){
-    recorderRigMotion.footfall(move.footfall,now/1000);
+    recorderRigMotion.footfall(move.footfall,now/1000);torchRigMotion.footfall(move.footfall,now/1000);
     RT.footstep(move.footfall.level,{...move.footfall});move.footfall=null;
   }
   const rig=ensureMotionRig(now);
@@ -12877,6 +12923,76 @@ function restoreFromSourceSpace(completion,exitSnapshot){
   else leave();
 }
 
+// ── Source ahead ────────────────────────────────────────────────────────────
+// The worlds in front of you load while you walk (game/source-preload.js). It
+// starts with the long hall and runs on its own timer: no step, page, scare
+// or handoff starts or stops it. Where you are is read every half second and
+// only decides what loads next. Each load is that scene's own asset step,
+// never its initialize(), so nothing here takes the screen from the hall.
+// Uploads from here hand the frame back every few milliseconds.
+const SOURCE_AHEAD_SLICE_MS=4;
+const sourceAheadProps=new Proxy(P3,{get:(target,key)=>key==='addPropPack'
+  ?(url,options={})=>target.addPropPack(url,{sliceMs:SOURCE_AHEAD_SLICE_MS,...options}):target[key]});
+const sourceAheadHushBody={id:'hush-body',label:'The HUSH body',run:()=>R3.r3dPrepareHushBody()};
+const sourceAheadContinuation={id:'continuation',label:'Source II and III architecture',
+  run:()=>prewarmSourceContinuationAssets({renderer:R3,props:sourceAheadProps})};
+const sourceAheadCrossing={id:'crossing-program',label:'The door crossings',run:()=>P3.prepareSourceCrossing()};
+const sourceAheadDrive={id:'drive',label:'The drive',run:()=>preloadSourceDriveAssets({props:sourceAheadProps})};
+const sourceAhead=createSourcePreloader({
+  tasks:{
+    hall:[sourceAheadHushBody],
+    'dock-shore':[sourceAheadHushBody],
+    field:[sourceAheadHushBody],
+    contact:[sourceAheadHushBody],
+    'false-return':[{id:'false-return',label:'The false return',run:()=>prewarmSourceFalseReturnAssets({renderer:R3,props:sourceAheadProps})}],
+    earthfall:[{id:'earthfall',label:'The descent',run:()=>prewarmSourceEarthfallAssets({renderer:R3,props:sourceAheadProps})},sourceAheadContinuation],
+    'source-ii':[sourceAheadContinuation],
+    'source-iii':[sourceAheadContinuation],
+    drive:[sourceAheadDrive],
+    outskirts:[{id:'outskirts-road',label:'The repeating road',run:()=>warmOutskirtsMotorwayAssets({props:sourceAheadProps})},
+      {id:'bus-body',label:'The bus',run:()=>R3.r3dPrepareBusBodyAssets()}],
+    pub:[{id:'pub',label:'The Lyric',run:()=>prewarmSourcePubAssets({renderer:R3,props:sourceAheadProps})}],
+    horizon:[{id:'horizon',label:'Horizon',run:()=>createHorizonApproachRenderer({props:sourceAheadProps}).prepare()},
+      {id:'horizon-bells',label:'The belfry samples',run:()=>{const bells=actx?warmHorizonBells():null;return bells?bells.load():false;}}],
+    bells:[sourceAheadCrossing,sourceAheadDrive,
+      {id:'coastal-memory',label:'The walkable lands',run:async()=>await preloadSourceDriveAssets({coastalMemory:true,props:sourceAheadProps})&&prewarmCoastalMemoryAssets({renderer:R3,props:sourceAheadProps})}],
+    station:[sourceAheadCrossing,{id:'station-field',label:'The station fields',run:()=>prewarmStationFieldAssets({renderer:R3,props:sourceAheadProps})}],
+  },
+  onEvent:event=>{
+    if(event.type==='failed'||event.type==='retry')console.warn('[source ahead]',event.type,event.id,event.error);
+    else if(event.type==='ready')console.debug('[source ahead] ready',event.id,`${Math.round(event.ms)}ms`,`ahead ${event.ahead}`);
+  },
+});
+// Where you are on the walk, for ordering only.
+function sourceAheadStage(){
+  try{
+    const continuation=sourceContinuationScene;
+    if(continuation?.id==='source-false-return')return 'false-return';
+    if(continuation?.id==='source-earthfall')return 'earthfall';
+    if(continuation?.id==='source-continuation')return continuation.stillnessPose?.()?.phase==='catch'?'source-iii':'source-ii';
+    if(sourceDriveSession)return 'drive';
+    if(sourcePubScene)return 'pub';
+    if(coastalMemoryScene)return 'bells';
+    if(stationFieldScene)return 'station';
+    if(horizonApproachScene())return 'horizon';
+    if(!usingSourceSpace())return null;
+    const phase=chunkSurfRuntime.state()?.phase,P=CHUNK_SURF_PHASE;
+    if(phase===P.HALL||phase===P.HAYSTACK)return 'hall';
+    if(phase===P.TRANSFORMING)return 'dock-shore';
+    if(phase===P.LANDSCAPE||phase===P.FINAL)return 'field';
+    if(phase===P.HORIZON)return 'outskirts';
+    if(phase===P.BELLS)return 'bells';
+    if(phase===P.CHAPEL_OUTSKIRTS)return 'station';
+    return null;
+  }catch{return null;}
+}
+let sourceAheadTimer=null;
+function startSourceAhead(){
+  if(RENDERER!=='3d')return;
+  sourceAhead.setStage(sourceAheadStage());
+  sourceAheadTimer ||= setInterval(()=>sourceAhead.setStage(sourceAheadStage()),500);
+}
+
 function activateSourceSpace(state,{position=null,resume=false}={}){
   sourceGlitchReview=null;
   sourceObjectGlitchSelection={};
@@ -16741,11 +16857,35 @@ function toggleTorchAction({protectTake=false}={}){
       : {who:'you',text:'Flat. It is flat, and I have nothing to put in it.'});
     return true;
   }
+  // A torch needs a hand (game/torch-hands.js). With the DA-1000 up, reaching
+  // for it means taking the machine down first: a rolling take keeps rolling
+  // with the deck lowered on its strap, and the handling is on the tape.
+  // An imagined rehearsal (protectTake) handles an imagined light: the real
+  // recorder, its deck and its take are not touched.
+  const kind=currentTorchKind();
+  const reach=protectTake?{action:REC.lightOn()?'off':'on',noise:'torch-click'}
+    :torchReach({kind,lightOn:REC.lightOn(),recorder:recorderInHands()?'raised':'away',
+      recording:REC.isRecording(),carrying:armsFull()});
+  if(reach.action==='refuse'){SPEECH.say({who:'you',text:'Both arms full. No hand for the torch.'});return true;}
+  if(reach.action==='stow-recorder'){
+    if((REC.isRecording()||PB.isPlaying())&&!canLowerLiveTakeRecorder()){
+      SPEECH.say({who:'you',text:'Both hands on the machine. Not now.'});return true;
+    }
+    const raisedScene=scenes.top();
+    if(raisedScene?.id===RECORDER_SCENE_ID&&raisedScene.close)raisedScene.close({feedback:false});
+    else if(scenes.has(RECORDER_SCENE_ID))scenes.remove(RECORDER_SCENE_ID);
+    if((REC.isRecording()||PB.isPlaying())&&!liveTakeRecorderLowered())toggleLiveTakeRecorder();
+    CUES.playCue(CUES.CUE.bag,{gain:.38,rate:.94});
+  }
   const on=REC.toggleLight({protectTake});
-  CUES.playCue(CUES.CUE.light,{gain:.7,rate:on?1:.92});
-  if(!protectTake)REC.emitNoise(.02,px,py,'torch switch',{
-    spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'torch',playerGenerated:true,deliberate:true,
-  });
+  if(on&&kind==='handheld'&&!protectTake)holdTorchInHand();
+  CUES.playCue(CUES.CUE.light,{gain:kind==='headlamp'?.5:.7,rate:on?1:.92});
+  if(!protectTake){
+    const stowed=reach.action==='stow-recorder';
+    REC.emitNoise(TORCH_HANDLING_NOISE[reach.noise]??.02,px,py,stowed?'you took the recorder down for the torch':kind==='headlamp'?'headlamp switch':'torch switch',{
+      ...(stowed?{}:{spoils:false}),kind:'handling_noise',sourceKind:'equipment',sourceId:kind==='headlamp'?'headlamp':'torch',playerGenerated:true,deliberate:true,
+    });
+  }
   if(usingStairAnomaly())noteStairTorchFlick(on);
   once(on?'said-light-on':'said-light-off',()=>SPEECH.say(on?framedLine('lightOn',LINES.lightOn):LINES.lightOff));
   return true;
@@ -17038,6 +17178,7 @@ function openRecorder(){
       return true;
     }
   }
+  stowHandheldTorchForRecorder();
   CUES.playCue(CUES.CUE.bag,{gain:.42,rate:1.18});
   const recorderScene=makeRecorderScene({
     getState:recorderMachineState,
@@ -20366,6 +20507,14 @@ function drawCarriedRecorder(cols,rows){
     rig,rigOnly:true,rect:recorderPanelRect({cols,rows}),note:machine.note});
 }
 
+// During a take the screen is the take's; with the deck lowered and the torch
+// lit in a hand, that hand is still in the corner.
+function drawHeldTorchDuringTake(){
+  if(!REC.lightOn()||currentTorchKind()!=='handheld'||!liveTakeRecorderLowered())return;
+  const inventory=currentActiveInventory();
+  const slot=inventory.held?.toolId==='torch'?inventory.held:inventory.slots.find(entry=>entry.toolId==='torch'&&entry.present);
+  if(slot)drawOrdinaryHeldItem({...inventory,held:slot});
+}
 function drawOrdinaryHeldItem(inventory){
   const held=inventory.held;
   if(!held){drawFieldHeldItem({frame:{active:false,present:false}});return;}
@@ -37320,7 +37469,7 @@ function drawStoryHud(){
   // ROLLING. The take takes over the screen: the dark room you are locked in,
   // and one instruction. Nothing else, because there is nothing else you may
   // do. He still speaks — his own body on the tape, and the thing that isn't.
-  if(REC.isRecording()){ drawTakeOverlay(cols, rows); SPEECH.drawSpeech(); return; }
+  if(REC.isRecording()){ drawHeldTorchDuringTake(); drawTakeOverlay(cols, rows); SPEECH.drawSpeech(); return; }
 
   // The paper takes the same foreground as the recorder and field tools.
   // Keep the survey instrument at the perimeter and bring the hands back as
@@ -40884,7 +41033,7 @@ function render3d(){
     : physicalTorchLook;
   // Losing himself: the torch catches, points a little off, and finds somebody who is not there.
   const torchLook=outskirtsLosingTorch(sourceTorchLook);
-  tickRecorderRigMotion(performance.now()/1000);
+  tickRecorderRigMotion(performance.now()/1000);tickTorchSway(performance.now()/1000);
   // THE BODY OUT THERE. An unsteady walk: a slow sway, a dip with every step, a
   // lurch and a drop when the legs go. Drawn only; the body is where it is.
   const outskirtsBody=usingSourceSpace()&&!worldView
@@ -40945,7 +41094,7 @@ function render3d(){
     light:worldView?.openingPresentation||worldView?.studentStrike||hushSensory?false:sourceRepriseSensory||costumeInspectionSensory?true:storyMode?REC.lightOn():true,
     torchLook,
     workOrderRoomFill:workOrderRoomFill(torchLook,paperLift),
-    recorderLamp:!worldView&&recorderRigPose&&recorderTorchAttached()?recorderBracketFrame(recorderRigPose):null,
+    recorderLamp:!worldView?playerLampFrame():null,
     sensoryProfile:worldView?.sensoryProfile||'story',
     plan: usingPlan(),
     textSpace: sourceTextSpaceActive(),
@@ -41263,6 +41412,8 @@ function liveTakeRecorderLowered(){
   return liveTakeRecorderIsLowered&&canLowerLiveTakeRecorder();
 }
 function toggleLiveTakeRecorder(){
+  // Back up into both hands mid-take: a handheld torch goes away first.
+  if(liveTakeRecorderIsLowered)stowHandheldTorchForRecorder();
   liveTakeRecorderIsLowered=!liveTakeRecorderIsLowered;
   liveRecordingPointerControls.clear();
   cancelControlScope('recording:');

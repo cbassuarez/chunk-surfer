@@ -42,7 +42,7 @@ function drivePackInstalled(record){
 
 // This installs context-owned P3 packs only. The still-visible Source scene,
 // lights, plan, eye, frame loop and canvas remain entirely with their owner.
-export async function preloadSourceDriveAssets({assets={},coastalMemory=false}={}){
+export async function preloadSourceDriveAssets({assets={},coastalMemory=false,props=P3}={}){
  // The base loader replaces P3's catalog rather than merging it. A saved
  // journey can resume before that asynchronous install finishes on a cold
  // boot; installing hero packs first let the later building erase the cabin.
@@ -65,7 +65,7 @@ export async function preloadSourceDriveAssets({assets={},coastalMemory=false}={
    for(const[otherKey,other]of warmedDrivePacks)if(other.key===spec.key&&other.url!==url&&other.ready)warmedDrivePacks.delete(otherKey);
    record={...spec,url,ready:false,promise:null};
    const before=spec.after?[...warmedDrivePacks.values()].find(other=>other.key===spec.after)?.promise:null;
-   record.promise=Promise.resolve(before).then(()=>spec.kind==='character'?P3.addCharacterPack(url):P3.addPropPack(url)).then(()=>{record.ready=true;return true;}).catch(error=>{if(warmedDrivePacks.get(key)===record)warmedDrivePacks.delete(key);throw error;});
+   record.promise=Promise.resolve(before).then(()=>spec.kind==='character'?props.addCharacterPack(url):props.addPropPack(url)).then(()=>{record.ready=true;return true;}).catch(error=>{if(warmedDrivePacks.get(key)===record)warmedDrivePacks.delete(key);throw error;});
    warmedDrivePacks.set(key,record);landing.add(spec.key);
   }
   await record.promise;

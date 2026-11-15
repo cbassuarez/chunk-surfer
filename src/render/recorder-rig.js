@@ -7,7 +7,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { assetUrl } from '../platform/paths.js';
 import { CONTROL_LATCH_TRAVEL, sampleControl } from '../game/control-mechanics.js';
-import { BRACKET_POSITION, BRACKET_PITCH } from './recorder-rig-motion.js';
 import { recorderElbow } from './recorder-arm.js';
 import { createBattleHandRig, loadRecordistHandTemplate } from './battle-hand-rig.js';
 import { createRecordistHandMaterial, addRecordistForearm, shapeRecordistForearm } from './battle-hands.js';
@@ -30,37 +29,6 @@ function box(group, size, position, material) {
   return mesh;
 }
 
-function buildBracket(caseGroup, torch) {
-  const steel = new MeshStandardMaterial({ color: '#78847a', metalness: .65, roughness: .48 });
-  const rubber = new MeshStandardMaterial({ color: '#18251e', roughness: .95 });
-  torch.position.set(...BRACKET_POSITION);
-  torch.rotation.x = BRACKET_PITCH;
-  caseGroup.add(torch);
-  box(caseGroup, [.180, .008, .018], [0, .086, -.010], steel);
-  box(caseGroup, [.026, .008, .120], [0, .090, -.052], steel);
-  for (const x of [-.080, .080]) {
-    box(caseGroup, [.026, .032, .004], [x, .065, -.025], steel);
-    box(caseGroup, [.026, .005, .056], [x, .0815, 0], steel);
-    box(caseGroup, [.026, .012, .004], [x, .072, .034], steel);
-    box(caseGroup, [.024, .024, .0012], [x, .065, -.0224], rubber);
-    box(caseGroup, [.024, .010, .0012], [x, .072, .0314], rubber);
-    box(caseGroup, [.024, .003, .047], [x, .077, 0], rubber);
-  }
-  for (const y of [-.055, .045]) {
-    const band = new Mesh(new TorusGeometry(.024, .0021, 8, 32), steel);
-    band.rotation.x = Math.PI / 2;
-    band.position.y = y;
-    torch.add(band);
-    const axis = new Vector3(0, 1, 0).applyQuaternion(torch.quaternion);
-    const down = new Vector3(0, -1, 0).addScaledVector(axis, axis.y).normalize();
-    const end = band.position.clone().applyQuaternion(torch.quaternion).add(torch.position).addScaledVector(down, .0261);
-    const start = new Vector3(0, .094, end.z);
-    const strut = new Mesh(new CylinderGeometry(.008, .008, start.distanceTo(end), 10), steel);
-    strut.position.copy(start).lerp(end, .5);
-    strut.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), end.sub(start).normalize());
-    caseGroup.add(strut);
-  }
-}
 
 function makeTexture() {
   const canvas = document.createElement('canvas');
@@ -95,7 +63,10 @@ function mountRig(asset, template) {
   body.traverse(part => {
     if (part.isMesh) part.castShadow = part.receiveShadow = true;
   });
-  buildBracket(caseGroup, torch);
+  // No light on the recorder (game/torch-hands.js): a torch is in a hand or on
+  // a head, never bracketed to the machine. The model's torch stays unmounted.
+  torch.removeFromParent();
+  torch.visible = false;
   const lens = torch.getObjectByName('flashlight-lens');
   lens.material.transparent = true;
   lens.material.opacity = .45;
@@ -293,7 +264,6 @@ export function drawRecorderRig(view, layout, paint) {
     r.camera.updateProjectionMatrix();
     r.caseGroup.position.set(...frame.pose.position);
     r.caseGroup.rotation.set(...frame.pose.rotation);
-    r.torch.visible = frame.torchAttached;
     r.lens.material.emissiveIntensity = Math.max(0, frame.torchPower || 0) * .55;
     r.key.intensity = .60 + Math.max(0, frame.ambient || 0) * 3;
     paintFace(r, view, layout, paint, cellW, cellH, dpr);

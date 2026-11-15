@@ -5,7 +5,7 @@ export const WORKBENCH_VARIANTS = Object.freeze({
   headphones: Object.freeze(['reference', 'closed', 'open']),
   microphone: Object.freeze(['reference', 'directional', 'wide']),
   recorder: Object.freeze(['reference', 'low-draw', 'headroom']),
-  flashlight: Object.freeze(['reference', 'throw', 'flood']),
+  flashlight: Object.freeze(['reference', 'throw', 'flood', 'headlamp']),
   faceplate: Object.freeze(['aluminum', 'black', 'olive']),
 });
 
@@ -13,7 +13,7 @@ const names = {
   headphones: ['REFERENCE HEADPHONES', 'CLOSED HEADPHONES', 'OPEN HEADPHONES'],
   microphone: ['REFERENCE MICROPHONE', 'DIRECTIONAL MICROPHONE', 'WIDE-FIELD MICROPHONE'],
   recorder: ['REFERENCE AMP', 'LOW-DRAW AMP', 'HIGH-HEADROOM AMP'],
-  flashlight: ['FIELD FLASHLIGHT', 'LONG-THROW FLASHLIGHT', 'FLOOD FLASHLIGHT'],
+  flashlight: ['FIELD FLASHLIGHT', 'LONG-THROW FLASHLIGHT', 'FLOOD FLASHLIGHT', 'HEADLAMP'],
   faceplate: ['BRUSHED ALUMINUM', 'BLACK ANODIZED', 'OLIVE ENAMEL'],
 };
 const columns = {
@@ -50,7 +50,8 @@ export function workbenchCatalog(state = {}) {
       const isPlate = group === 'faceplate', column = columns[group];
       objects.push({ key: `variant:${group}:${optionId}`, kind: 'variant', group, optionId,
         modelId: `${group === 'recorder' ? 'amp' : group}-${optionId}`, label: names[group][index],
-        position: isPlate ? [-2.15 + index * 2.15, VAN_REAR_STAGE.rackSeatY, VAN_REAR_STAGE.rackZ] : [column.x, .045, -2.6 + index * 2.35],
+        // Four lights share the lighting tray's 7 m, where three items had 2.35 apart.
+        position: isPlate ? [-2.15 + index * 2.15, VAN_REAR_STAGE.rackSeatY, VAN_REAR_STAGE.rackZ] : [column.x, .045, options.length > 3 ? -3.0 + index * 1.78 : -2.6 + index * 2.35],
         ...(isPlate ? { upright: true } : {}),
         width: isPlate ? 1.85 : column.width, selected,
         bay: group === 'recorder' ? 'amp' : group,

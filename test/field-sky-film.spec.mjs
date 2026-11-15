@@ -47,7 +47,7 @@ test('the film shares unit 14 and the uSourceLayer sampler, only while a field a
   assert.match(bind,/gl\.TEXTURE14/);assert.doesNotMatch(bind,/TEXTURE1[^4]|TEXTURE[0-9]\b/,'the film takes some other unit');
   assert.match(bind,/TEXTURE_WRAP_S,gl\.REPEAT/,'a mirrored film slides apart at its seams when it drifts');
   assert.match(bind,/pixelMeshSettings\.reduceMotion\?0:1/,'reduced motion still drifts the sky');
-  assert.match(r3d,/texture\(uSourceLayer,filmAt\)/);
+  assert.match(r3d,/texture\(uSourceLayer,filmAt,1\.5\)/,'the film is read sharp enough for its grain to flicker');
   assert.doesNotMatch(r3d,/uniform sampler2D uMemoryFilm/,'a new sampler breaks the world shader on sixteen-sampler backends');
 });
 

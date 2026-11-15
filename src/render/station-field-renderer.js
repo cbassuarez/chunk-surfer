@@ -139,6 +139,16 @@ export function stationFieldCrashProps(crash,{metrics=null,doorProps=[]}={}){
  out.push(...vanBrandInstances(out));
  return{props:out,replace};
 }
+// AHEAD OF TIME (game/source-preload.js): the field, its earth, and the
+// crash field's van, installed without taking the camera or the plan. Each
+// visit's initialize() finds them resident and only acquires the screen.
+export async function prewarmStationFieldAssets({renderer=R3,props=P3,resolveAsset=assetUrl}={}){
+ if(!await createMemoryFieldRenderer({renderer,props,resolveAsset}).prepare())return false;
+ props.installAuthoredPropMeshes?.(installMemoryMeshes(stationFieldEarthGeometry()));
+ props.installAuthoredPropMeshes?.(installMemoryMeshes(stationFieldVanShadowGeometry()));
+ for(const pack of STATION_FIELD_VAN_PACKS){const catalog=new Set(props.propMeshCatalog?.()||[]);if(pack.meshes.some(m=>!catalog.has(m)))await props.addPropPack(resolveAsset(pack.path));}
+ const catalog=new Set(props.propMeshCatalog?.()||[]);return STATION_FIELD_VAN_PACKS.every(pack=>pack.meshes.every(m=>catalog.has(m)));
+}
 export function createStationFieldRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,fetcher=globalThis.fetch}={}){
  let horizon=null,last=null,vanMetrics=null;
  const base=createMemoryFieldRenderer({renderer,props,transformFrame:(frame,context)=>{

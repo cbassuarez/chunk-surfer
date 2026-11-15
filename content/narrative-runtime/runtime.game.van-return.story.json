@@ -8,8 +8,7 @@
   "entries": [
     "vanReturnConversation.start",
     "vanReturnConversation.choice",
-    "vanReturnConversation.leave",
-    "vanReturnConversation.done"
+    "vanReturnConversation.leave"
   ],
   "tags": [
     "runtime",
@@ -17,10 +16,6 @@
   ],
   "regions": [],
   "module": "src/game/van-return.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/game/van-return.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "vanReturnConversation.start": {
@@ -75,13 +70,7 @@
         }
       ],
       "source": "src/game/van-return.js:35",
-      "goto": "vanReturnConversation.done"
-    },
-    "vanReturnConversation.done": {
-      "id": "vanReturnConversation.done",
-      "type": "line",
-      "lines": [],
-      "source": "src/game/van-return.js:36"
+      "targetName": "done"
     }
   }
 }

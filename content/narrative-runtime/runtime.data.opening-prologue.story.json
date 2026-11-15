@@ -8,7 +8,7 @@
   "entries": [
     "nodes.start",
     "nodes.there",
-    "nodes.who",
+    "nodes",
     "nodes.procrast",
     "nodes.driving",
     "nodes.quiet",
@@ -72,8 +72,7 @@
     "nodes.f-none",
     "nodes.f-enough",
     "nodes.off",
-    "nodes.wipers",
-    "nodes.card"
+    "nodes.wipers"
   ],
   "tags": [
     "runtime",
@@ -86,12 +85,6 @@
   ],
   "regions": [],
   "module": "src/data/opening-prologue.js",
-  "sourceGraph": {
-    "entryIds": [
-      "nodes.start"
-    ],
-    "scopePrefix": "nodes"
-  },
   "notes": "Generated from src/data/opening-prologue.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "nodes.start": {
@@ -160,7 +153,7 @@
           "id": "nodes.there.c0",
           "text": "\"Who is that?\"",
           "source": "src/data/opening-prologue.js:84",
-          "goto": "nodes.who"
+          "targetName": "who"
         },
         {
           "id": "nodes.there.c1",
@@ -183,24 +176,24 @@
       ],
       "source": "src/data/opening-prologue.js:81"
     },
-    "nodes.who": {
-      "id": "nodes.who",
+    "nodes": {
+      "id": "nodes",
       "type": "line",
       "lines": [
         {
-          "id": "nodes.who.l0",
+          "id": "nodes.l0",
           "who": "me",
           "text": "Who is that?! Who are you?",
           "source": "src/data/opening-prologue.js:86"
         },
         {
-          "id": "nodes.who.l1",
+          "id": "nodes.l1",
           "who": "unknown",
           "text": "Nobody you'd know, and everyone you've ever met. I keep late hours. I have been the cough in a slow movement, and the string that goes in the last eight bars. I am the sound that leaves your breath as you think of them.",
           "source": "src/data/opening-prologue.js:87"
         },
         {
-          "id": "nodes.who.l2",
+          "id": "nodes.l2",
           "who": "unknown",
           "text": "I have been the chair that creaks on the only good take. I am very much thought about; rarely ever acknowledged.",
           "source": "src/data/opening-prologue.js:88"
@@ -1740,8 +1733,7 @@
           "source": "src/data/opening-prologue.js:349"
         }
       ],
-      "source": "src/data/opening-prologue.js:346",
-      "goto": "nodes.fate"
+      "source": "src/data/opening-prologue.js:346"
     },
     "nodes.f-seal": {
       "id": "nodes.f-seal",
@@ -1766,8 +1758,7 @@
           "source": "src/data/opening-prologue.js:354"
         }
       ],
-      "source": "src/data/opening-prologue.js:352",
-      "goto": "nodes.fate"
+      "source": "src/data/opening-prologue.js:352"
     },
     "nodes.f-help": {
       "id": "nodes.f-help",
@@ -1792,8 +1783,7 @@
           "source": "src/data/opening-prologue.js:359"
         }
       ],
-      "source": "src/data/opening-prologue.js:357",
-      "goto": "nodes.fate"
+      "source": "src/data/opening-prologue.js:357"
     },
     "nodes.f-door": {
       "id": "nodes.f-door",
@@ -1818,8 +1808,7 @@
           "source": "src/data/opening-prologue.js:364"
         }
       ],
-      "source": "src/data/opening-prologue.js:362",
-      "goto": "nodes.fate"
+      "source": "src/data/opening-prologue.js:362"
     },
     "nodes.f-carry": {
       "id": "nodes.f-carry",
@@ -1838,8 +1827,7 @@
           "source": "src/data/opening-prologue.js:368"
         }
       ],
-      "source": "src/data/opening-prologue.js:367",
-      "goto": "nodes.fate"
+      "source": "src/data/opening-prologue.js:367"
     },
     "nodes.f-bench": {
       "id": "nodes.f-bench",
@@ -1864,8 +1852,7 @@
           "source": "src/data/opening-prologue.js:373"
         }
       ],
-      "source": "src/data/opening-prologue.js:371",
-      "goto": "nodes.fate"
+      "source": "src/data/opening-prologue.js:371"
     },
     "nodes.f-none": {
       "id": "nodes.f-none",
@@ -1975,13 +1962,7 @@
         }
       ],
       "source": "src/data/opening-prologue.js:392",
-      "goto": "nodes.card"
-    },
-    "nodes.card": {
-      "id": "nodes.card",
-      "type": "line",
-      "lines": [],
-      "source": "src/data/opening-prologue.js:396"
+      "targetName": "card"
     }
   }
 }

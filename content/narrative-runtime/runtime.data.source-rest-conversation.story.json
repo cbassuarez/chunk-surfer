@@ -6,8 +6,6 @@
   "fromCode": true,
   "entry": "phaseOpenings.wrong-return.arrival",
   "entries": [
-    "node",
-    "timed",
     "shared.who-asked",
     "shared.other-part",
     "shared.not-name",
@@ -82,26 +80,8 @@
   ],
   "regions": [],
   "module": "src/data/source-rest-conversation.js",
-  "sourceGraph": {
-    "entryIds": [
-      "phaseOpenings.wrong-return.arrival"
-    ],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/data/source-rest-conversation.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
-    "node": {
-      "id": "node",
-      "type": "line",
-      "lines": [],
-      "source": "src/data/source-rest-conversation.js:13"
-    },
-    "timed": {
-      "id": "timed",
-      "type": "line",
-      "lines": [],
-      "source": "src/data/source-rest-conversation.js:15"
-    },
     "shared.who-asked": {
       "id": "shared.who-asked",
       "type": "choice",

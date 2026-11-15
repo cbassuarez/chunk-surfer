@@ -140,3 +140,45 @@ export function benchFaceplate(finish,g){
   });
  });
 }
+
+// HL-1 HEADLAMP (game/torch-hands.js): the hands-free light. A tilting lamp on
+// a woven elastic band, a top strap over the crown, and the cell pack at the
+// back of the head. Front +Z, head-sized at the flashlights' scale (the FL-1
+// barrel's 1.16 is ~22 cm, so the band's 0.52 radius is a ~20 cm head).
+export function benchHeadlamp(g){
+ const {group,box,cylinder,ring,label,add}=g;
+ const band=.52,bandHeight=.15,bandThickness=.022;
+ group([0,0,0],[0,0,0],'headlamp-hl1-assembly',()=>{
+  // The headband: a flat woven strap all the way round.
+  const strap=new THREE.TorusGeometry(band,bandThickness,8,96);strap.scale(1,1,bandHeight/(bandThickness*2));
+  add(strap,'headlamp-strap',[0,0,0],[Math.PI/2,0,0],'headlamp-woven-headband');
+  // The top strap: front to back over the crown.
+  const top=new THREE.TorusGeometry(band*.97,bandThickness*.9,8,64,Math.PI);top.scale(1,1,.10/(bandThickness*1.8));
+  add(top,'headlamp-strap',[0,bandHeight*.32,0],[0,Math.PI/2,0],'headlamp-crown-strap');
+  for(const z of[band,-band])box([0,bandHeight*.32,z*.985],[.13,.05,.03],'graphite',undefined,.008,'headlamp-strap-slider');
+  // The lamp: a tilting housing on a hinged mount at the forehead.
+  group([0,0,band+.03],[0,0,0],'headlamp-front-mount',()=>{
+   box([0,0,-.01],[.36,.17,.05],'graphite',undefined,.02,'headlamp-mount-plate');
+   for(const x of[-.15,.15])box([x,0,.045],[.04,.12,.08],'graphite',undefined,.01,'headlamp-hinge-cheek');
+   cylinder([0,0,.06],.022,.34,'steel',[0,0,Math.PI/2],16,undefined,'headlamp-tilt-pin');
+   group([0,.01,.15],[-.12,0,0],'headlamp-tilting-lamp',()=>{
+    box([0,0,0],[.27,.22,.17],'flashlight-housing',undefined,.05,'headlamp-lamp-housing');
+    cylinder([0,0,.088],.088,.03,'steel',[Math.PI/2,0,0],48,undefined,'headlamp-bezel');
+    ring([0,0,.104],.083,.008,'graphite',[Math.PI/2,0,0],48,'headlamp-bezel-grip');
+    const reflector=[new THREE.Vector2(.016,-.06),new THREE.Vector2(.03,-.047),new THREE.Vector2(.055,-.028),new THREE.Vector2(.074,-.009),new THREE.Vector2(.08,0)];
+    add(new THREE.LatheGeometry(reflector.reverse(),48),'flashlight-reflector',[0,0,.105],[Math.PI/2,0,0],'headlamp-parabolic-reflector');
+    box([0,0,.05],[.02,.02,.008],'flashlight-emitter',[Math.PI/2,0,0],.003,'headlamp-emitter');
+    cylinder([0,0,.106],.079,.008,'flashlight-lens',[Math.PI/2,0,0],48,undefined,'headlamp-lens');
+    box([0,.123,0],[.08,.028,.06],'rubber',undefined,.012,'headlamp-top-switch');
+    label('HL-1',[-.105,-.07,.086],.022,'ink');
+   });
+  });
+  // The cell pack at the back, its lead running round the band.
+  group([0,0,-band-.04],[0,Math.PI,0],'headlamp-cell-pack',()=>{
+   box([0,0,0],[.30,.20,.08],'flashlight-housing',undefined,.03,'headlamp-cell-box');
+   box([0,-.03,.045],[.24,.06,.01],'rubber',undefined,.005,'headlamp-cell-door');
+  });
+  const lead=[];for(let i=0;i<=24;i++){const a=Math.PI/2+.12+i/24*(Math.PI-.24);lead.push([Math.cos(a)*(band+.026),-bandHeight*.38,Math.sin(a)*(band+.026)]);}
+  g.tube(lead,.009,'rubber','headlamp-cell-lead',8);
+ });
+}

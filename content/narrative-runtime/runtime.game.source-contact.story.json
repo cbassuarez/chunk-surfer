@@ -6,8 +6,7 @@
   "fromCode": true,
   "entry": "sourceContactDialogue",
   "entries": [
-    "sourceContactDialogue",
-    "nextSourceContact"
+    "sourceContactDialogue"
   ],
   "tags": [
     "runtime",
@@ -15,10 +14,6 @@
   ],
   "regions": [],
   "module": "src/game/source-contact.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/game/source-contact.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "sourceContactDialogue": {
@@ -63,12 +58,6 @@
         }
       ],
       "source": "src/game/source-contact.js:189"
-    },
-    "nextSourceContact": {
-      "id": "nextSourceContact",
-      "type": "line",
-      "lines": [],
-      "source": "src/game/source-contact.js:217"
     }
   }
 }

@@ -13,6 +13,7 @@ import { normalizeCombatBuild } from '../src/game/combat-progression.js';
 import { trainingCombatBattle } from '../src/data/combat-definitions.js';
 import { createCombatTutorialDirector } from '../src/game/combat-tutorial.js';
 import { advanceDreamFigure, freshDreamFigure, DREAM_FIGURE_PHASE } from '../src/game/dream-figure.js';
+import { torchReach, TORCH_HANDLING_NOISE } from '../src/game/torch-hands.js';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 
@@ -91,7 +92,7 @@ function fixture({ recording = true, trained = false, skillsClosed = false } = {
     tickDreamFigure: () => {},
     fireCue: () => {}, holdForSetupBag: () => events.push({ type: 'skills-case' }),
     SPEECH: { say: () => {}, clearSpeech: () => events.push({ type: 'clear-speech' }) },
-    CUES: { CUE: { recorder: 'recorder', light: 'light' }, playCue: () => {} },
+    CUES: { CUE: { recorder: 'recorder', light: 'light', bag: 'bag' }, playCue: () => {} },
     CR: { fx: { glitch: () => {}, flash: () => {} } },
     applyLensPreset: () => {}, itemLost: () => false, once: (_id, fn) => fn(),
     framedLine: (_kind, line) => line, LINES: { lightOn: 'On.', lightOff: 'Off.' },
@@ -118,6 +119,12 @@ function fixture({ recording = true, trained = false, skillsClosed = false } = {
     stopHeldPropPlay: () => events.push({ type: 'stop-held-prop' }),
     practiceRoomHushBattle: () => ({ id: 'practice-hush', combat: { id: 'practice' } }),
     FP: { toRuntimePoint: point => point }, ROOM_CELLS: { soundnoisemusic: { x: 40, y: 40 }, rehearsal: { x: 42, y: 40 } },
+    // Hands and the light (game/torch-hands.js): a handheld torch, the deck up.
+    torchReach, TORCH_HANDLING_NOISE, RECORDER_SCENE_ID: 'recorder', PB: { isPlaying: () => false },
+    deckLowered: false, currentTorchKind: () => 'handheld', armsFull: () => false,
+    recorderInHands: () => REC.isRecording() && !host.deckLowered,
+    canLowerLiveTakeRecorder: () => REC.isRecording(), liveTakeRecorderLowered: () => host.deckLowered,
+    toggleLiveTakeRecorder: () => { host.deckLowered = !host.deckLowered; }, holdTorchInHand: () => {},
   };
   vm.createContext(host);
   const install = names => vm.runInContext(names.map(mainFunction).join('\n\n'), host);
@@ -341,13 +348,19 @@ test('rehearsal light handling protects the real recorder and restores its origi
   const owner = h.host.combatRehearsalOwner;
   owner.key({ key: 'f', code: 'KeyF', repeat: false });
   assert.equal(REC.lightOn(), true); assert.deepEqual(transport(), before);
+  assert.equal(h.host.deckLowered, false, 'an imagined reach took the real deck down');
   owner.key({ key: 'f', code: 'KeyF', repeat: true });
   assert.equal(REC.lightOn(), true, 'held key repeat cannot toggle again');
   h.scenes.remove(owner);
   assert.equal(REC.lightOn(), false); assert.deepEqual(transport(), before);
+  // A real reach for the torch mid-take (game/torch-hands.js): the deck comes
+  // down for it, the take rolls on, and the handling is on the tape.
   h.host.toggleTorchAction();
-  assert.equal(REC.recState().spoiled, true, 'ordinary real light handling retains its recording consequence');
-  assert.equal(REC.recState().spoilReason, 'you reached for the light');
+  assert.equal(REC.lightOn(), true);
+  assert.equal(h.host.deckLowered, true, 'the torch was reached with the machine still in both hands');
+  assert.equal(REC.recState().phase, 'recording', 'taking the deck down stopped the take');
+  assert.ok(REC.recState().noise >= TORCH_HANDLING_NOISE['recorder-stow'], 'the handling is not on the tape');
+  assert.equal(REC.recState().spoiled, false, 'the handling alone ruined the take');
 });
 
 test('rehearsal light access cannot manufacture power or a missing torch', () => {

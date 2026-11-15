@@ -321,17 +321,17 @@ export function readSheet(amount = 3 * COMPOSURE_GRID) {
   return { spent: true, id, composure: restoreComposure(amount), sheets: state.sheets.length, reason: '' };
 }
 
-// Reaching for the light mid-take is allowed, and it ruins the take. Every
-// rule in this game is a price, never a locked door — except a flat battery,
-// which is not a rule and does not care what you have decided.
-// A world-owning imagined rehearsal may suspend an actual take; only that
-// owner uses protectTake, and power eligibility remains identical.
+// Reaching for the light mid-take is allowed. What it costs is what the hands
+// actually do (game/torch-hands.js, main.js toggleTorchAction): the deck comes
+// down off your chest and a hand finds the torch, and that handling noise goes
+// on the tape like any other sound. A headlamp only clicks. Every rule in this
+// game is a price, never a locked door; except a flat battery, which is not a
+// rule and does not care what you have decided. protectTake is kept for the
+// callers that pass it; power eligibility is identical either way.
 export function toggleLight({protectTake=false}={}) {
+  void protectTake;
   if (!state.light && state.battery <= 0) return false;      // nothing to turn on
   state.light = !state.light;
-  if (!protectTake && state.phase === 'recording' && state.light) spoil('you reached for the light', {
-    sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
-  });
   return state.light;
 }
 

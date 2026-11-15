@@ -15,7 +15,6 @@
     "CONVERSATIONS.warning-truth",
     "CONVERSATIONS.window-truth",
     "CONVERSATIONS.host-truth",
-    "windowInvitationConversation.make",
     "windowInvitationConversation",
     "windowInvitationConversation.accept",
     "windowInvitationConversation.decline",
@@ -32,10 +31,6 @@
   ],
   "regions": [],
   "module": "src/game/source-last-reception.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/game/source-last-reception.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "CONVERSATIONS.host-admission": {
@@ -268,12 +263,6 @@
         }
       ],
       "source": "src/game/source-last-reception.js:70"
-    },
-    "windowInvitationConversation.make": {
-      "id": "windowInvitationConversation.make",
-      "type": "line",
-      "lines": [],
-      "source": "src/game/source-last-reception.js:105"
     },
     "windowInvitationConversation": {
       "id": "windowInvitationConversation",

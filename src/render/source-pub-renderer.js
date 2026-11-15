@@ -141,6 +141,29 @@ export function sourcePubRenderFrame(state){
   return{props,lights:visibleLights,eye,yaw:state.yaw,pitch:state.pitch,stage:state.stage,orders:state.stage<SOURCE_PUB.rounds.length?round.orders:null,copies:1,stretch,layer:activeLayer,layers:3,casks,holes,falling:!!state.fall,floorH:floor};
 }
 
+// One pack, loaded only when the catalog lacks one of its meshes. Shared by
+// the renderer and the prewarm below.
+async function pubLoadIfMissing({props,resolveAsset,released=()=>false},meshes,url,character=false){
+  const catalog=()=>{const actual=props.propMeshCatalog?.()||[];return character?(props.characterStats?.()?.meshes||[]).filter(mesh=>actual.includes(mesh)):actual;};
+  const known=new Set(catalog());if(meshes.every(mesh=>known.has(mesh)))return;
+  await(character?props.addCharacterPack(resolveAsset(url)):props.addPropPack(resolveAsset(url)));
+  if(released())return false;
+  const loaded=new Set(catalog()),missing=meshes.filter(mesh=>!loaded.has(mesh));
+  if(missing.length)throw Error(`The Source bar asset is missing ${missing.join(', ')}.`);
+}
+// AHEAD OF TIME (game/source-preload.js): the Lyric's set, its people, its
+// doors and its trays, without taking the plan, the scene or the camera.
+export async function prewarmSourcePubAssets({renderer=R3,props=P3,resolveAsset=assetUrl}={}){
+  if(await renderer.r3dBasePropsReady?.()===false)return false;
+  const load=(meshes,url,character)=>pubLoadIfMissing({props,resolveAsset},meshes,url,character);
+  const door=doorAssembly('public-glazed-pair',{activeLeaves:'all'});
+  await load(Object.values(MESH),SOURCE_PUB_SCENOGRAPHY_ASSET);
+  await load(Object.values(PUB_CHARACTER_DESIGNS).map(d=>d.mesh),'assets/pub-characters.glb',true);
+  await load([door.frameMesh,door.leafMesh,door.freeStandingHeadMesh].filter(Boolean),'assets/conservatory-doors.glb');
+  await load(['pub_service_tray_loaded',...PUB_HELD_PROP_MESHES],'assets/pub-quest-props.glb');
+  return true;
+}
+
 export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,resolveAsset=assetUrl}={}){
   let initialized=false,released=false,loading=null,loadError=null,lastFrameFalling=false,residencyLoad=null,residencyError=null;
   const requiredCharacters=Object.values(PUB_CHARACTER_DESIGNS).map(d=>d.mesh),requiredDoor=doorAssembly('public-glazed-pair',{activeLeaves:'all'});
@@ -152,14 +175,7 @@ export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,r
     renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);props.setPressureInstances?.([]);
     renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);
   }
-  async function loadIfMissing(meshes,url,character=false){
-    const catalog=()=>{const actual=props.propMeshCatalog?.()||[];return character?(props.characterStats?.()?.meshes||[]).filter(mesh=>actual.includes(mesh)):actual;};
-    const known=new Set(catalog());if(meshes.every(mesh=>known.has(mesh)))return;
-    await(character?props.addCharacterPack(resolveAsset(url)):props.addPropPack(resolveAsset(url)));
-    if(released)return false;
-    const loaded=new Set(catalog()),missing=meshes.filter(mesh=>!loaded.has(mesh));
-    if(missing.length)throw Error(`The Source bar asset is missing ${missing.join(', ')}.`);
-  }
+  const loadIfMissing=(meshes,url,character=false)=>pubLoadIfMissing({props,resolveAsset,released:()=>released},meshes,url,character);
   function initialize(){
     if(loading)return loading;
     loading=(async()=>{

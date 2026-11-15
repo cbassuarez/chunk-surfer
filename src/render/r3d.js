@@ -1320,7 +1320,8 @@ vec3 memoryDaySky(vec3 dir){
     // plate: open sky L .54 (saturation .15), cloud shade .59, cloud tops .72.
     const float filmTurn=${FIELD_SKY_FILM.turn.toFixed(4)};
     vec2 filmAt=mat2(cos(filmTurn),-sin(filmTurn),sin(filmTurn),cos(filmTurn))*vec2(cp.x,cp.y*1.4)*uMemoryFilm.y+uMemoryFilm.zw*uTime;
-    vec3 film=texture(uSourceLayer,filmAt).rgb;
+    // A mip and a half soft: the grain goes, the clouds are far bigger than it.
+    vec3 film=texture(uSourceLayer,filmAt,1.5).rgb;
     float filmL=dot(film,vec3(0.2126,0.7152,0.0722)),filmSat=max(film.r,max(film.g,film.b))-min(film.r,min(film.g,film.b));
     float skyward=smoothstep(0.0,0.16,up),offSun=smoothstep(0.08,0.5,sd);
     float lightIn=clamp(develop,0.0,1.0),lifted=clamp(develop-1.0,0.0,1.0),shaped=clamp(develop-2.0,0.0,1.0);

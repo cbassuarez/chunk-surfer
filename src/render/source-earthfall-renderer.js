@@ -471,6 +471,24 @@ export function sourceEarthfallContinuationPreview(){
   return continuationPreview;
 }
 
+// The descending earth's packs and meshes, shared by initialize() and the
+// prewarm below. Nothing here touches the plan, the scene or the camera.
+async function loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation,released=()=>false}){
+  if(released())return false;if(props.installAuthoredPropMeshes?.(installMeshes)===false)throw Error('The descending earth mesh context is unavailable.');
+  for(const [meshes,url]of [[REQUIRED_DEMO,'assets/source-demolition.glb'],[REQUIRED_COLLAPSE,'assets/source-earthfall-fracture.glb'],[Object.values(ST_BRENDANS_PRESENCE_MESH),ST_BRENDANS_PRESENCE_PACK],[DOOR_MESHES,'assets/conservatory-doors.glb']]){
+    const catalog=new Set(props.propMeshCatalog?.()||[]);if(meshes.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset(url));if(released())return false;
+  }
+  if(previewContinuation)await prewarmSourceContinuationAssets({renderer,props,resolveAsset});
+  return true;
+}
+// AHEAD OF TIME (game/source-preload.js): the earth, Ellery's remembered aside
+// and the continuation it previews, loaded while another scene owns the screen.
+export async function prewarmSourceEarthfallAssets({renderer=R3,props=P3,resolveAsset=assetUrl,installMeshes=installSourceEarthfallMeshes}={}){
+  if(await renderer.r3dBasePropsReady?.()===false)return false;
+  if(!await loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation:true}))return false;
+  return createSourceEarthfallElleryAsideRenderer({renderer,props,resolveAsset}).initialize();
+}
+
 export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},installMeshes=installSourceEarthfallMeshes,transformFrame=null,previewContinuation=false,getTorch=()=>({on:false,look:{power:0}}),asideRenderer=null,diagnostics=false}={}){
   let initialized=false,released=false,loading=null,repair=null,error=null,last=null,releaseRange=null;
   const rangeOwner=Symbol('source-earthfall');
@@ -481,11 +499,7 @@ export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset
   const resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh));};
   function clearSource(){for(const name of ['r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);for(const name of ['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetIndoorRain'])renderer[name]?.(0);for(const name of ['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);props.setSourceSurroundingsPressure?.(null);}
   async function install(){
-    if(released)return false;if(props.installAuthoredPropMeshes?.(installMeshes)===false)throw Error('The descending earth mesh context is unavailable.');
-    for(const [meshes,url]of [[REQUIRED_DEMO,'assets/source-demolition.glb'],[REQUIRED_COLLAPSE,'assets/source-earthfall-fracture.glb'],[Object.values(ST_BRENDANS_PRESENCE_MESH),ST_BRENDANS_PRESENCE_PACK],[DOOR_MESHES,'assets/conservatory-doors.glb']]){
-      const catalog=new Set(props.propMeshCatalog?.()||[]);if(meshes.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset(url));if(released)return false;
-    }
-    if(previewContinuation)await prewarmSourceContinuationAssets({renderer,props,resolveAsset});
+    if(!await loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation,released:()=>released}))return false;
     const catalog=new Set(props.propMeshCatalog?.()||[]),missing=required.filter(mesh=>!catalog.has(mesh));if(missing.length)throw Error('Descending Source meshes missing: '+missing.join(', '));return true;
   }
   function acquireFallView(){

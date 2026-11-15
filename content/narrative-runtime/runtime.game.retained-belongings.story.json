@@ -24,10 +24,6 @@
   ],
   "regions": [],
   "module": "src/game/retained-belongings.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/game/retained-belongings.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "RETAINED_BELONGINGS.b3-session-card": {

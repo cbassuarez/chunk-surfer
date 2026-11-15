@@ -41,6 +41,10 @@ export const FIELD_KIT_OPTIONS = Object.freeze({
       { flashlightReachScale: 1.25, flashlightConeScale: .65, flashlightDrainScale: 1.2 }),
     option('flood', 'INSPECTION', 'A wide inspection beam reaches 25% less far; flashlight battery draw −10%.',
       { flashlightReachScale: .75, flashlightConeScale: 1.35, flashlightDrainScale: .9 }),
+    // Hands-free (game/torch-hands.js): light while the recorder is up, at the
+    // cost of a shorter beam that goes wherever you look and nowhere else.
+    option('headlamp', 'HEADLAMP', 'Hands-free: light with the recorder up. The beam reaches 30% less far and follows your gaze; battery draw −15%.',
+      { flashlightReachScale: .7, flashlightConeScale: 1.15, flashlightDrainScale: .85 }),
   ]),
   cosmetics: Object.freeze({
     faceplate: Object.freeze([

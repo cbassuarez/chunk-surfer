@@ -9,8 +9,7 @@
     "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",
     "ACADEMIC_FLOOR_POPULATION_BEATS.the-chair-can-wait",
     "ACADEMIC_FLOOR_POPULATION_BEATS.a-likeness-that-answers",
-    "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens",
-    "academicFloorPopulationDialogue.academic-floor-population-actor.id-.nodes.start"
+    "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens"
   ],
   "tags": [
     "runtime",
@@ -18,10 +17,6 @@
   ],
   "regions": [],
   "module": "src/data/academic-floor-population.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/data/academic-floor-population.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more": {
@@ -99,12 +94,6 @@
         }
       ],
       "source": "src/data/academic-floor-population.js:148"
-    },
-    "academicFloorPopulationDialogue.academic-floor-population-actor.id-.nodes.start": {
-      "id": "academicFloorPopulationDialogue.academic-floor-population-actor.id-.nodes.start",
-      "type": "line",
-      "lines": [],
-      "source": "src/data/academic-floor-population.js:160"
     }
   }
 }

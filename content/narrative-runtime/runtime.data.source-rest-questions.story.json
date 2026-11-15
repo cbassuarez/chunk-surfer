@@ -4,9 +4,8 @@
   "title": "Source II / III · Bench questions",
   "status": "reference",
   "fromCode": true,
-  "entry": "node",
+  "entry": "groups.recordings.questions.keep",
   "entries": [
-    "node",
     "groups.recordings.questions.keep",
     "groups.recordings.questions.keep.answer",
     "groups.recordings.questions.hush",
@@ -70,18 +69,8 @@
   ],
   "regions": [],
   "module": "src/data/source-rest-questions.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/data/source-rest-questions.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
-    "node": {
-      "id": "node",
-      "type": "line",
-      "lines": [],
-      "source": "src/data/source-rest-questions.js:8"
-    },
     "groups.recordings.questions.keep": {
       "id": "groups.recordings.questions.keep",
       "type": "choice",

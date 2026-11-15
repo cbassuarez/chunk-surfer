@@ -4,9 +4,8 @@
   "title": "Runtime · data/get-in-investigation.js",
   "status": "reference",
   "fromCode": true,
-  "entry": "back",
+  "entry": "theory",
   "entries": [
-    "back",
     "theory",
     "PRE.dock-desk-1.start",
     "PRE.dock-desk-1.hub",
@@ -93,19 +92,8 @@
   ],
   "regions": [],
   "module": "src/data/get-in-investigation.js",
-  "sourceGraph": {
-    "entryIds": [],
-    "scopePrefix": null
-  },
   "notes": "Generated from src/data/get-in-investigation.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
-    "back": {
-      "id": "back",
-      "type": "line",
-      "lines": [],
-      "source": "src/data/get-in-investigation.js:7",
-      "targetName": "hub"
-    },
     "theory": {
       "id": "theory",
       "type": "choice",

@@ -28,6 +28,7 @@ export const BENCH_MODELS=Object.freeze({
   'flashlight-reference':model('flashlight-reference','AUDIOCORP FL–1 Field Light',3.5),
   'flashlight-throw':model('flashlight-throw','AUDIOCORP FL–2 Long-throw Light',3.5),
   'flashlight-flood':model('flashlight-flood','AUDIOCORP FL–3 Flood Light',3.5),
+  'flashlight-headlamp':model('flashlight-headlamp','AUDIOCORP HL–1 Headlamp',3.3,{yaw:.55,pitch:-.18}),
   'faceplate-aluminum':model('faceplate-aluminum','DA–1000 / Brushed Aluminum Faceplate',3.7),
   'faceplate-black':model('faceplate-black','DA–1000 / Black Anodized Faceplate',3.7),
   'faceplate-olive':model('faceplate-olive','DA–1000 / Olive Enamel Faceplate',3.7),

@@ -49,6 +49,21 @@ function installNoteInk(gl,pack){
  mesh.coastalInkRevision=1;
  return true;
 }
+// The coast, the van and its wreck. Shared by initialize() and the prewarm.
+const COASTAL_PACKS=()=>[['assets/source-drive/drive.glb',vanMeshes],[COASTAL_MEMORY_ASSETS.geometry.replace(/^\//,''),coastMeshes],[VAN_BRAND_PACK,vanBrandMeshes],[VAN_WRECK_ASSET,wreckMeshes]];
+async function loadCoastalPacks({props,resolveAsset}){
+  for(const[path,names]of COASTAL_PACKS()){
+    const catalog=new Set(props.propMeshCatalog());if(names.some(name=>!catalog.has(name)))await props.addPropPack(resolveAsset(path));
+  }
+}
+// AHEAD OF TIME (game/source-preload.js): the packs and the lettering fonts,
+// without the plan, the note ink or the far-range lease.
+export async function prewarmCoastalMemoryAssets({renderer=R3,props=P3,resolveAsset=assetUrl,ensureFonts=ensureWorldLetteringFonts}={}){
+  if(await renderer.r3dBasePropsReady?.()===false)return false;
+  await loadCoastalPacks({props,resolveAsset});await ensureFonts();
+  const catalog=new Set(props.propMeshCatalog());return required.every(name=>catalog.has(name));
+}
+
 export function createCoastalMemoryRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,fetcher=globalThis.fetch,reducedMotion=false,onRelease=()=>{},ensureFonts=ensureWorldLetteringFonts,installInk=installNoteInk,getTorch=()=>({on:false})}={}){
  let initialized=false,released=false,pending=null,error=null,vehicleMetrics=null,last=null,releaseRange=null,leaves=null;
  const resident=()=>{const names=new Set(props.propMeshCatalog());return required.every(n=>names.has(n));};
@@ -62,9 +77,7 @@ export function createCoastalMemoryRenderer({renderer=R3,props=P3,resolveAsset=a
   if(pending)return pending;
   pending=(async()=>{
    if(await renderer.r3dBasePropsReady?.()===false)throw Error('The coastal prop context could not be prepared.');
-   for(const[path,names]of [['assets/source-drive/drive.glb',vanMeshes],[COASTAL_MEMORY_ASSETS.geometry.replace(/^\//,''),coastMeshes],[VAN_BRAND_PACK,vanBrandMeshes],[VAN_WRECK_ASSET,wreckMeshes]]){
-    const catalog=new Set(props.propMeshCatalog());if(names.some(name=>!catalog.has(name)))await props.addPropPack(resolveAsset(path));
-   }
+   await loadCoastalPacks({props,resolveAsset});
    const response=await fetcher(resolveAsset('assets/source-drive/geometry/metrics.json'));if(!response?.ok)throw Error('The actual van metrics are unavailable.');vehicleMetrics=await response.json();
    await ensureFonts();if(released)return false;
    if(!resident())throw Error('The shared coastal catalog is incomplete.');
