@@ -23,6 +23,13 @@ test('the screech follows the authored braking interval and fades before settlin
   assert.ok(at(.7,'arrival').rate>at(1.6,'settle').rate);
 });
 
+test('the approved rolling maneuver has no braking screech or permanent parked engine',()=>{
+  const braking=startupVanMix({motionVersion:'albion-maneuver-1',progress:.33,stage:'brake',speed:-1.1,slipping:false});
+  assert.equal(braking.tyre,0);assert.ok(braking.engine>0);
+  const parked=startupVanMix({motionVersion:'albion-maneuver-1',progress:1.94/3.4,stage:'parked',speed:0,slipping:false});
+  assert.equal(parked.engine,0);assert.equal(parked.tyre,0);assert.equal(parked.roll,0);
+});
+
 function fixture(state='running'){
   const nodes=[];
   function param(){return{value:0,cancelScheduledValues(){},setTargetAtTime(value){this.value=value;}};}

@@ -344,7 +344,7 @@ const port = await new Promise((resolve, reject) => {
 const sessionDirectory=await mkdtemp(join(tmpdir(),'chunk-surfer-studio-session-'));
 const studio = spawn(process.execPath, ['tools/narrative-studio/server.mjs'], {
   cwd: process.cwd(),
-  env: { ...process.env, STUDIO_PORT: String(port), STUDIO_NO_OPEN: '1',STUDIO_SESSION_FILE:join(sessionDirectory,'session.json') },
+  env: { ...process.env, STUDIO_PORT: String(port), STUDIO_NO_OPEN: '1',STUDIO_SESSION_FILE:join(sessionDirectory,'session.json'), STUDIO_CACHE_DIR:join(sessionDirectory,'vite-cache') },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 let studioOutput = '';

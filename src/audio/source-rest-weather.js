@@ -3,13 +3,13 @@ import {createThunderVoice} from './thunder.js';
 import {assetUrl} from '../platform/paths.js';
 import {sourceAcousticCoordinates} from './source-surroundings.js';
 import {createStandingTearImpulse} from './standing-tear-dsp.js';
-import {SOURCE_REST_BELLS} from '../game/source-rest-judgment.js';
+import {SOURCE_REST_BELL_SAMPLES,sourceRestBellSample} from '../data/source-rest-bells.js';
 
 const finite=(n,d=0)=>Number.isFinite(Number(n))?Number(n):d;
 const clamp=n=>Math.max(0,Math.min(1,finite(n)));
 const EPS=1e-7;
 export const SOURCE_REST_WEATHER_AUDIO=Object.freeze({
-  bellSamples:Object.freeze(['04','06','08']),bellEncodedByteLimit:2000000,bellGain:.23,bellWet:.16,bellReflectionSeconds:6.8,maxBellTails:6,maxClockStep:.5,
+  bellSamples:Object.freeze(SOURCE_REST_BELL_SAMPLES.map(row=>row.sample)),bellEncodedByteLimit:2000000,bellGain:.23,bellWet:.16,bellReflectionSeconds:6.8,maxBellTails:6,maxClockStep:.5,
 });
 
 
@@ -77,9 +77,9 @@ export function createSourceRestFloodAudio({context:ctx,destination}={}){
     dispose(){if(disposed)return;disposed=true;pause();for(const node of[input,filter,output])try{node.disconnect();}catch{}carrier=bubbleBuffer=null;}});
 }
 
-/** Local D/A modal rings retain the recorded CC0 clapper attacks. The original
- * tower bank remains unchanged; only three preprocessed20s local stems decode. A hit has an actual mouth in the scene; its spatial
- * coordinates never borrow or move the game's shared AudioListener. */
+/** Both worlds use the chapel's recorded CC0 handstrokes and complete decays.
+ * Four shared 12s samples cover the two palettes. Each hit belongs to a mouth
+ * in the scene; its coordinates never move the game's shared AudioListener. */
 export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...args)=>globalThis.fetch(...args),urlFor=assetUrl}={}){
   const buffers=new Map(),pending=new Map(),errors=new Map(),live=new Set(),controllers=new Set();
   let disposed=false,generation=0,impulse=null,played=0,lastStrike=null;
@@ -87,7 +87,7 @@ export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...a
   const release=v=>{if(!v||v.dead)return;v.dead=true;v.source.onended=null;try{v.source.stop();}catch{}for(const node of v.nodes)try{node.disconnect();}catch{}if(v.convolver)v.convolver.buffer=null;live.delete(v);};
   function pause(){for(const v of [...live])release(v);}
   function load(sample){
-    const row=SOURCE_REST_BELLS.find(bell=>bell.sample===sample);if(!row?.audioUrl)return Promise.resolve(false);
+    const row=sourceRestBellSample(sample);if(!row?.audioUrl)return Promise.resolve(false);
     if(buffers.has(sample))return Promise.resolve(true);if(pending.has(sample))return pending.get(sample);
     if(!ready||disposed||errors.has(sample))return Promise.resolve(false);
     const owner=generation,controller=typeof AbortController==='function'?new AbortController():null;
@@ -100,7 +100,7 @@ export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...a
         return valid()?ctx.decodeAudioData(bytes):null;
       }).then(buffer=>{
         if(!valid()||!buffer)return false;
-        if(Math.abs(buffer.duration-row.audioSeconds)>.1||buffer.numberOfChannels!==1)throw Error('Bell differs from canonical tuned mono stem');
+        if(Math.abs(buffer.duration-row.audioSeconds)>.1||buffer.numberOfChannels!==1)throw Error('Bell differs from canonical recorded mono handstroke');
         buffers.set(sample,buffer);return true;
       }).catch(error=>{if(valid())errors.set(sample,String(error?.message||error));return false;})
       .finally(()=>{if(controller)controllers.delete(controller);if(pending.get(sample)===job)pending.delete(sample);});
@@ -118,15 +118,15 @@ export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...a
   }
   function update({state={},acousticFrame=null}={}){for(const v of live)place(v,state,acousticFrame);}
   function strike(event={},state={},acousticFrame=null){
-    const row=SOURCE_REST_BELLS.find(bell=>bell.sample===String(event.sample)),buffer=buffers.get(String(event.sample));if(disposed||!ready||!buffer||!row)return false;
+    const row=sourceRestBellSample(event.sample),buffer=buffers.get(String(event.sample));if(disposed||!ready||!buffer||!row)return false;
     if(live.size>=SOURCE_REST_WEATHER_AUDIO.maxBellTails)release(live.values().next().value);
     const source=ctx.createBufferSource(),envelope=ctx.createGain(),spatial=ctx.createGain(),filter=ctx.createBiquadFilter?.(),
       hrtf=ctx.createPanner?.(),pan=hrtf||ctx.createStereoPanner?.(),nodes=[source,envelope,spatial];
     source.buffer=buffer;source.loop=false;if(source.playbackRate)source.playbackRate.value=1;
     const now=finite(ctx.currentTime),muffle=clamp(event.muffle),level=SOURCE_REST_WEATHER_AUDIO.bellGain*clamp(event.energy??1)*(1-.15*muffle);
     envelope.gain.setValueAtTime?.(level,now);if(!envelope.gain.setValueAtTime)envelope.gain.value=level;
-    // The processed stem owns its complete20s modal decay. Playback rate stays
-    // at1; no runtime transposition changes the recorded clapper timing.
+    // The chapel recording owns its attack and decay. Playback rate stays at
+    // one; no generated resonances or transposition replace the recorded bell.
     envelope.gain.setValueAtTime?.(level,now+buffer.duration-.3);envelope.gain.linearRampToValueAtTime?.(0,now+buffer.duration);
     let tail=source;if(filter){filter.type='lowpass';if(filter.Q)filter.Q.value=.55;nodes.push(filter);tail.connect(filter);tail=filter;}
     tail.connect(envelope).connect(spatial);tail=spatial;

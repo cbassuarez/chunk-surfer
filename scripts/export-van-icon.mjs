@@ -8,7 +8,6 @@ import {createServer} from 'vite';
 import {VAN_ICON_LAUNCH} from '../tools/app-icon/motion.mjs';
 import {STARTUP_VAN_LAYOUT,STARTUP_VAN_BUDGET} from '../tools/app-icon/startup-layout.mjs';
 import {VAN_ICON_ACQUISITION_PROVENANCE,VAN_ICON_ACQUISITION_PROFILE} from '../tools/app-icon/acquisition.mjs';
-import {encodeStartupVanVideo} from './build-startup-van-assets.mjs';
 import sharp from 'sharp';
 
 const root=resolve(import.meta.dirname,'..');
@@ -23,7 +22,7 @@ if(!startupOnly)for(const file of await readdir(join(root,'src-tauri/icons'))){i
   const info=await sharp(join(root,'src-tauri/icons',file)).metadata();if(info.width===info.height)sizes.add(info.width);}
 const rasterSizes=[...sizes].sort((a,b)=>a-b);
 async function renderInputs({startup=false}={}){
-  const result={},files=['tools/app-icon/renderer.mjs','tools/app-icon/motion.mjs','tools/app-icon/weather.mjs','tools/app-icon/acquisition.mjs','tools/app-icon/transit.glb','tools/app-icon/transit-source.json',
+  const result={},files=['tools/app-icon/renderer.mjs','tools/app-icon/motion.mjs','tools/app-icon/vehicle-maneuver.mjs','tools/app-icon/weather.mjs','tools/app-icon/acquisition.mjs','tools/app-icon/transit.glb','tools/app-icon/transit-source.json',
     'src/render/pixel-mesh/transparent.js','src/render/pixel-mesh/shader.js','src/render/pixel-mesh/final-look.js','src/render/pixel-mesh/screens.js','src/render/look-profiles.js','src/render/world-light-treatment.js','public/assets/blue-noise-64.png'];
   if(startup)files.push('tools/app-icon/startup-layout.mjs');
   for(const file of files)result[file]=hash(await readFile(join(root,file)));return result;
@@ -37,7 +36,7 @@ try{
   let studyURL=process.env.VAN_ICON_STUDY_URL;
   if(!studyURL){server=await createServer({root,configFile:false,cacheDir:join(profile,'vite-cache'),logLevel:'error',optimizeDeps:{entries:['tools/app-icon/index.html']},server:{host:'127.0.0.1',port:0}});await server.listen();studyURL=`http://127.0.0.1:${server.httpServer.address().port}/tools/app-icon/`;}
   browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,userDataDir:profile,
-    args:['--mute-audio','--use-angle=metal','--no-first-run','--no-default-browser-check'],protocolTimeout:120000});
+    args:['--mute-audio',...(process.platform==='darwin'?['--use-angle=metal']:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']),'--no-first-run','--no-default-browser-check'],protocolTimeout:120000});
   const page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));page.on('console',message=>{if(message.type()==='error'&&!/favicon/.test(message.location().url||''))errors.push(message.text());});
   await page.goto(studyURL,{waitUntil:'domcontentloaded',timeout:60000});
@@ -77,19 +76,16 @@ try{
     const decodedBytes=columns*cell*rows*cell*4+128*128*4;
     if(atlas.length>STARTUP_VAN_BUDGET.atlasEncodedBytes||poster.length>STARTUP_VAN_BUDGET.posterEncodedBytes||decodedBytes>STARTUP_VAN_BUDGET.totalDecodedBytes)
       throw Error('The optional app van exceeded its startup resource budget.');
-    const video=await encodeStartupVanVideo(atlas);
     const atlasPath='assets/brand/app-icon-van-startup.png',posterPath='assets/brand/app-icon-van-startup-poster.png';
-    const videoPath='assets/brand/app-icon-van-startup.mp4';
-    await writeFile(join(root,atlasPath),atlas);await writeFile(join(root,posterPath),poster);await writeFile(join(root,videoPath),video);
-    const manifest={version:5,purpose:'optional lightweight app widget',...STARTUP_VAN_LAYOUT,pngWidth:columns*cell,pngHeight:rows*cell,
+    await writeFile(join(root,atlasPath),atlas);await writeFile(join(root,posterPath),poster);
+    const manifest={version:6,purpose:'primary codec-independent vehicle atlas',...STARTUP_VAN_LAYOUT,pngWidth:columns*cell,pngHeight:rows*cell,
       atlas:{path:atlasPath,sha256:hash(atlas),bytes:atlas.length,renderedAtOutputResolution:true},
       poster:{path:posterPath,sha256:hash(poster),bytes:poster.length,render:result.rasterReports[128],renderedAtOutputResolution:true},
-      video:{path:videoPath,sha256:hash(video),bytes:video.length,codec:'H.264',background:'#020807',audioTracks:0},
       encoding:{format:'indexed PNG',paletteColours:256,additionalDithering:false},decodedBytes,budget:STARTUP_VAN_BUDGET,
       acquisition:result.acquisition,inputs:await renderInputs({startup:true}),nativeDockChanged:false};
     await writeFile(join(out,'app-icon-startup.json'),JSON.stringify(manifest,null,2)+'\n');
     console.log(JSON.stringify({startupExported:true,frameCount,cell,columns,rows,duration,atlasBytes:atlas.length,posterBytes:poster.length,
-      videoBytes:video.length,decodedBytes,atlasSha256:hash(atlas),posterSha256:hash(poster),videoSha256:hash(video),errors}));
+      decodedBytes,atlasSha256:hash(atlas),posterSha256:hash(poster),errors}));
   }else if(studyOnly){
     const studyOut=join(root,'artifacts/van-icon-study/dither-weather-study');await mkdir(studyOut,{recursive:true});
     const variants={};

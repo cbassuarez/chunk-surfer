@@ -39624,6 +39624,7 @@ async function bootScenes(){
   installProbe();
   try{ MAP_EL.setAttribute('tabindex','0'); MAP_EL.focus({preventScroll:true}); }catch(_){}
   const qp=params();
+  window.__chunkStartup?.stage?.('Reading saved game');
   await saveLoadAsync({ gameVersion: qp.get('build') || 'LOCAL' });
   window.__chunkStartupVan?.setVisualSettings?.({
     reducedMotion:(getSave().settings?.shake||'full')!=='full',
@@ -39631,6 +39632,7 @@ async function bootScenes(){
   });
   progressionInit({build:qp.get('build') || 'LOCAL'});
   configurePlatformReconciliation(()=>reconcileProfileAchievements({notify:false}));
+  window.__chunkStartup?.stage?.('Restoring recorded history');
   await reconcileSealedCausalDraft();
   await refreshHushAvailability();
   syncControllerSettingsFromSave();
@@ -40184,6 +40186,7 @@ async function bootScenes(){
   // before calibration completes. Do not make the native game wait for a
   // threshold of retired 2D audio samples before it can render, pause, or
   // accept a complete generated bank.
+  window.__chunkStartup?.stage?.('Initializing graphics');
   if(RENDERER==='3d' && !inRogue) enterRogue();
   // The authored facility is part of the critical boot payload, not a lazy
   // gameplay enhancement. Starting a run before this import completed made
@@ -40191,6 +40194,7 @@ async function bootScenes(){
   // seconds (and indefinitely if the import failed). Calibration and credits
   // now remain ahead of the title until the real plan is resident.
   if(RENDERER==='3d'){
+    window.__chunkStartup?.stage?.('Loading the conservatory');
     if(hasActiveRun())await loadBuilding();
     else{const persistentSave=getSave();const previewSave=freshSave({settings:persistentSave.settings});await withTransientGameState({save:previewSave,meta:getMeta()},()=>loadBuilding());}
   }
@@ -42129,6 +42133,7 @@ async function boot(){
   }
   updateOnboardingButton();
     await bootScenes();
+    window.__chunkStartup?.stage?.('Drawing the first frame');
     raf=requestAnimationFrame(loop);
     const qp=params();
     if(import.meta.env.DEV&&qp.has('yardSourceReview')){

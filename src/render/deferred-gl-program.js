@@ -1,5 +1,6 @@
-// Start driver compilation while assets are loading. Polling the KHR completion
-// token does not wait for that work; asking LINK_STATUS on first use does.
+// Start driver compilation now, then poll the KHR completion token when present.
+// This does not defer linkProgram itself: some Mesa drivers block in that call.
+// Callers must not start large optional shaders on the critical boot path.
 export function deferGlProgram(gl,vertexSource,fragmentSource,label='program'){
   const extension=gl.getExtension('KHR_parallel_shader_compile');
   const vertex=gl.createShader(gl.VERTEX_SHADER),fragment=gl.createShader(gl.FRAGMENT_SHADER);

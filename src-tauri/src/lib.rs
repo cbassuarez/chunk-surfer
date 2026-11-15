@@ -60,6 +60,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             dock_tile::chunk_app_icon_status,
+            dock_tile::chunk_launch_animation_state,
+            dock_tile::chunk_launch_animation_ready,
             dock_tile::chunk_set_app_icon,
             graphics_recovery::chunk_graphics_info,
             graphics_recovery::chunk_graphics_recover,

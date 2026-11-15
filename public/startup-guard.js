@@ -8,6 +8,24 @@
   var graphicsAttempted = false, graphicsActive = false, graphicsPromise = null, taggedGraphicsFailure = false;
   var entries = [], totalReports = 0, droppedReports = 0, serial = 0;
   var DIAGNOSTIC_LIMIT = 32, RELOAD_DELAY_MS = 1000;
+  var stage = 'Loading game modules', diagnosticsVisible = false;
+
+  function showDiagnostics() {
+    if (phase === 'ready' || !surface) return;
+    diagnosticsVisible = true;
+    surface.setAttribute('data-diagnostics', 'visible');
+    var title = document.getElementById('startupRecoveryTitle');
+    var message = document.getElementById('startupRecoveryMessage');
+    var details = document.getElementById('startupRecoveryDetails');
+    if (title) title.textContent = 'Chunk Surfer is waiting to start';
+    if (message) message.textContent = 'Last step: ' + stage + '. You can select and copy the details below.';
+    if (details) {
+      details.hidden = false;
+      details.textContent = entries.map(function (entry) {
+        return '[' + entry.source + '] ' + entry.detail;
+      }).join('\n\n') || 'No error was reported. Startup has not completed yet.';
+    }
+  }
 
   function text(value, limit) {
     try { return String(value == null ? '' : value).slice(0, limit); }
@@ -29,7 +47,9 @@
     }
     var entry = { id: ++serial, source: source, category: category, code: code, detail: detail, count: 1 };
     if (entries.length >= DIAGNOSTIC_LIMIT) { entries.shift(); droppedReports++; }
-    entries.push(entry); return entry.id;
+    entries.push(entry);
+    if (diagnosticsVisible) showDiagnostics();
+    return entry.id;
   }
   function nativeCall(command, args) {
     var api = window.__TAURI_INTERNALS__ || (window.__TAURI__ && window.__TAURI__.core);
@@ -105,11 +125,13 @@
       setPhase('waiting');
       report(info && info.canRecover === false ? 'Graphics recovery alternatives are exhausted.' : 'Graphics recovery did not restart the document.',
         { source: 'native-graphics-recovery', category: 'recovery-unavailable' });
+      showDiagnostics();
       finishIfReady();
       return false;
     }).catch(function (error) {
       graphicsActive = false; setPhase('waiting');
       report(error, { source: 'native-graphics-recovery', category: 'recovery-unavailable' });
+      showDiagnostics();
       finishIfReady();
       return false;
     });
@@ -131,7 +153,7 @@
     if (graphics) {
       taggedGraphicsFailure = true;
       void recover(false, errorDetail(error));
-    } else scheduleReload();
+    } else if (!scheduleReload()) showDiagnostics();
     return true;
   }
   function finishIfReady() {
@@ -181,10 +203,11 @@
   }
   window.__chunkStartup = Object.freeze({
     booted: booted, frame: frame, fail: fail, report: report,
+    stage: function (value) { stage = text(value, 160); if (diagnosticsVisible) showDiagnostics(); },
     retryGraphics: function () { return recover(true, 'Requested tagged graphics recovery'); },
     status: function () { return phase; },
     diagnostics: function () {
-      return { phase: phase, bootComplete: bootComplete, needsGraphics: needsGraphics, frameComplete: frameComplete,
+      return { phase: phase, stage: stage, bootComplete: bootComplete, needsGraphics: needsGraphics, frameComplete: frameComplete,
         reloadScheduled: !!reloadTimer, reloadUsed: reloadUsed, graphicsAttempted: graphicsAttempted, graphicsActive: graphicsActive,
         totalReports: totalReports, droppedReports: droppedReports,
         entries: entries.map(function (entry) { return { id: entry.id, source: entry.source, category: entry.category,
@@ -200,6 +223,6 @@
     if (phase === 'ready') return;
     if (!graphicsActive) setPhase('waiting');
     report('Startup is still waiting for a completed boot and frame.', { source: 'startup-watchdog', category: 'stalled' });
+    showDiagnostics();
   }, 90000);
 }(window, document));
-

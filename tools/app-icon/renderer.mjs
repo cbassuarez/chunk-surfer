@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {VAN_ICON_LAUNCH,vanIconPose,vanTyreContact,startupVanLoopPose} from './motion.mjs';
+import {VAN_ICON_LAUNCH,vanIconPose,vanTyreContact,startupVanLoopPose,VAN_ICON_CAMERA_ZOOM} from './motion.mjs';
 import {createVanIconAcquisition} from './acquisition.mjs';
 import {createVanIconWeather} from './weather.mjs';
 const host=document.getElementById('stage'),status=document.getElementById('status');
@@ -44,6 +44,7 @@ rig.traverse(object=>{
 const body=new THREE.Group();body.name='icon-body-suspension';
 for(const node of [...gltf.scene.children])if(!/^icon-wheel-/.test(node.name))body.add(node);
 gltf.scene.add(body);
+body.position.copy(center);for(const node of body.children)node.position.sub(center);
 rig.updateMatrixWorld(true);
 const groundY=staticBox.min.y+.008;
 const tyreLocations=tyres.map(wheel=>({wheel,point:wheel.getWorldPosition(new THREE.Vector3())}));
@@ -94,18 +95,20 @@ for(let sample=0;sample<=84;sample++){
  const pose=vanIconPose(sample/84*VAN_ICON_LAUNCH.durationSeconds),c=Math.cos(pose.yaw),s=Math.sin(pose.yaw);
  for(const x of[staticBox.min.x,staticBox.max.x])for(const y of[staticBox.min.y-.28,staticBox.max.y+.22])for(const z of[staticBox.min.z,staticBox.max.z]){const p=new THREE.Vector3(pose.x+c*x+s*z,y,pose.z-s*x+c*z).project(camera);maxX=Math.max(maxX,Math.abs(p.x));maxY=Math.max(maxY,Math.abs(p.y));}
 }
-camera.zoom=Math.min(.86/maxX,.86/maxY);camera.updateProjectionMatrix();
+camera.zoom=VAN_ICON_CAMERA_ZOOM; // Preserve the approved original rear three-quarter framing.camera.updateProjectionMatrix();
 const weather=createVanIconWeather(THREE,scene,{groundY,camera});
 const acquisition=createVanIconAcquisition(THREE,renderer);
 if(!await acquisition.ready)throw Error('The game acquisition shader could not prepare.');
+const bodyRest=body.position.clone();
+const wheelRigs=tyres.map(wheel=>{const steer=new THREE.Group();steer.position.copy(wheel.position);wheel.parent.add(steer);wheel.position.set(0,0,0);steer.add(wheel);return{wheel,steer};});
 let raf=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 let currentSize=1024,lastTime=VAN_ICON_LAUNCH.durationSeconds,currentVariant='detail';
 function renderAt(t=VAN_ICON_LAUNCH.durationSeconds,{size=currentSize,reducedMotion=false,reduceFlash=false,variant='detail',startupLoop=false}={}){
   size=Math.max(1,Math.min(4096,Math.round(size)));if(size!==currentSize){currentSize=size;renderer.setSize(size,size,false);}
   lastTime=t;currentVariant=variant;
   const p=startupLoop?startupVanLoopPose(t):vanIconPose(t);rig.position.set(p.x,0,p.z);rig.rotation.y=p.yaw;
-  body.position.y=p.body.heave;body.rotation.set(p.body.pitch,0,p.body.roll);
-  for(const wheel of tyres)wheel.rotation.x=p.wheelAngle;
+  body.position.copy(bodyRest);body.position.y+=p.body.heave;body.rotation.set(p.body.pitch,0,p.body.roll);
+  for(const {wheel,steer}of wheelRigs){const state=p.wheels.find(w=>wheel.name==='icon-wheel-'+w.name);steer.rotation.y=state.steer;wheel.rotation.x=state.spin;}
   for(const material of lamps)material.emissiveIntensity=p.brake;
   for(const material of headlamps)material.emissiveIntensity=3.5*p.head;
   rig.updateMatrixWorld(true);
@@ -114,8 +117,8 @@ function renderAt(t=VAN_ICON_LAUNCH.durationSeconds,{size=currentSize,reducedMot
   for(const layers of tracks)for(const track of layers){track.material.opacity=p.tracks;track.geometry.setDrawRange(0,Math.max(0,Math.min(track.geometry.attributes.position.count,Math.floor((p.t-.95)/.01)*6)));}
   for(const cloud of smoke){const age=p.t-cloud.born,alive=age>0&&age<.44;cloud.sprite.visible=alive;
     if(alive){cloud.sprite.position.set(cloud.at.x+cloud.side*(.06+.32*age),groundY+.05+.28*age,cloud.at.z-.18*age);cloud.sprite.scale.setScalar(.16+.34*age/.44);cloud.sprite.material.opacity=.85*Math.sin(age/.44*Math.PI)*p.smoke;}}
-  weather.update(t,{size,reducedMotion,reduceFlash,lamps:lampGlows.map(({glow,isHead,light})=>({position:glow.getWorldPosition(new THREE.Vector3()),isHead,intensity:light.intensity}))});
-  if(!acquisition.render(scene,camera,{width:size,height:size,time:t,reducedMotion,reduceFlash,variant}))throw Error('The van did not pass through game acquisition.');
+  weather.update(t,{size,reducedMotion,reduceFlash:true,lamps:lampGlows.map(({glow,isHead,light})=>({position:glow.getWorldPosition(new THREE.Vector3()),isHead,intensity:light.intensity}))});
+  if(!acquisition.render(scene,camera,{width:size,height:size,time:t,reducedMotion,reduceFlash:true,variant}))throw Error('The van did not pass through game acquisition.');
   return true;
 }
 function play(){cancelAnimationFrame(raf);if(reduced.matches){renderAt(undefined,{size:512,reducedMotion:true,reduceFlash:true});return;}const start=performance.now();const frame=now=>{const t=(now-start)/1000;renderAt(t,{size:512});if(t<VAN_ICON_LAUNCH.durationSeconds)raf=requestAnimationFrame(frame);else renderAt();};raf=requestAnimationFrame(frame);}

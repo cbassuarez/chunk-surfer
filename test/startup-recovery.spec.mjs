@@ -138,10 +138,16 @@ test('an explicit boot failure invalidates old frame evidence but permits a fres
 });
 
 test('a stalled load records waiting without restarting, clearing saves or fabricating readiness',()=>{
-  const f=fixture({invoke:()=>Promise.resolve({canRecover:true})});f.run(90000);
+  const f=fixture({invoke:()=>Promise.resolve({canRecover:true})});
+  f.api.stage('Loading the conservatory');f.run(90000);
   assert.equal(f.api.status(),'waiting');assert.equal(f.reloads,0);assert.equal(f.calls.length,0);
   assert.equal(f.api.diagnostics().bootComplete,false);assert.equal(f.api.diagnostics().frameComplete,false);
   assert.ok(f.api.diagnostics().entries.some(e=>e.source==='startup-watchdog'&&e.category==='stalled'));
+  assert.equal(f.elements.get('startupRecovery')['data-diagnostics'],'visible');
+  assert.match(f.elements.get('startupRecoveryMessage').textContent,/Loading the conservatory/);
+  assert.match(f.elements.get('startupRecoveryDetails').textContent,/Startup is still waiting/);
+  f.api.report(Error('driver diagnostic'),{source:'render-loop'});
+  assert.match(f.elements.get('startupRecoveryDetails').textContent,/driver diagnostic/);
   assert.equal(f.api.booted(true),false);assert.equal(f.api.frame(),true);assert.equal(f.api.status(),'ready');
 });
 
@@ -213,14 +219,14 @@ test('quiet reload budgets are per document URL and ignore only fragments',()=>{
   const other=fixture({storage,href:'tauri://localhost/index.html?mode=other'});other.api.fail(Error('different document'));other.run(1000);assert.equal(other.reloads,1);
 });
 
-test('the actual loading host has no failure pane and loads the dependency-free guard before main',()=>{
+test('the loading host provides selectable diagnostics and loads the dependency-free guard before main',()=>{
   const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
   assert.ok(html.indexOf('src="./startup-guard.js"')<html.indexOf('id="chunkMain" type="module"'));
   assert.match(html,/<section id="startupRecovery"[^>]*data-phase="starting"/);
-  assert.doesNotMatch(html,/id="startupRecovery(?:Details|Retry|Graphics)"/);
+  assert.match(html,/<pre id="startupRecoveryDetails" hidden>/);
+  assert.match(html,/user-select: text/);
   assert.doesNotMatch(source,/setPhase\(['"]failed['"]\)/);
   assert.match(html,/#startupRecovery\[hidden\]/);
   assert.match(html,/#startupRecovery\[data-phase="ready"\] \{ pointer-events: none; \}/);
   assert.match(html,/#startupRecovery\[data-phase="ready"\]::before \{ opacity: 0; \}/);
 });
-

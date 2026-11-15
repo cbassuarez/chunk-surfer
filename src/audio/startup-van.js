@@ -35,6 +35,10 @@ export function startupVanWaveforms(sampleRate=48000){
 
 export function startupVanMix(event={}){
   const p=clamp(event.progress),stage=event.stage;
+  if(event.motionVersion==='albion-maneuver-1'){
+    const speed=Math.min(1,Math.abs(Number(event.speed)||0)/2.7);
+    return{engine:stage==='parked'?0:.18+.4*speed,rate:.68+.65*speed,tyre:0,roll:.045*speed};
+  }
   if(stage==='offscreen')return{engine:0,rate:.85,tyre:0,roll:0};
   if(stage==='departure'){
     const drive=clamp((event.elapsed-1.55)/1.65);

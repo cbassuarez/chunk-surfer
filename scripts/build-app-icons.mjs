@@ -47,7 +47,16 @@ const temporary=mkdtempSync(join(tmpdir(),'chunk-surfer-icons-'));
 try{
  const set=join(temporary,'van.iconset');mkdirSync(set);
  for(const base of[16,32,128,256,512])for(const retina of[false,true])writeFileSync(join(set,`icon_${base}x${base}${retina?'@2x':''}.png`),await raster(base*(retina?2:1)));
- execFileSync('iconutil',['-c','icns',set,'-o',canonical]);
+ if(process.platform==='darwin')execFileSync('iconutil',['-c','icns',set,'-o',canonical]);
+ else{
+  // PNG ICNS elements, including Retina representations, preserve the actual
+  // per-size acquisition rasters. No macOS-only conversion is needed on Linux.
+  const elements=[];
+  for(const [type,size]of[['icp4',16],['icp5',32],['icp6',64],['ic07',128],['ic08',256],['ic09',512],['ic10',1024],['ic11',32],['ic12',64],['ic13',256],['ic14',512]]){
+   const png=await raster(size),header=Buffer.alloc(8);header.write(type,0,4,'ascii');header.writeUInt32BE(png.length+8,4);elements.push(header,png);
+  }
+  const header=Buffer.alloc(8);header.write('icns');header.writeUInt32BE(8+elements.reduce((n,b)=>n+b.length,0),4);writeFileSync(canonical,Buffer.concat([header,...elements]));
+ }
  for(const [destination,size]of[['32x32.png',32],['64x64.png',64],['128x128.png',128],['128x128@2x.png',256],['icon.png',512]])writeFileSync(join(root,'src-tauri/icons',destination),await raster(size));
  // Windows installer/Store representations use the same desktop identity.
  for(const file of readdirSync(join(root,'src-tauri/icons'))){if(!file.endsWith('.png')||file==='icon.png'||/^\d+x\d+/.test(file))continue;
@@ -62,6 +71,7 @@ try{
   `static const NSUInteger CSVLaunchCellSize = ${launch.cell};`,
   `static const NSUInteger CSVLaunchColumns = ${launch.columns};`,
   `static const NSUInteger CSVLaunchRows = ${launch.rows};`,
+  `static const NSTimeInterval CSVLaunchSettleEnd = ${launch.stagesSeconds.settleEnd};`,
   `static const NSTimeInterval CSVLaunchDuration = ${launch.durationSeconds.toFixed(1)};`,'',
  ].join('\n'));
  // The native atlas is not an app loader asset. Keep the optional widget's

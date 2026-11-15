@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { AudioProject, CodeFields, MediaProject, NarrativeDocument, StoryChoice, StoryLayout, StoryLine, StoryNode, StoryTransaction } from './types';
 import {
   addChoiceWithResponse,
@@ -23,7 +24,8 @@ const reorder = <T,>(items: T[], index: number, delta: number) => {
   return next;
 };
 
-export function StoryComposer({ document, layout, selectedId, audio, media, codeFields, onTransaction, onSelect, onCue }: {
+export function StoryComposer({ focusChoiceId, document, layout, selectedId, audio, media, codeFields, onTransaction, onSelect, onCue }: {
+  focusChoiceId?: string;
   document: NarrativeDocument;
   layout: StoryLayout;
   selectedId: string;
@@ -35,6 +37,10 @@ export function StoryComposer({ document, layout, selectedId, audio, media, code
   onSelect: (id: string) => void;
   onCue: (cueId: string) => void;
 }) {
+  const composerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (focusChoiceId) composerRef.current?.querySelector(`[data-choice-id="${CSS.escape(focusChoiceId)}"]`)?.scrollIntoView({ block: 'start' });
+  }, [focusChoiceId, selectedId]);
   const wordsOnly = !!codeFields;
   // A field built in code is shown but cannot be typed into; a partly built
   // one names the parts that have to stay.
@@ -54,23 +60,23 @@ export function StoryComposer({ document, layout, selectedId, audio, media, code
     transactDocument(next);
   };
   const updateSelected = (change: Partial<StoryNode>) => updateNodeById(activeId, change);
-  const updateLine = (nodeId: string, index: number, change: Partial<StoryLine>) => {
+  const updateLine = (nodeId: string, index: number, change: Partial<StoryLine>, collection: 'lines' | 'revisitLines' = 'lines') => {
     const next = structuredClone(document);
-    const lines = structuredClone(next.nodes[nodeId]?.lines || []);
+    const lines = structuredClone(next.nodes[nodeId]?.[collection] || []);
     lines[index] = { ...lines[index], ...change };
-    next.nodes[nodeId].lines = lines;
+    next.nodes[nodeId][collection] = lines;
     transactDocument(next);
   };
-  const addLine = (nodeId: string) => {
+  const addLine = (nodeId: string, collection: 'lines' | 'revisitLines' = 'lines') => {
     const next = structuredClone(document);
     const node = next.nodes[nodeId];
-    const id = allocateStoryId(next, `${nodeId}.line.${(node.lines || []).length + 1}`);
-    node.lines = [...(node.lines || []), { id, who: 'direction', text: '' }];
+    const id = allocateStoryId(next, `${nodeId}.${collection === 'revisitLines' ? 'revisit.' : ''}line.${(node[collection] || []).length + 1}`);
+    node[collection] = [...(node[collection] || []), { id, who: 'direction', text: '' }];
     transactDocument(next);
   };
-  const removeLine = (nodeId: string, index: number) => {
+  const removeLine = (nodeId: string, index: number, collection: 'lines' | 'revisitLines' = 'lines') => {
     const next = structuredClone(document);
-    next.nodes[nodeId].lines = (next.nodes[nodeId].lines || []).filter((_: StoryLine, itemIndex: number) => itemIndex !== index);
+    next.nodes[nodeId][collection] = (next.nodes[nodeId][collection] || []).filter((_: StoryLine, itemIndex: number) => itemIndex !== index);
     transactDocument(next);
   };
   const updateChoice = (index: number, change: Partial<StoryChoice>) => {
@@ -90,30 +96,34 @@ export function StoryComposer({ document, layout, selectedId, audio, media, code
     : choices[0].when || choices[0].cues?.length || choices[0].exit ? 'Remove the choice condition, cue, or exit before making it linear'
     : '';
 
-  const lineEditor = (nodeId: string, line: StoryLine, index: number, responseLabel = '') => <article className="composer-line" key={line.id} data-line-id={line.id}>
+  const lineEditor = (nodeId: string, line: StoryLine, index: number, responseLabel = '', collection: 'lines' | 'revisitLines' = 'lines') => {
+    const updateCollectionLine = (change: Partial<StoryLine>) => updateLine(nodeId, index, change, collection);
+    const rows = document.nodes[nodeId][collection] || [];
+    return <article className="composer-line" key={line.id} data-line-id={line.id}>
     <div className="composer-line__head">
-      <input aria-label={`${responseLabel || 'Beat'} line ${index + 1} speaker`} value={line.who || ''} placeholder="speaker" {...words(line.id, 'who')} onChange={(event) => updateLine(nodeId, index, { who: event.target.value })} />
+      <input aria-label={`${responseLabel || 'Beat'} line ${index + 1} speaker`} value={line.who || ''} placeholder="speaker" {...words(line.id, 'who')} onChange={(event) => updateCollectionLine({ who: event.target.value })} />
       <span>{line.id}</span>
-      {!wordsOnly && <><button aria-label={`Move ${responseLabel || 'beat'} line ${index + 1} up`} disabled={index === 0} onClick={() => updateNodeById(nodeId, { lines: reorder(document.nodes[nodeId].lines || [], index, -1) })}>↑</button>
-      <button aria-label={`Move ${responseLabel || 'beat'} line ${index + 1} down`} disabled={index === (document.nodes[nodeId].lines || []).length - 1} onClick={() => updateNodeById(nodeId, { lines: reorder(document.nodes[nodeId].lines || [], index, 1) })}>↓</button>
-      <button aria-label={`Remove ${responseLabel || 'beat'} line ${index + 1}`} onClick={() => removeLine(nodeId, index)}>×</button></>}
+      {!wordsOnly && <><button aria-label={`Move ${responseLabel || 'beat'} line ${index + 1} up`} disabled={index === 0} onClick={() => updateNodeById(nodeId, { [collection]: reorder(rows, index, -1) })}>↑</button>
+      <button aria-label={`Move ${responseLabel || 'beat'} line ${index + 1} down`} disabled={index === rows.length - 1} onClick={() => updateNodeById(nodeId, { [collection]: reorder(rows, index, 1) })}>↓</button>
+      <button aria-label={`Remove ${responseLabel || 'beat'} line ${index + 1}`} onClick={() => removeLine(nodeId, index, collection)}>×</button></>}
     </div>
-    <textarea aria-label={`${responseLabel || 'Beat'} line ${index + 1} text`} rows={4} value={line.text || ''} placeholder="Write the line…" {...words(line.id, 'text')} onChange={(event) => updateLine(nodeId, index, { text: event.target.value })} />
+    <textarea aria-label={`${responseLabel || 'Beat'} line ${index + 1} text`} rows={4} value={line.text || ''} placeholder="Write the line…" {...words(line.id, 'text')} onChange={(event) => updateCollectionLine({ text: event.target.value })} />
     {keepHint(line.id)}
     {!wordsOnly && <details className="composer-details"><summary>Line details</summary>
       <div className="composer-detail-grid">
-        {field('Condition', <input value={line.when || ''} placeholder="flags.example && keys>=3" onChange={(event) => updateLine(nodeId, index, { when: event.target.value || undefined })} />, true)}
-        {field('Art', <select value={(line.art as { id?: string } | undefined)?.id || (line.artId as string) || ''} onChange={(event) => updateLine(nodeId, index, { art: event.target.value ? { id: event.target.value } : undefined, artId: undefined })}><option value="">No art</option>{storyArt.map((slot) => <option key={slot.id} value={slot.id}>{slot.label}</option>)}</select>)}
-        {field('Cue', <select value="" onChange={(event) => event.target.value && updateLine(nodeId, index, { cues: toggleCue(line.cues, event.target.value) })}><option value="">Toggle cue</option>{cueIds.map((id) => <option key={id}>{id}</option>)}</select>)}
-        {field('Channel', <input value={String(line.channel || '')} onChange={(event) => updateLine(nodeId, index, { channel: event.target.value || undefined })} />)}
-        {field('Hold', <input type="number" step=".05" value={line.hold ?? ''} onChange={(event) => updateLine(nodeId, index, { hold: event.target.value === '' ? undefined : Number(event.target.value) })} />)}
-        {field('Rate', <input type="number" step=".05" value={line.rate ?? ''} onChange={(event) => updateLine(nodeId, index, { rate: event.target.value === '' ? undefined : Number(event.target.value) })} />)}
+        {field('Condition', <input value={line.when || ''} placeholder="flags.example && keys>=3" onChange={(event) => updateCollectionLine({ when: event.target.value || undefined })} />, true)}
+        {field('Art', <select value={(line.art as { id?: string } | undefined)?.id || (line.artId as string) || ''} onChange={(event) => updateCollectionLine({ art: event.target.value ? { id: event.target.value } : undefined, artId: undefined })}><option value="">No art</option>{storyArt.map((slot) => <option key={slot.id} value={slot.id}>{slot.label}</option>)}</select>)}
+        {field('Cue', <select value="" onChange={(event) => event.target.value && updateCollectionLine({ cues: toggleCue(line.cues, event.target.value) })}><option value="">Toggle cue</option>{cueIds.map((id) => <option key={id}>{id}</option>)}</select>)}
+        {field('Channel', <input value={String(line.channel || '')} onChange={(event) => updateCollectionLine({ channel: event.target.value || undefined })} />)}
+        {field('Hold', <input type="number" step=".05" value={line.hold ?? ''} onChange={(event) => updateCollectionLine({ hold: event.target.value === '' ? undefined : Number(event.target.value) })} />)}
+        {field('Rate', <input type="number" step=".05" value={line.rate ?? ''} onChange={(event) => updateCollectionLine({ rate: event.target.value === '' ? undefined : Number(event.target.value) })} />)}
       </div>
-      {!!line.cues?.length && <div className="cue-chips">{line.cues.map((id) => <button key={id} onClick={() => updateLine(nodeId, index, { cues: (line.cues || []).filter((cueId) => cueId !== id) })}>{id} ×</button>)}</div>}
+      {!!line.cues?.length && <div className="cue-chips">{line.cues.map((id) => <button key={id} onClick={() => updateCollectionLine({ cues: (line.cues || []).filter((cueId) => cueId !== id) })}>{id} ×</button>)}</div>}
     </details>}
   </article>;
+  };
 
-  return <section className="story-composer">
+  return <section ref={composerRef} className="story-composer">
     <header className="composer-header">
       <div><span>BEAT COMPOSER</span><strong>{document.title}</strong></div>
       <label>Beat<select aria-label="Beat" value={activeId} onChange={(event) => onSelect(event.target.value)}>{Object.keys(document.nodes).map((id) => <option key={id} value={id}>{id}</option>)}</select></label>
@@ -133,6 +143,11 @@ export function StoryComposer({ document, layout, selectedId, audio, media, code
         <div className="composer-stack">{(selected.lines || []).map((line, index) => lineEditor(activeId, line, index))}</div>
         {!selected.lines?.length && !wordsOnly && <button className="composer-empty-action" onClick={() => addLine(activeId)}>This beat has no text. Add a line.</button>}
       </section>
+
+      {!wordsOnly && <section className="composer-section">
+        <div className="composer-section__title"><div><span>REVISIT VARIANT</span><strong>On return</strong></div><button onClick={() => addLine(activeId, 'revisitLines')}>＋ Return line</button></div>
+        <div className="composer-stack">{(selected.revisitLines || []).map((line, index) => lineEditor(activeId, line, index, 'Return', 'revisitLines'))}</div>
+      </section>}
 
       <section className="composer-section composer-section--choices">
         <div className="composer-section__title"><div><span>PLAYER AGENCY</span><strong>Choices</strong></div>{!wordsOnly && <button onClick={() => onTransaction(addChoiceWithResponse(document, layout, activeId))}>＋ Choice</button>}</div>

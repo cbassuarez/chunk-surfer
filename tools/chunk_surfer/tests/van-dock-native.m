@@ -1,6 +1,11 @@
 // Offscreen AppKit lifecycle checks. No NSApplication, NSWindow, Dock install,
 // preference writes, WebView, game session, audio or GPU capture is created.
 #define CS_DOCK_ASSEMBLY_TESTING 1
+#import <Foundation/Foundation.h>
+static NSTimeInterval testLaunchOrigin;
+double chunk_surfer_launch_elapsed_seconds(void) {
+ return NSProcessInfo.processInfo.systemUptime-testLaunchOrigin;
+}
 #import "../../../src-tauri/macos/DockTile/DockAssembly.m"
 
 int main(int argc, const char **argv) {
@@ -41,6 +46,7 @@ int main(int argc, const char **argv) {
         if (!assets) { fputs("Dock resources failed to decode or have the wrong atlas size.\n", stderr); return 1; }
         CSDockAssemblyView *timed = [[CSDockAssemblyView alloc]
             initWithFrame:NSMakeRect(0, 0, 128, 128) image:image atlas:atlas tile:nil];
+        testLaunchOrigin=NSProcessInfo.processInfo.systemUptime;
         [timed start];
         BOOL started = timed.timerIsValidForTesting;
         BOOL respectsSystem = started || NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
@@ -54,21 +60,29 @@ int main(int argc, const char **argv) {
         BOOL noReplay = !timed.timerIsValidForTesting;
         CSDockAssemblyView *cancelled = [[CSDockAssemblyView alloc]
             initWithFrame:NSMakeRect(0, 0, 128, 128) image:image atlas:atlas tile:nil];
+        testLaunchOrigin=NSProcessInfo.processInfo.systemUptime;
         [cancelled start]; [cancelled cancel]; [cancelled cancel];
         BOOL switched = !cancelled.timerIsValidForTesting && !cancelled.atlasRetainedForTesting;
         CSDockAssemblyView *reduced = [[CSDockAssemblyView alloc]
             initWithFrame:NSMakeRect(0, 0, 128, 128) image:image atlas:atlas tile:nil];
+        testLaunchOrigin=NSProcessInfo.processInfo.systemUptime;
         [reduced start]; [reduced handleReducedMotion:YES];
         BOOL reducedDone = !reduced.timerIsValidForTesting && !reduced.atlasRetainedForTesting
             && reduced.elapsedForTesting == CSVLaunchDuration;
         BOOL nilRejected = [[CSDockAssemblyView alloc] initWithFrame:NSZeroRect image:image atlas:nil tile:nil] == nil;
+        testLaunchOrigin=NSProcessInfo.processInfo.systemUptime-CSVLaunchSettleEnd-.1;
+        CSDockAssemblyView *late = [[CSDockAssemblyView alloc]
+            initWithFrame:NSMakeRect(0, 0, 128, 128) image:image atlas:atlas tile:nil];
+        [late start];
+        BOOL lateJoined = !late.timerIsValidForTesting && !late.atlasRetainedForTesting;
         NSDictionary *report = @{@"offscreenOnly":@YES, @"applicationActivated":@NO,
             @"assetsDecoded":@(assets), @"topDownAtlasMapping":@(mapping), @"monotonicFrameSkip":@(monotonic),
             @"systemReduceMotionRespected":@(respectsSystem), @"timerCompletedAfterStall":@(completed),
             @"completedDoesNotReplay":@(noReplay), @"switchCancelsAndReleasesAtlas":@(switched),
-            @"reduceMotionFinishesAndReleasesAtlas":@(reducedDone), @"missingAtlasRejected":@(nilRejected)};
+            @"reduceMotionFinishesAndReleasesAtlas":@(reducedDone), @"missingAtlasRejected":@(nilRejected),
+            @"lateJoinDoesNotReplay":@(lateJoined)};
         NSData *json = [NSJSONSerialization dataWithJSONObject:report options:NSJSONWritingPrettyPrinted error:nil];
         puts([[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding].UTF8String);
-        return (mapping && monotonic && respectsSystem && completed && noReplay && switched && reducedDone && nilRejected) ? 0 : 1;
+        return (mapping && monotonic && respectsSystem && completed && noReplay && switched && reducedDone && nilRejected && lateJoined) ? 0 : 1;
     }
 }

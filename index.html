@@ -98,29 +98,25 @@
     #startupRecovery[data-phase="ready"] { pointer-events: none; }
     #startupRecovery[data-phase="ready"]::before { opacity: 0; }
     #startupVan { width: min(32vw, 160px); aspect-ratio: 1; position: relative; overflow: hidden; }
-    #startupVanPoster, #startupVanVideo { display: block; width: 100%; height: 100%; object-fit: contain; }
+    #startupVanPoster, #startupVanCanvas { display: block; width: 100%; height: 100%; object-fit: contain; }
     #startupVanPoster { position: absolute; inset: 0; z-index: 1; }
-    #startupRecovery[data-phase="ready"] #startupVanVideo {
-      -webkit-mask-image: radial-gradient(ellipse 85% 76%, black 55%, transparent 92%);
-      mask-image: radial-gradient(ellipse 85% 76%, black 55%, transparent 92%);
-    }
-    #startupVanPoster[data-repeating] { animation: startup-van-poster-pass 1.4s linear infinite; }
-    #startupVanVideo[data-departing], #startupVanPoster[data-departing="exit"] {
-      animation: startup-van-exit 360ms cubic-bezier(.35, .15, .65, .84) both;
-    }
-    #startupVanPoster[data-departing="pass"] { animation: startup-van-poster-pass 360ms linear both; }
-    @keyframes startup-van-exit {
-      from { transform: var(--startup-van-translate, translateX(0)); }
-      to { transform: translateX(-100%); }
-    }
-    @keyframes startup-van-poster-pass { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
     #startupRecovery h1, #startupRecovery p {
       position: absolute; width: 1px; height: 1px; overflow: hidden;
       clip-path: inset(50%); white-space: nowrap;
     }
+    #startupRecovery[data-diagnostics="visible"] { overflow: auto; }
+    #startupRecovery[data-diagnostics="visible"] h1,
+    #startupRecovery[data-diagnostics="visible"] p {
+      position: relative; width: auto; height: auto; overflow: visible;
+      clip-path: none; white-space: normal;
+    }
+    #startupRecoveryDetails {
+      position: relative; max-width: 900px; width: 100%; max-height: 45vh;
+      overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+      text-align: left; user-select: text; font: 12px/1.5 monospace;
+    }
     @media (prefers-reduced-motion: reduce) {
       #startupRecovery::before { transition: none; }
-      #startupVanPoster[data-repeating] { animation: none; }
     }
   </style>
   <link id="mainStyles" rel="stylesheet" href="./styles.css?v=20260907-guided-case-tour">
@@ -189,10 +185,11 @@
 <section id="startupRecovery" aria-live="polite" data-phase="starting">
   <div id="startupVan" aria-hidden="true">
     <img id="startupVanPoster" src="./app-icon/van-startup-poster.png" alt="" width="128" height="128" fetchpriority="low" hidden>
-    <video id="startupVanVideo" muted playsinline loop preload="auto" hidden></video>
+    <canvas id="startupVanCanvas" width="128" height="128" hidden></canvas>
   </div>
   <h1 id="startupRecoveryTitle">Starting Chunk Surfer</h1>
   <p id="startupRecoveryMessage">The van is arriving.</p>
+  <pre id="startupRecoveryDetails" hidden></pre>
 </section>
 <div id="wrap">
   <div id="introTitle">

@@ -4,7 +4,7 @@ function allContentIds(document) {
   const ids = new Set(Object.keys(document.nodes || {}));
   for (const node of Object.values(document.nodes || {})) {
     if (node.id) ids.add(node.id);
-    for (const line of node.lines || []) if (line?.id) ids.add(line.id);
+    for (const line of [...(node.lines || []), ...(node.revisitLines || [])]) if (line?.id) ids.add(line.id);
     for (const choice of node.choices || []) if (choice?.id) ids.add(choice.id);
   }
   return ids;
@@ -127,7 +127,10 @@ export function incomingStoryReferences(document, targetId) {
   const incoming = [];
   for (const [nodeId, node] of Object.entries(document.nodes || {})) {
     if (node.goto === targetId) incoming.push({ nodeId, kind: 'goto', choiceId: null });
-    for (const choice of node.choices || []) if (choice.goto === targetId) incoming.push({ nodeId, kind: 'choice', choiceId: choice.id });
+    for (const choice of node.choices || []) {
+      if (choice.goto === targetId) incoming.push({ nodeId, kind: 'choice', choiceId: choice.id });
+      if (choice.check?.fail === targetId) incoming.push({ nodeId, kind: 'check-fail', choiceId: choice.id });
+    }
   }
   return incoming;
 }
@@ -141,7 +144,7 @@ export function detachedStoryNodeIds(document) {
     reached.add(id);
     const node = document.nodes[id];
     if (node.goto) pending.push(node.goto);
-    for (const choice of node.choices || []) if (choice.goto) pending.push(choice.goto);
+    for (const choice of node.choices || []) { if (choice.goto) pending.push(choice.goto); if (choice.check?.fail) pending.push(choice.check.fail); }
   }
   return Object.keys(document.nodes || {}).filter((id) => !reached.has(id));
 }
@@ -169,6 +172,7 @@ export function deleteStoryNode(document, layout, nodeId) {
   if (!nextDocument.nodes[nodeId] || nodeId === nextDocument.entry || (nextDocument.entries || []).includes(nodeId)) {
     return { document: nextDocument, layout: nextLayout, selectedId: nodeId, changed: false };
   }
+  if (incomingStoryReferences(nextDocument, nodeId).some(ref => ref.kind === 'check-fail')) return { document: nextDocument, layout: nextLayout, selectedId: nodeId, changed: false, problem: 'Reconnect the check failure route before deleting its destination.' };
   delete nextDocument.nodes[nodeId];
   delete nextLayout.positions?.[nodeId];
   for (const node of Object.values(nextDocument.nodes)) {
@@ -191,12 +195,16 @@ export function renameStoryNode(document, layout, nodeId, nextId) {
   if (nextDocument.entries) nextDocument.entries = nextDocument.entries.map((id) => id === nodeId ? nextId : id);
   for (const node of Object.values(nextDocument.nodes)) {
     if (node.goto === nodeId) node.goto = nextId;
-    for (const choice of node.choices || []) if (choice.goto === nodeId) choice.goto = nextId;
+    for (const choice of node.choices || []) { if (choice.goto === nodeId) choice.goto = nextId; if (choice.check?.fail === nodeId) choice.check.fail = nextId; }
   }
   for (const region of nextDocument.regions || []) region.nodeIds = region.nodeIds.map((id) => id === nodeId ? nextId : id);
   if (nextLayout.positions?.[nodeId]) {
     nextLayout.positions[nextId] = nextLayout.positions[nodeId];
     delete nextLayout.positions[nodeId];
+  }
+  for (const [id, position] of Object.entries(nextLayout.positions || {})) for (const kind of ['choice', 'line', 'collection']) {
+    const prefix = `${kind}:${encodeURIComponent(nodeId)}:`;
+    if (id.startsWith(prefix)) { nextLayout.positions[`${kind}:${encodeURIComponent(nextId)}:${id.slice(prefix.length)}`] = position; delete nextLayout.positions[id]; }
   }
   return { document: nextDocument, layout: nextLayout, selectedId: nextId, changed: true };
 }

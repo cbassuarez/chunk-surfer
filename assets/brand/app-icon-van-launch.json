@@ -1,5 +1,6 @@
 {
   "version": 3,
+  "motionVersion": "albion-maneuver-1",
   "frameCount": 84,
   "cell": 256,
   "cellSize": 256,
@@ -12,12 +13,16 @@
       "name": "arrival"
     },
     {
-      "atSeconds": 0.95,
+      "atSeconds": 0.88,
       "name": "brake"
     },
     {
-      "atSeconds": 1.27,
+      "atSeconds": 1.42,
       "name": "settle"
+    },
+    {
+      "atSeconds": 1.94,
+      "name": "departure"
     },
     {
       "atSeconds": 3.4,
@@ -25,35 +30,20 @@
     }
   ],
   "stagesSeconds": {
-    "accelerateEnd": 0.3,
-    "finalAccelerationStart": 0.8,
-    "brakeStart": 0.95,
-    "lockStart": 0.95,
-    "stop": 1.27,
-    "settleEnd": 2.35,
-    "smokeEnd": 1.65,
-    "poolEnd": 2.9,
-    "tracksEnd": 3.25
+    "brakeStart": 0.88,
+    "stop": 1.42,
+    "settleEnd": 1.94,
+    "departure": 1.94
   },
   "weather": {
     "rain": true,
     "seed": 1987,
     "rainDrops": 72,
-    "lightningAtSeconds": [
-      2.42
-    ],
-    "thunderAtSeconds": [
-      2.9
-    ],
-    "lightningDurationSeconds": 0.57,
-    "flashRanges": [
-      {
-        "fromSeconds": 2.38,
-        "toSeconds": 2.95,
-        "safeAtSeconds": 2.3
-      }
-    ],
-    "lightningPolicy": "one restrained illumination rising to2.42s then softly decaying to2.95s; no secondary flashes; disabled for Reduced Motion/reduced flash",
+    "lightningAtSeconds": [],
+    "thunderAtSeconds": [],
+    "lightningDurationSeconds": 0,
+    "flashRanges": [],
+    "lightningPolicy": "Shared reduced-flash vehicle performance.",
     "nativeAudio": false
   },
   "pngWidth": 2048,
@@ -63,17 +53,17 @@
   "audioTracks": 0,
   "master": {
     "path": "assets/brand/app-icon-van.png",
-    "sha256": "7bcb13b248948c3f8ef590fd67d3d4354771d9eebba754995a5c1830b517f041"
+    "sha256": "7fb219e591df52f0f1e6492db29304e64289b09690e0e46f4a3645fd34e2b690"
   },
   "atlas": {
     "path": "assets/brand/app-icon-van-launch.png",
-    "sha256": "6e56acca35260d26f25531f464cb355ca382dde2a9d1dc5ac510cd687e6e1d47",
+    "sha256": "904dc1282d1a5f7541cade8fdc853c3aca49fbb357ecd681aace05cf112dab02",
     "renderedAtOutputResolution": true
   },
   "rasters": {
     "16": {
       "path": "assets/brand/app-icon-van-rasters/16.png",
-      "sha256": "52a69276636741079fe46be958e56234e132166c23fe3f05452743e6cdcb30f8",
+      "sha256": "63050191725695986cd44bc8d84a7d5550d62802a9f173522e075e2c6a2a51d9",
       "width": 16,
       "height": 16,
       "renderedAtOutputResolution": true,
@@ -84,7 +74,7 @@
         "sourceHeight": 16,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -122,7 +112,7 @@
     },
     "24": {
       "path": "assets/brand/app-icon-van-rasters/24.png",
-      "sha256": "64f5201f87f5fe58a2a37fb2540f4a2ba7cdee4cd2460b0efd36c6135698aabd",
+      "sha256": "5dd98934143e08119a4f893679e62cdcb212aec00b444b277e2b3f2240ea6c35",
       "width": 24,
       "height": 24,
       "renderedAtOutputResolution": true,
@@ -133,7 +123,7 @@
         "sourceHeight": 24,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -171,7 +161,7 @@
     },
     "30": {
       "path": "assets/brand/app-icon-van-rasters/30.png",
-      "sha256": "c8cd60e3c9caee19511084f7146936ef6479594a0d6874185520b0bb3a499948",
+      "sha256": "9339fe5c9e66668145e50b6cb22d7683fc165efe1eb9dfc32939f0f9240093be",
       "width": 30,
       "height": 30,
       "renderedAtOutputResolution": true,
@@ -182,7 +172,7 @@
         "sourceHeight": 30,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -220,7 +210,7 @@
     },
     "32": {
       "path": "assets/brand/app-icon-van-rasters/32.png",
-      "sha256": "5fbeb8be3733f145464ea4f7128f24fa8ed3ae3822869372302bc55dfb8e3c6a",
+      "sha256": "f522877f50ff10de1b92d94533bee9a90b2f23dac4ca1ce52e5784d3efe100db",
       "width": 32,
       "height": 32,
       "renderedAtOutputResolution": true,
@@ -231,7 +221,7 @@
         "sourceHeight": 32,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -269,7 +259,7 @@
     },
     "44": {
       "path": "assets/brand/app-icon-van-rasters/44.png",
-      "sha256": "693d66cf330880398c6c4d85ed2bd4fe2643f823cab54a76fb1118754bfa785c",
+      "sha256": "d38a4cd13be429963b1e032563daf14bfc2fd2d748537d09243b5494041bb4fb",
       "width": 44,
       "height": 44,
       "renderedAtOutputResolution": true,
@@ -280,7 +270,7 @@
         "sourceHeight": 44,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -318,7 +308,7 @@
     },
     "48": {
       "path": "assets/brand/app-icon-van-rasters/48.png",
-      "sha256": "7933907ed101768cb63d1f0512c9cc7d01d98df335164279b0d8fd559bfd234c",
+      "sha256": "468dd48ebbd648b0ba855a09a05619b236be33299d1695b484c1a15f46d3dcd9",
       "width": 48,
       "height": 48,
       "renderedAtOutputResolution": true,
@@ -329,7 +319,7 @@
         "sourceHeight": 48,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -367,7 +357,7 @@
     },
     "50": {
       "path": "assets/brand/app-icon-van-rasters/50.png",
-      "sha256": "fc9d98bbef682302a68bc05bc5966106ebd4852eca8ff72bda6092840453422a",
+      "sha256": "a459f66e8e1424069163aa1986002f9e6d8c58b0e7b2526124ff7220be78bfcd",
       "width": 50,
       "height": 50,
       "renderedAtOutputResolution": true,
@@ -378,7 +368,7 @@
         "sourceHeight": 50,
         "screenPeriodPx": 4.25,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.3,
         "vfdToneAmount": 0.1,
         "variant": "detail",
@@ -416,7 +406,7 @@
     },
     "64": {
       "path": "assets/brand/app-icon-van-rasters/64.png",
-      "sha256": "d95374033eec32c8773cae17f2697d1417b5629aca15883f1605339e5816ea72",
+      "sha256": "9a67929420c7b635d3fd4c30c64af7eed2a39c54212c59d67570380543daaff2",
       "width": 64,
       "height": 64,
       "renderedAtOutputResolution": true,
@@ -427,7 +417,7 @@
         "sourceHeight": 64,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -465,7 +455,7 @@
     },
     "71": {
       "path": "assets/brand/app-icon-van-rasters/71.png",
-      "sha256": "4419f64ad75659e99addaa4e32cddc487369651e284fdd094283bb26f6bb7fc6",
+      "sha256": "fc1844f3f95a880d86f55185e4264378dcf85cc9946b9545010fabff2537e665",
       "width": 71,
       "height": 71,
       "renderedAtOutputResolution": true,
@@ -476,7 +466,7 @@
         "sourceHeight": 71,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -514,7 +504,7 @@
     },
     "89": {
       "path": "assets/brand/app-icon-van-rasters/89.png",
-      "sha256": "7e75e67b85abb8a1fbf53992ab910300d5aa8caeb39720dbe3c748a66dbc4824",
+      "sha256": "76d0aeb242f0f057a423ac0100f79766042ca742b703e893603beb32e669a598",
       "width": 89,
       "height": 89,
       "renderedAtOutputResolution": true,
@@ -525,7 +515,7 @@
         "sourceHeight": 89,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -563,7 +553,7 @@
     },
     "107": {
       "path": "assets/brand/app-icon-van-rasters/107.png",
-      "sha256": "c9794668eba7066c9cb7ce86232a6f7da53177e7debda6131c1cac3ec2a3be89",
+      "sha256": "a502f37b8a196226f97998d6323a09f7f15d78deed32ef3993743d1c28cf90e6",
       "width": 107,
       "height": 107,
       "renderedAtOutputResolution": true,
@@ -574,7 +564,7 @@
         "sourceHeight": 107,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -612,7 +602,7 @@
     },
     "128": {
       "path": "assets/brand/app-icon-van-rasters/128.png",
-      "sha256": "6b282e5d975c3ceabe859bcaf6cb9a68aa5caa081221c51b159d11c6da18b308",
+      "sha256": "86644bdf7c0cb8c347704ef280d274da74c79f9b35f201e8909bbe85a3007367",
       "width": 128,
       "height": 128,
       "renderedAtOutputResolution": true,
@@ -623,7 +613,7 @@
         "sourceHeight": 128,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -661,7 +651,7 @@
     },
     "142": {
       "path": "assets/brand/app-icon-van-rasters/142.png",
-      "sha256": "9ed79857152360e81b647ea9b3fc90ff7a443092af2941695535cb722cd4a3f5",
+      "sha256": "cbd0569a94581bf75b0af798e3479840726a54df6c9902fcbf642e1100befcd6",
       "width": 142,
       "height": 142,
       "renderedAtOutputResolution": true,
@@ -672,7 +662,7 @@
         "sourceHeight": 142,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -710,7 +700,7 @@
     },
     "150": {
       "path": "assets/brand/app-icon-van-rasters/150.png",
-      "sha256": "356174af456e1b9723a3d5033b7e4fdb02f3cbbdb01593233a53f70d72524753",
+      "sha256": "48762d71c1224c8dd17836729f02718610c285dd211bbf86d4bc3a7a939ad465",
       "width": 150,
       "height": 150,
       "renderedAtOutputResolution": true,
@@ -721,7 +711,7 @@
         "sourceHeight": 150,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -759,7 +749,7 @@
     },
     "256": {
       "path": "assets/brand/app-icon-van-rasters/256.png",
-      "sha256": "c21a67fce3959fb87fcee48a2ef79204805c9c1895c9c3a32112ada88af4067c",
+      "sha256": "2724e93ebd547e19f78bd59b67d1c47c2556a0bc096c78646c8ebf573a583249",
       "width": 256,
       "height": 256,
       "renderedAtOutputResolution": true,
@@ -770,7 +760,7 @@
         "sourceHeight": 256,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -808,7 +798,7 @@
     },
     "284": {
       "path": "assets/brand/app-icon-van-rasters/284.png",
-      "sha256": "7a6b21ffe2ee0fa1cc7e3b571b41378a65dceeb9374782d5884734e5e064fa2c",
+      "sha256": "7bea46c182d5f793b7873719311124f5868de29ece004df8e3fa1eafb684bb35",
       "width": 284,
       "height": 284,
       "renderedAtOutputResolution": true,
@@ -819,7 +809,7 @@
         "sourceHeight": 284,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -857,7 +847,7 @@
     },
     "310": {
       "path": "assets/brand/app-icon-van-rasters/310.png",
-      "sha256": "6dde3ca4759db59f543fd6fe4f60680a56322d36cb5f636a8d8c4c84e344403b",
+      "sha256": "f551e2de0b49d95daec9aacfd81108477a798d28cd5d451ea82b6469984c0fb3",
       "width": 310,
       "height": 310,
       "renderedAtOutputResolution": true,
@@ -868,7 +858,7 @@
         "sourceHeight": 310,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -906,7 +896,7 @@
     },
     "512": {
       "path": "assets/brand/app-icon-van-rasters/512.png",
-      "sha256": "6aba1a0c6b0652242f0a7f24762f8398120f337cce7f6c4e92ae549ec729dc70",
+      "sha256": "e69bcd703247083206190803576d1f63ef806d67ff44bccb6093d8d9bcea4573",
       "width": 512,
       "height": 512,
       "renderedAtOutputResolution": true,
@@ -917,7 +907,7 @@
         "sourceHeight": 512,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -955,7 +945,7 @@
     },
     "1024": {
       "path": "assets/brand/app-icon-van.png",
-      "sha256": "7bcb13b248948c3f8ef590fd67d3d4354771d9eebba754995a5c1830b517f041",
+      "sha256": "7fb219e591df52f0f1e6492db29304e64289b09690e0e46f4a3645fd34e2b690",
       "width": 1024,
       "height": 1024,
       "renderedAtOutputResolution": true,
@@ -966,7 +956,7 @@
         "sourceHeight": 1024,
         "screenPeriodPx": 6.5,
         "cellPx": 1,
-        "shaderFingerprint": "fnv1a32:cb6386a1",
+        "shaderFingerprint": "fnv1a32:2e0a7558",
         "recordingCaptureMix": 0.45,
         "vfdToneAmount": 0.12,
         "variant": "detail",
@@ -1004,14 +994,15 @@
     }
   },
   "inputs": {
-    "tools/app-icon/renderer.mjs": "391736a483b779cef2fdc23f22cf079dd2aff1085bbde9093085951f37bd8fb6",
-    "tools/app-icon/motion.mjs": "ba9bc3ede60f592650c6c605b093f23da832b11024524ec2002d63cdc95b74c1",
+    "tools/app-icon/renderer.mjs": "5e28405d5be80d5b7c9b606ad516e0d08b3fab5f1c2f2a08ec9bda16adf88d29",
+    "tools/app-icon/motion.mjs": "26bf396f48c98ce04a9437f3d267870bd20f1edad7277544c9360bc080515182",
+    "tools/app-icon/vehicle-maneuver.mjs": "093a14d1ed7b4480caf5df3778b98eb0a5bf675555495932475e83dcbc1418c4",
     "tools/app-icon/weather.mjs": "dde8cf78608912e31223cd72de567ad9eb1ecd72667b6fb0c791a8f48df4c881",
     "tools/app-icon/acquisition.mjs": "b932537dc02ccb464d78942eb4d999b4297f3917d6345ce11490c0c7b7905abb",
     "tools/app-icon/transit.glb": "9eb1a5e5b6d878cd049d738d9fee85072e29db18bea8b60e3b4c0f662e775887",
     "tools/app-icon/transit-source.json": "d89bc960e135fcde23f9ff2b2c506e79f9fe2273094abf2c6fbf81e79019b22b",
-    "src/render/pixel-mesh/transparent.js": "56f08d95bd7b6f7e6afcedf77a0e97376585f8ea3a235cbc4eb303ce0da96405",
-    "src/render/pixel-mesh/shader.js": "b2eb4c1193af5ab48e7b1c3e6d1ef528e5cad8657e9f6fbadd4fbed2368ce48b",
+    "src/render/pixel-mesh/transparent.js": "7ead4932402aa752a03aeaf7b4a30a3ec91c2fc34aec349c8bbe773ec150ca32",
+    "src/render/pixel-mesh/shader.js": "b348bb1601aa25ba262d15ef3bb5516f9fed92a9347709dfbc75b240c9285538",
     "src/render/pixel-mesh/final-look.js": "bd2b1ec84c4b562eedec64778e46d9f3e5fcb3cedab8bf5f89fb40a7e5ec241a",
     "src/render/pixel-mesh/screens.js": "af986abca9e34414d306168e281a99ceeded7eb3c030ad132e5c73818508fc7e",
     "src/render/look-profiles.js": "f7d90c9392a21cbbb4c0b9f826423aaa83f3047cbf7f864ebdb1b63e5bcbbeb6",
@@ -1041,12 +1032,12 @@
   },
   "lampCentres": [
     {
-      "x": 0.16147299994772646,
-      "y": 0.6429846258586882
+      "x": 0.27705677635895554,
+      "y": 0.5941665244871374
     },
     {
-      "x": 0.4794023975150449,
-      "y": 0.6800262281178414
+      "x": 0.48643509493579756,
+      "y": 0.618560961933156
     }
   ],
   "acquisition": {
@@ -1073,8 +1064,8 @@
       "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
       "shaderModule": "src/render/pixel-mesh/shader.js",
       "shaderExport": "PIXEL_MESH_FRAG",
-      "shaderFingerprint": "fnv1a32:cb6386a1",
-      "shaderCharacters": 95833,
+      "shaderFingerprint": "fnv1a32:2e0a7558",
+      "shaderCharacters": 96576,
       "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
       "startingProfile": "calm",
       "profile": "van-icon-detail",
@@ -1196,7 +1187,7 @@
     "snapshot": {
       "clock": 3.4,
       "reducedMotion": false,
-      "reduceFlash": false,
+      "reduceFlash": true,
       "audio": 0,
       "fear": 0
     },
@@ -1292,8 +1283,8 @@
           "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
           "shaderModule": "src/render/pixel-mesh/shader.js",
           "shaderExport": "PIXEL_MESH_FRAG",
-          "shaderFingerprint": "fnv1a32:cb6386a1",
-          "shaderCharacters": 95833,
+          "shaderFingerprint": "fnv1a32:2e0a7558",
+          "shaderCharacters": 96576,
           "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
           "startingProfile": "calm",
           "profile": "van-icon-detail",
@@ -1415,7 +1406,7 @@
         "snapshot": {
           "clock": 0.35,
           "reducedMotion": false,
-          "reduceFlash": false,
+          "reduceFlash": true,
           "audio": 0,
           "fear": 0
         },
@@ -1541,8 +1532,8 @@
           "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
           "shaderModule": "src/render/pixel-mesh/shader.js",
           "shaderExport": "PIXEL_MESH_FRAG",
-          "shaderFingerprint": "fnv1a32:cb6386a1",
-          "shaderCharacters": 95833,
+          "shaderFingerprint": "fnv1a32:2e0a7558",
+          "shaderCharacters": 96576,
           "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
           "startingProfile": "calm",
           "profile": "van-icon-detail",
@@ -1664,16 +1655,16 @@
         "snapshot": {
           "clock": 1.12,
           "reducedMotion": false,
-          "reduceFlash": false,
+          "reduceFlash": true,
           "audio": 0,
           "fear": 0
         },
         "participation": {
           "meshes": 80,
-          "sprites": 16,
+          "sprites": 18,
           "paintMeshes": 3,
           "weatherMeshes": 1,
-          "materialCount": 69,
+          "materialCount": 71,
           "materialNames": [
             "MeshBasicMaterial",
             "ShadowMaterial",
@@ -1790,8 +1781,8 @@
           "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
           "shaderModule": "src/render/pixel-mesh/shader.js",
           "shaderExport": "PIXEL_MESH_FRAG",
-          "shaderFingerprint": "fnv1a32:cb6386a1",
-          "shaderCharacters": 95833,
+          "shaderFingerprint": "fnv1a32:2e0a7558",
+          "shaderCharacters": 96576,
           "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
           "startingProfile": "calm",
           "profile": "van-icon-detail",
@@ -1913,7 +1904,7 @@
         "snapshot": {
           "clock": 2.3,
           "reducedMotion": false,
-          "reduceFlash": false,
+          "reduceFlash": true,
           "audio": 0,
           "fear": 0
         },
@@ -2039,8 +2030,8 @@
           "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
           "shaderModule": "src/render/pixel-mesh/shader.js",
           "shaderExport": "PIXEL_MESH_FRAG",
-          "shaderFingerprint": "fnv1a32:cb6386a1",
-          "shaderCharacters": 95833,
+          "shaderFingerprint": "fnv1a32:2e0a7558",
+          "shaderCharacters": 96576,
           "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
           "startingProfile": "calm",
           "profile": "van-icon-detail",
@@ -2162,7 +2153,7 @@
         "snapshot": {
           "clock": 2.42,
           "reducedMotion": false,
-          "reduceFlash": false,
+          "reduceFlash": true,
           "audio": 0,
           "fear": 0
         },
@@ -2236,7 +2227,7 @@
         "rainInstances": 72,
         "puddles": 7,
         "ripples": 12,
-        "lightningIntensity": 0.95,
+        "lightningIntensity": 0,
         "oneShot": true,
         "screenOverlay": false,
         "metadata": {
@@ -2288,8 +2279,8 @@
           "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
           "shaderModule": "src/render/pixel-mesh/shader.js",
           "shaderExport": "PIXEL_MESH_FRAG",
-          "shaderFingerprint": "fnv1a32:cb6386a1",
-          "shaderCharacters": 95833,
+          "shaderFingerprint": "fnv1a32:2e0a7558",
+          "shaderCharacters": 96576,
           "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
           "startingProfile": "calm",
           "profile": "van-icon-detail",
@@ -2411,7 +2402,7 @@
         "snapshot": {
           "clock": 2.95,
           "reducedMotion": false,
-          "reduceFlash": false,
+          "reduceFlash": true,
           "audio": 0,
           "fear": 0
         },
@@ -2537,8 +2528,8 @@
           "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
           "shaderModule": "src/render/pixel-mesh/shader.js",
           "shaderExport": "PIXEL_MESH_FRAG",
-          "shaderFingerprint": "fnv1a32:cb6386a1",
-          "shaderCharacters": 95833,
+          "shaderFingerprint": "fnv1a32:2e0a7558",
+          "shaderCharacters": 96576,
           "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
           "startingProfile": "calm",
           "profile": "van-icon-detail",
@@ -2660,7 +2651,7 @@
         "snapshot": {
           "clock": 3.4,
           "reducedMotion": false,
-          "reduceFlash": false,
+          "reduceFlash": true,
           "audio": 0,
           "fear": 0
         },

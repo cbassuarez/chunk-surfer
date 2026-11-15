@@ -1,11 +1,12 @@
 {
-  "version": 5,
-  "purpose": "optional lightweight app widget",
-  "frameCount": 42,
+  "version": 6,
+  "purpose": "primary codec-independent vehicle atlas",
+  "motionVersion": "albion-maneuver-1",
+  "frameCount": 84,
   "cell": 128,
   "cellSize": 128,
-  "columns": 7,
-  "rows": 6,
+  "columns": 8,
+  "rows": 11,
   "durationSeconds": 3.4,
   "stages": [
     {
@@ -13,32 +14,27 @@
       "name": "arrival"
     },
     {
-      "atSeconds": 0.95,
+      "atSeconds": 0.88,
       "name": "brake"
     },
     {
-      "atSeconds": 1.27,
+      "atSeconds": 1.42,
       "name": "settle"
     },
     {
-      "atSeconds": 1.55,
+      "atSeconds": 1.94,
       "name": "departure"
     },
     {
-      "atSeconds": 3.2,
-      "name": "offscreen"
+      "atSeconds": 3.4,
+      "name": "parked"
     }
   ],
   "stagesSeconds": {
-    "accelerateEnd": 0.3,
-    "finalAccelerationStart": 0.8,
-    "brakeStart": 0.95,
-    "lockStart": 0.95,
-    "stop": 1.27,
-    "settleEnd": 2.35,
-    "smokeEnd": 1.65,
-    "poolEnd": 2.9,
-    "tracksEnd": 3.25
+    "brakeStart": 0.88,
+    "stop": 1.42,
+    "settleEnd": 1.94,
+    "departure": 1.94
   },
   "weather": {
     "rain": true,
@@ -48,21 +44,21 @@
     "thunderAtSeconds": [],
     "lightningDurationSeconds": 0,
     "flashRanges": [],
-    "lightningPolicy": "The app loop uses the reduced-flash render.",
+    "lightningPolicy": "Shared reduced-flash vehicle performance.",
     "nativeAudio": false
   },
-  "pngWidth": 896,
-  "pngHeight": 768,
+  "pngWidth": 1024,
+  "pngHeight": 1408,
   "atlas": {
     "path": "assets/brand/app-icon-van-startup.png",
-    "sha256": "dba88fa07218517ace23db97c65e477ed65a052600e2826f479f00259994b681",
-    "bytes": 78632,
+    "sha256": "2c7d51ffac00123894c4d2fd0ed4848e82f9b358728b1b0041e883bfb65f585f",
+    "bytes": 118441,
     "renderedAtOutputResolution": true
   },
   "poster": {
     "path": "assets/brand/app-icon-van-startup-poster.png",
-    "sha256": "aa9796f2876e0cee78c9b05f88e76fa8a579b650b8935b5d8b21e6e81684286c",
-    "bytes": 4495,
+    "sha256": "2dae65971518e0d7b57940a4758aed5ba08d10eb2c8216d352f329f1b9f807da",
+    "bytes": 2956,
     "render": {
       "width": 128,
       "height": 128,
@@ -70,7 +66,7 @@
       "sourceHeight": 128,
       "screenPeriodPx": 6.5,
       "cellPx": 1,
-      "shaderFingerprint": "fnv1a32:afbfd081",
+      "shaderFingerprint": "fnv1a32:2e0a7558",
       "recordingCaptureMix": 0.45,
       "vfdToneAmount": 0.12,
       "variant": "detail",
@@ -112,18 +108,17 @@
     "paletteColours": 256,
     "additionalDithering": false
   },
-  "decodedBytes": 2818048,
+  "decodedBytes": 5832704,
   "budget": {
     "atlasEncodedBytes": 307200,
     "posterEncodedBytes": 16384,
-    "videoEncodedBytes": 131072,
-    "totalDecodedBytes": 3145728
+    "totalDecodedBytes": 6291456
   },
   "acquisition": {
     "shader": "pixel-mesh",
     "profile": "van-icon-detail",
     "screen": "crosshatch",
-    "renderCount": 57,
+    "renderCount": 99,
     "noiseReady": true,
     "depthReconstruction": "inverse-projection",
     "coveragePreserved": true,
@@ -143,8 +138,8 @@
       "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
       "shaderModule": "src/render/pixel-mesh/shader.js",
       "shaderExport": "PIXEL_MESH_FRAG",
-      "shaderFingerprint": "fnv1a32:afbfd081",
-      "shaderCharacters": 95847,
+      "shaderFingerprint": "fnv1a32:2e0a7558",
+      "shaderCharacters": 96576,
       "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
       "startingProfile": "calm",
       "profile": "van-icon-detail",
@@ -266,7 +261,7 @@
     "snapshot": {
       "clock": 3.4,
       "reducedMotion": false,
-      "reduceFlash": false,
+      "reduceFlash": true,
       "audio": 0,
       "fear": 0
     },
@@ -308,7 +303,7 @@
       "marks": true,
       "lighting": false,
       "fineMarkPx": 0.85,
-      "uploads": 57
+      "uploads": 99
     },
     "sourceTone": {
       "exposure": 1,
@@ -336,28 +331,21 @@
     "validation": "CPU contract only until an actual GPU export is inspected"
   },
   "inputs": {
-    "tools/app-icon/renderer.mjs": "430a39e4ceb5a0ee70f0906d487b4d1701f62d43b7d682c23b395055e6ea17f1",
-    "tools/app-icon/motion.mjs": "e5063466f9993d522ec8e2e98ee8a0024e6481ed61a192297bcb51e84de3aa85",
+    "tools/app-icon/renderer.mjs": "5e28405d5be80d5b7c9b606ad516e0d08b3fab5f1c2f2a08ec9bda16adf88d29",
+    "tools/app-icon/motion.mjs": "26bf396f48c98ce04a9437f3d267870bd20f1edad7277544c9360bc080515182",
+    "tools/app-icon/vehicle-maneuver.mjs": "093a14d1ed7b4480caf5df3778b98eb0a5bf675555495932475e83dcbc1418c4",
     "tools/app-icon/weather.mjs": "dde8cf78608912e31223cd72de567ad9eb1ecd72667b6fb0c791a8f48df4c881",
     "tools/app-icon/acquisition.mjs": "b932537dc02ccb464d78942eb4d999b4297f3917d6345ce11490c0c7b7905abb",
     "tools/app-icon/transit.glb": "9eb1a5e5b6d878cd049d738d9fee85072e29db18bea8b60e3b4c0f662e775887",
     "tools/app-icon/transit-source.json": "d89bc960e135fcde23f9ff2b2c506e79f9fe2273094abf2c6fbf81e79019b22b",
     "src/render/pixel-mesh/transparent.js": "7ead4932402aa752a03aeaf7b4a30a3ec91c2fc34aec349c8bbe773ec150ca32",
-    "src/render/pixel-mesh/shader.js": "f85344c3aca9dd3f49fe79355561651348144267bf517020a9d555751248d3b4",
+    "src/render/pixel-mesh/shader.js": "b348bb1601aa25ba262d15ef3bb5516f9fed92a9347709dfbc75b240c9285538",
     "src/render/pixel-mesh/final-look.js": "bd2b1ec84c4b562eedec64778e46d9f3e5fcb3cedab8bf5f89fb40a7e5ec241a",
     "src/render/pixel-mesh/screens.js": "af986abca9e34414d306168e281a99ceeded7eb3c030ad132e5c73818508fc7e",
     "src/render/look-profiles.js": "f7d90c9392a21cbbb4c0b9f826423aaa83f3047cbf7f864ebdb1b63e5bcbbeb6",
     "src/render/world-light-treatment.js": "1a7de56039889845e47c6dd643140c4644613a7d7f4bdf92c3ab01da551622db",
     "public/assets/blue-noise-64.png": "dd64cfc6afe59c255f2026750daa9602af82f32596d608a9a89db87cac93e3c7",
-    "tools/app-icon/startup-layout.mjs": "6d6a75b0851367be70003c6e386752cef0ca960ba95dd0e3afb05abd91d41185"
+    "tools/app-icon/startup-layout.mjs": "8fec75716f734afd9fc49249cfc39568ca2b6f8ce5bdf87ff23b9df95ed9188e"
   },
-  "nativeDockChanged": false,
-  "video": {
-    "path": "assets/brand/app-icon-van-startup.mp4",
-    "sha256": "53824451ce94a6a7bbf6c63bba19bc6c8e07459d0c399101e2472f958d9c0dbc",
-    "bytes": 51856,
-    "codec": "H.264",
-    "background": "#020807",
-    "audioTracks": 0
-  }
+  "nativeDockChanged": false
 }

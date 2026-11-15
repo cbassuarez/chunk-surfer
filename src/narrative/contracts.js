@@ -95,23 +95,23 @@ export function validateNarrativeDocument(doc, options = {}) {
     mutations(errors, `nodes.${nodeId}.mutations`, node.mutations);
     validateCueRefs(errors, `nodes.${nodeId}.cues`, node.cues, cueIds);
     validateArtRef(errors, `nodes.${nodeId}.art`, node.art || node.artId, mediaIds);
-    for (const [index, line] of (node.lines || []).entries()) {
+    for (const [collection, index, line] of ['lines', 'revisitLines'].flatMap(collection => (node[collection] || []).map((line, index) => [collection, index, line]))) {
       const item = typeof line === 'string' ? { text: line } : line;
-      if (!item?.text && !item?.direction) issue(errors, `nodes.${nodeId}.lines.${index}`, 'requires text or direction');
-      if (!item?.id) issue(errors, `nodes.${nodeId}.lines.${index}.id`, 'stable id is required');
-      else if (seenContentIds.has(item.id)) issue(errors, `nodes.${nodeId}.lines.${index}.id`, 'must be unique in document');
+      if (!item?.text && !item?.direction) issue(errors, `nodes.${nodeId}.${collection}.${index}`, 'requires text or direction');
+      if (!item?.id) issue(errors, `nodes.${nodeId}.${collection}.${index}.id`, 'stable id is required');
+      else if (seenContentIds.has(item.id)) issue(errors, `nodes.${nodeId}.${collection}.${index}.id`, 'must be unique in document');
       else seenContentIds.add(item.id);
-      condition(errors, `nodes.${nodeId}.lines.${index}.when`, item?.when);
+      condition(errors, `nodes.${nodeId}.${collection}.${index}.when`, item?.when);
       // The Chunk Surfer has nothing of its own to say. A trace must name the
       // recorded or institutional language it is repeating — see TRACE_SOURCES
       // in signal-role.js. Checked here as well as at attach time so a bad
       // source is caught by `npm run studio:validate` rather than at runtime.
       if (String(item?.who || '').trim().toLowerCase() === 'surfer' && !isTraceSource(item?.quotes)) {
-        issue(errors, `nodes.${nodeId}.lines.${index}.quotes`,
+        issue(errors, `nodes.${nodeId}.${collection}.${index}.quotes`,
           `a Chunk Surfer trace must quote a known source (${Object.keys(TRACE_SOURCES).join(', ')})`);
       }
-      validateCueRefs(errors, `nodes.${nodeId}.lines.${index}.cues`, item?.cues, cueIds);
-      validateArtRef(errors, `nodes.${nodeId}.lines.${index}.art`, item?.art || item?.artId, mediaIds);
+      validateCueRefs(errors, `nodes.${nodeId}.${collection}.${index}.cues`, item?.cues, cueIds);
+      validateArtRef(errors, `nodes.${nodeId}.${collection}.${index}.art`, item?.art || item?.artId, mediaIds);
     }
     const choices = node.choices || [];
     choices.forEach((choice, index) => {

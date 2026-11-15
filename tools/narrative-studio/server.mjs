@@ -19,7 +19,9 @@ import { applyPatches, codeFields, planWriteBack } from './write-back.mjs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const STUDIO_ROOT = resolve(ROOT, 'tools/narrative-studio');
-const CONTENT_ROOT = resolve(ROOT, 'content');
+// An isolated authoring root lets integration/browser tests exercise real saves
+// without writing over the game's authored conversations.
+const CONTENT_ROOT = resolve(process.env.STUDIO_CONTENT_ROOT || resolve(ROOT, 'content'));
 const PUBLIC_ROOT = resolve(ROOT, 'public');
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.STUDIO_PORT || 4317);
@@ -234,6 +236,9 @@ function saveCodeDocument(input) {
 try { const t = await runtimeTotals(); console.log(`Runtime dialogue: ${t.docs} modules, ${t.lines} lines, ${t.choices} choices`); }
 catch (error) { console.warn(`Runtime dialogue export failed: ${error.message}`); }
 const server = await createViteServer({
+  cacheDir: resolve(process.env.STUDIO_CACHE_DIR || resolve(ROOT, `node_modules/.vite-studio-${PORT}`)),
+  resolve: { dedupe: ['react', 'react-dom'] },
+  optimizeDeps: { include: ['react', 'react-dom/client', 'react/jsx-runtime', '@xyflow/react'] },
   configFile: false,
   root: STUDIO_ROOT,
   publicDir: false,

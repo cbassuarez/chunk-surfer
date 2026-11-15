@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Packaged ALBION playback check</title><style>
+:root{color-scheme:dark;background:#020807;color:#e8e2d3;font:15px/1.5 system-ui}body{max-width:800px;margin:40px auto;padding:20px}h1{font-size:24px;font-weight:500}p{color:#aabbba}button{font:inherit;padding:8px 14px;background:#233a3a;color:#e8e2d3;border:1px solid #638383;border-radius:5px;cursor:pointer}#startupVan{width:160px;height:160px;position:relative;margin:30px auto}#startupVanPoster,#startupVanCanvas{width:100%;height:100%;object-fit:contain;display:block}#startupVanPoster{position:absolute;inset:0}#startupVan [hidden]{display:none}pre{white-space:pre-wrap;font:12px/1.5 ui-monospace;background:#0d1b1a;padding:18px;border-radius:8px}a{color:#d8bd84}</style>
+<h1>Packaged ALBION player</h1><p>This uses the shipping loader script, metadata and transparent atlas. It creates a 2D canvas. It arrives once and holds until readiness.</p>
+<div id="startupVan"><img id="startupVanPoster" src="/app-icon/van-startup-poster.png" width="128" height="128" alt="Stationary fallback" hidden><canvas id="startupVanCanvas" width="128" height="128" hidden></canvas></div>
+<button id="reload">Restart</button> <button id="ready">Game ready · release input now</button> <button id="reduced">Reduced Motion</button><pre id="state" aria-live="off"></pre><p id="readiness">Game readiness has not been signalled.</p><p><a href="../maneuver-study/">Motion inspection and references</a></p>
+<script src="/startup-van.js"></script><script>
+document.getElementById('reload').onclick=()=>location.reload();
+document.getElementById('ready').onclick=()=>{const deferred=window.__chunkStartupVan.reveal(()=>{document.getElementById('readiness').textContent='Input live; optional departure has retired.';});document.getElementById('readiness').textContent=deferred?'Input live immediately; optional departure continues.':'Input live immediately; artwork retired.';};
+document.getElementById('reduced').onclick=()=>window.__chunkStartupVan.setVisualSettings({reducedMotion:true});
+setInterval(()=>{document.getElementById('state').textContent=JSON.stringify(window.__chunkStartupVan.status(),null,2);},100);
+</script></html>

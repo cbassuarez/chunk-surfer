@@ -78,6 +78,7 @@ function runtimeChoice(choice, context = {}, documentId = '') {
 
 function runtimeNode(node, context = {}, documentId = '') {
   const next = { ...node, sourceId: node.id, lines: (node.lines || []).map((line) => runtimeLine(line, context, documentId)) };
+  if (node.revisitLines) next.revisitLines = node.revisitLines.map(line => runtimeLine(line, context, documentId));
   delete next.id; delete next.type; delete next.when; delete next.mutations;
   if (node.when) next.if = node.when;
   if (node.mutations?.set) next.set = node.mutations.set;

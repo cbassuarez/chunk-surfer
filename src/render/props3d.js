@@ -1047,10 +1047,10 @@ export function props3dInit(context){
   gl.vertexAttribI4ui(13,0,0,0,0);
   initTextPass();
   if(!gl.isProgram(program)||!gl.getProgramParameter(program,gl.LINK_STATUS))throw graphicsStartupError('prop program unavailable after successful link');
-  // These large views first become visible after a long walk. Begin their
-  // shader work during the existing asset load instead of on a door animation.
-  try{portalProgramPending=deferGlProgram(gl,PORTAL_VERT,PORTAL_FRAG,'source portal');}
-  catch(error){portalProgramFailed=true;console.warn('Source portal preview unavailable',error);}
+  // Portal previews are compiled on first visible use in renderSourcePortals.
+  // linkProgram itself can block inside Mesa even when compilation is called
+  // "deferred": warming this large, late-game shader here froze Linux boot
+  // and consumed gigabytes before the first playable frame.
   try{towerViewProgramPending=deferGlProgram(gl,TOWER_VIEW_VERT,TOWER_VIEW_FRAG,'source tower view');}
   catch(error){towerViewProgramFailed=true;console.warn('Source tower preview unavailable',error);}
 }

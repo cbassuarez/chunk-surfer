@@ -86,7 +86,7 @@ test('recent academic social exchanges and B3 investigation variants are visible
   assert.ok(social.includes('I gave her a heading.'));
   const b3=await textIn('src/data/b3-investigation-dialogue.js');
   assert.ok(b3.includes('Same phrase. Same speakers. A second length of tape, and exactly the same fault.'));
-  assert.ok(b3.some(t=>t.includes('pull the mains plug')));
+  assert.ok(b3.some(t=>t.includes('unplug the rack power unit')));
 });
 
 test('live code refresh replaces only derived documents while preserving unsaved authoring and media',()=>{
@@ -118,7 +118,8 @@ test('bench and Ophanim views are discoverable by player terms and open on actua
     assert.ok(Object.values(doc.nodes).some(node=>node.choices?.length),'actual choices must be browseable');
     assert.ok(!Object.values(doc.nodes).flatMap(node=>node.lines).some(line=>line.text==='"{text}"'),'a helper declaration is not a spoken opening');
     if(title==='Ophanim'){
-      assert.equal(doc.nodes[entry].lines[0].text,'You have been driving for a long time. It is raining on the road. The wipers go.');
+      const { OPENING_PROLOGUE } = await import('../src/data/opening-prologue.js');
+      assert.equal(doc.nodes[entry].lines[0].text, OPENING_PROLOGUE.nodes.start.lines[0].text);
       assert.equal(doc.nodes[entry].goto,'nodes.there');
     }else if(title==='Source II'){
       assert.equal(doc.nodes[entry].lines[0].text,'There you are.','unrelated canonical text must not erase the actual bench opening');
@@ -145,18 +146,19 @@ test('the default timeline places actual Ophanim and bench conversations in thei
 
   // Render the real workspace, so passing the adapter data alone cannot hide
   // these conversations behind a different tab or the generic source index.
-  const src=await readFile('tools/narrative-studio/src/TimelineWorkspace.tsx','utf8');
+  const src=await readFile('tools/narrative-studio/src/DialogSelectWorkspace.tsx','utf8');
   const compiled=await transform(src,{loader:'tsx',format:'cjs',jsx:'transform'}),module={exports:{}};
   new Function('module','exports','require','React',compiled.code)(module,module.exports,name=>{
-    assert.equal(name,'./timeline-model.js');return{projectStudioTimeline};
+    if(name==='./timeline-model.js')return{projectStudioTimeline};
+    assert.equal(name,'./story-search.js');return{storyMatchesSearch};
   },React);
-  const selected=[],view=module.exports.TimelineWorkspace({project,documents,selectedDocumentId:'',onSelect:id=>selected.push(id),runtimeDocumentCount:5});
+  const selected=[],view=module.exports.DialogSelectWorkspace({project,documents,selectedDocumentId:'',search:'',onSearch:()=>{},onSelect:id=>selected.push(id)});
   const html=renderToStaticMarkup(view),sections=html.split('<section');
   const openingHtml=sections.find(section=>section.includes('<h2>Opening and title flow</h2>'));
   const sourceHtml=sections.find(section=>section.includes('Source Space · Contact and listening'));
   assert.ok(openingHtml?.includes('Ophanim · Opening drive dialogue'));
   for(const title of ['Source II · Bench dialogue · Bach Chaconne','Source III · Bench dialogue · Couperin'])assert.ok(sourceHtml?.includes(title));
-  assert.ok(sourceHtml.includes('From game code · '));
+  assert.ok(sourceHtml.includes('SOURCE COLLECTION'));
   assert.ok(!html.includes('read-only'),'code conversations are no longer presented as read-only');
   assert.ok(!html.includes('Missing document'));
   const elements=[];const visit=node=>{if(Array.isArray(node)){node.forEach(visit);return;}if(!React.isValidElement(node))return;elements.push(node);visit(node.props.children);};visit(view);

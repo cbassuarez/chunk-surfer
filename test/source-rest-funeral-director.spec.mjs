@@ -28,13 +28,22 @@ test('one funeral company shares duty differently without becoming a note-sequen
   assert.ok(Object.isFrozen(a)&&Object.isFrozen(a[0])&&Object.isFrozen(a[0].position));
 });
 
-test('phase anchors preserve Source II and give III its own finite chart-local positions and the same pitches',()=>{
+test('phase anchors preserve their positions while each world selects its own recorded bell palette',()=>{
   const a=SOURCE_REST_FUNERAL_BELLS[phase],b=SOURCE_REST_FUNERAL_BELLS.catch;
   assert.deepEqual(a.map(v=>v.position),[{x:-9.5,y:13.2,z:-25.6},{x:-10.7,y:13.600000000000001,z:-16.799999999999997},{x:-20.5,y:17,z:-20.95}]);
-  assert.deepEqual(a.map(v=>[v.id,v.sample,v.note,v.frequency,v.audioUrl]),b.map(v=>[v.id,v.sample,v.note,v.frequency,v.audioUrl]));
+  assert.deepEqual(a.map(v=>v.note),['A4','E♭4','D4']);
+  assert.deepEqual(b.map(v=>v.note),['A4','F4','E♭4']);
+  for(const bells of[a,b])for(const bell of bells){
+    assert.equal(bell.audioUrl,`assets/audio/bell-tower/bell-${bell.sample}-hand-01.wav`);
+    assert.equal(bell.audioSeconds,12);
+  }
+  for(const p of[phase,'catch'])for(const event of sourceRestFuneralPlan(p)){
+    const bell=SOURCE_REST_FUNERAL_BELLS[p].find(row=>row.id===event.bellId);
+    assert.deepEqual([event.sample,event.note,event.frequency],[bell.sample,bell.note,bell.frequency]);
+  }
   assert.ok(b.every(v=>v.phase==='catch'&&v.chartId===0&&Object.values(v.position).every(Number.isFinite)));
   assert.notDeepEqual(a.map(v=>v.position),b.map(v=>v.position));
-  assert.match(SOURCE_REST_FUNERAL_RULES.palette,/not key-neutral/);
+  assert.match(SOURCE_REST_FUNERAL_RULES.palette,/Recorded chapel handstrokes/);
   assert.match(SOURCE_REST_FUNERAL_RULES.sourceIIIAnchors,/production geometry/);
 });
 

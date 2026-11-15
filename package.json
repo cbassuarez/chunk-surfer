@@ -33,7 +33,7 @@
     "studio:import": "node scripts/import-narrative-studio.mjs",
     "studio:reimport": "node scripts/import-narrative-studio.mjs --force",
     "studio:validate": "npm run studio:registry && node scripts/validate-authoring.mjs",
-    "studio:audit": "npm run studio:validate && node test/narrative-studio.spec.mjs && npm run studio:build",
+    "studio:audit": "npm run studio:validate && node test/narrative-studio.spec.mjs && node test/narrative-runtime-export.spec.mjs && node test/narrative-scene-graph.test.mjs && node test/narrative-patch-commands.test.mjs && npm run studio:build",
     "build": "node scripts/build-lock.mjs wrap npm run build:chain",
     "build:chain": "npm run studio:validate && npm run paper:validate && npm run media:validate && npm run chunk-surf:atlas && vite build && npm run lean:verify -- dist",
     "preview": "vite preview",

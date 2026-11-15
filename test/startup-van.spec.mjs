@@ -2,186 +2,104 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-
 const source=readFileSync(new URL('../public/startup-van.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const metadata={durationSeconds:3.4,stages:[{name:'arrival',atSeconds:0},{name:'brake',atSeconds:.95},
-  {name:'settle',atSeconds:1.27},{name:'departure',atSeconds:1.55}],weather:{rain:true}};
-const settle=async()=>{for(let n=0;n<20;n++)await Promise.resolve();};
-
-function fixture({reduced=false,hidden=false,fetchNever=false,fetchFails=false,metadataFails=false,playFails=false,posterReady=true,decodedFrames=true,size=12000}={}){
-  const timers=new Map(),listeners=new Map(),mediaListeners=new Map(),posterListeners=new Map(),callbacks=new Map(),events=[],requests=[],revoked=[];
-  let serial=0;
-  const video={currentTime:0,paused:true,hidden:true,playbackRate:1,
-    addEventListener:(type,fn)=>mediaListeners.set(type,fn),
-    removeEventListener:type=>mediaListeners.delete(type),
-    hasAttribute(name){return name in this;},
-    setAttribute(name,value){this[name]=value;},
-    removeAttribute(name){delete this[name];},
-    play(){if(playFails)return Promise.reject(Error('Playback failed'));this.paused=false;return Promise.resolve();},
-    pause(){this.paused=true;},load(){this.currentTime=0;},
-  };
-  if(decodedFrames){
-    video.requestVideoFrameCallback=fn=>(callbacks.set(++serial,fn),serial);
-    video.cancelVideoFrameCallback=id=>callbacks.delete(id);
-  }
-  const poster={hidden:true,complete:posterReady,naturalWidth:posterReady?128:0,
-    addEventListener:(type,fn)=>posterListeners.set(type,fn),
-    removeEventListener:type=>posterListeners.delete(type),
-    setAttribute(name,value){this[name]=value;},hasAttribute(name){return name in this;},removeAttribute(name){delete this[name];},
-    offset:16,getBoundingClientRect(){return{left:this.offset,right:this.offset+128};},
-    parentElement:{getBoundingClientRect:()=>({left:0,right:128})},
-    style:{setProperty(name,value){this[name]=value;},removeProperty(name){delete this[name];}},
-  };
-  const media={matches:reduced,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
-  const window={AbortController,Blob,matchMedia:()=>media,
-    getComputedStyle:element=>({transform:`matrix(1, 0, 0, 1, ${element.offset}, 0)`}),
-    CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}},
-    addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type),dispatchEvent:event=>events.push(event),
-    setTimeout(fn,ms){timers.set(++serial,{fn,ms});return serial;},clearTimeout:id=>timers.delete(id),
-    fetch(url,{signal}){
-      requests.push({url,signal});
-      if(url.endsWith('.json'))return Promise.resolve({ok:!metadataFails,json:()=>Promise.resolve(metadata)});
-      if(fetchFails)return Promise.resolve({ok:false});
-      if(fetchNever)return new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true}));
-      return Promise.resolve({ok:true,arrayBuffer:()=>Promise.resolve(new ArrayBuffer(size))});
-    }};
-  class MediaURL extends URL {
-    static createObjectURL(blob){assert.equal(blob.type,'video/mp4');return 'blob:startup-van';}
-    static revokeObjectURL(url){revoked.push(url);}
-  }
-  const document={baseURI:'https://game.invalid/nested/index.html',currentScript:{src:'https://game.invalid/nested/startup-van.js'},hidden,
-    getElementById:id=>id==='startupVanVideo'?video:id==='startupVanPoster'?poster:null,
-    addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
-  runInNewContext(source,{window,document,URL:MediaURL});
-  return{api:window.__chunkStartupVan,video,poster,timers,requests,events,revoked,listeners,mediaListeners,posterListeners,callbacks,
-    playing(){mediaListeners.get('playing')();},
-    frame(time){video.currentTime=time;for(const [id,fn]of [...callbacks]){callbacks.delete(id);fn(0,{mediaTime:time});}mediaListeners.get('timeupdate')?.();},
-    fire(mediaEvent,event){mediaListeners.get(mediaEvent)?.(event);},
-    posterExit(animationName){posterListeners.get('animationend')?.({animationName});},
-    tick(delay){for(const [id,{fn,ms}] of [...timers])if(delay===undefined||delay===ms){timers.delete(id);fn();}},
-    hide(value){document.hidden=value;listeners.get('visibilitychange')();},
-  };
+const settle=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
+const metadata={motionVersion:'albion-maneuver-1',durationSeconds:3.4,frameCount:84,columns:8,rows:11,cell:128,atlas:'van-startup.png',weather:{rain:true},motionFrames:Array.from({length:84},()=>({speed:1,slipping:false}))};
+function fixture({reduced=false,fetchNever=false,fetchFails=false,imageFails=false,width=1024,nativeElapsed=null,nativeLatency=0,nativeReadyAt=null,version=metadata.motionVersion}={}){
+ let ms=0,serial=0;
+ const timers=new Map(),frames=new Map(),listeners=new Map(),events=[],requests=[],draws=[],calls=[];
+ const canvas={hidden:true,getContext(kind){assert.equal(kind,'2d');return{clearRect(){},drawImage(...args){draws.push(args.slice(1));}};}};
+ const poster={hidden:true},media={matches:reduced,addEventListener:(type,fn)=>listeners.set('media:'+type,fn),removeEventListener:type=>listeners.delete('media:'+type)};
+ const window={performance:{now:()=>ms},AbortController,
+  Image:class{constructor(){this.naturalWidth=width;this.naturalHeight=1408;}set src(value){this.value=value;if(value)queueMicrotask(()=>imageFails?this.onerror?.():this.onload?.());}},
+  matchMedia:()=>media,requestAnimationFrame(fn){frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id),
+  setTimeout(fn,delay){timers.set(++serial,{fn,delay});return serial;},clearTimeout:id=>timers.delete(id),
+  fetch(url,{signal}){requests.push({url,signal});if(fetchNever)return new Promise(()=>{});return Promise.resolve({ok:!fetchFails,json:async()=>metadata});},
+  addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type),dispatchEvent:event=>events.push(event),
+  CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}}};
+ if(nativeElapsed!==null)window.__TAURI_INTERNALS__={invoke(name){calls.push(name);if(calls.length===1)ms+=nativeLatency;return Promise.resolve({motionVersion:version,elapsed:nativeElapsed+ms/1000,readyAt:nativeReadyAt});}};
+ const document={hidden:false,baseURI:'https://game.invalid/index.html',currentScript:{src:'https://game.invalid/startup-van.js'},
+  getElementById:id=>id==='startupVanCanvas'?canvas:id==='startupVanPoster'?poster:null,
+  addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
+ runInNewContext(source,{window,document,URL,Promise,Number});
+ return{api:window.__chunkStartupVan,canvas,poster,frames,timers,draws,events,requests,calls,listeners,
+  frame(at){ms=at*1000;for(const[id,fn]of [...frames]){frames.delete(id);fn(ms);}},
+  tick(delay){for(const[id,item]of [...timers])if(item.delay===delay){timers.delete(id);item.fn();}},
+  hide(value){document.hidden=value;listeners.get('visibilitychange')();},
+  focus(value){listeners.get(value?'focus':'blur')();}};
 }
-
-test('muted video drives in and out through repeated cycles and speeds up the empty ends and settle',async()=>{
-  assert.match(html,/<video id="startupVanVideo" muted playsinline loop preload="auto" hidden>/);
-  const f=fixture();
-  assert.ok(f.requests.some(({url})=>url==='https://game.invalid/nested/app-icon/van-startup.mp4'));
-  assert.equal(f.poster.hidden,true);
-  await settle();f.playing();
-  assert.equal(f.video.muted,true);assert.equal(f.video.src,'blob:startup-van');
-  assert.equal(f.poster.hidden,true);
-  for(let cycle=0;cycle<3;cycle++){
-    for(const [time,rate,stage] of [[0,4,'arrival'],[.48,1,'arrival'],[1.05,1,'brake'],[1.31,4,'settle'],[1.68,1,'departure'],[2.72,4,'offscreen'],[3.33,4,'offscreen']]){
-      f.frame(time);assert.equal(f.api.status().position,time);assert.equal(f.api.status().visualStage,stage);
-      assert.equal(f.api.status().phase,'playing');assert.equal(f.video.playbackRate,rate);assert.equal(f.video.paused,false);
-    }
-  }
-  assert.equal(f.events.length,0);
+test('a decoded atlas paints the authored cells once and holds without a busy idle loop',async()=>{
+ const f=fixture();await settle();f.frame(.5);assert.equal(f.api.status().phase,'playing');assert.equal(f.api.status().frame,12);
+ assert.deepEqual(f.draws.at(-1),[512,128,128,128,0,0,128,128]);
+ f.frame(2);assert.equal(f.api.status().phase,'holding');assert.equal(f.api.status().position,1.94);assert.equal(f.frames.size,0);
+ assert.equal(f.poster.hidden,true);assert.equal(f.api.status().slipping,false);
+ assert.equal(f.events[0].detail.reason,'settled');
 });
-
-test('readiness cancels pending video and plays a decoded poster through the crop',async()=>{
-  const f=fixture({fetchNever:true});let retired=0;
-  assert.equal(f.api.canReveal(),true);assert.equal(f.api.reveal(()=>retired++),true);await settle();
-  assert.equal(f.requests.at(-1).signal.aborted,true);assert.equal(f.video.src,undefined);
-  assert.equal(f.api.status().phase,'departing');assert.equal(f.poster['data-departing'],'pass');assert.equal(retired,0);
-  f.posterExit('startup-van-poster-pass');
-  assert.equal(f.api.status().phase,'revealed');assert.equal(f.events.length,1);assert.equal(retired,1);
+test('readiness during arrival immediately retires artwork, aborts pending work and never holds input',async()=>{
+ for(const options of[{}, {fetchNever:true}]){const f=fixture(options);await settle();f.frame(.9);let retired=0;
+  assert.equal(f.api.canReveal(),true);assert.equal(f.api.reveal(()=>retired++),false);
+  assert.equal(f.api.status().readyAt,.9);
+  assert.equal(f.api.status().phase,'revealed');assert.equal(f.canvas.hidden,true);assert.equal(f.poster.hidden,true);
+  assert.equal(f.frames.size,0);assert.equal(f.timers.size,0);assert.equal(retired,0);
+ }
 });
-
-test('readiness gives the visible van its remaining drive, then retires media once',async()=>{
-  const f=fixture(),audio=[];f.api.setAudio(event=>audio.push(event));
-  let retired=0;
-  await settle();f.playing();f.frame(2.2);assert.equal(f.api.reveal(()=>retired++),true);
-  assert.equal(f.video.paused,false);assert.equal(f.video.currentTime,2.2);assert.equal(f.video.loop,true);
-  assert.equal(f.video.playbackRate,1);assert.equal(f.video['data-departing'],'');
-  assert.equal(f.video.hidden,false);assert.equal(f.api.status().elapsed,2.2);
-  assert.equal(f.api.status().departure,'video');assert.equal(retired,0);
-  assert.equal(audio.at(-1).reason,'revealed');
-  f.frame(2.6);assert.equal(f.api.status().phase,'departing');
-  f.frame(2.7);assert.equal(f.video.src,undefined);assert.deepEqual(f.revoked,['blob:startup-van']);
-  assert.equal(f.callbacks.size,0);assert.equal(f.timers.size,0);assert.equal(retired,1);
-  f.playing();assert.equal(f.api.status().phase,'revealed');
+test('a ready settled vehicle continues forward while input is already live, then releases resources once',async()=>{
+ const f=fixture();await settle();f.frame(2.1);let retired=0;
+ assert.equal(f.api.reveal(()=>retired++),true);assert.equal(f.api.status().departure,'atlas');
+ f.frame(2.6);assert.ok(Math.abs(f.api.status().position-2.44)<1e-10);
+ f.frame(3.6);assert.equal(f.api.status().phase,'revealed');assert.equal(retired,1);assert.equal(f.frames.size,0);assert.equal(f.timers.size,0);
+ f.api.finish();assert.equal(retired,1);
 });
-
-test('readiness between cycles preserves the offscreen seam and never starts a new pass',async()=>{
-  for(const at of [0,.32,2.75,3.36]){
-    const f=fixture();await settle();f.playing();f.frame(.45);f.frame(2.9);f.frame(at);
-    assert.equal(f.api.reveal(),false);assert.equal(f.api.status().phase,'revealed');
-    assert.equal(f.video.hidden,true);assert.equal(f.video.src,undefined);assert.equal(f.timers.size,0);
-  }
-  const absent=fixture({fetchNever:true,posterReady:false});assert.equal(absent.api.reveal(),false);
-  assert.equal(absent.api.status().phase,'revealed');assert.equal(absent.timers.size,0);
+test('the departure has a bounded timeout even if browser painting stops',async()=>{
+ const f=fixture();await settle();f.frame(2);let retired=0;f.api.reveal(()=>retired++);f.tick(1580);
+ assert.equal(f.api.status().phase,'revealed');assert.equal(retired,1);
 });
-
-test('readiness on the first visible paint handles the decoder clock running ahead of the callback',async()=>{
-  const f=fixture();await settle();f.playing();f.frame(.324);f.video.currentTime=.405;
-  assert.equal(f.api.reveal(),true);assert.equal(f.api.status().departure,'video');assert.equal(f.api.status().position,.405);
-  f.fire('animationend',{animationName:'startup-van-exit'});assert.equal(f.api.status().phase,'revealed');
+test('native elapsed time joins a late webview without restarting, and rejects a different motion version',async()=>{
+ const late=fixture({nativeElapsed:1.1});await settle();late.frame(0);
+ assert.equal(late.api.status().clock,'native');assert.equal(late.api.status().position,1.1);assert.equal(late.api.status().frame,26);
+ const held=fixture({nativeElapsed:3});await settle();held.frame(0);assert.equal(held.api.status().phase,'holding');assert.equal(held.api.status().position,1.94);
+ held.api.reveal();assert.ok(held.calls.includes('chunk_launch_animation_ready'));
+ const mismatch=fixture({nativeElapsed:3,version:'wrong'});await settle();mismatch.frame(.2);assert.equal(mismatch.api.status().clock,'web');assert.equal(mismatch.api.status().position,.2);
 });
-
-test('an unresponsive first frame falls back only while visible, then exits from its current position',async()=>{
-  const f=fixture({fetchNever:true});assert.equal(f.timers.size,1);
-  f.hide(true);f.tick(1200);assert.equal(f.api.status().phase,'loading');
-  f.hide(false);f.tick(1200);await settle();
-  assert.equal(f.api.status().phase,'finished');assert.equal(f.poster['data-repeating'],'');
-  assert.equal(f.requests.at(-1).signal.aborted,true);
-  f.poster.offset=-30;assert.equal(f.api.reveal(),true);
-  assert.equal(f.poster['data-departing'],'exit');
-  assert.equal(f.poster.style['--startup-van-translate'],'matrix(1, 0, 0, 1, -30, 0)');
-  f.posterExit('startup-van-exit');assert.equal(f.api.status().phase,'revealed');
-  assert.equal(f.poster.style['--startup-van-translate'],undefined);
-  const offscreen=fixture({fetchNever:true});offscreen.tick(1200);offscreen.poster.offset=128;
-  assert.equal(offscreen.api.reveal(),false);assert.equal(offscreen.api.status().phase,'revealed');
+test('visibility and focus suspend painting but never pause the shared clock or replay missed frames',async()=>{
+ const f=fixture();await settle();f.frame(.4);f.hide(true);assert.equal(f.frames.size,0);
+ f.frame(1.3);f.hide(false);await settle();f.frame(1.4);assert.equal(f.api.status().position,1.4);
+ f.focus(false);assert.equal(f.frames.size,0);f.frame(2.3);f.focus(true);await settle();f.frame(2.4);
+ assert.equal(f.api.status().phase,'holding');assert.equal(f.api.status().position,1.94);
+ f.api.reveal();f.focus(false);assert.equal(f.api.status().phase,'revealed');
 });
-
-test('timeupdate covers decoders without video-frame callbacks and waiting has a bounded moving fallback',async()=>{
-  const f=fixture({decodedFrames:false});await settle();f.playing();f.frame(.82);
-  assert.equal(f.video.playbackRate,1);f.fire('waiting');f.frame(.9);f.tick(400);
-  assert.equal(f.api.status().phase,'playing','a resumed frame cancels the stall');
-  f.fire('waiting');f.fire('stalled');f.tick(400);
-  assert.equal(f.video.src,undefined);assert.equal(f.poster['data-repeating'],'');
-  assert.equal(f.api.reveal(),true);assert.equal(f.poster['data-departing'],'exit');
-  f.tick(480);assert.equal(f.api.status().phase,'revealed');assert.equal(f.timers.size,0);
-  const late=fixture();await settle();late.playing();late.frame(.8);late.api.reveal();late.fire('waiting');late.tick(400);
-  assert.equal(late.api.status().phase,'departing','the CSS exit moves independently of the stopped decoder');
-  late.fire('animationend',{animationName:'startup-van-exit'});
-  assert.equal(late.api.status().phase,'revealed');assert.equal(late.events[0].detail.reason,'revealed');
+test('a slow initial clock response is discarded and a fresh bounded sample refines the launch offset',async()=>{
+ const f=fixture({nativeElapsed:1.1,nativeLatency:150});await settle();f.frame(.15);
+ assert.ok(f.calls.filter(name=>name==='chunk_launch_animation_state').length>=2);
+ assert.equal(f.api.status().clock,'native');assert.equal(f.api.status().clockUncertaintyMs,0);
+ assert.ok(Math.abs(f.api.status().position-1.25)<1e-10);
 });
-
-test('optional sound stops after one pass even while the picture loops',async()=>{
-  const f=fixture(),audio=[];f.api.setAudio(event=>audio.push(event));
-  await settle();f.playing();f.video.currentTime=.8;f.tick();
-  f.video.currentTime=.1;f.tick();
-  assert.equal(audio.at(-1).progress,1);assert.equal(f.timers.size,0);
-  assert.equal(f.api.status().phase,'playing');assert.equal(f.video.paused,false);
-  f.api.reveal();assert.equal(audio.at(-1).type,'stop');
+test('a late replacement webview never replays a launch that was already ready',async()=>{
+ const f=fixture({nativeElapsed:3,nativeReadyAt:2.1});await settle();f.frame(0);
+ assert.equal(f.api.status().phase,'revealed');assert.equal(f.api.status().readyAt,2.1);
+ assert.equal(f.api.reveal(),false);assert.equal(f.draws.length,0);assert.equal(f.frames.size,0);
 });
-
-test('hidden documents pause playback and resume it in place',async()=>{
-  const f=fixture({hidden:true});
-  assert.equal(f.requests.length,0);f.hide(false);await settle();f.playing();
-  f.video.currentTime=1.1;f.hide(true);assert.equal(f.video.paused,true);
-  f.hide(false);assert.equal(f.video.paused,false);assert.equal(f.video.currentTime,1.1);
-  assert.equal(f.api.status().stage,'brake');
+test('decode failure, incorrect dimensions and timeout retain a stationary still until readiness',async()=>{
+ for(const options of[{fetchFails:true},{imageFails:true},{width:4},{fetchNever:true}]){
+  const f=fixture(options);await settle();if(options.fetchNever)f.tick(1500);
+  assert.equal(f.api.status().phase,'finished');assert.equal(f.poster.hidden,false);assert.equal(f.draws.length,0);
+  assert.equal(f.api.reveal(),false);assert.equal(f.poster.hidden,true);assert.equal(f.timers.size,0);
+ }
 });
-
-test('Reduced Motion, missing video, oversized video and denied playback preserve the still',async()=>{
-  for(const options of[{reduced:true},{fetchFails:true},{playFails:true},{size:140000}]){
-    const f=fixture(options);await settle();
-    assert.equal(f.api.status().phase,'finished');
-    assert.equal(f.poster.hidden,false);assert.equal(f.video.paused,true);
-  }
-  const saved=fixture();await settle();saved.playing();saved.api.setVisualSettings({reducedMotion:true});
-  assert.equal(saved.api.status().phase,'finished');assert.equal(saved.poster.hidden,false);
-  assert.deepEqual(saved.revoked,['blob:startup-van']);
+test('Reduced Motion allocates no atlas and live settings cancel playback without restarting',async()=>{
+ const still=fixture({reduced:true});assert.equal(still.requests.length,0);assert.equal(still.poster.hidden,false);
+ const f=fixture();await settle();f.frame(.4);f.api.setVisualSettings({reducedMotion:true});
+ assert.equal(f.api.status().phase,'finished');assert.equal(f.poster.hidden,false);assert.equal(f.frames.size,0);
+ f.api.setVisualSettings({reducedMotion:false});assert.equal(f.api.status().phase,'finished');
 });
-
-test('missing sound metadata leaves the picture running and disposal cancels media',async()=>{
-  const f=fixture({metadataFails:true});await settle();f.playing();
-  assert.equal(f.api.status().phase,'playing');assert.equal(f.video.paused,false);
-  f.api.reveal();f.api.dispose();
-  assert.equal(f.api.status().phase,'disposed');assert.equal(f.video.src,undefined);
-  assert.equal(f.timers.size,0);assert.equal(f.listeners.size,0);assert.equal(f.mediaListeners.size,0);
+test('audio joins current motion, has no tyre slip, stops at settling, and disposal clears every listener',async()=>{
+ const f=fixture(),audio=[];await settle();f.frame(.5);f.api.setAudio(event=>audio.push(event));
+ assert.equal(audio.at(-1).position,.5);assert.equal(audio.at(-1).slipping,false);
+ f.frame(2);assert.equal(audio.at(-1).type,'stop');f.api.dispose();assert.equal(f.listeners.size,0);assert.equal(f.frames.size,0);assert.equal(f.timers.size,0);
+});
+test('the player contains neither a media-decoder dependency nor a translated poster/video',()=>{
+ assert.match(html,/<canvas id="startupVanCanvas" width="128" height="128" hidden>/);
+ assert.doesNotMatch(source,/requestVideoFrameCallback|video\.play|\.mp4|data-repeating|data-departing|translateX/);
+ assert.doesNotMatch(html,/startup-van-(?:poster-pass|exit)|<video id="startupVanVideo"/);
 });

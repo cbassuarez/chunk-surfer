@@ -26,6 +26,7 @@ export type StoryNode = {
   type: string;
   speaker?: string;
   lines: StoryLine[];
+  revisitLines?: StoryLine[];
   choices?: StoryChoice[];
   goto?: string;
   exit?: string;
@@ -68,6 +69,7 @@ export type NarrativeDocument = {
   regions: StoryRegion[];
   nodes: Record<string, StoryNode>;
   metadata?: Record<string, unknown> & { combat?: CombatDefinition };
+  sourceGraph?: { entryIds: string[]; scopePrefix: string | null };
 };
 
 export type StoryLayout = {
@@ -75,6 +77,7 @@ export type StoryLayout = {
   documentId: string;
   positions: Record<string, { x: number; y: number }>;
   regions: Record<string, { x?: number; y?: number; width?: number; height?: number; collapsed?: boolean }>;
+  exits?: Record<string, { event: string }>;
 };
 
 export type StoryTransaction = {

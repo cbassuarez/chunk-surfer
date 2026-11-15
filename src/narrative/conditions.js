@@ -6,6 +6,9 @@ const CMP = /^([A-Za-z_][\w.]*)\s*(>=|<=|==|!=|>|<)\s*(.+)$/;
 const PATH = /^[A-Za-z_][\w.]*$/;
 
 export function contextValue(context, path) {
+  // Runtime story flags use literal dotted keys (e.g. confession.kind).
+  // Explicit context objects may also use nested properties.
+  if (context && Object.prototype.hasOwnProperty.call(context, path)) return context[path];
   const parts = String(path || '').split('.');
   let value = context;
   for (const part of parts) {

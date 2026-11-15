@@ -68,7 +68,7 @@ export function createConversation({
   nodes = null, beats = [], startAt = 'start', sceneId = 'conversation', replay = null,
   onChoice, onLine, onDone, cue, fx, audio, getAudio, volume = 0.26,
   feedbackScope=sceneId,feedbackProfile=sceneId.includes('radio')?'radio':'panel',
-  isActive = () => true, voiceEnabled = true,
+  isActive = () => true, voiceEnabled = true, conditionTest = visibleByFlag,
 } = {}) {
   const voice = voiceEnabled ? createSamDialogVoice({ volume, getAudio }) : null;
   voice?.warm?.();
@@ -101,7 +101,7 @@ export function createConversation({
     const n = node();
     if (!n) return [];
     const collection = nodeEntryMode === 'revisit' && n.revisitLines?.length ? 'revisitLines' : 'lines';
-    return (Array.isArray(n[collection]) ? n[collection] : []).map((source, index) => ({ source, index, collection })).filter(({ source }) => visibleByFlag(source));
+    return (Array.isArray(n[collection]) ? n[collection] : []).map((source, index) => ({ source, index, collection })).filter(({ source }) => conditionTest(source));
   };
   const nodeLines = () => nodeLineRecords().map(record => record.source);
   // A BEAT LIST IS FILTERED THE SAME WAY A NODE IS.
@@ -112,7 +112,7 @@ export function createConversation({
   // collapsing twelve files into one that reads the run) every conditional line
   // played at once, and the ending told the player both that it never touched
   // them and that it reached them three times, in consecutive sentences.
-  const beatRecords = () => (Array.isArray(beats) ? beats : []).map((source, index) => ({ source, index, collection: 'beats' })).filter(({ source }) => visibleByFlag(source));
+  const beatRecords = () => (Array.isArray(beats) ? beats : []).map((source, index) => ({ source, index, collection: 'beats' })).filter(({ source }) => conditionTest(source));
   const visibleBeats = () => beatRecords().map(record => record.source);
   const sourceRecord = () => mode === 'nodes' ? nodeLineRecords()[lineIdx] : beatRecords()[beatIdx];
   const sourceLine = () => sourceRecord()?.source;
@@ -353,9 +353,9 @@ export function createConversation({
     // Hubs do not repeat their whole greeting. If a hub has authored return
     // beats, play those; otherwise reopen the question board immediately.
     if (revisiting && n.choices?.length) {
-      const returnLines = visibleList(n.revisitLines || []);
+      const returnLines = (n.revisitLines || []).filter(conditionTest);
       if (returnLines.length) { beginLine(); return; }
-      const ls = visibleList(n.lines || []);
+      const ls = (n.lines || []).filter(conditionTest);
       const last = ls[ls.length - 1];
       typed = textOf(last).length;
       lineIdx = Math.max(0, ls.length - 1);
@@ -628,7 +628,7 @@ export function createConversation({
     }));
     return pending.options
       .map((c, index) => ({ choice: c, index, id: choiceKey(c, index) }))
-      .filter(({ choice }) => visibleByFlag(choice))
+      .filter(({ choice }) => conditionTest(choice))
       .filter(({ choice, id }) => !(choice.hideWhenAsked && asked.has(id)))
       .map(({ choice, id, index }) => {
         const target = targetFor(choice, index, 'choices', [{ name: 'text', label: 'Choice text', original: String(choice.text || '') }]);

@@ -26,36 +26,66 @@ npm run studio:build
 node test/narrative-studio.spec.mjs
 ```
 
-## Story Graph
+## Conversation patching
 
-- Pick a document from the left index. Endings, battles, radio trees, room
-  listens, playback scenes, and legacy material are all searchable.
-- The index also includes dialogue still authored in game modules. Search a
-  spoken sentence or choice to open its source beat. Edit a line's words, its
-  speaker or a choice's text and **Save writes them into the module's own
-  string literals**, in their own quoting, so the game picks them up on its
-  next reload. Only words change from there: beats, their order, where a
-  choice leads, conditions and cues are the shape of the code and are changed
-  in the module. A speaker or text built in code rather than written on that
-  line (a shared constant, a line helper's prefix) is locked, and a line with
-  code-built parts such as `{room}` names the parts to keep. When one written
-  speaker covers several lines, changing it changes all of them. A save is
-  checked field by field against the module as it is now: anything changed in
-  code since the Studio loaded it is refused, never overwritten.
-- Source edits refresh those documents automatically, including imported line
-  constructors and conditional variants. A code document with unsaved edits is
-  kept as it is. Unsaved Studio stories, media and audio edits stay in place.
-  Ordinary external authoring edits still ask for a reload so they cannot
-  silently overwrite your work.
-- Drag nodes or use **Auto-layout**. Layout changes are stored separately from
-  prose so visual organization does not create dialogue merge conflicts.
-- Connect a choice handle to another node to change its `goto` target.
-- The inspector edits lines, conditions, cues, choices, mutations, and regions.
-- **Trace ending** highlights every upstream node that can reach an ending.
-- **Runtime preview** uses the same pure narrative executor as runtime adapters.
-  Edit the JSON context to exercise flags and variants deterministically.
-- `Cmd/Ctrl-S` saves, `Cmd/Ctrl-Z` undoes, `Cmd/Ctrl-Shift-Z` redoes, and
-  `Cmd/Ctrl-P` toggles preview.
+**Dialog Select** searches authored conversations and source collections.
+**Story** opens the whole-document graph, with declared starts, disconnected
+material, joins, return jumps, exits, and unresolved destinations. Progression
+is a graph relation, not elapsed time. Generated source entry lists and source
+order are not treated as runtime starts or chronology.
+
+- Select a beat, choice, or cable to open **Patch selection**. Choice words,
+  availability, spent-answer behavior, flags, cues, owner, and destination are
+  editable there. A choice is an independent object with an ownership cable
+  and a separate route. Moving it preserves its condition and effects.
+- **Patch beat** (or double-click a beat) opens individual line objects and
+  their sequence cables. Edit text, speaker, visibility, speech permission and
+  prompt, or cues in place. Switch between **First visit** and **On return**.
+  Connecting a line output to another line moves the target immediately after
+  the source. The collection head moves a line to the beginning. These are
+  ordered sequences, not parallel dataflow.
+- Right-click the canvas, click **＋ Object**, or press **N** to create.
+  Drag an output into empty canvas to create a connected object. A choice
+  outlet creates an answer and response; an exit outlet creates an exit
+  terminal. Creating from a connected route preserves its old destination.
+- Select a progression cable and choose **Insert beat in cable**; in a beat
+  patch use **Insert line in cable**. Drag either cable endpoint to reconnect.
+  Ownership moves by its source end. Caller check failures move by their
+  destination end and cannot be silently unplugged.
+- Shift-click to select several objects. **Duplicate** / **Cmd/Ctrl-D** gives
+  copied objects fresh identities and preserves internal selected routes.
+  **Remove…** / **Delete** asks whether incoming routes should end or bypass
+  a linear beat. Removing an answer keeps its response. **Escape** cancels
+  creation, removal, or an uncommitted text draft.
+- Text commits on blur, Enter for a short field, or Cmd/Ctrl-Enter for prose.
+  Each field edit or structural command is one undo step. Cmd/Ctrl-S commits
+  the focused field before saving. Invalid condition drafts block Save.
+- **Fit scene**, **Focus selected**, **Fit beat**, and the minimap connect the
+  whole-scene overview to working zoom. Each beat patch retains its view, and
+  **← Scene overview** returns to the same scene position. **Edit form** and
+  **Full inspector** retain access to the existing full property editors.
+- **Save flow layout** stores an arrangement explicitly. Dragging objects
+  stores their positions independently of prose. Unplaced objects receive
+  fallback positions; opening a scene does not rewrite its layout.
+
+**Conversation probe** runs the production conversation cursor under supplied
+flags: line visibility, speech permission, choice banks, revisit prose, and
+spent answers use the actual controller. Choice flag callbacks are supplied by
+the probe. World actions, custom checks, beat effects, and caller exit handlers
+remain explicitly named boundaries. This is not a simulation of the world.
+
+Dialogue still authored in JS has literal word writeback through **Edit form**.
+Its structural patch controls are disabled: order, routes, conditions and new
+objects must be changed in the named module. Computed strings remain locked;
+code-built placeholders must survive word edits. Saves compare each literal
+with the current source and refuse conflicts. Source refresh preserves dirty
+Studio documents. Canonical document structure uses the existing narrative
+schema and runtime adapters, with no second execution graph to keep in sync.
+
+The chassis, controls, sockets and cable curves reuse the actual game's
+field-case and patchbay painters. See [PATCH-EDITOR.md](PATCH-EDITOR.md) for
+object/port semantics and source findings, and
+[VERIFICATION.md](VERIFICATION.md) for concrete checks and usability limits.
 
 ## Audio Timeline
 

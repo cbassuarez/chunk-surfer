@@ -7,6 +7,7 @@
 // No strike count identifies the deceased, their age, sex or moral outcome.
 import {SOURCE_REST_SEATS} from './source-rest-seat.js';
 import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
+import {SOURCE_REST_BELL_PALETTES,sourceRestBellSample} from '../data/source-rest-bells.js';
 
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 const unit=value=>Math.max(0,Math.min(1,finite(value)));
@@ -14,9 +15,9 @@ const frozen=Object.freeze;
 const EPS=1e-7;
 const PHASES=frozen(['wrong-return','catch']);
 const bank=frozen([
-  frozen({id:'rest-bell-left',sample:'04',note:'D4',frequency:293.6647679174076,audioUrl:'audio/source-rest/bells/rest-bell-d4.wav',audioSeconds:20,scale:1.15}),
-  frozen({id:'rest-bell-right',sample:'06',note:'A3',frequency:220,audioUrl:'audio/source-rest/bells/rest-bell-a3.wav',audioSeconds:20,scale:1.30}),
-  frozen({id:'rest-bell-far',sample:'08',note:'D3',frequency:146.8323839587038,audioUrl:'audio/source-rest/bells/rest-bell-d3.wav',audioSeconds:20,scale:1.75}),
+  frozen({id:'rest-bell-left',scale:1.15}),
+  frozen({id:'rest-bell-right',scale:1.30}),
+  frozen({id:'rest-bell-far',scale:1.75}),
 ]);
 const first=SOURCE_REST_SEATS[0],third=SOURCE_REST_SEATS[1];
 const centre=SOURCE_CONTINUATION.catch.center;
@@ -35,7 +36,7 @@ const positions=frozen({
 });
 export const SOURCE_REST_FUNERAL_BELLS=frozen(Object.fromEntries(PHASES.map(phase=>[phase,frozen(bank.map((bell,index)=>{
   const position=positions[phase][index],yaw=phase==='catch'?Math.atan2(position.x-centre.x,-(position.z-centre.z)):0;
-  return frozen({...bell,phase,chartId:0,position,yaw});
+  return frozen({...bell,...sourceRestBellSample(SOURCE_REST_BELL_PALETTES[phase][index]),phase,chartId:0,position,yaw});
 }))])));
 
 // The same individuals take duty in different orders. II leaves a place for
@@ -58,7 +59,7 @@ const duty=frozen({
 export const SOURCE_REST_FUNERAL_RULES=frozen({
   maxClockStep:.5,preparationSeconds:1.15,poseSeconds:9.5,maxContactHistory:3,quietProgress:.95,
   duckGain:10**(-3/20),duckAttackSeconds:.08,duckRecoverySeconds:2.8,
-  palette:'Same fixed D/A bells in both places; not key-neutral and never a transposition of the performance.',
+  palette:'Recorded chapel handstrokes: II A/D with outside Eb; III A/F/Eb cross Couperin\'s changing keys. Fixed pitches, never a transposition of the performance.',
   sourceIIIAnchors:'Right-cheek anchors checked against production geometry and existing support; native review required.',
 });
 

@@ -1,11 +1,12 @@
 {
-  "version": 5,
-  "purpose": "optional lightweight app widget",
-  "frameCount": 42,
+  "version": 6,
+  "purpose": "primary codec-independent vehicle atlas",
+  "motionVersion": "albion-maneuver-1",
+  "frameCount": 84,
   "cell": 128,
   "cellSize": 128,
-  "columns": 7,
-  "rows": 6,
+  "columns": 8,
+  "rows": 11,
   "durationSeconds": 3.4,
   "stages": [
     {
@@ -13,32 +14,27 @@
       "name": "arrival"
     },
     {
-      "atSeconds": 0.95,
+      "atSeconds": 0.88,
       "name": "brake"
     },
     {
-      "atSeconds": 1.27,
+      "atSeconds": 1.42,
       "name": "settle"
     },
     {
-      "atSeconds": 1.55,
+      "atSeconds": 1.94,
       "name": "departure"
     },
     {
-      "atSeconds": 3.2,
-      "name": "offscreen"
+      "atSeconds": 3.4,
+      "name": "parked"
     }
   ],
   "stagesSeconds": {
-    "accelerateEnd": 0.3,
-    "finalAccelerationStart": 0.8,
-    "brakeStart": 0.95,
-    "lockStart": 0.95,
-    "stop": 1.27,
-    "settleEnd": 2.35,
-    "smokeEnd": 1.65,
-    "poolEnd": 2.9,
-    "tracksEnd": 3.25
+    "brakeStart": 0.88,
+    "stop": 1.42,
+    "settleEnd": 1.94,
+    "departure": 1.94
   },
   "weather": {
     "rain": true,
@@ -48,24 +44,362 @@
     "thunderAtSeconds": [],
     "lightningDurationSeconds": 0,
     "flashRanges": [],
-    "lightningPolicy": "The app loop uses the reduced-flash render.",
+    "lightningPolicy": "Shared reduced-flash vehicle performance.",
     "nativeAudio": false
   },
-  "video": "van-startup.mp4",
+  "atlas": "van-startup.png",
   "poster": "van-startup-poster.png",
-  "videoSha256": "53824451ce94a6a7bbf6c63bba19bc6c8e07459d0c399101e2472f958d9c0dbc",
-  "posterSha256": "aa9796f2876e0cee78c9b05f88e76fa8a579b650b8935b5d8b21e6e81684286c",
+  "atlasSha256": "2c7d51ffac00123894c4d2fd0ed4848e82f9b358728b1b0041e883bfb65f585f",
+  "posterSha256": "2dae65971518e0d7b57940a4758aed5ba08d10eb2c8216d352f329f1b9f807da",
   "bytes": {
-    "video": 51856,
-    "poster": 4495
+    "atlas": 118441,
+    "poster": 2956
   },
+  "motionFrames": [
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": -0.00002428431138991832,
+      "slipping": false
+    },
+    {
+      "speed": -0.02706411503759891,
+      "slipping": false
+    },
+    {
+      "speed": -0.09906017234125254,
+      "slipping": false
+    },
+    {
+      "speed": -0.20105259468842368,
+      "slipping": false
+    },
+    {
+      "speed": -0.3353094928960168,
+      "slipping": false
+    },
+    {
+      "speed": -0.4884674372481542,
+      "slipping": false
+    },
+    {
+      "speed": -0.6434300414154113,
+      "slipping": false
+    },
+    {
+      "speed": -0.8080412248273331,
+      "slipping": false
+    },
+    {
+      "speed": -0.965498273950899,
+      "slipping": false
+    },
+    {
+      "speed": -1.1004114167750396,
+      "slipping": false
+    },
+    {
+      "speed": -1.2185141031142346,
+      "slipping": false
+    },
+    {
+      "speed": -1.3034074747321738,
+      "slipping": false
+    },
+    {
+      "speed": -1.345251513049995,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3496932515337425,
+      "slipping": false
+    },
+    {
+      "speed": -1.3431061655039627,
+      "slipping": false
+    },
+    {
+      "speed": -1.3009089792940907,
+      "slipping": false
+    },
+    {
+      "speed": -1.2203394260284313,
+      "slipping": false
+    },
+    {
+      "speed": -1.1100079278029158,
+      "slipping": false
+    },
+    {
+      "speed": -0.9844028908430457,
+      "slipping": false
+    },
+    {
+      "speed": -0.8374362984935071,
+      "slipping": false
+    },
+    {
+      "speed": -0.6826571955920058,
+      "slipping": false
+    },
+    {
+      "speed": -0.5351575978102618,
+      "slipping": false
+    },
+    {
+      "speed": -0.38654479788013074,
+      "slipping": false
+    },
+    {
+      "speed": -0.25206892180593204,
+      "slipping": false
+    },
+    {
+      "speed": -0.14418805313043695,
+      "slipping": false
+    },
+    {
+      "speed": -0.05867987712300131,
+      "slipping": false
+    },
+    {
+      "speed": -0.009258059379391757,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0,
+      "slipping": false
+    },
+    {
+      "speed": 0.0039407407407407264,
+      "slipping": false
+    },
+    {
+      "speed": 0.02377980346679698,
+      "slipping": false
+    },
+    {
+      "speed": 0.06158129453305844,
+      "slipping": false
+    },
+    {
+      "speed": 0.11540112327293092,
+      "slipping": false
+    },
+    {
+      "speed": 0.1801315773292829,
+      "slipping": false
+    },
+    {
+      "speed": 0.26128600079571784,
+      "slipping": false
+    },
+    {
+      "speed": 0.3544575683593749,
+      "slipping": false
+    },
+    {
+      "speed": 0.4528660687481914,
+      "slipping": false
+    },
+    {
+      "speed": 0.565569903564454,
+      "slipping": false
+    },
+    {
+      "speed": 0.6862896889015484,
+      "slipping": false
+    },
+    {
+      "speed": 0.8071628906250002,
+      "slipping": false
+    },
+    {
+      "speed": 0.9396126157407405,
+      "slipping": false
+    },
+    {
+      "speed": 1.0760770978009269,
+      "slipping": false
+    },
+    {
+      "speed": 1.2082016558611846,
+      "slipping": false
+    },
+    {
+      "speed": 1.3485937502260563,
+      "slipping": false
+    },
+    {
+      "speed": 1.4889994079589841,
+      "slipping": false
+    },
+    {
+      "speed": 1.621161977358217,
+      "slipping": false
+    },
+    {
+      "speed": 1.7576929199218756,
+      "slipping": false
+    },
+    {
+      "speed": 1.8902362322771995,
+      "slipping": false
+    },
+    {
+      "speed": 2.0112234680175782,
+      "slipping": false
+    },
+    {
+      "speed": 2.132089737729674,
+      "slipping": false
+    },
+    {
+      "speed": 2.244967183657046,
+      "slipping": false
+    },
+    {
+      "speed": 2.3435657407407415,
+      "slipping": false
+    },
+    {
+      "speed": 2.436963816550926,
+      "slipping": false
+    },
+    {
+      "speed": 2.5183718750000006,
+      "slipping": false
+    },
+    {
+      "speed": 2.5833684084291813,
+      "slipping": false
+    },
+    {
+      "speed": 2.63749476928711,
+      "slipping": false
+    },
+    {
+      "speed": 2.6756299192075375,
+      "slipping": false
+    },
+    {
+      "speed": 2.6958110839843754,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    },
+    {
+      "speed": 2.7,
+      "slipping": false
+    }
+  ],
   "acquisition": {
     "revision": "hero-vfd-acquisition-mix-4",
     "factory": "src/render/pixel-mesh/transparent.js#createTransparentPixelMesh",
     "shaderModule": "src/render/pixel-mesh/shader.js",
     "shaderExport": "PIXEL_MESH_FRAG",
-    "shaderFingerprint": "fnv1a32:afbfd081",
-    "shaderCharacters": 95847,
+    "shaderFingerprint": "fnv1a32:2e0a7558",
+    "shaderCharacters": 96576,
     "shaderDefine": "SOURCE_DESKTOP_TRANSPARENT",
     "startingProfile": "calm",
     "profile": "van-icon-detail",
@@ -101,6 +435,6 @@
     "fineRank": "runtime blueNoise / fineMarkFootprint in output pixels",
     "tonePolicy": "recording capture uses real broad source luma and densityGamma; VFD whitePoint shapes the supporting form/colour branch"
   },
-  "sourceManifestSha256": "b958e66627712838cdf5c6b007d92b676ad3cb729d7e3a28ebbdc71784187e3d",
-  "notes": "App-only 128px recording of the van in rain through the game shader. The van enters and leaves the frame so the shot can loop while the game loads."
+  "sourceManifestSha256": "806a793131a02a843a6f829742cb73d3771da7304ab2c273a734ee13e8bc0d25",
+  "notes": "128px transparent atlas through the game acquisition. Arrive and settle once; hold while loading. Readiness releases input immediately; a settled vehicle may continue forward as decoration."
 }

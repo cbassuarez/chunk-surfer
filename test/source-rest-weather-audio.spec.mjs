@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createHash} from 'node:crypto';
 import {createSourceRestWeather,createSourceRestBellAudio,createSourceRestFloodAudio,sourceRestFloodAcousticFrame,SOURCE_REST_WEATHER_AUDIO} from '../src/audio/source-rest-weather.js';
 import {sourceRestJudgmentFrame,SOURCE_REST_BELLS,SOURCE_REST_BELL_EVENTS,SOURCE_REST_LIGHTNING} from '../src/game/source-rest-judgment.js';
+import {SOURCE_REST_BELL_SAMPLES} from '../src/data/source-rest-bells.js';
+import {sourceRestFuneralPlan} from '../src/game/source-rest-funeral-director.js';
+import {ELLERY_BELLS} from '../src/data/bell-tower.js';
 
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 test('the actual shipped 24-bit bell stems fit the local decoder budget',()=>{
@@ -41,11 +43,11 @@ function scoredHarness(){
   const update=(clock,extra={})=>{ctx.currentTime=clock;return weather.update({active:true,progress:clock/716.397868,cue:{audio:{},judgment:sourceRestJudgmentFrame({clock,stormAge:clock})},...extra});};
   return{weather,update,hits,prepares,stops,placements,ctx};
 }
-test('three tuned bell mouths and the authored standard lightning channels sound once on their own scored arrivals',()=>{
+test('three sampled bell mouths and the authored standard lightning channels sound once on their own scored arrivals',()=>{
   const h=scoredHarness();for(let t=0;t<500;t+=.02)h.update(t);h.update(500);
   const bells=h.hits.filter(v=>v.kind==='bell'),thunder=h.hits.filter(v=>v.kind==='thunder');
   assert.equal(bells.length,SOURCE_REST_BELL_EVENTS.length);assert.equal(thunder.length,SOURCE_REST_LIGHTNING.length);
-  assert.deepEqual(new Set(bells.map(v=>v.event.sample)),new Set(['04','06','08']));
+  assert.deepEqual(new Set(bells.map(v=>v.event.sample)),new Set(SOURCE_REST_BELLS.map(bell=>bell.sample)));
   for(const hit of thunder)assert.equal(hit.event.at,hit.event.startedAt+hit.event.distance/343);
   for(const strike of SOURCE_REST_LIGHTNING)assert.equal(h.prepares.filter(e=>e.id===strike.id).length,1);
   assert.equal(h.weather.snapshot().playedBells,11);assert.equal(h.weather.snapshot().playedThunder,SOURCE_REST_LIGHTNING.length);
@@ -83,17 +85,18 @@ function graphHarness(){
     createConvolver:()=>Object.assign(node('convolver'),{buffer:null}),
     createBuffer(channels,length,rate){const data=Array.from({length:channels},()=>new Float32Array(length));return{duration:length/rate,numberOfChannels:channels,length,sampleRate:rate,getChannelData:i=>data[i]};},
     createBufferSource(){const n=Object.assign(node('source'),{playbackRate:{value:1},start(...args){starts.push({node:n,args});},stop(...args){this.stopArgs=args;}});return n;},
-    decodeAudioData:async()=>({duration:20,numberOfChannels:1})};
+    decodeAudioData:async()=>({duration:12,numberOfChannels:1})};
   const bells=createSourceRestBellAudio({context:ctx,destination:node('bus'),fetcher:async url=>{fetches.push(url);return{ok:true,arrayBuffer:async()=>new ArrayBuffer(4)};},urlFor:p=>'/game/'+p});
   return{ctx,nodes,fetches,starts,bells};
 }
-test('recorded bells decode only three canonical stems, keep pitch, locate the mouths, and own their complete tails',async()=>{
-  const h=graphHarness();assert.equal(await h.bells.prepare(),true);await h.bells.prepare();assert.equal(h.fetches.length,3);
+test('recorded bells share four chapel samples, keep pitch, locate the mouths, and own their complete tails',async()=>{
+  const h=graphHarness();assert.equal(await h.bells.prepare(),true);await h.bells.prepare();assert.equal(h.fetches.length,4);
+  assert.deepEqual(new Set(h.fetches),new Set(SOURCE_REST_BELL_SAMPLES.map(row=>'/game/'+row.audioUrl)));
   const event={...SOURCE_REST_BELL_EVENTS[0],position:{x:10,y:2,z:0}},state={x:0,feet:0,z:0,yaw:0,pitch:0};
   assert.equal(h.bells.strike(event,state),true);assert.equal(h.starts.length,1);
-  const snap=h.bells.snapshot();assert.equal(snap.lastStrike.sample,'04');assert.equal(snap.lastStrike.level,SOURCE_REST_WEATHER_AUDIO.bellGain*event.energy);
+  const snap=h.bells.snapshot();assert.equal(snap.lastStrike.sample,event.sample);assert.equal(snap.lastStrike.level,SOURCE_REST_WEATHER_AUDIO.bellGain*event.energy);
   assert.ok(snap.lastStrike.placement.relativeXYZ[0]>0);assert.equal(h.nodes.find(n=>n.kind==='pan').pan.value>0,true);
-  assert.equal(h.starts[0].node.playbackRate.value,1,'the processed20s stem is not pitch/time shifted at playback');assert.deepEqual(h.starts[0].node.stopArgs,[20]);
+  assert.equal(h.starts[0].node.playbackRate.value,1,'the recorded handstroke is not pitch/time shifted at playback');assert.deepEqual(h.starts[0].node.stopArgs,[12]);
   assert.equal(h.nodes.find(n=>n.kind==='convolver').buffer.length,6800);
   h.bells.update({state:{...state,yaw:Math.PI}});assert.equal(h.nodes.find(n=>n.kind==='pan').pan.value<0,true,'turning around relocates the same bell');
   for(let n=0;n<5;n++)h.bells.strike({...event,id:'tail-'+n},state);
@@ -108,14 +111,14 @@ test('a physical half-muffle softens the contact level and actual lowpass while 
   assert.ok(soft.bells.snapshot().lastStrike.level<open.bells.snapshot().lastStrike.level);
   assert.ok(soft.nodes.find(n=>n.kind==='filter').frequency.value<open.nodes.find(n=>n.kind==='filter').frequency.value*.2);
   assert.equal(soft.bells.snapshot().lastStrike.stroke,'muffled');assert.equal(soft.bells.snapshot().lastStrike.muffle,.68);
-  assert.equal(soft.starts[0].node.playbackRate.value,1);assert.deepEqual(soft.starts[0].node.stopArgs,[20]);
+  assert.equal(soft.starts[0].node.playbackRate.value,1);assert.deepEqual(soft.starts[0].node.stopArgs,[12]);
   assert.equal(soft.nodes.find(n=>n.kind==='convolver').buffer.length,6800);open.bells.dispose();soft.bells.dispose();
 });
 test('a late decode after disposal cannot publish or play a bell',async()=>{
   const h=graphHarness(),releases=[];h.ctx.decodeAudioData=()=>new Promise(resolve=>releases.push(resolve));
   const loading=h.bells.prepare();await flush();h.bells.dispose();for(const release of releases)release({duration:12,numberOfChannels:1});
   assert.equal(await loading,false);
-  // Three decodes may have been pending; disposal must prevent all results from
+  // Four decodes may have been pending; disposal must prevent all results from
   // publishing, regardless of completion order. The source has never started.
   assert.deepEqual(h.bells.snapshot().loaded,[]);assert.equal(h.starts.length,0);
   assert.equal(h.bells.strike(SOURCE_REST_BELL_EVENTS[0]),false);
@@ -156,21 +159,37 @@ test('rain, lightning and bell tails share the flood medium while their separate
 });
 
 
-test('shipped local bells have D/A dominant resonance, an audible12s tail and an authentic clapper source record',()=>{
-  const manifest=JSON.parse(readFileSync(new URL('../public/audio/source-rest/bells/manifest.json',import.meta.url)));
-  assert.equal(manifest.kind,'processed-clapper-and-tuned-modal-resonance');
-  const rms=(v,a,b)=>Math.sqrt(v.slice(a,b).reduce((sum,n)=>sum+n*n,0)/(b-a));
-  const tone=(v,hz,rate)=>{let re=0,im=0;for(let n=0;n<v.length;n++){const phase=2*Math.PI*hz*n/rate;re+=v[n]*Math.cos(phase);im-=v[n]*Math.sin(phase);}return Math.hypot(re,im)/v.length;};
-  for(const bell of SOURCE_REST_BELLS){
-    const bytes=readFileSync(new URL('../public/'+bell.audioUrl,import.meta.url)),dataOffset=bytes.indexOf(Buffer.from('data'))+8,rate=bytes.readUInt32LE(24),length=bytes.readUInt32LE(dataOffset-4)/2;
-    assert.ok(bytes.length<=SOURCE_REST_WEATHER_AUDIO.bellEncodedByteLimit);assert.equal(bytes.readUInt16LE(22),1);assert.equal(bytes.readUInt16LE(34),16);assert.equal(rate,48000);assert.equal(length/rate,20);
-    const samples=Float64Array.from({length},(_,n)=>bytes.readInt16LE(dataOffset+n*2)/32768),window=samples.slice(rate,rate*6),actual=tone(window,bell.frequency,rate),semitone=tone(window,bell.frequency*2**(1/12),rate);
-    assert.ok(actual>semitone*20,'the dominant resonance is the intended note, not the old upper mode');
-    assert.ok(rms(samples,8*rate,9*rate)>.025);assert.ok(rms(samples,12*rate,13*rate)>.01);assert.ok(rms(samples,Math.floor(19.9*rate),20*rate)<.0001);
-    const entry=manifest.entries.find(row=>row.sample===bell.sample);assert.equal(entry.frequency,bell.frequency);assert.equal(entry.note,bell.note);assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256);
-    const original=readFileSync(new URL(`../public/assets/audio/bell-tower/bell-${bell.sample}-hand-01.wav`,import.meta.url));assert.equal(createHash('sha256').update(original).digest('hex'),entry.sourceSha256);
-    assert.equal(SOURCE_REST_BELL_EVENTS.find(event=>event.sample===bell.sample).frequency,bell.frequency);
+test('both worlds use the shipped chapel recordings with canonical pitch, format and provenance',()=>{
+  const manifest=JSON.parse(readFileSync(new URL('../public/assets/audio/bell-tower/manifest.json',import.meta.url))),
+    credits=JSON.parse(readFileSync(new URL('../public/assets/audio/bell-tower/credits.json',import.meta.url)));
+  assert.ok(credits.sourceFiles.length>0);
+  for(const bell of SOURCE_REST_BELL_SAMPLES){
+    const entry=manifest.entries.find(row=>String(row.bell).padStart(2,'0')===bell.sample&&row.stroke==='hand'),
+      canonical=ELLERY_BELLS.find(row=>row.id===entry.bell);
+    assert.equal(bell.audioUrl,'assets/audio/bell-tower/'+entry.url);
+    assert.equal(entry.licenseId,credits.licenseId);assert.equal(bell.note,canonical.note);assert.equal(bell.frequency,canonical.frequency);
+    const bytes=readFileSync(new URL('../public/'+bell.audioUrl,import.meta.url)),dataOffset=bytes.indexOf(Buffer.from('data'))+8,rate=bytes.readUInt32LE(24),length=bytes.readUInt32LE(dataOffset-4)/3;
+    assert.ok(bytes.length<=SOURCE_REST_WEATHER_AUDIO.bellEncodedByteLimit);assert.equal(bytes.readUInt16LE(22),1);assert.equal(bytes.readUInt16LE(34),24);assert.equal(rate,48000);assert.equal(length/rate,bell.audioSeconds);
   }
+});
+test('both complete funeral plans play recorded buffers at unity pitch without a synthesized fallback',async()=>{
+  const h=graphHarness();h.ctx.createOscillator=()=>assert.fail('bells must use their recorded handstroke');
+  const decoded=[];h.ctx.decodeAudioData=async()=>{const buffer={duration:12,numberOfChannels:1};decoded.push(buffer);return buffer;};
+  assert.equal(await h.bells.prepare(),true);
+  for(const phase of['wrong-return','catch'])for(const event of sourceRestFuneralPlan(phase)){
+    assert.equal(h.bells.strike(event),true);const start=h.starts.at(-1);
+    assert.ok(decoded.includes(start.node.buffer),'the actual decoded sample reaches the buffer source');
+    assert.equal(start.node.playbackRate.value,1);assert.deepEqual(start.node.stopArgs,[12]);
+    assert.equal(h.bells.snapshot().lastStrike.note,event.note);assert.equal(h.bells.snapshot().lastStrike.frequency,event.frequency);
+  }
+  h.bells.dispose();
+});
+test('unavailable chapel recordings stay silent and never acquire a synthetic replacement',async()=>{
+  const h=graphHarness();h.ctx.decodeAudioData=async()=>{throw Error('unavailable recording');};
+  h.ctx.createOscillator=()=>assert.fail('no fallback is authorized');
+  assert.equal(await h.bells.prepare(),false);
+  for(const phase of['wrong-return','catch'])assert.equal(h.bells.strike(sourceRestFuneralPlan(phase)[0]),false);
+  assert.equal(h.starts.length,0);assert.equal(Object.keys(h.bells.snapshot().errors).length,4);h.bells.dispose();
 });
 test('ordinary forward gaps, leaving weather range and a settled score retain struck bell tails',()=>{
   const h=scoredHarness();h.update(7.79);h.update(7.8);const before=h.stops.filter(v=>v==='bells').length;

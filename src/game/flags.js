@@ -64,10 +64,14 @@ export function flagTest(expr) {
 }
 
 // Apply a node's effects: set:['a','b=2'], clear:['c']
+export function parseFlagAssignment(entry) {
+  const [name, value] = String(entry).split('=');
+  return [name.trim(), value === undefined ? true : (isNaN(+value) ? value.trim() : +value)];
+}
 export function flagApply(list = [], clear = []) {
   for (const entry of list) {
-    const [name, value] = String(entry).split('=');
-    flagSet(name.trim(), value === undefined ? true : (isNaN(+value) ? value.trim() : +value));
+    const [name, value] = parseFlagAssignment(entry);
+    flagSet(name, value);
   }
   for (const name of clear) flagClear(String(name).trim());
 }

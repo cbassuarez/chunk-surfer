@@ -55,7 +55,8 @@ async function tauriAdapter() {
     baseData: BaseDirectory.AppData,
     baseLog: BaseDirectory.AppLog,
     async exists(path, baseDir) { return fs.exists(path, { baseDir }); },
-    async mkdir(path, baseDir) { if (path) await fs.mkdir(path, { baseDir, recursive: true }); },
+    // Empty paths mean the app-scoped root, which may not exist on first run.
+    async mkdir(path, baseDir) { await fs.mkdir(path || '.', { baseDir, recursive: true }); },
     async readText(path, baseDir) { return fs.readTextFile(path, { baseDir }); },
     async writeText(path, data, baseDir) { return fs.writeTextFile(path, data, { baseDir }); },
     async remove(path, baseDir, recursive = false) { if (await fs.exists(path, { baseDir })) await fs.remove(path, { baseDir, recursive }); },

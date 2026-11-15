@@ -577,6 +577,8 @@ const tests = [
   'test/electronic-text.spec.mjs',
   'test/pad-glyphs.test.mjs',
   'test/studio-layout.test.mjs',
+  'test/narrative-scene-graph.test.mjs',
+  'test/narrative-patch-commands.test.mjs',
   'test/lighting-rig.spec.mjs',
   'test/plan-open-ground.spec.mjs',
   'test/exterior-civic-block.spec.mjs',

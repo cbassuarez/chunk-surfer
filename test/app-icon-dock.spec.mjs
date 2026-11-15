@@ -42,7 +42,7 @@ test('the packaged icon sizes come from independent final-resolution game-shader
  const native64=await sharp(rendered.rasters['64'].path).ensureAlpha().raw().toBuffer();
  const resized=await sharp(rendered.rasters['1024'].path).resize(64,64).ensureAlpha().raw().toBuffer();
  assert.notDeepEqual(native64,resized,'64px receives fresh screen marks instead of blurred 1024px marks');
- assert.equal(rendered.weather.rain,true);assert.deepEqual(rendered.weather.lightningAtSeconds,[2.42]);assert.deepEqual(rendered.weather.thunderAtSeconds,[2.90]);
+ assert.equal(rendered.weather.rain,true);assert.deepEqual(rendered.weather.lightningAtSeconds,[]);assert.deepEqual(rendered.weather.thunderAtSeconds,[]);
 });
 
 test('bundle and static Dock share the van ICNS while the original ear remains a separate alternate',()=>{
@@ -106,26 +106,19 @@ test('the last launch frame hands off to the packaged still without a pose or fr
  assert.ok(delta/frame.length<1.3,`mean visible byte difference ${delta/frame.length}`);
 });
 
-test('the app widget ships a small video loop from its own rendered frames',async()=>{
+test('the app ships a primary transparent atlas on the shared native clock',async()=>{
  const source=JSON.parse(readFileSync('assets/brand/app-icon-startup.json','utf8'));
  const startup=JSON.parse(readFileSync('public/app-icon/van-startup.json','utf8'));
- for(const name of['frameCount','cell','cellSize','columns','rows','durationSeconds'])assert.equal(startup[name],source[name]);
- assert.deepEqual([startup.frameCount,startup.cell,startup.columns,startup.rows,startup.durationSeconds],[42,128,7,6,3.4]);
- assert.deepEqual(startup.stages,[{atSeconds:0,name:'arrival'},{atSeconds:.95,name:'brake'},{atSeconds:1.27,name:'settle'},
-  {atSeconds:1.55,name:'departure'},{atSeconds:3.2,name:'offscreen'}]);
- assert.equal(startup.stagesSeconds.lockStart,.95);assert.equal(startup.stagesSeconds.smokeEnd,1.65);assert.equal(startup.stagesSeconds.tracksEnd,3.25);
- assert.equal(startup.video,'van-startup.mp4');assert.equal(startup.poster,'van-startup-poster.png');
- assert.equal(hash('public/app-icon/van-startup.mp4'),source.video.sha256);assert.equal(startup.videoSha256,source.video.sha256);
- assert.equal(hash(source.atlas.path),source.atlas.sha256);
- assert.equal(hash('public/app-icon/van-startup-poster.png'),source.poster.sha256);assert.equal(startup.posterSha256,source.poster.sha256);
- assert.equal(source.atlas.renderedAtOutputResolution,true);assert.equal(source.poster.render.sourceWidth,128);
- const atlas=readFileSync(source.atlas.path),poster=readFileSync('public/app-icon/van-startup-poster.png');
- const a=await sharp(atlas).metadata(),p=await sharp(poster).metadata();assert.deepEqual([a.width,a.height,p.width,p.height],[896,768,128,128]);
- assert.ok(atlas.length<=300*1024);assert.ok(poster.length<=16*1024);assert.ok(a.width*a.height*4+p.width*p.height*4<3*1024*1024);
- const video=readFileSync('public/app-icon/van-startup.mp4');
- assert.ok(video.length<=128*1024);assert.equal(video.length,startup.bytes.video);
- assert.equal(video.toString('ascii',4,8),'ftyp');
- assert.ok(video.indexOf('moov')>0&&video.indexOf('moov')<video.indexOf('mdat'),'video metadata precedes frames for immediate playback');
- assert.equal(startup.weather.rain,true);assert.deepEqual(startup.weather.lightningAtSeconds,[]);assert.deepEqual(startup.weather.thunderAtSeconds,[]);
+ for(const name of['frameCount','cell','cellSize','columns','rows','durationSeconds','motionVersion'])assert.equal(startup[name],source[name]);
+ assert.deepEqual([startup.frameCount,startup.cell,startup.columns,startup.rows,startup.durationSeconds],[84,128,8,11,3.4]);
+ assert.equal(startup.stagesSeconds.stop,1.42);assert.equal(startup.stagesSeconds.settleEnd,1.94);
+ assert.equal(startup.atlas,'van-startup.png');assert.equal(startup.poster,'van-startup-poster.png');
+ assert.equal(hash('public/app-icon/van-startup.png'),source.atlas.sha256);assert.equal(startup.atlasSha256,source.atlas.sha256);
+ assert.equal(hash('public/app-icon/van-startup-poster.png'),source.poster.sha256);
+ const a=await sharp('public/app-icon/van-startup.png').metadata();
+ assert.deepEqual([a.width,a.height],[1024,1408]);assert.ok(a.hasAlpha);
+ assert.ok(startup.bytes.atlas<=300*1024);assert.ok(a.width*a.height*4+128*128*4<6*1024*1024);
+ assert.equal(startup.weather.rain,true);assert.deepEqual(startup.weather.lightningAtSeconds,[]);
  assert.equal(startup.acquisition.shaderFingerprint,source.acquisition.provenance.shaderFingerprint);
+ assert.equal(startup.motionFrames.length,84);assert.ok(startup.motionFrames.every(frame=>frame.slipping===false));
 });

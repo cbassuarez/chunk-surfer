@@ -5,6 +5,7 @@
 #include <stdint.h>
 #import "DockIconPolicy.h"
 #include "VanLaunch.inc"
+extern double chunk_surfer_launch_elapsed_seconds(void);
 
 static void CSInstallStaticImage(NSDockTile *tile, NSImage *image) {
     if (tile == nil || image == nil) return;
@@ -36,7 +37,6 @@ static NSRect CSLaunchFrameRect(NSUInteger index) {
     __weak NSDockTile *_tile;
     NSTimer *_timer;
     id _displayObserver;
-    NSTimeInterval _startedAt;
     NSTimeInterval _elapsed;
     BOOL _finished;
 }
@@ -68,7 +68,8 @@ static NSRect CSLaunchFrameRect(NSUInteger index) {
 - (void)start {
     if (_finished || _timer != nil) return;
     if (NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion) { [self finish]; return; }
-    _startedAt = NSProcessInfo.processInfo.systemUptime;
+    _elapsed = chunk_surfer_launch_elapsed_seconds();
+    if (_elapsed >= CSVLaunchSettleEnd) { [self finish]; return; }
     __weak CSDockAssemblyView *weakSelf = self;
     _displayObserver = [NSWorkspace.sharedWorkspace.notificationCenter
         addObserverForName:NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification
@@ -80,8 +81,8 @@ static NSRect CSLaunchFrameRect(NSUInteger index) {
         CSDockAssemblyView *view = weakSelf;
         if (view == nil) { [timer invalidate]; return; }
         // Real elapsed time skips missed frames; loading cannot queue a burst.
-        view->_elapsed = NSProcessInfo.processInfo.systemUptime - view->_startedAt;
-        if (view->_elapsed >= CSVLaunchDuration || NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion) {
+        view->_elapsed = chunk_surfer_launch_elapsed_seconds();
+        if (view->_elapsed >= CSVLaunchSettleEnd || NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion) {
             [view finish]; return;
         }
         view.needsDisplay = YES;

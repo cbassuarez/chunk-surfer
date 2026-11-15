@@ -16,6 +16,7 @@
     "tickBellTower",
     "answerTowerPersonalRing",
     "sourceReturnArrivalSpeech",
+    "enterStory.onGuest.payload",
     "openVanReturnDecision",
     "beginOpeningVehicleArrival.scene.onInspect",
     "takeTheBag",
@@ -28,6 +29,7 @@
     "tickSetupHandoff",
     "refuseDockExit",
     "daydreamBeat",
+    "beginDaydream.opened.start",
     "beginDreamFigure",
     "dreamFigureSpared.opened.start",
     "beginMicTest",
@@ -44,10 +46,13 @@
     "roll.slate",
     "acceptRoomTake",
     "stopTake",
+    "stopTake.start",
     "presentTakenDialogue.taken-dialogue.onDone",
     "tickLostCassettes",
     "interactAcademicRoofProp",
     "interactAcademicRoofProp.onOpen",
+    "offerRetainedBelonging.start",
+    "offerRetainedBelonging.done",
     "NATATORIUM_WATER_THOUGHT.start",
     "NATATORIUM_WATER_THOUGHT.approach",
     "NATATORIUM_WATER_THOUGHT.record",
@@ -89,6 +94,7 @@
     "openSourceContactWarning.start",
     "openSourceContactWarning.contact",
     "openSourceContactWarning.away",
+    "openSourceContactWarning.done",
     "sourceStallNudge",
     "tickSourceSpace",
     "tickSourceFinalEncounter.battleOptions.onWin",
@@ -102,6 +108,9 @@
     "useAcademicGalleryPA.off",
     "useAcademicGalleryPA.leave",
     "talkToAcademicAdmissionAdvice.scene.start",
+    "talkToAcademicAdmissionAdvice.scene.help",
+    "talkToAcademicAdmissionAdvice.scene.listen",
+    "talkToAcademicAdmissionAdvice.scene.leave",
     "syncAcademicBouncerClueProps.inspect",
     "syncAcademicBouncerClueProps",
     "talkToBust",
@@ -147,6 +156,10 @@
   ],
   "regions": [],
   "module": "src/main.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/main.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "step": {
@@ -393,6 +406,12 @@
       ],
       "source": "src/main.js:12684"
     },
+    "enterStory.onGuest.payload": {
+      "id": "enterStory.onGuest.payload",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:13583"
+    },
     "openVanReturnDecision": {
       "id": "openVanReturnDecision",
       "type": "line",
@@ -572,6 +591,12 @@
         }
       ],
       "source": "src/main.js:16094"
+    },
+    "beginDaydream.opened.start": {
+      "id": "beginDaydream.opened.start",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:16221"
     },
     "beginDreamFigure": {
       "id": "beginDreamFigure",
@@ -907,6 +932,12 @@
       ],
       "source": "src/main.js:17625"
     },
+    "stopTake.start": {
+      "id": "stopTake.start",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:17631"
+    },
     "presentTakenDialogue.taken-dialogue.onDone": {
       "id": "presentTakenDialogue.taken-dialogue.onDone",
       "type": "line",
@@ -958,6 +989,18 @@
         }
       ],
       "source": "src/main.js:18787"
+    },
+    "offerRetainedBelonging.start": {
+      "id": "offerRetainedBelonging.start",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:19076"
+    },
+    "offerRetainedBelonging.done": {
+      "id": "offerRetainedBelonging.done",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:19078"
     },
     "NATATORIUM_WATER_THOUGHT.start": {
       "id": "NATATORIUM_WATER_THOUGHT.start",
@@ -1922,7 +1965,7 @@
         }
       ],
       "source": "src/main.js:25461",
-      "targetName": "done"
+      "goto": "openSourceContactWarning.done"
     },
     "openSourceContactWarning.away": {
       "id": "openSourceContactWarning.away",
@@ -1942,7 +1985,13 @@
         }
       ],
       "source": "src/main.js:25465",
-      "targetName": "done"
+      "goto": "openSourceContactWarning.done"
+    },
+    "openSourceContactWarning.done": {
+      "id": "openSourceContactWarning.done",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:25468"
     },
     "sourceStallNudge": {
       "id": "sourceStallNudge",
@@ -2165,22 +2214,40 @@
           "id": "talkToAcademicAdmissionAdvice.scene.start.c0",
           "text": "Listen to their welcome.",
           "source": "src/main.js:26626",
-          "targetName": "listen"
+          "goto": "talkToAcademicAdmissionAdvice.scene.listen"
         },
         {
           "id": "talkToAcademicAdmissionAdvice.scene.start.c1",
           "text": "Ask what the attendants are waiting for.",
           "source": "src/main.js:26627",
-          "targetName": "help"
+          "goto": "talkToAcademicAdmissionAdvice.scene.help"
         },
         {
           "id": "talkToAcademicAdmissionAdvice.scene.start.c2",
           "text": "Leave them to it.",
           "source": "src/main.js:26628",
-          "targetName": "leave"
+          "goto": "talkToAcademicAdmissionAdvice.scene.leave"
         }
       ],
       "source": "src/main.js:26626"
+    },
+    "talkToAcademicAdmissionAdvice.scene.help": {
+      "id": "talkToAcademicAdmissionAdvice.scene.help",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:26629"
+    },
+    "talkToAcademicAdmissionAdvice.scene.listen": {
+      "id": "talkToAcademicAdmissionAdvice.scene.listen",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:26630"
+    },
+    "talkToAcademicAdmissionAdvice.scene.leave": {
+      "id": "talkToAcademicAdmissionAdvice.scene.leave",
+      "type": "line",
+      "lines": [],
+      "source": "src/main.js:26631"
     },
     "syncAcademicBouncerClueProps.inspect": {
       "id": "syncAcademicBouncerClueProps.inspect",

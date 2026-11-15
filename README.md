@@ -416,6 +416,20 @@ Run `npm run build` and verify that `dist/assets`, `dist/audio`, and `dist/index
 
 Tauri Linux builds require WebKitGTK and related system packages. The release workflow installs `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`, and `xdg-utils`.
 
+### Van freezes during startup on Linux
+
+On KDE neon 24.04 with Intel UHD 630 and Mesa 25.2.8, the installed 0.3.3
+build stalled inside Mesa while linking the large Source portal preview shader
+during renderer initialization. Memory grew by gigabytes; neither X11 nor
+disabling DMABUF resolved it. Skipping that optional warmup let the same package
+complete boot and render its first frame.
+
+The source now leaves portal compilation to its existing first-visible-use path.
+This startup fix requires a rebuilt package; it does not establish that the
+late-game portal shader itself compiles successfully on that driver. Startup
+errors and extended waits also expose the last loading step and diagnostic text
+when the JavaScript thread can respond.
+
 ### macOS unsigned app warning
 
 Local builds are unsigned. macOS may warn when opening the app. Developer ID signing and notarization are not configured yet.

@@ -1,50 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {VAN_ICON_LAUNCH as L,VAN_ICON_PHYSICS as P,vanIconPose,vanTravelAt,vanSpeedAt,vanTyreContact} from '../tools/app-icon/motion.mjs';
-
-test('reverse arrival follows one measured 1.53m path and a distinct hard braking interval',()=>{
- assert.equal(vanTravelAt(0),0);assert.equal(vanTravelAt(P.stopAt),1.53);
- let integrated=0;for(let t=.0005;t<P.stopAt;t+=.001)integrated+=vanSpeedAt(t)*.001;
- assert.ok(Math.abs(integrated-1.53)<.002);
- assert.ok(vanSpeedAt(.94)>2.3);assert.ok(vanSpeedAt(1.22)<.6);assert.equal(vanSpeedAt(1.27),0);
- const start=vanIconPose(0),end=vanIconPose(3.4);
- assert.ok(Math.hypot(end.x-start.x,end.z-start.z)>1.5);
- for(let t=0;t<3.4;t+=.01)assert.ok(vanTravelAt(t+.01)>=vanTravelAt(t));
-});
-
-test('wheels roll from real travel then lock while the last forty centimetres skid',()=>{
- for(const t of[0,.2,.5,.9])assert.ok(Math.abs(vanIconPose(t).wheelAngle-(vanTravelAt(t)-1.53)/.33)<1e-10);
- assert.equal(vanIconPose(1.04).wheelAngle,vanIconPose(1.26).wheelAngle);
- assert.ok(vanIconPose(1.04).slipping);assert.equal(vanIconPose(1.28).slipping,false);
- const skid=vanTravelAt(P.stopAt)-vanTravelAt(P.lockAt);assert.ok(skid>.39&&skid<.41);
-});
-
-test('braking produces visible yaw and load transfer without moving tyre contact off the ground',()=>{
- const pose=vanIconPose(1.12);assert.ok(pose.yaw>.2);assert.ok(pose.body.heave<-.06);assert.ok(pose.body.pitch>.05);assert.ok(Math.abs(pose.body.roll)>.04);
- for(const x of[-.83,.83])for(const z of[-1.3,1.535])for(let t=0;t<3.4;t+=.03){
-  const point=vanTyreContact({x,z},t,-1.012);assert.equal(point.y,-1.012);assert.ok(Number.isFinite(point.x)&&Number.isFinite(point.z));
+import {SPEC,samples,maneuverAt,verifyMotion,presentationTime} from '../tools/app-icon/vehicle-maneuver.mjs';
+test('parked coordinate normalization preserves a continuous rear axle path',()=>{
+ const parked=maneuverAt(SPEC.stop);assert.equal(parked.x,0);assert.equal(parked.z,0);assert.equal(parked.yaw,0);
+ for(let i=1;i<samples.length;i++){
+  const a=samples[i-1],b=samples[i];
+  assert.ok(Math.hypot(b.rearX-a.rearX,b.rearZ-a.rearZ)<=SPEC.forwardPeak/SPEC.hz+1e-8);
  }
 });
-
-test('actual axle paths leave finite trails on both sides and contact stops at parking',()=>{
- const paths=[-.83,.83].map(x=>[.95,1.10,1.20,1.27].map(t=>vanTyreContact({x,z:1.535},t,-1)));
- for(const path of paths){const distance=path.slice(1).reduce((n,p,i)=>n+Math.hypot(p.x-path[i].x,p.z-path[i].z),0);assert.ok(distance>.2);}
- assert.deepEqual(vanTyreContact({x:.83,z:1.535},2,-1),vanTyreContact({x:.83,z:1.535},3.4,-1));
+test('independently measured tyre paths agree with rolling and steering',()=>{
+ const result=verifyMotion();
+ assert.ok(result.lateralError<1e-10);
+ assert.ok(result.rollingError<2e-8);
+ assert.ok(result.wheelLateralError<1e-5);
+ assert.ok(Math.abs(result.reverseDistance-1.1)<1e-6);
+ for(const sample of samples){
+  const [left,right]=sample.wheels;
+  if(sample.curvature>.001)assert.ok(left.steer>right.steer);
+  if(sample.curvature<-.001)assert.ok(left.steer>right.steer,'negative turns: right is more negative');
+ }
 });
-
-test('lights and friction have perceptible peaks and disappear before the final stable still',()=>{
- assert.ok(vanIconPose(.6).head>.95);assert.ok(vanIconPose(.6).pool>.95);
- assert.ok(vanIconPose(1.15).brake>2.8);assert.ok(vanIconPose(1.15).tracks>.65);assert.ok(vanIconPose(1.2).smoke>.95);
- assert.equal(vanIconPose(1.65).smoke,0,'friction puff ends near the skid rather than persisting like exhaust');
- const end=vanIconPose(3.4);for(const name of['head','running','pool','tracks','smoke'])assert.equal(end[name],0,name);
- assert.equal(end.brake,.28);assert.equal(end.yaw,0);assert.equal(end.z,0);assert.equal(end.x,0);
- assert.ok(Math.abs(end.body.heave)<.000002);assert.ok(Math.abs(end.body.pitch)<.000002);
- assert.deepEqual(end,vanIconPose(100),'the timeline has no repeating idle loop');
+test('sprung body settles without altering wheel pivot heights or travel',()=>{
+ const p=maneuverAt(1.9);assert.ok(Math.abs(p.body.pitch)<.00002);assert.ok(Math.abs(p.body.heave)<.000001);
+ assert.ok(verifyMotion().maxPitch<.028);
+ const dock=maneuverAt(3.4,{presentation:'dock'}),parked=maneuverAt(SPEC.depart-1/SPEC.hz);
+ assert.deepEqual(dock.wheels,parked.wheels);assert.equal(dock.x,parked.x);assert.equal(dock.z,parked.z);
 });
-
-test('native, startup and audio use one 84-frame 3.4-second clock',()=>{
- assert.deepEqual([L.frameCount,L.cell,L.cellSize,L.columns,L.rows,L.durationSeconds],[84,256,256,8,11,3.4]);
- assert.equal(L.columns*L.rows-L.frameCount,4);
- assert.deepEqual(L.stages,[{atSeconds:0,name:'arrival'},{atSeconds:.95,name:'brake'},{atSeconds:1.27,name:'settle'},{atSeconds:3.4,name:'parked'}]);
- assert.equal(L.stagesSeconds.brakeStart,P.brakeAt);assert.equal(L.stagesSeconds.lockStart,P.lockAt);assert.equal(L.stagesSeconds.stop,P.stopAt);
+test('late joins, readiness and focus never replay or gate readiness',()=>{
+ assert.equal(presentationTime(.8,{lateJoin:1.1}).visible,false);
+ assert.equal(presentationTime(1.2,{lateJoin:1.1}).time,1.2);
+ assert.equal(presentationTime(1,{readyAt:.9}).visible,false);
+ assert.equal(presentationTime(5).time,SPEC.depart-1/SPEC.hz);
+ const departure=presentationTime(2.8,{readyAt:2.4});assert.ok(Math.abs(departure.time-2.34)<1e-9);
+ assert.match(departure.stage,/Input live/);
+ assert.equal(presentationTime(1,{hidden:true}).visible,false);
+ assert.equal(presentationTime(1.8).time,1.8);
+ assert.equal(presentationTime(1,{reduced:true}).time,SPEC.depart-1/SPEC.hz);
+ assert.equal(presentationTime(3,{reduced:true,readyAt:2.4}).visible,false);
 });

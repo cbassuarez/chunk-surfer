@@ -1,12 +1,13 @@
 import {SOURCE_REST_SEATS} from './source-rest-seat.js';
 import {freshStorm,forceStrike,stormFlash} from './storm.js';
 import {makeChannel} from '../audio/thunder-channel.js';
+import {SOURCE_REST_BELL_PALETTES,sourceRestBellSample} from '../data/source-rest-bells.js';
 const seat=SOURCE_REST_SEATS[0],unit=n=>Math.max(0,Math.min(1,Number(n)||0));
 export const SOURCE_REST_BELLS=Object.freeze([
-  {id:'rest-bell-left',sample:'04',note:'D4',frequency:293.6647679174076,audioUrl:'audio/source-rest/bells/rest-bell-d4.wav',audioSeconds:20,position:{x:seat.x-11,y:seat.feet+4.8,z:seat.z-4.4},scale:1.15},
-  {id:'rest-bell-right',sample:'06',note:'A3',frequency:220,audioUrl:'audio/source-rest/bells/rest-bell-a3.wav',audioSeconds:20,position:{x:seat.x-12.2,y:seat.feet+5.2,z:seat.z+4.4},scale:1.30},
-  {id:'rest-bell-far',sample:'08',note:'D3',frequency:146.8323839587038,audioUrl:'audio/source-rest/bells/rest-bell-d3.wav',audioSeconds:20,position:{x:seat.x-22,y:seat.feet+8.6,z:seat.z+.25},scale:1.75},
-].map(row=>Object.freeze({...row,position:Object.freeze(row.position)})));
+  {id:'rest-bell-left',position:{x:seat.x-11,y:seat.feet+4.8,z:seat.z-4.4},scale:1.15},
+  {id:'rest-bell-right',position:{x:seat.x-12.2,y:seat.feet+5.2,z:seat.z+4.4},scale:1.30},
+  {id:'rest-bell-far',position:{x:seat.x-22,y:seat.feet+8.6,z:seat.z+.25},scale:1.75},
+].map((row,index)=>Object.freeze({...row,...sourceRestBellSample(SOURCE_REST_BELL_PALETTES['wrong-return'][index]),position:Object.freeze(row.position)})));
 const bellTimes=[[7.8,0],[12.6,1],[31.9,2],[89.2,1],[133.5,0],[208.5,2],[247.9,0],[330.8,1],[405.6,0],[448.7,2],[484.4,1]];
 export const SOURCE_REST_BELL_EVENTS=Object.freeze(bellTimes.map(([at,index],n)=>Object.freeze({
   id:`rest-bell-strike-${n}`,at,bellId:SOURCE_REST_BELLS[index].id,sample:SOURCE_REST_BELLS[index].sample,

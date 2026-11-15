@@ -213,6 +213,11 @@ function shapeOf(expr, env, src, depth = 0) {
   expr = unwrapFreeze(expr, src);
   if (!expr || depth > 5) return null;
   if (expr.type === 'Identifier' && env.has(expr.name)) { const b = env.get(expr.name); return b ? shapeOf(b.node, b.env, src, depth + 1) : null; }
+  if (expr.type === 'Identifier') {
+    const context = ORIGIN.get(expr) ?? CURRENT_CONTEXT;
+    const binding = context?.bindings.get(expr.name);
+    if (binding) return shapeOf(binding, env, context.source, depth + 1);
+  }
   if (expr.type === 'ObjectExpression') {
     const shape = new Map();
     for (const p of expr.properties) {
@@ -259,7 +264,12 @@ const PIECES = new WeakMap();
 function moduleContext(source,file,cache){
   const full=resolve(ROOT,file),prior=cache.get(full);
   if(prior&&prior.source===source)return prior;
-  const ast=parseAst(source,{lang:'js'}),context={source,file,ast,constants:new Map(),helpers:collectHelpers(ast)};
+  const ast=parseAst(source,{lang:'js'}),context={source,file,ast,constants:new Map(),helpers:collectHelpers(ast),bindings:new Map()};
+  for (const statement of ast.body) {
+    const declaration = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
+    if (declaration?.type === 'VariableDeclaration') for (const item of declaration.declarations)
+      if (item.id?.type === 'Identifier' && item.init) context.bindings.set(item.id.name, item.init);
+  }
   cache.set(full,context); // finite, cycle-safe imports
   const imports=new Map(),constantPending=new Set(),helperPending=new Set();
   const reference=(specifier,name)=>{
@@ -349,6 +359,17 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
     if (!n || typeof n.type !== 'string') return;
     if (n.type === 'ObjectExpression') {
       const props = objectProps(n), at = lineAt(n);
+      // Node tables can contain a beat literally named `who` or `text`.
+      // Those names are structural only *inside* a beat, never table keys.
+      const nodeTable = n.properties.some(p => p.type === 'Property' && p.value?.type === 'ObjectExpression' && objectProps(p.value).has('lines'));
+      if (props.has('lines') && (ctx.inNodeTable || props.has('goto') || props.has('next') || props.has('choices'))) {
+        const beat = node(path), shape = shapeOf(n, new Map(), source);
+        beat.structural = true; beat.source = `${file}:${at}`;
+        for (const key of ['goto', 'next', 'exit', 'action', 'if']) {
+          const binding = shape?.get(key), value = binding && valueText(binding.node, binding.env, source);
+          if (value != null) beat[key === 'next' ? 'goto' : key === 'if' ? 'when' : key] = value;
+        }
+      }
       const whoExpr = props.get('who') ?? props.get('speaker');
       const whoPieces = textPieces(whoExpr, source) ?? (whoExpr ? fixed(`{${source.slice(whoExpr.start, whoExpr.end).replace(/\s+/g, ' ')}}`) : null);
       const who = joined(whoPieces);
@@ -359,6 +380,7 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
       if (prompt != null && text != null) emitChoice(path, { text: prompt, source: `${file}:${at}` }, at, n, { text: promptP });
       if (who != null && text != null) {
         const line = { who, text, source: `${file}:${at}` };
+        const when = textOf(props.get('if') ?? props.get('when'), source); if (when) line.when = when;
         const q = props.get('quotes'), quotes = textOf(q, source); if (quotes) line.quotes = quotes; else if (q) line.quotesExpr = source.slice(q.start, q.end);
         emitLine(path, line, at, n, { who: whoPieces, text: textP }); consumed = true;
       } else if (ctx.inChoices && (text != null || props.has('label'))) {
@@ -398,8 +420,8 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
         // anything else under those keys (lines(...) helpers, spreads) is walked.
         if (key === 'lines' && linesHandled) continue;
         if ((key === 'first' || key === 'again') && textOf(p.value, source) != null) continue;
-        const nextPath = key && !STRUCTURAL.has(key) && !/^\d+$/.test(key) ? [...path, key] : path;
-        visit(p.value, nextPath, { inChoices: !!key && CHOICE_ARRAYS.has(key) });
+        const nextPath = key && (nodeTable || !STRUCTURAL.has(key)) && !/^\d+$/.test(key) ? [...path, key] : path;
+        visit(p.value, nextPath, { inChoices: !!key && CHOICE_ARRAYS.has(key), inNodeTable: nodeTable });
       }
       return;
     }
@@ -470,6 +492,7 @@ export function extractModule(source, file, {contextCache=new Map()}={}) {
 // edits (optional Map) receives, per line/choice id, the pieces its who/text
 // were read from: what the studio's write-back patches.
 export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText = new Set(), edits = null } = {}) {
+  const originallyEmpty = new Set([...nodes].filter(([, node]) => !node.lines.length && !node.choices.length).map(([id]) => id));
   // These current conversations are source-owned, not imported legacy trees.
   // A shared short reply such as "There you are." or "Yes." in an unrelated
   // canonical document cannot remove an actual beat from either bench/prologue.
@@ -480,9 +503,9 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText =
   const id = sanitize(`runtime.${rel.replace(/\.js$/, '').split(sep).join('.').split('/').join('.')}`);
   const out = {}, entries = [];
   for (const [nodeId, n] of nodes) {
-    if (!n.lines.length && !n.choices.length) continue;
+    if (!n.lines.length && !n.choices.length && !(n.structural && originallyEmpty.has(nodeId))) continue;
     if (skipNodePrefixes.some((p) => nodeId === p || nodeId.startsWith(`${p}.`))) continue;
-    out[nodeId] = { id: nodeId, type: n.choices.length ? 'choice' : 'line', lines: [], choices: [], source: n.lines[0]?.source || n.choices[0]?.source };
+    out[nodeId] = { id: nodeId, type: n.choices.length ? 'choice' : 'line', lines: [], choices: [], source: n.lines[0]?.source || n.choices[0]?.source || n.source };
     entries.push(nodeId);
   }
   for (const nodeId of entries) {
@@ -492,6 +515,7 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText =
       return [`${prefix}.${target}`,target,`${nodeId.split('.')[0]}.${target}`].map(sanitize).find(c=>out[c]);
     };
     if(n.goto){const target=resolveTarget(n.goto);if(target)doc.goto=target;else doc.targetName=n.goto;}
+    for (const key of ['exit', 'action', 'when']) if (n[key]) doc[key] = n[key];
     n.lines.forEach((line, i) => { doc.lines.push({ id: `${nodeId}.l${i}`, ...line }); if (edits && PIECES.has(line)) edits.set(`${nodeId}.l${i}`, PIECES.get(line)); });
     n.choices.forEach((choice, i) => {
       const item = { id: `${nodeId}.c${i}`, text: choice.text, source: choice.source };
@@ -510,6 +534,10 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText =
   return {
     schemaVersion: 1, id, title: experience?.title??`Runtime · ${rel}`, status: 'reference', fromCode: true, entry:out[experience?.entry]?experience.entry:entries[0], entries,
     tags: ['runtime', 'derived',...(experience?.tags||[])], regions: [], module: `src/${rel}`,
+    sourceGraph: { entryIds: experience && out[experience.entry] ? [experience.entry] : [],
+      // The opening's node table is passed intact to createConversation.
+      // Other exports can combine builders/variants: do not claim a boundary.
+      scopePrefix: rel === 'data/opening-prologue.js' ? 'nodes' : null },
     notes: `Generated from src/${rel} by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.`,
     nodes: out,
   };
