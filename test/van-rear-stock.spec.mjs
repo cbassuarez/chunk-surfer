@@ -11,9 +11,9 @@ import {CONSERVATORY_PROPS,PROP_MESH} from '../src/data/conservatory-props.js';
 import * as productionProps from '../src/game/props.js';
 
 const fieldKit={headphones:'reference',microphone:'reference',recorder:'reference',flashlight:'reference',cosmetics:{faceplate:'aluminum'}};
-test('the physical van uses the same fifteen ordinary choices and fitting destinations as preparation',()=>{
- assert.equal(VAN_REAR_STOCK_PARTS.length,15);
- assert.equal(new Set(VAN_REAR_STOCK_PARTS.map(p=>p.mesh)).size,15);
+test('the physical van uses the same sixteen ordinary choices and fitting destinations as preparation',()=>{
+ assert.equal(VAN_REAR_STOCK_PARTS.length,16);
+ assert.equal(new Set(VAN_REAR_STOCK_PARTS.map(p=>p.mesh)).size,16);
  assert.ok(VAN_REAR_STOCK_PARTS.every(p=>!p.mesh.includes('witness')));
  for(const bagTaken of [false,true])for(const packedGroups of [[],['headphones'],['microphone','recorder','flashlight'],Object.keys(WORKBENCH_VARIANTS)]){
   const state={bagTaken,fieldKit,packedGroups};

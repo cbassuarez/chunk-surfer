@@ -1,14 +1,14 @@
 {
   "revision": "endowed-school-yard-clearance-5",
-  "sha256": "350a707335e5af660bcd6497d8390aa43d10e661abe7d13d97eabcb1bf709ec5",
-  "bytes": 5094504,
-  "baselineHeroBytes": 4586756,
-  "addedBytes": 507748,
+  "sha256": "803ec9dee70626607f4c8179b87fe1c00bb35f3e9deafebb0624a4fb8df5fdf4",
+  "bytes": 5080148,
+  "baselineHeroBytes": 4572408,
+  "addedBytes": 507740,
   "addedTriangles": 3656,
   "totalTriangles": 20986,
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+    "sha256": "bb7976f33ef93c7ce94355521243a3d6226043173bd50116691a085f31dfed4f",
     "unchangedDuringBuild": true,
     "meshCount": 626
   },
@@ -401,6 +401,7 @@
       "building_window_faculty",
       "building_window_foyer",
       "building_window_baths",
+      "hall_stage_service_steps",
       "academic_frieze",
       "academic_bust_plinth",
       "academic_bust_fragment",
@@ -638,6 +639,7 @@
       "yard_van_stock_flashlight_reference",
       "yard_van_stock_flashlight_throw",
       "yard_van_stock_flashlight_flood",
+      "yard_van_stock_flashlight_headlamp",
       "yard_van_stock_faceplate_aluminum",
       "yard_van_stock_faceplate_black",
       "yard_van_stock_faceplate_olive",
@@ -770,7 +772,6 @@
       "lettering_overlay_tower-hammer-isolator",
       "lettering_overlay_brendan-visitor-till",
       "lettering_overlay_foyer-pew-1",
-      "lettering_overlay_box-office-returns-tray",
       "lettering_overlay_plant-header-card",
       "lettering_overlay_acq-services-panel-pool",
       "lettering_overlay_acq-services-panel-foh",
@@ -817,8 +818,7 @@
       "building_dressing_batch_ground",
       "building_dressing_batch_academic",
       "building_dressing_batch_upper",
-      "building_dressing_batch_hall",
-      "hall_stage_service_steps"
+      "building_dressing_batch_hall"
     ],
     "allUnmodifiedInSourcePack": true
   },

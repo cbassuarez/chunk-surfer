@@ -13,7 +13,7 @@
     21
   ],
   "inputGlbSha256": {
-    "public/assets/conservatory-props.glb": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
+    "public/assets/conservatory-props.glb": "bb7976f33ef93c7ce94355521243a3d6226043173bd50116691a085f31dfed4f",
     "public/assets/conservatory-acquisitions.glb": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336"
   },
   "materialEncoding": {
@@ -594,7 +594,7 @@
   "addedCatalogueTriangles": 20882,
   "export": {
     "bytes": 2356232,
-    "sha256": "f7e62468ab61eedcb16a47dd931ef6395e2a4273ba0125193457f8b025e4e07d",
+    "sha256": "e844ad44f9bc4d6b9fa90048f9db4c20524d766e4ae7f92883cf8a29b9c16a3e",
     "meshes": [
       {
         "name": "gallery_atrium_structure",
@@ -15445,7 +15445,7 @@
     "estimatedMipmappedTextureBytes": 4194300,
     "allNodeTransformsIdentity": true,
     "coreGltfOnly": true,
-    "blendSha256": "3f6b694bcd5f6ea690de6e1743ebb96d2fd2d50a423c20b5a724d3abde8e0883",
+    "blendSha256": "b853adc2a9a1ba804b039dcec5613fd4e7795a8b8532bfbde3b8a12c2938e17f",
     "sourceSha256": "165603e842a29c741cbfc065ff93b9c4f528673066bbd057b66f26c02155b553",
     "wrapperSha256": "6be5babf0945a2c772eca70d012791a2235ded185f6f4e2eca96f8a0f4f23284"
   },

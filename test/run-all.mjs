@@ -1230,6 +1230,7 @@ const tests = [
   'test/audits.spec.mjs',
   'test/narrative-studio.spec.mjs',
   'test/narrative-runtime-export.spec.mjs',
+  'test/source-preload.spec.mjs',
   // Portable checks added after the original hand-maintained suite.
   'test/about-system.test.mjs',
   'test/academic-gallery-assets.spec.mjs',
@@ -1431,6 +1432,7 @@ const tests = [
   'test/memory-field-ant.spec.mjs',
   'test/drive-time-skips.spec.mjs',
   'test/drive-hydroplane.spec.mjs',
+  'test/torch-hands.spec.mjs',
   'test/source-rest-couperin-source.spec.mjs',
   'test/source-rest-couperin-timing.spec.mjs',
   'test/source-rest-couperin.spec.mjs',

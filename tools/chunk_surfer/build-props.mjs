@@ -47,6 +47,7 @@ import { buildBuildingDressingBatches } from './building-dressing-batch-geometry
 import { isBuildingDressingMesh } from '../../src/world/building-dressing-batches.js';
 import { propsInit, allProps, renderInstances } from '../../src/game/props.js';
 import { PROP_BOUNDS } from '../../src/data/generated/prop-geometry.js';
+import { BOX_OFFICE_BOUNDS, BOX_OFFICE_SURFACES } from '../../src/data/box-office.js';
 import { buildDistrictSceneryRoads } from './district-scenery-roads.mjs';
 import {
   MARIMBA_ACCIDENTAL_AFTER,
@@ -6583,7 +6584,10 @@ const courtyardArchitectureReceipt=clipCourtyardArchitecture(meshes);
 // print job. The data import remains pure and does not compile a hidden plan.
 // First-pass hosts include newly authored models absent from the installed
 // generated surface table. Resolve them from the geometry being built now.
-propsInit(FP,undefined,{surfaces:workSurfaces()});
+// The box office ships its own pack (/assets/box-office.glb), so its desk and
+// hatch are never in `meshes` and their tops are declared in box-office.js, not
+// measured here. Same merge the runtime makes in src/game/props.js.
+propsInit(FP,undefined,{surfaces:{...BOX_OFFICE_SURFACES,...workSurfaces()}});
 const corridorWorldInscriptions=corridorInscriptionsForHosts(renderInstances({inscriptions:false}));
 const activeWorldInscriptions=[...WORLD_INSCRIPTIONS,...corridorWorldInscriptions];
 // Per-placement inscriptions share host geometry. Their physical print meshes
@@ -6637,7 +6641,7 @@ for(const m of meshes.values())if(isBuildingDressingMesh(m.name)){
   // exact same table here so wall-contact poses and freshness digests agree.
   dressingContactBounds[m.name]={min:min.map(v=>+v.toFixed(3)),max:max.map(v=>+v.toFixed(3))};
 }
-propsInit(FP,undefined,{bounds:dressingContactBounds,surfaces:meshSurfaces});
+propsInit(FP,undefined,{bounds:{...BOX_OFFICE_BOUNDS,...dressingContactBounds},surfaces:{...BOX_OFFICE_SURFACES,...meshSurfaces}});
 const dressingGroups=[...new Set(allProps().filter(p=>isBuildingDressingMesh(p.mesh)).flatMap(p=>p.renderGroups||[p.renderGroup]))].filter(Boolean);
 const buildingDressingBatches=buildBuildingDressingBatches({meshes,mesh,groups:Object.fromEntries(
   dressingGroups.map(name=>[name,renderInstances({group:name,inscriptions:false})]))});

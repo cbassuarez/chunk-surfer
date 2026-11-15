@@ -12931,8 +12931,8 @@ function restoreFromSourceSpace(completion,exitSnapshot){
 // never its initialize(), so nothing here takes the screen from the hall.
 // Uploads from here hand the frame back every few milliseconds.
 const SOURCE_AHEAD_SLICE_MS=4;
-const sourceAheadProps=new Proxy(P3,{get:(target,key)=>key==='addPropPack'
-  ?(url,options={})=>target.addPropPack(url,{sliceMs:SOURCE_AHEAD_SLICE_MS,...options}):target[key]});
+const sourceAheadProps=new Proxy(P3,{get:(target,key)=>key==='addPropPack'||key==='addCharacterPack'
+  ?(url,options={})=>target[key](url,{sliceMs:SOURCE_AHEAD_SLICE_MS,...options}):target[key]});
 const sourceAheadHushBody={id:'hush-body',label:'The HUSH body',run:()=>R3.r3dPrepareHushBody()};
 const sourceAheadContinuation={id:'continuation',label:'Source II and III architecture',
   run:()=>prewarmSourceContinuationAssets({renderer:R3,props:sourceAheadProps})};
@@ -12949,11 +12949,14 @@ const sourceAhead=createSourcePreloader({
     'source-ii':[sourceAheadContinuation],
     'source-iii':[sourceAheadContinuation],
     drive:[sourceAheadDrive],
-    outskirts:[{id:'outskirts-road',label:'The repeating road',run:()=>warmOutskirtsMotorwayAssets({props:sourceAheadProps})},
-      {id:'bus-body',label:'The bus',run:()=>R3.r3dPrepareBusBodyAssets()}],
+    // A false from these is a failed load, not "not yet": let it back off.
+    outskirts:[{id:'outskirts-road',label:'The repeating road',run:async()=>{if(await warmOutskirtsMotorwayAssets({props:sourceAheadProps})===false)throw Error('the road packs did not load');return true;}},
+      {id:'bus-body',label:'The bus',run:()=>R3.r3dPrepareBusBodyAssets({sliceMs:SOURCE_AHEAD_SLICE_MS})}],
     pub:[{id:'pub',label:'The Lyric',run:()=>prewarmSourcePubAssets({renderer:R3,props:sourceAheadProps})}],
     horizon:[{id:'horizon',label:'Horizon',run:()=>createHorizonApproachRenderer({props:sourceAheadProps}).prepare()},
-      {id:'horizon-bells',label:'The belfry samples',run:()=>{const bells=actx?warmHorizonBells():null;return bells?bells.load():false;}}],
+      {id:'horizon-bells',label:'The belfry samples',run:async()=>{
+        const bells=actx?warmHorizonBells():null;if(!bells)return false;// no audio context yet: ask again
+        if(await bells.load()===false)throw Error('the bell samples did not load');return true;}}],
     bells:[sourceAheadCrossing,sourceAheadDrive,
       {id:'coastal-memory',label:'The walkable lands',run:async()=>await preloadSourceDriveAssets({coastalMemory:true,props:sourceAheadProps})&&prewarmCoastalMemoryAssets({renderer:R3,props:sourceAheadProps})}],
     station:[sourceAheadCrossing,{id:'station-field',label:'The station fields',run:()=>prewarmStationFieldAssets({renderer:R3,props:sourceAheadProps})}],
@@ -13003,6 +13006,7 @@ function activateSourceSpace(state,{position=null,resume=false}={}){
   // Prepare the later threshold while the existing Source approach is still
   // playable. Asset preparation never borrows its active presentation.
   void prewarmSourceContinuationAssets().catch(error=>console.debug('[source continuation prewarm]',error.message));
+  startSourceAhead();
   stopOutskirtsStreetAudio();resetOutskirtsLastLight();
   endSourceHaystackMosh();
   endSourceBracketPresence({despawn:true});
@@ -16849,7 +16853,7 @@ function tickCover(dt){
 function toggleTorchAction({protectTake=false}={}){
   if(itemLost('torch')){SPEECH.say({who:'you',text:'No torch. It has the torch.'});return true;}
   if(!REC.lightOn()&&flagTest('van.bench.v2')&&!flagTest('kit.fitted')&&!flagTest('van.packed.flashlight')){
-    SPEECH.say({who:'you',text:'My flashlight is still on the workbench.'});return true;
+    SPEECH.say({who:'you',text:`My ${currentTorchKind()==='headlamp'?'headlamp':'flashlight'} is still on the workbench.`});return true;
   }
   if(!REC.lightOn()&&REC.batteryLevel()<=0){
     SPEECH.say(usingStairAnomaly()
@@ -20515,9 +20519,26 @@ function drawHeldTorchDuringTake(){
   const slot=inventory.held?.toolId==='torch'?inventory.held:inventory.slots.find(entry=>entry.toolId==='torch'&&entry.present);
   if(slot)drawOrdinaryHeldItem({...inventory,held:slot});
 }
+// The practical lamps within reach of the player, as the held hand would feel
+// them: each lamp's intensity falling off across its own radius, measured from
+// the eye (the torch frame's origin, resolved every frame whether lit or not).
+function heldItemPracticalLight(lighting){
+  const eye=lighting?.torch?.origin;
+  if(!Array.isArray(eye)||!Array.isArray(lighting?.lights))return {nearLight:0};
+  let total=0;const tint=[0,0,0];
+  for(const lamp of lighting.lights){
+    const radius=Number(lamp?.radius)||0,intensity=Number(lamp?.intensity)||0;
+    if(!(radius>0&&intensity>0))continue;
+    const d=Math.hypot(lamp.x-eye[0],lamp.y-eye[1],lamp.z-eye[2]),reach=Math.max(0,1-d/(radius*1.5));
+    const share=intensity*reach*reach;if(!(share>0))continue;
+    total+=share;(lamp.color||[1,1,1]).forEach((c,i)=>{tint[i]+=c*share;});
+  }
+  return total>0?{nearLight:Math.min(3,total),nearColor:tint.map(c=>c/total)}:{nearLight:0};
+}
 function drawOrdinaryHeldItem(inventory){
   const held=inventory.held;
-  if(!held){drawFieldHeldItem({frame:{active:false,present:false}});return;}
+  // A headlamp is on your head, not in your hand: nothing to show in the corner.
+  if(!held||held.toolId==='torch'&&currentTorchKind()==='headlamp'){drawFieldHeldItem({frame:{active:false,present:false}});return;}
   const lighting=R3.r3dLightingDebug();
   uiDraw(({ctx,dpr,cellW,cellH})=>{
     const rect=fieldHeldItemLayout({width:ctx.canvas.width,height:ctx.canvas.height,
@@ -20528,7 +20549,8 @@ function drawOrdinaryHeldItem(inventory){
       reducedMotion:shakeMode()!=='full',injuries:REC.recState().injuries,
       fieldKit:getSave().fieldKit,lightOn:REC.lightOn(),
       fieldLight:{torchPower:lighting.torch.power,ambientIntensity:lighting.ambientIntensity,
-        ambientColor:lighting.ambientColor,torchColor:lighting.torch.color},
+        ambientColor:lighting.ambientColor,torchColor:lighting.torch.color,
+        exposure:lighting.captureExposure,...heldItemPracticalLight(lighting)},
     }});
   });
 }
@@ -23551,23 +23573,31 @@ const outskirtsMotorwayPacks=[
   ['assets/source-drive/drive.glb',['drive_vehicle_body','drive_cabin','drive_tyre']],
   [OUTSKIRTS_VAN_SPILL_ASSETS[0],['source_return_fish_body','source_return_fish_fins']],
 ];
-let outskirtsMotorwayWarm=null,outskirtsMotorwayRetryAt=0;
-function warmOutskirtsMotorwayAssets(){
-  if(outskirtsMotorwayWarm||performance.now()<outskirtsMotorwayRetryAt)return;
+let outskirtsMotorwayWarm=null,outskirtsMotorwayRetryAt=0,outskirtsMotorwayDone=false;
+// Resolves true once the road's packs and water are resident, false while a
+// load is in flight or waiting out a retry (Source ahead asks again).
+function warmOutskirtsMotorwayAssets({props=P3}={}){
+  if(outskirtsMotorwayWarm)return outskirtsMotorwayWarm;
+  // Called every frame on the road: the catalog is read at most once a second.
+  if(performance.now()<outskirtsMotorwayRetryAt)return Promise.resolve(outskirtsMotorwayDone);
   const names=new Set(P3.propMeshCatalog());
   const missing=outskirtsMotorwayPacks.filter(([,meshes])=>!meshes.every(mesh=>names.has(mesh)));
   if(!missing.length&&Object.values(OUTSKIRTS_SPILL_WATER).every(mesh=>names.has(mesh))){
-    outskirtsMotorwayRetryAt=performance.now()+1000;
-    return;
+    outskirtsMotorwayRetryAt=performance.now()+1000;outskirtsMotorwayDone=true;
+    return Promise.resolve(true);
   }
+  outskirtsMotorwayDone=false;
   outskirtsMotorwayWarm=R3.r3dBasePropsReady().then(async ready=>{
     if(!ready)throw Error('The road prop catalog is not ready.');
-    await Promise.all(missing.map(([path])=>P3.addPropPack(assetUrl(path))));
+    await Promise.all(missing.map(([path])=>props.addPropPack(assetUrl(path))));
     if(!P3.installAuthoredPropMeshes(installOutskirtsSpillWater))throw Error('The shared fountain water is unavailable.');
+    return true;
   }).catch(error=>{
     outskirtsMotorwayRetryAt=performance.now()+5000;
     console.warn('[M62 pass] props unavailable',error);
+    return false;
   }).finally(()=>{outskirtsMotorwayWarm=null;});
+  return outskirtsMotorwayWarm;
 }
 let busBodyWarmPromise=null,busBodyWarmError=null;
 function warmBusBodyAssets({retry=false}={}){
@@ -38533,6 +38563,8 @@ function installProbe(){
     // The chapel road off the tape runs with the tower still waiting on Source.
     // The god menu's take grant, as a probe: ids, on.
     setTakes:(ids=[],on=true)=>({ok:godSetTakes(ids,on),takes:REC.recState().takes,tower:chapelTowerState().phase}),
+    // What has loaded ahead of you in Source (game/source-preload.js).
+    sourceAhead:()=>sourceAhead.status(),
     sourceChapelReady:()=>{saveCommit({chapelTower:{...chapelTowerState(),phase:CHAPEL_TOWER_PHASE.SOURCE_READY}});return chapelTowerState().phase;},
     whereAmI:()=>({x:px,y:py,facing:R3.r3dFacing(),look:R3.r3dLookAngles?.(),zone:FP.isLoaded()?FP.zoneAt(px,py):null,chapelOuter:ZONE.chapelOuter,source:usingSourceSpace()}),
     towerViewDepth:()=>R3.r3dTowerViewDepthStats?.(),
@@ -38556,6 +38588,10 @@ function installProbe(){
       rest:valleyRest?{locus:valleyRest.locus,mode:valleyRest.mode,settle:valleyRest.settle,elapsed:valleyRest.elapsed,
         dialogue:valleyRest.dialogue?.view?.()||null}:null}),
     homeValleyMusic:()=>homeValleyMusic.snapshot(),
+    // The kit chosen at the van; a patch picks pieces (e.g. {flashlight:'headlamp'}).
+    fieldKit:(patch=null)=>{if(patch&&typeof patch==='object')saveCommit({fieldKit:normalizeFieldKit({...getSave().fieldKit,...patch})});return normalizeFieldKit(getSave().fieldKit);},
+    torchState:()=>({on:REC.lightOn(),kind:currentTorchKind(),recorderInHands:recorderInHands(),lamp:playerLampFrame(),held:currentActiveInventory().held?.toolId||null,
+      deckLowered:liveTakeRecorderLowered(),canLower:canLowerLiveTakeRecorder(),slating:REC.isSlating(),levelCheckRoom:takeRoom===LEVEL_CHECK_ROOM,tutorial:TUT.tutorialActive()}),
     // The walk in: its state and this frame's reveal; 'skip' ends it for a capture.
     homeArrival:(action=null)=>{
       if(action==='skip'){homeArrival=null;scenes.remove?.(`thought:door-field:${HOME_ARRIVAL_START}`);flagApply([HOME_ARRIVAL_FLAG]);}

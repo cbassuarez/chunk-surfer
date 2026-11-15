@@ -101,7 +101,9 @@ test('held takes and explicit actions retain their authored rules under every ha
   REC.stallTake(); REC.emitNoise(.9, 1, 2, 'permitted return');
   assert.equal(REC.tickRecording(20), 'stalled'); close(REC.takeProgress(), 0);
   REC.resumeTake(); assert.equal(REC.tickRecording(1), 'running');
-  REC.toggleLight(); assert.equal(REC.tickRecording(1), 'running');assert.equal(REC.recState().spoiled,true,'the light still marks the attempt for the sheet');
+  // Reaching for the light is priced by the handling it takes (game/torch-hands.js,
+  // main.js toggleTorchAction), not by a rule inside the recorder.
+  REC.toggleLight(); assert.equal(REC.tickRecording(1), 'running');assert.equal(REC.recState().spoiled,false,'the switch itself ruined the take');
   reset({ microphone: 'wide' }); roll();
   REC.emitNoise(.9, 1, 2, 'weather', { spoils: false, sourceKind: 'environment' });
   assert.equal(REC.tickRecording(1), 'running', 'weather does not become take contamination');

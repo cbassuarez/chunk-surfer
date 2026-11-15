@@ -184,7 +184,7 @@
   },
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
+    "sha256": "bb7976f33ef93c7ce94355521243a3d6226043173bd50116691a085f31dfed4f",
     "unchangedDuringBuild": true,
     "meshCount": 626
   },

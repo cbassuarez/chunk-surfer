@@ -1,16 +1,16 @@
 {
   "version": 1,
-  "inputSha256": "5067d534a6b054b9ff945e727a9bf6af15b043cd8c0cb9b247f875192948ad98",
+  "inputSha256": "f376b33cbfee5a1d84c585bfb921246be8e8406b9ac1f3d1e894623d6b597b2e",
   "generatorSha256": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
     {
       "name": "lettering-00",
-      "width": 952,
+      "width": 944,
       "height": 928,
-      "normalWidth": 238,
+      "normalWidth": 236,
       "normalHeight": 232,
-      "ormWidth": 476,
+      "ormWidth": 472,
       "ormHeight": 464,
       "albedo": "lettering-00-albedo.png",
       "normal": "lettering-00-normal.png",
@@ -24,9 +24,9 @@
         0,
         0
       ],
-      "sharedTiles": 5,
+      "sharedTiles": 4,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 4638144
+      "rgbaBaseLevelBytes": 4599168
     },
     {
       "name": "lettering-01",
@@ -72,7 +72,7 @@
         0,
         0
       ],
-      "sharedTiles": 8,
+      "sharedTiles": 7,
       "preservesSampledStockChannels": false,
       "rgbaBaseLevelBytes": 4755072
     },
@@ -144,45 +144,21 @@
         0,
         0
       ],
-      "sharedTiles": 27,
+      "sharedTiles": 29,
       "preservesSampledStockChannels": false,
       "rgbaBaseLevelBytes": 4953312
     },
     {
       "name": "lettering-06",
-      "width": 176,
-      "height": 80,
-      "normalWidth": 44,
-      "normalHeight": 20,
-      "ormWidth": 88,
-      "ormHeight": 40,
-      "albedo": "lettering-06-albedo.png",
-      "normal": "lettering-06-normal.png",
-      "orm": "lettering-06-orm.png",
-      "category": "shared compatible print",
-      "process": "per-material fabrication; see entries",
-      "polarity": "dark-on-light",
-      "emission": "none",
-      "emissiveFactor": [
-        0,
-        0,
-        0
-      ],
-      "sharedTiles": 1,
-      "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 73920
-    },
-    {
-      "name": "lettering-07",
       "width": 544,
       "height": 136,
       "normalWidth": 544,
       "normalHeight": 136,
       "ormWidth": 544,
       "ormHeight": 136,
-      "albedo": "lettering-07-albedo.png",
-      "normal": "lettering-07-normal.png",
-      "orm": "lettering-07-orm.png",
+      "albedo": "lettering-06-albedo.png",
+      "normal": "lettering-06-normal.png",
+      "orm": "lettering-06-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "dark-on-light",
@@ -197,12 +173,36 @@
       "rgbaBaseLevelBytes": 887808
     },
     {
-      "name": "lettering-08",
+      "name": "lettering-07",
       "width": 608,
       "height": 192,
       "normalWidth": 608,
       "normalHeight": 192,
       "ormWidth": 608,
+      "ormHeight": 192,
+      "albedo": "lettering-07-albedo.png",
+      "normal": "lettering-07-normal.png",
+      "orm": "lettering-07-orm.png",
+      "category": "shared compatible print",
+      "process": "per-material fabrication; see entries",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "sharedTiles": 5,
+      "preservesSampledStockChannels": true,
+      "rgbaBaseLevelBytes": 1400832
+    },
+    {
+      "name": "lettering-08",
+      "width": 712,
+      "height": 192,
+      "normalWidth": 712,
+      "normalHeight": 192,
+      "ormWidth": 712,
       "ormHeight": 192,
       "albedo": "lettering-08-albedo.png",
       "normal": "lettering-08-normal.png",
@@ -218,43 +218,19 @@
       ],
       "sharedTiles": 5,
       "preservesSampledStockChannels": true,
-      "rgbaBaseLevelBytes": 1400832
-    },
-    {
-      "name": "lettering-09",
-      "width": 712,
-      "height": 192,
-      "normalWidth": 712,
-      "normalHeight": 192,
-      "ormWidth": 712,
-      "ormHeight": 192,
-      "albedo": "lettering-09-albedo.png",
-      "normal": "lettering-09-normal.png",
-      "orm": "lettering-09-orm.png",
-      "category": "shared compatible print",
-      "process": "per-material fabrication; see entries",
-      "polarity": "dark-on-light",
-      "emission": "none",
-      "emissiveFactor": [
-        0,
-        0,
-        0
-      ],
-      "sharedTiles": 5,
-      "preservesSampledStockChannels": true,
       "rgbaBaseLevelBytes": 1640448
     },
     {
-      "name": "lettering-10",
+      "name": "lettering-09",
       "width": 736,
       "height": 192,
       "normalWidth": 736,
       "normalHeight": 192,
       "ormWidth": 736,
       "ormHeight": 192,
-      "albedo": "lettering-10-albedo.png",
-      "normal": "lettering-10-normal.png",
-      "orm": "lettering-10-orm.png",
+      "albedo": "lettering-09-albedo.png",
+      "normal": "lettering-09-normal.png",
+      "orm": "lettering-09-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "dark-on-light",
@@ -269,16 +245,16 @@
       "rgbaBaseLevelBytes": 1695744
     },
     {
-      "name": "lettering-11",
+      "name": "lettering-10",
       "width": 496,
       "height": 96,
       "normalWidth": 124,
       "normalHeight": 24,
       "ormWidth": 248,
       "ormHeight": 48,
-      "albedo": "lettering-11-albedo.png",
-      "normal": "lettering-11-normal.png",
-      "orm": "lettering-11-orm.png",
+      "albedo": "lettering-10-albedo.png",
+      "normal": "lettering-10-normal.png",
+      "orm": "lettering-10-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "dark-on-light",
@@ -293,16 +269,16 @@
       "rgbaBaseLevelBytes": 249984
     },
     {
-      "name": "lettering-12",
+      "name": "lettering-11",
       "width": 800,
       "height": 632,
       "normalWidth": 200,
       "normalHeight": 158,
       "ormWidth": 400,
       "ormHeight": 316,
-      "albedo": "lettering-12-albedo.png",
-      "normal": "lettering-12-normal.png",
-      "orm": "lettering-12-orm.png",
+      "albedo": "lettering-11-albedo.png",
+      "normal": "lettering-11-normal.png",
+      "orm": "lettering-11-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "light-on-dark",
@@ -317,16 +293,16 @@
       "rgbaBaseLevelBytes": 2654400
     },
     {
-      "name": "lettering-13",
+      "name": "lettering-12",
       "width": 704,
       "height": 608,
       "normalWidth": 176,
       "normalHeight": 152,
       "ormWidth": 352,
       "ormHeight": 304,
-      "albedo": "lettering-13-albedo.png",
-      "normal": "lettering-13-normal.png",
-      "orm": "lettering-13-orm.png",
+      "albedo": "lettering-12-albedo.png",
+      "normal": "lettering-12-normal.png",
+      "orm": "lettering-12-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "light-on-dark",
@@ -341,16 +317,16 @@
       "rgbaBaseLevelBytes": 2247168
     },
     {
-      "name": "lettering-14",
+      "name": "lettering-13",
       "width": 632,
       "height": 640,
       "normalWidth": 158,
       "normalHeight": 160,
       "ormWidth": 316,
       "ormHeight": 320,
-      "albedo": "lettering-14-albedo.png",
-      "normal": "lettering-14-normal.png",
-      "orm": "lettering-14-orm.png",
+      "albedo": "lettering-13-albedo.png",
+      "normal": "lettering-13-normal.png",
+      "orm": "lettering-13-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "light-on-dark",
@@ -365,16 +341,16 @@
       "rgbaBaseLevelBytes": 2123520
     },
     {
-      "name": "lettering-15",
+      "name": "lettering-14",
       "width": 384,
       "height": 440,
       "normalWidth": 96,
       "normalHeight": 110,
       "ormWidth": 192,
       "ormHeight": 220,
-      "albedo": "lettering-15-albedo.png",
-      "normal": "lettering-15-normal.png",
-      "orm": "lettering-15-orm.png",
+      "albedo": "lettering-14-albedo.png",
+      "normal": "lettering-14-normal.png",
+      "orm": "lettering-14-orm.png",
       "category": "shared compatible print",
       "process": "per-material fabrication; see entries",
       "polarity": "light-on-dark",
@@ -394,9 +370,9 @@
       "id": "vigil_part_banner:0",
       "page": 0,
       "uvRect": [
-        0.01680672268907563,
+        0.01694915254237288,
         0.017241379310344827,
-        0.9632352941176471,
+        0.9713983050847458,
         0.27801724137931033
       ],
       "copy": "KEEP ELLERY\nSTANDING",
@@ -612,9 +588,9 @@
       "id": "outskirts_shelter_timetable:0",
       "page": 0,
       "uvRect": [
-        0.01680672268907563,
+        0.01694915254237288,
         0.3125,
-        0.40021008403361347,
+        0.4036016949152542,
         0.9536637931034483
       ],
       "copy": "ELLERY\nLAST BUS\n23:10\n23:40\n00:10",
@@ -929,9 +905,9 @@
       "id": "rekey_ledger:0",
       "page": 0,
       "uvRect": [
-        0.4338235294117647,
+        0.4375,
         0.3125,
-        0.9716386554621849,
+        0.9798728813559322,
         0.7316810344827587
       ],
       "copy": "REPLACEMENT LOCK \u2014 CHAPEL \u2014 CABINET C-17",
@@ -1280,9 +1256,9 @@
       "id": "exterior-baths-mosaic",
       "page": 0,
       "uvRect": [
-        0.4338235294117647,
+        0.4375,
         0.7661637931034483,
-        0.9002100840336135,
+        0.9078389830508474,
         0.9773706896551724
       ],
       "copy": "MUNICIPAL BATHS \u00b7 1912",
@@ -1533,157 +1509,6 @@
           0,
           0.48,
           -0.1856
-        ]
-      },
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "city_phone_box_apparatus:9",
-      "page": 0,
-      "uvRect": [
-        0.9338235294117647,
-        0.7661637931034483,
-        0.9800420168067226,
-        0.8265086206896551
-      ],
-      "copy": "8",
-      "lines": [
-        "8"
-      ],
-      "widthM": 0.016,
-      "heightM": 0.02016,
-      "metrics": {
-        "font": "NimbusSansNarrow-Bold.otf",
-        "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
-        "capHeightM": 0.012727272727272728,
-        "stemWidthM": 0.002181818181818182,
-        "coverage": 0.18425324675324675,
-        "boundsPx": [
-          12,
-          10,
-          32,
-          46
-        ],
-        "glyphs": [
-          {
-            "character": "8",
-            "line": 0,
-            "xPx": 11.0,
-            "advancePx": 22.42
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "44784425f426742b20a0cd165d32f835ca2368b2aafb0c2488bb6a2ef2261a73"
-      },
-      "category": "phone",
-      "process": "telephone apparatus printed enamel and paper",
-      "polarity": "dark-on-light",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "paper stock",
-        "coating": "absorbed print or pen ink",
-        "roughness": 0.88,
-        "inkRoughness": 0.82,
-        "fieldM": 0.095,
-        "variation": 0.027,
-        "roughnessVariation": 0.035,
-        "microReliefM": 4e-06,
-        "deposit": 0.025,
-        "edgeLoss": 0,
-        "sequence": [
-          "paper fibre direction survives printing",
-          "gentle stock tone varies across the sheet",
-          "actual handled lower region has restrained contact polishing"
-        ],
-        "limits": [
-          "no added foxing, water damage or yellow vignette without a supported cause"
-        ],
-        "version": 1,
-        "profile": "paper-print",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "paper-print",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "coverageSha256": "44784425f426742b20a0cd165d32f835ca2368b2aafb0c2488bb6a2ef2261a73",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.095,
-          "minimumNormalPeriod": 0.0015,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.0
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            0.0,
-            0.0
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.8116583333333333,
-            0.8848333333333334
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": "tools/chunk_surfer/build-props.mjs",
-      "orientation": {
-        "readerRight": [
-          1,
-          0,
-          0
-        ],
-        "up": [
-          0,
-          1,
-          0
-        ],
-        "normal": [
-          0,
-          0,
-          1
-        ],
-        "center": [
-          -0.08146943658766913,
-          1.3107900236935393,
-          -0.2925
         ]
       },
       "bounds": null,
@@ -7390,174 +7215,17 @@
       "substrate": null
     },
     {
-      "id": "source_hall_number_17:0",
+      "id": "city_phone_box_apparatus:9",
       "page": 2,
       "uvRect": [
         0.5737704918032787,
         0.6961206896551724,
-        0.6639344262295082,
-        0.7650862068965517
-      ],
-      "copy": "17",
-      "lines": [
-        "17"
-      ],
-      "widthM": 0.33,
-      "heightM": 0.24,
-      "metrics": {
-        "font": "NimbusMonoPS-Bold.otf",
-        "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
-        "capHeightM": 0.13875,
-        "stemWidthM": 0.02625,
-        "coverage": 0.16530539772727273,
-        "boundsPx": [
-          10,
-          10,
-          77,
-          50
-        ],
-        "glyphs": [
-          {
-            "character": "1",
-            "line": 0,
-            "xPx": 4.777999999999999,
-            "advancePx": 39.444
-          },
-          {
-            "character": "7",
-            "line": 0,
-            "xPx": 44.222,
-            "advancePx": 39.444
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "cfd1b310a3e4d1632111cdbb7c4fa5d6586364a41e81896fd2fe4f41c086c820"
-      },
-      "category": "maintenance",
-      "process": "bridged maintenance stencil on concrete",
-      "polarity": "dark-on-light",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "concrete or blockwork repair finish",
-        "coating": "bridged opaque maintenance paint",
-        "roughness": 0.89,
-        "inkRoughness": 0.77,
-        "fieldM": 0.12,
-        "variation": 0.035,
-        "roughnessVariation": 0.06,
-        "microReliefM": 1.2e-05,
-        "deposit": 0.04,
-        "edgeLoss": 0,
-        "sequence": [
-          "porous original face supports a solid paint layer",
-          "spray/brush load varies without deleting stencil cores",
-          "recess deposit is independent of pigment"
-        ],
-        "limits": [
-          "word patch perimeter is never treated as a physical object edge"
-        ],
-        "version": 1,
-        "profile": "mineral-stencil",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "mineral-stencil",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "coverageSha256": "cfd1b310a3e4d1632111cdbb7c4fa5d6586364a41e81896fd2fe4f41c086c820",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.12,
-          "minimumNormalPeriod": 0.011250000000000001,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.0
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            0.0,
-            0.0
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.7659470588235294,
-            0.92
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": "tools/chunk_surfer/build-props.mjs",
-      "orientation": {
-        "readerRight": [
-          0,
-          0,
-          -1
-        ],
-        "up": [
-          0,
-          1,
-          0
-        ],
-        "normal": [
-          1,
-          0,
-          0
-        ],
-        "center": [
-          0,
-          0,
-          0
-        ]
-      },
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "city_phone_box_apparatus:8",
-      "page": 2,
-      "uvRect": [
-        0.5737704918032787,
-        0.7995689655172413,
         0.6188524590163934,
-        0.8599137931034483
+        0.7564655172413793
       ],
-      "copy": "7",
+      "copy": "8",
       "lines": [
-        "7"
+        "8"
       ],
       "widthM": 0.016,
       "heightM": 0.02016,
@@ -7566,23 +7234,23 @@
         "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
         "capHeightM": 0.012727272727272728,
         "stemWidthM": 0.002181818181818182,
-        "coverage": 0.11282467532467533,
+        "coverage": 0.18425324675324675,
         "boundsPx": [
           12,
-          11,
+          10,
           32,
-          45
+          46
         ],
         "glyphs": [
           {
-            "character": "7",
+            "character": "8",
             "line": 0,
             "xPx": 11.0,
             "advancePx": 22.42
           }
         ],
         "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "d1bc69688275c49f59e199bb016a0ecd6f158c0c8d23b56a7c9b4893624e1888"
+        "coverageSha256": "44784425f426742b20a0cd165d32f835ca2368b2aafb0c2488bb6a2ef2261a73"
       },
       "category": "phone",
       "process": "telephone apparatus printed enamel and paper",
@@ -7630,7 +7298,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "coverageSha256": "d1bc69688275c49f59e199bb016a0ecd6f158c0c8d23b56a7c9b4893624e1888",
+        "coverageSha256": "44784425f426742b20a0cd165d32f835ca2368b2aafb0c2488bb6a2ef2261a73",
         "immutableCoverage": true,
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
@@ -7660,8 +7328,8 @@
         },
         "channelRanges": {
           "roughness": [
-            0.814424019607843,
-            0.894107843137255
+            0.8116583333333333,
+            0.8848333333333334
           ],
           "metallic": [
             0.0,
@@ -7689,8 +7357,8 @@
           1
         ],
         "center": [
-          -0.08055918859357251,
-          1.3664153185690509,
+          -0.08146943658766913,
+          1.3107900236935393,
           -0.2925
         ]
       },
@@ -9725,7 +9393,7 @@
       "substrate": null
     },
     {
-      "id": "door_stencil_b1:0",
+      "id": "door_stencil_b2:0",
       "page": 3,
       "uvRect": [
         0.808,
@@ -9733,9 +9401,9 @@
         0.931,
         0.9738636363636364
       ],
-      "copy": "B1",
+      "copy": "B2",
       "lines": [
-        "B1"
+        "B2"
       ],
       "widthM": 0.46,
       "heightM": 0.32,
@@ -9744,11 +9412,11 @@
         "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
         "capHeightM": 0.1421138211382114,
         "stemWidthM": 0.02991869918699187,
-        "coverage": 0.13428981348637015,
+        "coverage": 0.1492109038737446,
         "boundsPx": [
           22,
           20,
-          97,
+          96,
           61
         ],
         "glyphs": [
@@ -9759,14 +9427,14 @@
             "advancePx": 40.456
           },
           {
-            "character": "1",
+            "character": "2",
             "line": 0,
             "xPx": 61.728,
             "advancePx": 40.456
           }
         ],
         "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "6558579d61c6b1a98bf7ce8cdabfbbf1dc5263fef0ebd4c6a5376b194f668ae2"
+        "coverageSha256": "aa054f3c411ade1f0cb560dfe9025bc4e5bf50026f5eada1f11f3a6badbe725e"
       },
       "category": "maintenance",
       "process": "bridged maintenance stencil on a blockwork repair patch",
@@ -9814,7 +9482,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "coverageSha256": "6558579d61c6b1a98bf7ce8cdabfbbf1dc5263fef0ebd4c6a5376b194f668ae2",
+        "coverageSha256": "aa054f3c411ade1f0cb560dfe9025bc4e5bf50026f5eada1f11f3a6badbe725e",
         "immutableCoverage": true,
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
@@ -9844,8 +9512,8 @@
         },
         "channelRanges": {
           "roughness": [
-            0.7595235294117647,
-            0.9134117647058824
+            0.7541705882352941,
+            0.92
           ],
           "metallic": [
             0.0,
@@ -15682,199 +15350,12 @@
       "substrate": null
     },
     {
-      "id": "box-office-returns-tray",
+      "id": "van-stock-recorder",
       "page": 5,
       "uvRect": [
         0.015873015873015872,
         0.8450854700854701,
-        0.27380952380952384,
-        0.9732905982905983
-      ],
-      "copy": "RETURNS",
-      "lines": [
-        "RETURNS"
-      ],
-      "widthM": 0.26,
-      "heightM": 0.12,
-      "metrics": {
-        "font": "NimbusMonoPS-Bold.otf",
-        "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
-        "capHeightM": 0.025,
-        "stemWidthM": 0.005,
-        "coverage": 0.07983974358974359,
-        "boundsPx": [
-          38,
-          47,
-          220,
-          73
-        ],
-        "glyphs": [
-          {
-            "character": "R",
-            "line": 0,
-            "xPx": 38.10000000000001,
-            "advancePx": 26.3
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 64.4,
-            "advancePx": 26.3
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 90.7,
-            "advancePx": 26.3
-          },
-          {
-            "character": "U",
-            "line": 0,
-            "xPx": 117.0,
-            "advancePx": 26.3
-          },
-          {
-            "character": "R",
-            "line": 0,
-            "xPx": 143.3,
-            "advancePx": 26.3
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 169.60000000000002,
-            "advancePx": 26.3
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 195.90000000000003,
-            "advancePx": 26.3
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "d0e164361783b8ee41341e3548c13a78a053285de944e636ffc9affd2396cc1c"
-      },
-      "category": "maintenance",
-      "process": "existing returns-tray stencil",
-      "polarity": "dark-on-light",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "original equipment finish",
-        "coating": "maintenance stencil paint",
-        "roughness": 0.62,
-        "inkRoughness": 0.74,
-        "fieldM": 0.045,
-        "variation": 0.018,
-        "roughnessVariation": 0.055,
-        "microReliefM": 4e-06,
-        "deposit": 0.025,
-        "edgeLoss": 0,
-        "sequence": [
-          "original apparatus finish remains outside pigment",
-          "thin dielectric stencil sits over that finish",
-          "accessible contact may smooth the finish"
-        ],
-        "limits": [
-          "no artificial weathered rectangle around an applied equipment legend"
-        ],
-        "version": 1,
-        "profile": "apparatus-stencil",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "apparatus-stencil",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "coverageSha256": "d0e164361783b8ee41341e3548c13a78a053285de944e636ffc9affd2396cc1c",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.045,
-          "minimumNormalPeriod": 0.003,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.0
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            0.0,
-            0.0
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.5925,
-            0.757875
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": "tools/chunk_surfer/build-props.mjs",
-      "orientation": {
-        "readerRight": [
-          0.9968017063026194,
-          0,
-          -0.0799146939691727
-        ],
-        "up": [
-          -0.0799146939691727,
-          0,
-          -0.9968017063026194
-        ],
-        "normal": [
-          0,
-          1.0000000000000002,
-          0
-        ],
-        "center": [
-          -0.155,
-          0.0216,
-          0
-        ]
-      },
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "van-stock-recorder",
-      "page": 5,
-      "uvRect": [
-        0.3055555555555556,
-        0.8450854700854701,
-        0.6468253968253969,
+        0.35714285714285715,
         0.8942307692307693
       ],
       "copy": "03 / AMPLIFIER",
@@ -16089,9 +15570,9 @@
       "id": "van-stock-microphone",
       "page": 5,
       "uvRect": [
-        0.3055555555555556,
+        0.015873015873015872,
         0.9284188034188035,
-        0.6279761904761905,
+        0.3382936507936508,
         0.9775641025641025
       ],
       "copy": "02 / MICROPHONE",
@@ -17759,17 +17240,17 @@
       "substrate": null
     },
     {
-      "id": "door_stencil_b2:0",
+      "id": "door_stencil_b1:0",
       "page": 5,
       "uvRect": [
-        0.6785714285714286,
-        0.7457264957264957,
-        0.8005952380952381,
-        0.8365384615384616
+        0.3888888888888889,
+        0.8450854700854701,
+        0.5109126984126984,
+        0.9358974358974359
       ],
-      "copy": "B2",
+      "copy": "B1",
       "lines": [
-        "B2"
+        "B1"
       ],
       "widthM": 0.46,
       "heightM": 0.32,
@@ -17778,11 +17259,11 @@
         "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
         "capHeightM": 0.1421138211382114,
         "stemWidthM": 0.02991869918699187,
-        "coverage": 0.1492109038737446,
+        "coverage": 0.13428981348637015,
         "boundsPx": [
           22,
           20,
-          96,
+          97,
           61
         ],
         "glyphs": [
@@ -17793,14 +17274,14 @@
             "advancePx": 40.456
           },
           {
-            "character": "2",
+            "character": "1",
             "line": 0,
             "xPx": 61.728,
             "advancePx": 40.456
           }
         ],
         "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "aa054f3c411ade1f0cb560dfe9025bc4e5bf50026f5eada1f11f3a6badbe725e"
+        "coverageSha256": "6558579d61c6b1a98bf7ce8cdabfbbf1dc5263fef0ebd4c6a5376b194f668ae2"
       },
       "category": "maintenance",
       "process": "bridged maintenance stencil on a blockwork repair patch",
@@ -17848,7 +17329,7 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "coverageSha256": "aa054f3c411ade1f0cb560dfe9025bc4e5bf50026f5eada1f11f3a6badbe725e",
+        "coverageSha256": "6558579d61c6b1a98bf7ce8cdabfbbf1dc5263fef0ebd4c6a5376b194f668ae2",
         "immutableCoverage": true,
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
@@ -17878,8 +17359,8 @@
         },
         "channelRanges": {
           "roughness": [
-            0.7541705882352941,
-            0.92
+            0.7595235294117647,
+            0.9134117647058824
           ],
           "metallic": [
             0.0,
@@ -17919,10 +17400,10 @@
       "id": "door_stencil_b3:0",
       "page": 5,
       "uvRect": [
-        0.6785714285714286,
-        0.8707264957264957,
-        0.8005952380952381,
-        0.9615384615384616
+        0.5426587301587301,
+        0.7254273504273504,
+        0.6646825396825397,
+        0.8162393162393162
       ],
       "copy": "B3",
       "lines": [
@@ -18076,10 +17557,10 @@
       "id": "door_stencil_b5:0",
       "page": 5,
       "uvRect": [
-        0.8323412698412699,
-        0.7457264957264957,
-        0.9543650793650794,
-        0.8365384615384616
+        0.5426587301587301,
+        0.8504273504273504,
+        0.6646825396825397,
+        0.9412393162393162
       ],
       "copy": "B5",
       "lines": [
@@ -18233,10 +17714,10 @@
       "id": "outskirts_ticket:0",
       "page": 5,
       "uvRect": [
-        0.4176587301587302,
-        0.7254273504273504,
-        0.5863095238095238,
-        0.7692307692307693
+        0.6964285714285714,
+        0.7457264957264957,
+        0.8650793650793651,
+        0.7895299145299145
       ],
       "copy": "ELLERY",
       "lines": [
@@ -18414,10 +17895,10 @@
       "id": "ending_returned_ledger:unnamed-signature",
       "page": 5,
       "uvRect": [
-        0.8323412698412699,
-        0.8707264957264957,
-        0.9632936507936508,
-        0.9273504273504274
+        0.6964285714285714,
+        0.8237179487179487,
+        0.8273809523809523,
+        0.8803418803418803
       ],
       "copy": "",
       "lines": [
@@ -18549,6 +18030,332 @@
           0.24,
           0.047,
           -0.095
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "ending_returned_ledger:1",
+      "page": 5,
+      "uvRect": [
+        0.6964285714285714,
+        0.9145299145299145,
+        0.8382936507936508,
+        0.9626068376068376
+      ],
+      "copy": "ALAN",
+      "lines": [
+        "ALAN"
+      ],
+      "widthM": 0.25,
+      "heightM": 0.078,
+      "metrics": {
+        "font": "NimbusRoman-Italic.otf",
+        "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+        "capHeightM": 0.0472027972027972,
+        "stemWidthM": 0.006993006993006993,
+        "coverage": 0.11546231546231546,
+        "boundsPx": [
+          18,
+          8,
+          125,
+          37
+        ],
+        "glyphs": [
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 20.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 46.0,
+            "advancePx": 23.0
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 69.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 95.0,
+            "advancePx": 28.0
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "a6ff46b79fdc1706fb3759d70a3d60fbcdea9ac641b65b3082852fa95c2dd3b5"
+      },
+      "category": "record",
+      "process": "fresh pen name on ledger paper",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 4e-06,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "a6ff46b79fdc1706fb3759d70a3d60fbcdea9ac641b65b3082852fa95c2dd3b5",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.005244755244755245,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8102308823529412,
+            0.9043627450980392
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.034992854604336196,
+          -0.9993875625234886
+        ],
+        "normal": [
+          0,
+          0.9993875625234886,
+          0.034992854604336196
+        ],
+        "center": [
+          0.215,
+          0.039,
+          0.112
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "source_hall_number_17:0",
+      "page": 5,
+      "uvRect": [
+        0.8968253968253969,
+        0.7457264957264957,
+        0.9841269841269841,
+        0.8141025641025641
+      ],
+      "copy": "17",
+      "lines": [
+        "17"
+      ],
+      "widthM": 0.33,
+      "heightM": 0.24,
+      "metrics": {
+        "font": "NimbusMonoPS-Bold.otf",
+        "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
+        "capHeightM": 0.13875,
+        "stemWidthM": 0.02625,
+        "coverage": 0.16530539772727273,
+        "boundsPx": [
+          10,
+          10,
+          77,
+          50
+        ],
+        "glyphs": [
+          {
+            "character": "1",
+            "line": 0,
+            "xPx": 4.777999999999999,
+            "advancePx": 39.444
+          },
+          {
+            "character": "7",
+            "line": 0,
+            "xPx": 44.222,
+            "advancePx": 39.444
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "cfd1b310a3e4d1632111cdbb7c4fa5d6586364a41e81896fd2fe4f41c086c820"
+      },
+      "category": "maintenance",
+      "process": "bridged maintenance stencil on concrete",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "concrete or blockwork repair finish",
+        "coating": "bridged opaque maintenance paint",
+        "roughness": 0.89,
+        "inkRoughness": 0.77,
+        "fieldM": 0.12,
+        "variation": 0.035,
+        "roughnessVariation": 0.06,
+        "microReliefM": 1.2e-05,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "porous original face supports a solid paint layer",
+          "spray/brush load varies without deleting stencil cores",
+          "recess deposit is independent of pigment"
+        ],
+        "limits": [
+          "word patch perimeter is never treated as a physical object edge"
+        ],
+        "version": 1,
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "cfd1b310a3e4d1632111cdbb7c4fa5d6586364a41e81896fd2fe4f41c086c820",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.12,
+          "minimumNormalPeriod": 0.011250000000000001,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.7659470588235294,
+            0.92
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0,
+          0,
+          0
         ]
       },
       "bounds": null,
@@ -19008,63 +18815,45 @@
       "substrate": null
     },
     {
-      "id": "ending_returned_ledger:1",
-      "page": 6,
+      "id": "city_phone_box_apparatus:8",
+      "page": 5,
       "uvRect": [
-        0.09090909090909091,
-        0.2,
-        0.9034090909090909,
-        0.7625
+        0.4176587301587302,
+        0.7254273504273504,
+        0.46130952380952384,
+        0.7852564102564102
       ],
-      "copy": "ALAN",
+      "copy": "7",
       "lines": [
-        "ALAN"
+        "7"
       ],
-      "widthM": 0.25,
-      "heightM": 0.078,
+      "widthM": 0.016,
+      "heightM": 0.02016,
       "metrics": {
-        "font": "NimbusRoman-Italic.otf",
-        "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
-        "capHeightM": 0.0472027972027972,
-        "stemWidthM": 0.006993006993006993,
-        "coverage": 0.11546231546231546,
+        "font": "NimbusSansNarrow-Bold.otf",
+        "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+        "capHeightM": 0.012727272727272728,
+        "stemWidthM": 0.002181818181818182,
+        "coverage": 0.11282467532467533,
         "boundsPx": [
-          18,
-          8,
-          125,
-          37
+          12,
+          11,
+          32,
+          45
         ],
         "glyphs": [
           {
-            "character": "A",
+            "character": "7",
             "line": 0,
-            "xPx": 20.0,
-            "advancePx": 26.0
-          },
-          {
-            "character": "L",
-            "line": 0,
-            "xPx": 46.0,
-            "advancePx": 23.0
-          },
-          {
-            "character": "A",
-            "line": 0,
-            "xPx": 69.0,
-            "advancePx": 26.0
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 95.0,
-            "advancePx": 28.0
+            "xPx": 11.0,
+            "advancePx": 22.42
           }
         ],
         "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "a6ff46b79fdc1706fb3759d70a3d60fbcdea9ac641b65b3082852fa95c2dd3b5"
+        "coverageSha256": "d1bc69688275c49f59e199bb016a0ecd6f158c0c8d23b56a7c9b4893624e1888"
       },
-      "category": "record",
-      "process": "fresh pen name on ledger paper",
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
       "polarity": "dark-on-light",
       "emission": "none",
       "reliefM": 7e-06,
@@ -19109,12 +18898,12 @@
           "contact": "none",
           "exposure": "interior"
         },
-        "coverageSha256": "a6ff46b79fdc1706fb3759d70a3d60fbcdea9ac641b65b3082852fa95c2dd3b5",
+        "coverageSha256": "d1bc69688275c49f59e199bb016a0ecd6f158c0c8d23b56a7c9b4893624e1888",
         "immutableCoverage": true,
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
           "field": 0.095,
-          "minimumNormalPeriod": 0.005244755244755245,
+          "minimumNormalPeriod": 0.0015,
           "inkRelief": 7e-06
         },
         "structure": {
@@ -19139,8 +18928,8 @@
         },
         "channelRanges": {
           "roughness": [
-            0.8102308823529412,
-            0.9043627450980392
+            0.814424019607843,
+            0.894107843137255
           ],
           "metallic": [
             0.0,
@@ -19159,18 +18948,18 @@
         ],
         "up": [
           0,
-          0.034992854604336196,
-          -0.9993875625234886
+          1,
+          0
         ],
         "normal": [
           0,
-          0.9993875625234886,
-          0.034992854604336196
+          0,
+          1
         ],
         "center": [
-          0.215,
-          0.039,
-          0.112
+          -0.08055918859357251,
+          1.3664153185690509,
+          -0.2925
         ]
       },
       "bounds": null,
@@ -19178,7 +18967,7 @@
     },
     {
       "id": "acq-foyer-console-01",
-      "page": 7,
+      "page": 6,
       "uvRect": [
         0.029411764705882353,
         0.11764705882352941,
@@ -19377,7 +19166,7 @@
     },
     {
       "id": "acq-foyer-armchair-01",
-      "page": 8,
+      "page": 7,
       "uvRect": [
         0.02631578947368421,
         0.08333333333333333,
@@ -19576,7 +19365,7 @@
     },
     {
       "id": "deadend-ground-armchair",
-      "page": 8,
+      "page": 7,
       "uvRect": [
         0.4868421052631579,
         0.08333333333333333,
@@ -19775,7 +19564,7 @@
     },
     {
       "id": "acq-services-panel-academic",
-      "page": 8,
+      "page": 7,
       "uvRect": [
         0.02631578947368421,
         0.6354166666666666,
@@ -19963,7 +19752,7 @@
     },
     {
       "id": "acq-services-panel-foh",
-      "page": 8,
+      "page": 7,
       "uvRect": [
         0.35855263157894735,
         0.6354166666666666,
@@ -20151,7 +19940,7 @@
     },
     {
       "id": "acq-services-panel-plant",
-      "page": 8,
+      "page": 7,
       "uvRect": [
         0.6907894736842105,
         0.6354166666666666,
@@ -20339,7 +20128,7 @@
     },
     {
       "id": "acq-foyer-sofa-01",
-      "page": 9,
+      "page": 8,
       "uvRect": [
         0.02247191011235955,
         0.08333333333333333,
@@ -20538,7 +20327,7 @@
     },
     {
       "id": "acq-practice-chair-1",
-      "page": 9,
+      "page": 8,
       "uvRect": [
         0.3946629213483146,
         0.08333333333333333,
@@ -20731,7 +20520,7 @@
     },
     {
       "id": "acq-practice-chair-2",
-      "page": 9,
+      "page": 8,
       "uvRect": [
         0.3946629213483146,
         0.5833333333333334,
@@ -20924,7 +20713,7 @@
     },
     {
       "id": "acq-services-panel-pool",
-      "page": 9,
+      "page": 8,
       "uvRect": [
         0.7387640449438202,
         0.08333333333333333,
@@ -21112,7 +20901,7 @@
     },
     {
       "id": "acq-services-panel-practice",
-      "page": 9,
+      "page": 8,
       "uvRect": [
         0.7387640449438202,
         0.5104166666666666,
@@ -21300,7 +21089,7 @@
     },
     {
       "id": "acq-practice-chair-3",
-      "page": 10,
+      "page": 9,
       "uvRect": [
         0.021739130434782608,
         0.08333333333333333,
@@ -21493,7 +21282,7 @@
     },
     {
       "id": "acq-practice-chair-4",
-      "page": 10,
+      "page": 9,
       "uvRect": [
         0.021739130434782608,
         0.5833333333333334,
@@ -21686,7 +21475,7 @@
     },
     {
       "id": "acq-practice-chair-5",
-      "page": 10,
+      "page": 9,
       "uvRect": [
         0.3546195652173913,
         0.08333333333333333,
@@ -21879,7 +21668,7 @@
     },
     {
       "id": "acq-practice-chair-6",
-      "page": 10,
+      "page": 9,
       "uvRect": [
         0.6875,
         0.08333333333333333,
@@ -22072,7 +21861,7 @@
     },
     {
       "id": "acq-practice-chair-7",
-      "page": 10,
+      "page": 9,
       "uvRect": [
         0.3546195652173913,
         0.5833333333333334,
@@ -22265,7 +22054,7 @@
     },
     {
       "id": "acq-practice-chair-8",
-      "page": 10,
+      "page": 9,
       "uvRect": [
         0.6875,
         0.5833333333333334,
@@ -22458,7 +22247,7 @@
     },
     {
       "id": "city_phone_box:0",
-      "page": 11,
+      "page": 10,
       "uvRect": [
         0.03225806451612903,
         0.16666666666666666,
@@ -22657,7 +22446,7 @@
     },
     {
       "id": "city_phone_box:1",
-      "page": 11,
+      "page": 10,
       "uvRect": [
         0.03225806451612903,
         0.16666666666666666,
@@ -22856,7 +22645,7 @@
     },
     {
       "id": "city_phone_box:2",
-      "page": 11,
+      "page": 10,
       "uvRect": [
         0.03225806451612903,
         0.16666666666666666,
@@ -23055,7 +22844,7 @@
     },
     {
       "id": "city_phone_box:3",
-      "page": 11,
+      "page": 10,
       "uvRect": [
         0.03225806451612903,
         0.16666666666666666,
@@ -23254,7 +23043,7 @@
     },
     {
       "id": "atrium-sign-main-exit",
-      "page": 12,
+      "page": 11,
       "uvRect": [
         0.02,
         0.02531645569620253,
@@ -23526,7 +23315,7 @@
     },
     {
       "id": "chapel-stair-sign-nave",
-      "page": 12,
+      "page": 11,
       "uvRect": [
         0.02,
         0.24525316455696203,
@@ -23979,7 +23768,7 @@
     },
     {
       "id": "hall-entrance-sign",
-      "page": 12,
+      "page": 11,
       "uvRect": [
         0.02,
         0.4651898734177215,
@@ -24527,7 +24316,7 @@
     },
     {
       "id": "pub-lyric-fascia-east",
-      "page": 12,
+      "page": 11,
       "uvRect": [
         0.02,
         0.615506329113924,
@@ -24739,7 +24528,7 @@
     },
     {
       "id": "pub-lyric-fascia-west",
-      "page": 12,
+      "page": 11,
       "uvRect": [
         0.02,
         0.7294303797468354,
@@ -24933,7 +24722,7 @@
     },
     {
       "id": "city_phone_box_apparatus:0",
-      "page": 12,
+      "page": 11,
       "uvRect": [
         0.02,
         0.8433544303797469,
@@ -25148,7 +24937,7 @@
     },
     {
       "id": "yard-caretaker-sign",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.02631578947368421,
@@ -25347,7 +25136,7 @@
     },
     {
       "id": "yard-laundry-sign",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.1924342105263158,
@@ -25570,7 +25359,7 @@
     },
     {
       "id": "yard-stores-sign",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.35855263157894735,
@@ -25793,7 +25582,7 @@
     },
     {
       "id": "landing-academic-floor-landing",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.524671052631579,
@@ -26010,7 +25799,7 @@
     },
     {
       "id": "landing-b3-landing",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.649671052631579,
@@ -26245,7 +26034,7 @@
     },
     {
       "id": "landing-ground-landing",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.774671052631579,
@@ -26426,7 +26215,7 @@
     },
     {
       "id": "landing-upper-floor-landing",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.022727272727272728,
         0.899671052631579,
@@ -26643,7 +26432,7 @@
     },
     {
       "id": "tower_rope_mat_tenor:0",
-      "page": 13,
+      "page": 12,
       "uvRect": [
         0.6136363636363636,
         0.524671052631579,
@@ -26831,7 +26620,7 @@
     },
     {
       "id": "tower_peal_board:0",
-      "page": 14,
+      "page": 13,
       "uvRect": [
         0.02531645569620253,
         0.025,
@@ -27602,7 +27391,7 @@
     },
     {
       "id": "outskirts_lodge:0",
-      "page": 14,
+      "page": 13,
       "uvRect": [
         0.02531645569620253,
         0.6859375,
@@ -27783,7 +27572,7 @@
     },
     {
       "id": "outskirts_bus:0",
-      "page": 14,
+      "page": 13,
       "uvRect": [
         0.02531645569620253,
         0.8515625,
@@ -27964,7 +27753,7 @@
     },
     {
       "id": "hymn_board:0",
-      "page": 15,
+      "page": 14,
       "uvRect": [
         0.041666666666666664,
         0.03636363636363636,

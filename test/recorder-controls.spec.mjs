@@ -436,6 +436,8 @@ test('lowering the live recorder returns camera look without touching the take, 
     scenes: { depth: () => Number(!!state.scene), blocksInput: () => !!state.scene, allowsLook: () => false },
     startupPresentationHeld: () => false, gameplayInputLifecycleActive: () => true,
     liveRecorderHadCursor: false, liveTakeRecorderIsLowered: false,
+    // Raising the deck pockets a burning handheld torch (game/torch-hands.js).
+    stowHandheldTorchForRecorder: () => false,
     liveRecordingPointerControls: new Map(), R3: {}, cancelControlScope() {}, cancelRecorderRigPress() {},
     recordAction: () => shortcuts.push('transport'), openRecorder: () => shortcuts.push('open'),
   };

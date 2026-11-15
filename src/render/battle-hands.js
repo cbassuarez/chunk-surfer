@@ -17,12 +17,19 @@ export function recordistHandLighting(frame = {}) {
   };
   const color = (value, fallback) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite)
     ? value.map(component => clamp(component, 0, 4)) : fallback;
+  // The hands are lit by what lights the player: the room's ambient, the
+  // practical lamps within reach (nearLight), and their own torch, whose beam
+  // throws light back off whatever it hits. They are then printed through the
+  // world's look, so they take the world's exposure too: without it, a hand in
+  // a bright pub printed as a black block (main.js drawOrdinaryHeldItem).
   const ambient = clamp(field.ambientIntensity, 0, 2), torch = clamp(field.torchPower);
+  const near = clamp(field.nearLight, 0, 3), exposure = clamp(Number(field.exposure) || 1, .5, 3);
   const sky = color(field.ambientColor, [.66, .51, .35]), lamp = color(field.torchColor, [1, .94, .82]);
-  return { owner: 'field', environment: ambient * .25, hemisphere: ambient,
-    key: torch * 1.35, rim: ambient * .15, fill: torch * .10 + ambient * .20,
+  const practical = color(field.nearColor, sky);
+  return { owner: 'field', environment: (ambient * .25 + near * .10) * exposure, hemisphere: (ambient + near * .45) * exposure,
+    key: (torch * 1.35 + near * .9) * exposure, rim: (ambient * .15 + torch * .22) * exposure, fill: (torch * .10 + torch * .25 * (1 - near / 3) + ambient * .20) * exposure,
     skyColor: sky, groundColor: sky.map(component => component * .25),
-    keyColor: lamp, rimColor: sky, fillColor: lamp };
+    keyColor: near > torch * 1.35 ? practical : lamp, rimColor: sky, fillColor: lamp };
 }
 
 // Reconcile both directions on each draw. The cached view is also used by the

@@ -4610,14 +4610,14 @@ export function r3dBusBodyAssetsReady(){
   const characters=new Set(P3.characterStats().meshes),props=new Set(P3.propMeshCatalog());
   return busBodyPacks.every(p=>p.meshes.every(name=>(p.kind==='character'?characters:props).has(name)));
 }
-export function r3dPrepareBusBodyAssets(){
+export function r3dPrepareBusBodyAssets({sliceMs=0}={}){
   if(r3dBusBodyAssetsReady())return Promise.resolve(true);
   if(busBodyPackLoad&&busBodyPackBase===basePropPackLoad)return busBodyPackLoad;
   busBodyPackBase=basePropPackLoad;
   busBodyPackLoad=(async()=>{
     busBodyAssetStage='street';
     if(!await r3dBasePropsReady())throw Error('The street renderer is not ready.');
-    for(const p of busBodyPacks){busBodyAssetStage=p.url;await(p.kind==='character'?P3.addCharacterPack(assetUrl(p.url)):P3.addPropPack(assetUrl(p.url)));}
+    for(const p of busBodyPacks){busBodyAssetStage=p.url;await(p.kind==='character'?P3.addCharacterPack(assetUrl(p.url),{sliceMs}):P3.addPropPack(assetUrl(p.url),{sliceMs}));}
     if(!r3dBusBodyAssetsReady())throw Error('The body passage assets did not install.');
     busBodyAssetStage='ready';return true;
   })().catch(error=>{busBodyAssetStage='failed: '+String(error?.message||error);busBodyPackLoad=null;throw error;});
@@ -6450,8 +6450,10 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   const black = blend(authoredBlack, authoredBlack * scale);
   gl.uniform1f(pixelMeshU('uBlackPoint'), black);
   // Floored clear of the black point so a scale can never invert the curve.
-  gl.uniform1f(pixelMeshU('uWhitePoint'),
-    Math.max(black + 0.002, blend(authoredWhite, authoredWhite * scale)));
+  const white = Math.max(black + 0.002, blend(authoredWhite, authoredWhite * scale));
+  gl.uniform1f(pixelMeshU('uWhitePoint'), white);
+  // The torch in the hand prints through these same ends (render/torch-rig.js).
+  pixelMeshStatus.blackPoint = black; pixelMeshStatus.whitePoint = white;
   gl.uniform1f(pixelMeshU('uToneGamma'), look.vfd.toneGamma ?? 1.0);
   // THE FRONT-END PLATE. Neutral in the room; a negative behind the menu. See
   // FRONT_END_GRADE in look-profiles.js for where the numbers come from.

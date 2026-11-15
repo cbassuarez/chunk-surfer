@@ -10,7 +10,7 @@ const find = (state, key) => workbenchCatalog({ fieldKit: kit, ...state }).find(
 
 test('every hardware choice and standard faceplate has its own simultaneous physical model', () => {
   const objects = workbenchCatalog({ fieldKit: kit });
-  assert.equal(objects.length, 20);
+  assert.equal(objects.length, 21);
   assert.equal(new Set(objects.map(item => item.key)).size, objects.length);
   assert.equal(new Set(objects.map(item => item.modelId)).size, objects.length);
   for (const [group, options] of Object.entries(WORKBENCH_VARIANTS)) {

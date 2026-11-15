@@ -471,24 +471,6 @@ export function sourceEarthfallContinuationPreview(){
   return continuationPreview;
 }
 
-// The descending earth's packs and meshes, shared by initialize() and the
-// prewarm below. Nothing here touches the plan, the scene or the camera.
-async function loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation,released=()=>false}){
-  if(released())return false;if(props.installAuthoredPropMeshes?.(installMeshes)===false)throw Error('The descending earth mesh context is unavailable.');
-  for(const [meshes,url]of [[REQUIRED_DEMO,'assets/source-demolition.glb'],[REQUIRED_COLLAPSE,'assets/source-earthfall-fracture.glb'],[Object.values(ST_BRENDANS_PRESENCE_MESH),ST_BRENDANS_PRESENCE_PACK],[DOOR_MESHES,'assets/conservatory-doors.glb']]){
-    const catalog=new Set(props.propMeshCatalog?.()||[]);if(meshes.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset(url));if(released())return false;
-  }
-  if(previewContinuation)await prewarmSourceContinuationAssets({renderer,props,resolveAsset});
-  return true;
-}
-// AHEAD OF TIME (game/source-preload.js): the earth, Ellery's remembered aside
-// and the continuation it previews, loaded while another scene owns the screen.
-export async function prewarmSourceEarthfallAssets({renderer=R3,props=P3,resolveAsset=assetUrl,installMeshes=installSourceEarthfallMeshes}={}){
-  if(await renderer.r3dBasePropsReady?.()===false)return false;
-  if(!await loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation:true}))return false;
-  return createSourceEarthfallElleryAsideRenderer({renderer,props,resolveAsset}).initialize();
-}
-
 export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},installMeshes=installSourceEarthfallMeshes,transformFrame=null,previewContinuation=false,getTorch=()=>({on:false,look:{power:0}}),asideRenderer=null,diagnostics=false}={}){
   let initialized=false,released=false,loading=null,repair=null,error=null,last=null,releaseRange=null;
   const rangeOwner=Symbol('source-earthfall');
@@ -545,4 +527,22 @@ export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset
   }
   function dispose(){if(released)return false;released=true;initialized=false;aside.dispose();if(diagnostics)props.setPropDiagnostics?.(false);clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
   return{initialize,render,renderAside(state,presentation={}){if(!initialized||released)return false;if(!resident()||!aside.ready()){restoreResidency();return true;}renderingAside=true;return aside.render(state,presentation);},ready:()=>initialized&&!released&&resident()&&aside.ready()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,error,restoringScenery:!!repair,budget:SOURCE_EARTHFALL_RENDER_BUDGET,aside:aside.diagnostics(),renderingAside,...(diagnostics?{cpuSubmission:cpuSummary(),props:props.propPackStats?.()||null}:{}),frame:last?{phase:last.phase,eye:last.eye,counts:last.counts,catchSurfaceY:last.catchSurfaceY,construction:SOURCE_EARTHFALL_CONSTRUCTION}:null})};
+}
+
+// The descending earth's packs and meshes, shared by initialize() and the
+// prewarm below. Nothing here touches the plan, the scene or the camera.
+async function loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation,released=()=>false}){
+  if(released())return false;if(props.installAuthoredPropMeshes?.(installMeshes)===false)throw Error('The descending earth mesh context is unavailable.');
+  for(const [meshes,url]of [[REQUIRED_DEMO,'assets/source-demolition.glb'],[REQUIRED_COLLAPSE,'assets/source-earthfall-fracture.glb'],[Object.values(ST_BRENDANS_PRESENCE_MESH),ST_BRENDANS_PRESENCE_PACK],[DOOR_MESHES,'assets/conservatory-doors.glb']]){
+    const catalog=new Set(props.propMeshCatalog?.()||[]);if(meshes.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset(url));if(released())return false;
+  }
+  if(previewContinuation)await prewarmSourceContinuationAssets({renderer,props,resolveAsset});
+  return true;
+}
+// AHEAD OF TIME (game/source-preload.js): the earth, Ellery's remembered aside
+// and the continuation it previews, loaded while another scene owns the screen.
+export async function prewarmSourceEarthfallAssets({renderer=R3,props=P3,resolveAsset=assetUrl,installMeshes=installSourceEarthfallMeshes}={}){
+  if(await renderer.r3dBasePropsReady?.()===false)return false;
+  if(!await loadSourceEarthfallAssets({renderer,props,resolveAsset,installMeshes,previewContinuation:true}))return false;
+  return createSourceEarthfallElleryAsideRenderer({renderer,props,resolveAsset}).initialize();
 }

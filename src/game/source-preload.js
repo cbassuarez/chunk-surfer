@@ -73,6 +73,9 @@ export function createSourcePreloader({
   tasks = {},
   minimumAhead = SOURCE_PRELOAD_MINIMUM_AHEAD,
   gapMs = 120,
+  // Past the minimum there is time: a big upload can still cost the GPU a
+  // frame, and one at a time with a second between keeps those apart.
+  farGapMs = 1000,
   pollMs = 250,
   maxPolls = 240,
   retryMs = [4000, 20000],
@@ -100,14 +103,14 @@ export function createSourcePreloader({
     if (current === null) return { next: null, soonest: null };
     let soonest = null;
     const at = now();
-    for (const { id } of sourcePreloadOrder(current, stages)) {
+    for (const { id, depth } of sourcePreloadOrder(current, stages)) {
       for (const record of stageTasks(id)) {
         if (record.state === 'ready' || record.state === 'failed' || record.state === 'loading') continue;
         if (record.notBefore > at) { soonest = soonest === null ? record.notBefore : Math.min(soonest, record.notBefore); continue; }
-        return { next: record, soonest };
+        return { next: record, depth, soonest };
       }
     }
-    return { next: null, soonest };
+    return { next: null, depth: null, soonest };
   }
 
   async function run(record) {
@@ -140,13 +143,13 @@ export function createSourcePreloader({
     pumping = mine; wakeAt = null;
     try {
       while (!stopped && mine === generation) {
-        const { next, soonest } = pick();
+        const { next, depth, soonest } = pick();
         if (!next) {
           if (soonest !== null && current !== null) { wakeAt = soonest; await wait(Math.max(0, soonest - now())); if (mine === generation) wakeAt = null; continue; }
           break;
         }
         await run(next);
-        await wait(gapMs);
+        await wait(depth <= minimumAhead ? gapMs : farGapMs);
       }
     } finally { if (pumping === mine) pumping = null; }
   }

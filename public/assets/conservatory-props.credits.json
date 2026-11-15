@@ -20,10 +20,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
+    "sha256": "bb7976f33ef93c7ce94355521243a3d6226043173bd50116691a085f31dfed4f",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 890557,
-    "bytes": 64730312
+    "triangles": 896431,
+    "bytes": 64624552
   },
   "meshes": [
     {
@@ -576,17 +576,17 @@
       "name": "b3_mixing_console",
       "bounds": {
         "min": [
-          -1.165,
+          -1.15,
           0.02,
           -0.48
         ],
         "max": [
-          1.165,
-          1.31,
-          0.48
+          1.15,
+          1.301,
+          0.472
         ]
       },
-      "triangles": 2876,
+      "triangles": 6760,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -2919,7 +2919,7 @@
           10.5
         ]
       },
-      "triangles": 438,
+      "triangles": 390,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -4369,6 +4369,27 @@
         ]
       },
       "triangles": 852,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "hall_stage_service_steps",
+      "bounds": {
+        "min": [
+          0,
+          -1.68,
+          -1.028
+        ],
+        "max": [
+          5,
+          0.977,
+          3.027
+        ]
+      },
+      "triangles": 696,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -9316,12 +9337,12 @@
         "min": [
           0.615,
           1.11,
-          0.982
+          0.943
         ],
         "max": [
           0.67,
           1.165,
-          1.156
+          1.117
         ]
       },
       "triangles": 387,
@@ -9337,12 +9358,12 @@
         "min": [
           0.607,
           1.11,
-          1.209
+          1.115
         ],
         "max": [
           0.678,
           1.182,
-          1.383
+          1.289
         ]
       },
       "triangles": 376,
@@ -9358,15 +9379,36 @@
         "min": [
           0.612,
           1.11,
-          1.436
+          1.288
         ],
         "max": [
           0.674,
           1.165,
-          1.61
+          1.461
         ]
       },
       "triangles": 403,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "yard_van_stock_flashlight_headlamp",
+      "bounds": {
+        "min": [
+          0.56,
+          1.11,
+          1.494
+        ],
+        "max": [
+          0.729,
+          1.349,
+          1.598
+        ]
+      },
+      "triangles": 394,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11540,17 +11582,17 @@
       "name": "baseboard_ground",
       "bounds": {
         "min": [
-          -114,
-          -2.57,
-          -62.5
+          -101,
+          -2.45,
+          -60
         ],
         "max": [
-          80,
-          1.045,
-          121.5
+          93,
+          1.165,
+          124
         ]
       },
-      "triangles": 4152,
+      "triangles": 4032,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11561,17 +11603,17 @@
       "name": "baseboard_hall",
       "bounds": {
         "min": [
-          -5,
+          -8,
           -1,
           0
         ],
         "max": [
-          29,
+          26,
           9.115,
           36
         ]
       },
-      "triangles": 1896,
+      "triangles": 1956,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11613,7 +11655,7 @@
           50.5
         ]
       },
-      "triangles": 1308,
+      "triangles": 1092,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -12138,27 +12180,6 @@
           -0.74,
           0.513,
           0.241
-        ]
-      },
-      "triangles": 2,
-      "provenance": {
-        "source": "tools/chunk_surfer/build-props.mjs",
-        "origin": "project-native procedural geometry",
-        "license": "project source"
-      }
-    },
-    {
-      "name": "lettering_overlay_box-office-returns-tray",
-      "bounds": {
-        "min": [
-          -0.289,
-          0.022,
-          -0.07
-        ],
-        "max": [
-          -0.021,
-          0.022,
-          0.07
         ]
       },
       "triangles": 2,
@@ -13080,12 +13101,12 @@
           -55.25
         ],
         "max": [
-          9.9,
+          9.02,
           16.051,
           80.5
         ]
       },
-      "triangles": 34264,
+      "triangles": 34612,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -13106,7 +13127,7 @@
           6.35
         ]
       },
-      "triangles": 66296,
+      "triangles": 65792,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -13127,7 +13148,7 @@
           35.65
         ]
       },
-      "triangles": 42282,
+      "triangles": 41418,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -13138,38 +13159,17 @@
       "name": "building_dressing_batch_hall",
       "bounds": {
         "min": [
-          -18.98,
+          -20.48,
           0.065,
           0
         ],
         "max": [
-          14,
+          12.5,
           17,
           36
         ]
       },
-      "triangles": 6588,
-      "provenance": {
-        "source": "tools/chunk_surfer/build-props.mjs",
-        "origin": "project-native procedural geometry",
-        "license": "project source"
-      }
-    },
-    {
-      "name": "hall_stage_service_steps",
-      "bounds": {
-        "min": [
-          0,
-          -1.68,
-          -1.028
-        ],
-        "max": [
-          5,
-          0.977,
-          1.028
-        ]
-      },
-      "triangles": 672,
+      "triangles": 7188,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -13226,36 +13226,6 @@
       "license": "unverified",
       "meshName": null,
       "reason": "The supplied GLB contains one two-triangle dark plane and no usable frame geometry or texture; project-native brass rail frame used."
-    }
-  ],
-  "selectedRevisions": [
-    {
-      "previousPackSha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
-      "packSha256": "4af365dc1d67684fc1d90f9692f3aff7a34990dd5ebb0dbf99a2569a93bde129",
-      "reason": "Selected atrium circulation update. All other logical mesh bytes, full material definitions, all embedded images, original nodes and roots are independently preserved. Only this revision's source hashes are reconciled; other pre-existing producer drift remains explicit.",
-      "unchangedMeshes": 620,
-      "preservedPrintedEntries": 120,
-      "embeddedImagesPreserved": 69,
-      "proof": "/artifacts/atrium-access/selected-owner-comparison.json",
-      "sourceHashes": {
-        "src/data/building-amenities.js": "a46f19cc50430f87ff39ae8278f4be16818facaf8aae20686c345b9586f4460c",
-        "tools/chunk_surfer/building-amenities-geometry.mjs": "759899aeb01ee6bbb805c01da4c09785de8a60e718febba98bc83d8d3227a620",
-        "tools/chunk_surfer/build-props.mjs": "9c4a2a4a368d2c2deaa83e5c43c54168d1018f2d8bf05257d4348e1961c97f23",
-        "src/data/conservatory-props.js": "38ec45e5e1206d36e69ef114e871510d31c9a733740fa1d6ab4cda5fddc855dc",
-        "src/data/floorplan/conservatory.js": "b7b75d8e2b548966f1bbec305413d924d9be86424deb5902519cd50dc3440b1d",
-        "src/data/conservatory-doors.js": "feea287160ca84f35ee503f608c3215ee3cfb946ae253f69fbcc218ec723ade3",
-        "src/data/institution-occupation.js": "79300ce2f3bef164a4b27e71703480d4b89a8a9398291a9ec3709b2c4004cdce",
-        "src/data/atrium-circulation.js": "80e6fddc932f3f524bf8476721f2d7ae67e721b83fa23c0cd34ece12db0f81de",
-        "tools/chunk_surfer/hall-service-stair-geometry.mjs": "a004e16a0bb676fd7598c2110ae4290fdc96115bdb9b8701914ff404415a6705"
-      },
-      "owners": [
-        "amenity_public_core_shell",
-        "baseboard_ground",
-        "baseboard_hall",
-        "baseboard_academic",
-        "baseboard_academicRoof",
-        "hall_stage_service_steps"
-      ]
     }
   ]
 }

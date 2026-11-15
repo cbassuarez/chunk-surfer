@@ -245,30 +245,36 @@ const L = freezeLight;
 // anchored light resolves from the prop every frame; moving a fitting moves its
 // emitted light. The fallback coordinates keep deterministic tests and early
 // asset-load frames stable.
+const LYRIC_LIGHT_ZONES=Object.freeze([ZONE.pub,ZONE.street,ZONE.civicCourt,ZONE.serviceYard,ZONE.dock]);
 export const CONSERVATORY_LIGHTS = Object.freeze([
   ...GLASS_COURT_LIGHTS.map(a=>L(a.id,LIGHT_KIND.FITTING,a.x,a.z,a.y,a.color,a.intensity,a.radius,
     {groups:['ground'],zones:[a.zone],powerMode:LIGHT_POWER_MODE.ALWAYS,glassCourtOnly:true})),
   ...STATIONERS_LIGHTS.map(a=>L(a.id,LIGHT_KIND.FITTING,a.x,a.z,a.y,a.color,a.intensity,a.radius,
     {groups:['ground'],zones:[ZONE.stationers,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL})),
+  // Where the Lyric can be seen from. A light is only submitted to a viewer
+  // standing in one of its zones, and the Lyric no longer stands on the street:
+  // its front faces the service yard's gardens (yard-jardins.js, ZONE.serviceYard)
+  // across from the loading yard (ZONE.dock). Without those two its lamps were
+  // dropped for anyone on its own doorstep and the front printed as a black wall.
   // The Lyric is supplied independently of the closed institution. These are
   // the actual pendant/WC sockets from the shared furnishing contract; retain
   // their output when seen through the pub's open window joinery.
   ...PUB_LIGHT_ANCHORS.map(a=>{
     const p=pubPhysicalFromLocal(a),warm=PUB_HOSPITALITY_LIGHTS.find(light=>light.id===a.id),w=warm&&pubPhysicalFromLocal(warm);
     return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
-      {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
+      {groups:['ground'],zones:LYRIC_LIGHT_ZONES,powerMode:LIGHT_POWER_MODE.EXTERNAL,
        castsShadow:a.id==='pub-bar-light',pubHospitalityReplacement:w?{x:w.x,z:w.z,y:EXTERIOR_PUB.floor+warm.y,color:warm.color,intensity:warm.intensity,radius:warm.radius}:null});
   }),
   ...PUB_HOSPITALITY_LIGHTS.filter(a=>!PUB_LIGHT_ANCHORS.some(base=>base.id===a.id)).map(a=>{
     const p=pubPhysicalFromLocal(a);
     return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
-      {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
+      {groups:['ground'],zones:LYRIC_LIGHT_ZONES,powerMode:LIGHT_POWER_MODE.EXTERNAL,
        penetration:a.penetration||0,pubHospitalityOnly:true,castsShadow:!!a.castsShadow});
   }),
   ...[-28,-20].flatMap(z=>[-1.57,3.63].map(dz=>{
     const p=pubPhysicalFromLocal({x:.79,z:z+dz});
     return L(`pub-front-lantern-${z}-${dz}`,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+2.80,
-      [1,.72,.40],1.2,4.3,{groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
+      [1,.72,.40],1.2,4.3,{groups:['ground'],zones:LYRIC_LIGHT_ZONES,powerMode:LIGHT_POWER_MODE.EXTERNAL,
        pubHospitalityReplacement:{radius:6.2,intensity:1.55,penetration:.12}});
   })),
 

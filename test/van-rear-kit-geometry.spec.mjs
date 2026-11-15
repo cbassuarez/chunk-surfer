@@ -121,12 +121,12 @@ test('open and closed world cases retain one rigid housing registration and decl
   }
 });
 
-test('ordinary world stock uses all15 original catalog choices, independent poses and bounded source geometry', async () => {
+test('ordinary world stock uses every catalog choice, independent poses and bounded source geometry', async () => {
   const out = fixture(), report = await buildVanRearStockGeometry(out.api);
   const expected = Object.entries(WORKBENCH_VARIANTS).flatMap(([group, options]) => options.map(optionId => ({ group, optionId })));
-  assert.equal(report.parts.length, 15);
+  assert.equal(report.parts.length, expected.length);
   assert.deepEqual(report.parts.map(({ group, optionId }) => ({ group, optionId })), expected);
-  assert.equal(report.meshCount, 15); assert.equal(report.witnessIncluded, false);
+  assert.equal(report.meshCount, expected.length); assert.equal(report.witnessIncluded, false);
   assert.ok(report.triangles <= report.maximumTriangles, `stock budget ${report.triangles}`);
   for (const part of report.parts) {
     assert.equal(part.mesh, vanRearStockMeshName(part.group, part.optionId));

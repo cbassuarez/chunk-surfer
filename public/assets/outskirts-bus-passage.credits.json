@@ -4,8 +4,8 @@
   "author": "Chunk Surfer original procedural geometry",
   "license": "project source",
   "pack": {
-    "sha256": "edc677b62870d326153b2d6e78cab4eea2dd03beb21a497a8c3a10d6fa38a0cb",
-    "bytes": 885668,
+    "sha256": "d5726d522a2e2c0d530f3398504d8be72c034b1bf2895332e6200358ce9e7b6e",
+    "bytes": 882816,
     "triangles": 7188
   },
   "sources": [
@@ -20,7 +20,7 @@
   ],
   "productionReuse": {
     "factory": "tools/chunk_surfer/build-props.mjs:outskirts_bus",
-    "sourceMeshFingerprint": "fe9678cc7bc7c315e8d82ba0d86ba68401e5f360a2fd8bfe2f892c83224b4dea",
+    "sourceMeshFingerprint": "62d898ba6b44bc77d3400ab56e2df969055d91a5093a9c4b704896d9d40272de",
     "physicalPrint": "Original ELLERY and J 063 albedo/normal/ORM bytes and UVs retained"
   },
   "validation": "CPU geometry and asset tests; native final-dither inspection remains separate"

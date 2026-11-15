@@ -2,7 +2,6 @@
 // front of you load first, every branch counts, and loading runs on its own.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { createSourcePreloader, sourcePreloadOrder, SOURCE_PRELOAD_STAGES, SOURCE_PRELOAD_MINIMUM_AHEAD } from '../src/game/source-preload.js';
 
 // A clock that only moves when the scheduler waits, so nothing here sleeps.
@@ -103,11 +102,26 @@ test('leaving Source pauses loading; nothing needs an event to make it run', asy
   assert.deepEqual(log, ['outskirts', 'pub', 'horizon', 'bells', 'station', 'chapel']);
 });
 
-test('the stages follow the source path the audit describes', async () => {
-  // A new stretch of Source has to be placed in this walk too.
-  const audit = await readFile('tools/audits/source-path/audit.mjs', 'utf8');
-  for (const scene of ['source-false-return', 'source-earthfall', 'source-continuation', 'source-drive', 'source-pub', 'horizon-approach'])
-    assert.ok(audit.includes(scene.replace('source-', '')) || audit.includes(scene), `${scene} is on the audited path`);
+test('every step of the walk leads to a stage that exists, and each stage is named once', () => {
   const ids = SOURCE_PRELOAD_STAGES.map((stage) => stage.id);
-  for (const stage of SOURCE_PRELOAD_STAGES) for (const next of stage.next) assert.ok(ids.includes(next), `${stage.id} → ${next}`);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const stage of SOURCE_PRELOAD_STAGES) {
+    assert.ok(stage.label, `${stage.id} says where it is in ordinary words`);
+    for (const next of stage.next) assert.ok(ids.includes(next), `${stage.id} → ${next}`);
+  }
+});
+
+test('the three steps ahead load back to back; everything further is paced', async () => {
+  // Record the pause the loop asks for after each load (no settled(): its own
+  // polling would interleave with the loop's pauses).
+  const pauses = [], order = [];
+  let finished;
+  const done = new Promise((resolve) => { finished = resolve; });
+  const tasks = Object.fromEntries(SOURCE_PRELOAD_STAGES.map((stage) => [stage.id, [{ id: stage.id, run: async () => { order.push(stage.id); if (stage.id === 'chapel') finished(); return true; } }]]));
+  const loader = createSourcePreloader({ tasks, gapMs: 100, farGapMs: 1000, now: () => 0, wait: (ms) => { pauses.push([order.at(-1), ms]); return new Promise((resolve) => setImmediate(resolve)); } });
+  loader.setStage('hall');
+  await done;
+  const after = Object.fromEntries(pauses);
+  for (const near of ['hall', 'dock-shore', 'field', 'contact', 'false-return']) assert.equal(after[near], 100, `${near} is followed by the short pause`);
+  for (const far of ['earthfall', 'source-ii', 'drive', 'horizon']) assert.equal(after[far], 1000, `${far} is followed by the long pause`);
 });

@@ -86,6 +86,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
     projectionInverse: { value: new THREE.Matrix4() },
     toneMappingExposure: { value: renderer.toneMappingExposure },
     pressureFinish: { value: pressureFinish ? 1 : 0 },
+    worldSignal: { value: 0 },
   };
   const acquisitionMaterial = new THREE.RawShaderMaterial({
     glslVersion: THREE.GLSL3, vertexShader: VERTEX,
@@ -93,7 +94,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
       uniform sampler2D source,depth;
       uniform vec2 resolution;
       uniform mat4 projectionInverse;
-      uniform float pressureFinish;
+      uniform float pressureFinish,worldSignal;
       out vec4 result;
       ${HUSH_COSMOS_GLSL}
       ${THREE.ShaderChunk.tonemapping_pars_fragment}
@@ -110,7 +111,11 @@ export function createTransparentPixelMesh(THREE, renderer, {
           vec2 cosmic=hushCosmosDecodeTransport(linear);
           linear=mix(linear,hushCosmosSignalMaterial(cosmic.y).rgb,cosmic.x);
         }
-        vec3 display=sRGBTransferOETF(vec4(ACESFilmicToneMapping(linear),1.0)).rgb;
+        // worldSignal: acquire exactly as the world's own meshes reach the
+        // recorder (props3d: linear light with the c/(1+.3c) shoulder), so an
+        // object drawn here prints at the room's exposure like everything in it.
+        vec3 display=worldSignal>.5?linear/(1.0+linear*.30)
+          :sRGBTransferOETF(vec4(ACESFilmicToneMapping(linear),1.0)).rgb;
         // Perspective depth is hyperbolic. Reconstruct with the real camera
         // projection so a close human face cannot acquire far-plane marks.
         // The same equation also preserves orthographic hand/desktop depth.
@@ -181,12 +186,20 @@ export function createTransparentPixelMesh(THREE, renderer, {
       width, height, dpr = 1, stageHeight = height, snapshot = {}, sceneScale = 1,
       profile: nextProfile = defaultProfile, screen: nextScreen, cellSize = 'auto',
       cellScale = dpr, screenScale = dpr,
-      screenOffset = [0, 0], worldUnitScale = 1,
+      screenOffset = [0, 0], worldUnitScale = 1, world = null,
     }) {
       if (disposed) return false;
       dpr = positive(dpr);
       resize(width, height, dpr, sceneScale);
       setLook(nextProfile, nextScreen, cellSize, positive(cellScale), positive(screenScale));
+      // world: the room's own print, as r3d applied it this frame (its capture
+      // exposure and zone-scaled black and white points). Without it the
+      // overlay keeps its display-RGB acquisition at unit exposure.
+      const printed = world && typeof world === 'object' ? world : null;
+      acquisitionUniforms.worldSignal.value = printed ? 1 : 0;
+      uniforms.uRecordingExposure.value = printed ? positive(printed.captureExposure) : 1;
+      if (printed && Number.isFinite(Number(printed.blackPoint))) uniforms.uBlackPoint.value = Number(printed.blackPoint);
+      if (printed && Number.isFinite(Number(printed.whitePoint))) uniforms.uWhitePoint.value = Number(printed.whitePoint);
       uniforms.uSourceScreenOffset.value.set(Number(screenOffset[0]) || 0, Number(screenOffset[1]) || 0);
       const stagePixels = Math.max(1, Math.min(bufferHeight, Math.round(stageHeight * dpr)));
       const stageBottom = bufferHeight - stagePixels;

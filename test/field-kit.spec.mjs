@@ -7,9 +7,10 @@ import { isBattleGear } from '../src/game/combat-loadout.js';
 test('reference kit preserves every existing gameplay value', () => {
   assert.deepEqual(normalizeFieldKit(), freshFieldKit());
   assert.deepEqual(Object.values(fieldKitEffects()), [1, 1, 1, 1, 1, 1, 1, 1, 1]);
-  for (const group of ['headphones', 'microphone', 'recorder', 'flashlight']) {
-    assert.equal(FIELD_KIT_OPTIONS[group].length, 3);
-    assert.equal(new Set(FIELD_KIT_OPTIONS[group].map((option) => option.id)).size, 3);
+  // Lighting has a fourth, hands-free choice: the headlamp (game/torch-hands.js).
+  for (const [group, count] of [['headphones', 3], ['microphone', 3], ['recorder', 3], ['flashlight', 4]]) {
+    assert.equal(FIELD_KIT_OPTIONS[group].length, count);
+    assert.equal(new Set(FIELD_KIT_OPTIONS[group].map((option) => option.id)).size, count);
   }
 });
 

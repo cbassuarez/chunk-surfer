@@ -24,7 +24,7 @@ function harness(){
   const geometry={cellAt:()=>({material:model.material,zone:ZONE.hall,sourceDivide:model.divide,sourceEdgeApron:model.apron}),materialAt:()=>model.material};
   const context=vm.createContext({MATERIAL,ZONE,CELL:.5,resolveFootContact,resolveSourceFootingTreatment,SOURCE_BRAIDED_DIVIDE,sourceDivideDepth,createFootContactClock,
     playerFootClock:createFootContactClock(),playerFootTravel:[],playerFootOwner:null,playerFootIndex:0,
-    playerFootHeld:false,playerFootPrepareKey:null,recordNightClockTravel,recorderRigMotion:createRecorderRigMotion(),recorderTraveling:false,
+    playerFootHeld:false,playerFootPrepareKey:null,recordNightClockTravel,recorderRigMotion:createRecorderRigMotion(),torchRigMotion:createRecorderRigMotion(),recorderTraveling:false,
     px:0,py:0,depth:0,planName:'test',storyMode:true,inRogue:true,paused:false,
     performance:{now:()=>1000},document:{hidden:false},
     sourceContinuationScene:null,coastalMemoryScene:null,sourceDriveSession:null,sourcePubScene:null,

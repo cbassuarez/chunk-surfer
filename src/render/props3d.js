@@ -1164,7 +1164,19 @@ async function parsePropPack(url,{sliceMs=0}={}){
   if(json.accessors?.some((a)=>a.sparse))throw new Error('prop pack contains sparse accessors');
   const srgbTextures=new Set((json.materials||[]).map((material)=>material.pbrMetallicRoughness?.baseColorTexture?.index).filter(Number.isInteger));
   const pigmentTextures=new Set((json.materials||[]).filter(m=>m.extras?.printedSurface?.coverage==='baseColorAlpha').map(m=>m.pbrMetallicRoughness?.baseColorTexture?.index).filter(Number.isInteger));
-  const textures=await Promise.all((json.textures||[]).map((_,i)=>makeTexture(json,bin,i,{srgb:srgbTextures.has(i),pigmentCoverage:pigmentTextures.has(i)}))); 
+  const texture=i=>makeTexture(json,bin,i,{srgb:srgbTextures.has(i),pigmentCoverage:pigmentTextures.has(i)});
+  // A background load uploads one texture per slice; a scene's own load keeps
+  // decoding them all at once.
+  let textures;
+  if(sliceMs>0){
+    textures=[];let began=performance.now();
+    for(let i=0;i<(json.textures||[]).length;i++){
+      if(performance.now()-began>=sliceMs){await yieldUpload();began=performance.now();}
+      textures.push(await texture(i));
+      if(gl!==context)throw new Error('prop pack load interrupted by renderer re-init');
+    }
+  }else textures=await Promise.all((json.textures||[]).map((_,i)=>texture(i)));
+
   const nodeByMesh=new Map();for(const n of json.nodes||[])if(n.mesh!=null&&!nodeByMesh.has(n.mesh))nodeByMesh.set(n.mesh,nodeMatrix(n));
   const accessorCache=new Map();const accessor=index=>{if(!accessorCache.has(index))accessorCache.set(index,readAccessor(json,bin,index));return accessorCache.get(index);};
   const catalog=new Map();let sliceStart=performance.now();
@@ -1199,7 +1211,13 @@ export async function loadPropPack(url){await ensureWorldLetteringFonts();pack=a
 // mesh.
 // One parse per pack at a time: a background preload and a scene that asks
 // for the same pack while it is in flight share one upload, not two.
-const propPackLoads=new Map();
+const propPackLoads=new Map(),propPackEntries=new Map();
+// True when every mesh a pack installed is still the one in the catalog: a
+// later pack that replaced any of them makes it not resident again.
+export function propPackResident(url){
+  const record=propPackEntries.get(String(url));
+  return !!(record&&record.context===gl&&pack)&&[...record.entries].every(([name,entry])=>pack.catalog.get(name)===entry);
+}
 export async function addPropPack(url,{sliceMs=0}={}){
   const key=String(url);let load=propPackLoads.get(key);
   if(!load||load.context!==gl){
@@ -1207,6 +1225,7 @@ export async function addPropPack(url,{sliceMs=0}={}){
     const settled=()=>{if(propPackLoads.get(key)===load)propPackLoads.delete(key);};load.promise.then(settled,settled);
   }
   const extra=await load.promise;
+  if(load.context===gl)propPackEntries.set(key,{context:load.context,entries:new Map(extra.catalog)});
   if(!pack){pack=extra;return pack;}
   for(const[name,entry]of extra.catalog)pack.catalog.set(name,entry);
   return pack;
@@ -1235,8 +1254,16 @@ export function stBrendansPresenceStats(){
 // A separate loader keeps the static prop validator deliberately static. The
 // character pack is installed transactionally: malformed geometry, textures or
 // an interrupted context never remove the room that was already loaded.
-export async function addCharacterPack(url,{allowedMeshes=null}={}){
+export async function addCharacterPack(url,{allowedMeshes=null,sliceMs=0}={}){
   if(!gl)throw new Error('props3dInit first');
+  // As for prop packs: a background load hands the frame back between items.
+  let sliceStart=performance.now();
+  const slice=async()=>{
+    if(!(sliceMs>0)||performance.now()-sliceStart<sliceMs)return;
+    gl.bindVertexArray(null);await yieldUpload();
+    if(gl!==context)throw new Error('character load interrupted by renderer re-init');
+    sliceStart=performance.now();
+  };
   const context=gl,bundle={context,buffers:[],vaos:[],textures:[],catalog:new Map(),asset:null,url:String(url)};
   try{
     const response=await fetch(url);if(!response.ok)throw new Error(`character pack ${response.status}`);
@@ -1253,11 +1280,13 @@ export async function addCharacterPack(url,{allowedMeshes=null}={}){
     // buffer views. Do not silently turn a failed cloth texture into white skin.
     for(const texture of asset.json.textures||[]){const image=asset.json.images?.[texture.source],view=asset.json.bufferViews?.[image?.bufferView];if(!view||view.buffer!==0||view.byteLength>16*1024*1024||(view.byteOffset||0)+view.byteLength>asset.bin.byteLength||!['image/png','image/jpeg','image/webp'].includes(image.mimeType))throw new Error('character embedded texture invalid');}
     for(let i=0;i<(asset.json.textures||[]).length;i++){
+      await slice();
       const texture=await makeTexture(asset.json,asset.bin,i,{srgb:srgb.has(i),maxSize:4096});bundle.textures.push(texture);
       if(gl!==context)throw new Error('character load interrupted by renderer re-init');
     }
     const buffer=(target,data)=>{const b=context.createBuffer();bundle.buffers.push(b);context.bindBuffer(target,b);context.bufferData(target,data,context.STATIC_DRAW);return b;};
     for(const entry of asset.entries){
+      await slice();
       const instanceBuffer=context.createBuffer();bundle.buffers.push(instanceBuffer);
       const mesh={name:entry.name,nodeMatrix:identity(),extras:entry.extras,primitives:[],instanceBuffer,characterAsset:asset,characterEntry:entry};
       for(const source of entry.primitives){

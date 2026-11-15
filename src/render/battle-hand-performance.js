@@ -61,7 +61,9 @@ export function battleHandPerformance(frame = {}) {
     + wounded * .0008 * Math.sin(time * 17.3);
   const prepare = operates ? pulse(raw, 0, .10, .15, .28) : 0;
   const listening = handling === 'listen' ? pulse(raw, 0, .16, .65, 1) : 0;
-  const aim = frame.tool === 'torch' && handling === 'operate' ? operation : 0;
+  // A torch burning in the field is pointed where it lights, not held upright
+  // like a baton: the same authored aim the fight uses, sustained.
+  const aim = frame.tool !== 'torch' ? 0 : handling === 'operate' ? operation : frame.fieldCarry && frame.lightOn ? 1 : 0;
   const toolGuard = frame.tool === 'spanner' ? guardStrength : 0;
   const fingers = [.25, .33, .40, .46].map((base, i) => {
     const relaxed = handling === 'breathe' ? 1 - operation * .45 : 1;

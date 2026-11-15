@@ -45,6 +45,9 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
       if(props.installAuthoredPropMeshes?.((gl,pack)=>installProceduralMeshes(gl,pack,[...horizonApproachGeometry(),...FIELD_ROWS()]))===false)throw Error('The approach meshes have no context.');
       for(const pack of PACKS){
         if(required.every(m=>catalog().has(m)))break;
+        // Already in, and nothing has replaced it since: parsing it again would
+        // only upload a second copy.
+        if(props.propPackResident?.(resolveAsset(pack)))continue;
         const at=clock();await props.addPropPack(resolveAsset(pack));packTimings.push({pack,ms:clock()-at});
         if(released)return false;
       }

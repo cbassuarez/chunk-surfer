@@ -12,8 +12,9 @@ const load=id=>io.read(`public/${vanKitModel(id).model}`);
 const find=(doc,name)=>doc.getRoot().listNodes().find(n=>n.getName()===name);
 const names=doc=>doc.getRoot().listNodes().map(n=>n.getName());
 
-test('bench stock ships nine independent bounded assets without changing the original eight-item registry',async()=>{
- assert.equal(Object.keys(BENCH_MODELS).length,9);assert.equal(Object.keys(VAN_KIT_MODELS).length,8);
+// The tenth is the HL-1 headlamp (game/torch-hands.js).
+test('bench stock ships ten independent bounded assets without changing the original eight-item registry',async()=>{
+ assert.equal(Object.keys(BENCH_MODELS).length,10);assert.equal(Object.keys(VAN_KIT_MODELS).length,8);
  const hashes=new Set();
  for(const spec of Object.values(BENCH_MODELS)){
   const doc=await load(spec.id),root=doc.getRoot().listScenes()[0].listChildren()[0];
@@ -33,7 +34,7 @@ test('bench stock ships nine independent bounded assets without changing the ori
   assert.ok((await stat(`public/${spec.model}`)).size<500_000,spec.id);
   hashes.add(createHash('sha256').update(await readFile(`public/${spec.model}`)).digest('hex'));
  }
- assert.equal(hashes.size,9);
+ assert.equal(hashes.size,10);
 });
 
 test('amplifier variants have different housings, genuine controls and service hardware, never decorative readings',async()=>{

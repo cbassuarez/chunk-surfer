@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "sha256": "edc677b62870d326153b2d6e78cab4eea2dd03beb21a497a8c3a10d6fa38a0cb",
-  "bytes": 885668,
+  "sha256": "d5726d522a2e2c0d530f3398504d8be72c034b1bf2895332e6200358ce9e7b6e",
+  "bytes": 882816,
   "totalTriangles": 7188,
   "totalVertices": 12924,
   "meshes": {
@@ -330,8 +330,8 @@
   },
   "materialCount": 21,
   "embeddedImages": 12,
-  "sourceBusFingerprint": "fe9678cc7bc7c315e8d82ba0d86ba68401e5f360a2fd8bfe2f892c83224b4dea",
-  "factorySha256": "661c4141ff3fb2ba79ca5d402ac0774b9a48f414e48f72e61919e9a8ed209ccd",
-  "contractSha256": "29058f39d9668cb4f06c9211c0cb164247775a256d521e03327eff8a95286011",
+  "sourceBusFingerprint": "62d898ba6b44bc77d3400ab56e2df969055d91a5093a9c4b704896d9d40272de",
+  "factorySha256": "2ba6a6dfa518344e9a6d7672287617eae17cc371b1e8bc71ad774a67bc8afb7f",
+  "contractSha256": "5288eadcb11b1703a91a6cf01a1a51cebf234f17842a1167d12395bed2ccf185",
   "ordinaryBusUnchanged": true
 }
