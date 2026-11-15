@@ -94,7 +94,7 @@
         {
           "id": "nodes.start.l0",
           "who": "direction",
-          "text": "You have been on this motorway for some time now. It's been raining on the road for even longer, though it's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go; even on the fastest speed they stop just short of giving you enough roaadtime visibility.",
+          "text": "You have been on this motorway for some time now, due north. It's been raining on the road for even longer, though that's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go; even on the fastest speed they stop just short of giving you enough roadtime visibility.",
           "source": "src/data/opening-prologue.js:74"
         },
         {
@@ -118,7 +118,7 @@
         {
           "id": "nodes.start.l4",
           "who": "direction",
-          "text": "On this occasion, you and the van are on the M62, headed to Ellery Conservatoire of Music and Dance, a university whose music programme you know all too well. You spent a semester as an exchange student, taking up a wealth of knowledge in sound recording, chamber ensemble performance- viol consorts, electroacoustic ensembles, and many an impromptu performance series- and instrumental performance on a wide array of instruments. You received a communique from some department in the school you can't yet remember requesting your sound recording services for audio recordings of the school before its demolition. They gave you until today, and of course you chose today to complete the job.",
+          "text": "On this occasion, however, you and the van are on the M62, headed to Ellery Conservatoire of Music and Dance, a university whose music programme you know all too well. You spent a semester as an exchange student, taking up a wealth of knowledge in sound recording, chamber ensemble performance- viol consorts, electroacoustic ensembles, and many an impromptu performance series- and instrumental performance on a wide array of instruments. You received a communique from some department in the school you can't yet remember requesting your sound recording services for audio recordings of the school before its demolition. They gave you until today, and of course you chose today to complete the job.",
           "source": "src/data/opening-prologue.js:78"
         }
       ],
@@ -132,7 +132,7 @@
         {
           "id": "nodes.there.l0",
           "who": "unknown",
-          "text": "Ah! There you are.",
+          "text": "Now then. There you are.",
           "source": "src/data/opening-prologue.js:81"
         },
         {
@@ -144,7 +144,7 @@
         {
           "id": "nodes.there.l2",
           "who": "unknown",
-          "text": "I've been waiting for you to arrive... been waiting for ages. What took you so long?",
+          "text": "I've been waiting for you to arrive... been waiting for a fair while now. What kept you so long?",
           "source": "src/data/opening-prologue.js:83"
         }
       ],
@@ -215,7 +215,7 @@
         {
           "id": "nodes.procrast.l1",
           "who": "unknown",
-          "text": "I bet you have been, haven't you? But you're here now, and now that you're here, we finally get to talk.",
+          "text": "I bet you've been, haven't you? But you're here now, and now that you're here, we finally get to talk.",
           "source": "src/data/opening-prologue.js:92"
         },
         {
@@ -389,7 +389,7 @@
         {
           "id": "nodes.interval-eyes.l1",
           "who": "unknown",
-          "text": "I do'nt think you'd want the answer to that question.",
+          "text": "I don't think you'd want the answer to that question.",
           "source": "src/data/opening-prologue.js:126"
         },
         {

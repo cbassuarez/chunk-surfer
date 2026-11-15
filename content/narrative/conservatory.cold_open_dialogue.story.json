@@ -122,7 +122,7 @@
         {
           "id": "start.line.7-2",
           "who": "guard",
-          "text": "Christ. They actually sent someone tonight."
+          "text": "Christ. They actually sent someone tonight. Been waiting for this one for a while; you're the last person to need my services. The last person to go through this gate."
         },
         {
           "who": "direction",
@@ -139,7 +139,7 @@
         },
         {
           "who": "guard",
-          "text": "There's coffee if you want it. I made too much. It's not good but it's hot, and it's a long night you have ahead.",
+          "text": "There's coffee if you want it. I made too much. It's not good but it's hot, and I believe it's a long night you have ahead.",
           "id": "start.line.8"
         }
       ],
@@ -675,7 +675,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "A letterhead, a list, and a signature. That signature block has been photocopied so many times it barely passes for a smudge.",
+          "text": "A letterhead, a list, a signature. That signature block has been photocopied so many times it barely passes for a smudge.",
           "id": "order.line.1"
         },
         {
@@ -687,6 +687,11 @@
           "who": "direction",
           "text": "Four seventy fifty five quid with a rush fee, making it six seventy five, half on acceptance. That's plenty fine. That's more than plenty fine, actually, that makes your entire rent payment this month. ",
           "id": "order.line.3"
+        },
+        {
+          "id": "order.line.4",
+          "who": "guard",
+          "text": "Well, no, money doesn't really talk now, does it?"
         }
       ],
       "revisitLines": [
@@ -2723,12 +2728,12 @@
         },
         {
           "who": "guard",
-          "text": "Rang in sick, the first. The other one just never came I think. ",
+          "text": "Rang in sick, the first. The other one just never came I think. Can't remember allat well.",
           "id": "greet.actually.line.4"
         },
         {
           "who": "direction",
-          "text": "He says it to you but not at you. He keeps his eyes to the forms.",
+          "text": "He says it to you but not at you. He keeps his eyes on the telly.",
           "id": "greet.actually.line.5"
         }
       ],
@@ -2757,7 +2762,7 @@
         },
         {
           "who": "guard",
-          "text": "Order came through at five. It is here, whatever else.",
+          "text": "Order came through at five. It's here, ready for you to sign off.",
           "id": "greet.somebody.line.3"
         }
       ],

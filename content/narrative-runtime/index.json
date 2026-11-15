@@ -243,7 +243,7 @@
       "nodes": 67,
       "lines": 174,
       "choices": 49,
-      "sourceSha256": "37ee19950d968df8d67b3bf6c7cdc11b2b31cf80cf32b8db749b015585967114"
+      "sourceSha256": "f0138c7a4f7f2de82ee1f7e851db0e85783ac2c42f5030d3d68a2321bec06d6f"
     },
     {
       "id": "runtime.data.plaza-shopfronts",
@@ -675,7 +675,7 @@
       "nodes": 134,
       "lines": 266,
       "choices": 15,
-      "sourceSha256": "fab30c42090e43365cb1540428f2ba88cdbbea32b158ac902c28d0328eb2826c"
+      "sourceSha256": "13cab26bd3ffb89c56fa48c77d1e8e87a925c316991ae0972cee373f40dbbbfd"
     },
     {
       "id": "runtime.render.arrival-title-options",

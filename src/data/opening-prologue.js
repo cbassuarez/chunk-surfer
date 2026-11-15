@@ -71,16 +71,16 @@ const action=(text,go)=>({...mum(go,text),hideWhenAsked:true});
 const nodes={
   // ── the blink ────────────────────────────────────────────────────────────────
   start:{stage:'dark',lines:[
-    d("You have been on this motorway for some time now. It's been raining on the road for even longer, though it's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go; even on the fastest speed they stop just short of giving you enough roaadtime visibility."),
+    d("You have been on this motorway for some time now, due north. It's been raining on the road for even longer, though that's been of no surprise to you. The last few weeks have been a gray mass of dull weather. The wipers go; even on the fastest speed they stop just short of giving you enough roadtime visibility."),
     d('You can\'t help but sway- not quite swerve- from side to side every now and then. You\'ve ran through the night-drivers\' playbook; crank the radio, yawp and scream, you\'ve even slapped your face two or three times, but this has all simply made you all the more tired, with a red and ringing face and a scratchy throat.'),
     d('Thankfully, this road is rather quiet, lacking of the vehicle and pedestrian traffic that might ordinarily put you and others in grave danger should you veer off after an accidental wink.'),
     d('Your thumb rests on the seam of the steering wheel; you can feel the join in the leather. Your trusty van, which you\'ve had ever since your uni days, is holding up rather well. For all the places you\\ve ever driven it, all the calls you\'ve made with it (it\'s taken you all the way to Slovenia for a summer music festival), it\'s never earned more than a scratch. What a lucky van.'),
-    d('On this occasion, you and the van are on the M62, headed to Ellery Conservatoire of Music and Dance, a university whose music programme you know all too well. You spent a semester as an exchange student, taking up a wealth of knowledge in sound recording, chamber ensemble performance- viol consorts, electroacoustic ensembles, and many an impromptu performance series- and instrumental performance on a wide array of instruments. You received a communique from some department in the school you can\'t yet remember requesting your sound recording services for audio recordings of the school before its demolition. They gave you until today, and of course you chose today to complete the job.'),
+    d('On this occasion, however, you and the van are on the M62, headed to Ellery Conservatoire of Music and Dance, a university whose music programme you know all too well. You spent a semester as an exchange student, taking up a wealth of knowledge in sound recording, chamber ensemble performance- viol consorts, electroacoustic ensembles, and many an impromptu performance series- and instrumental performance on a wide array of instruments. You received a communique from some department in the school you can\'t yet remember requesting your sound recording services for audio recordings of the school before its demolition. They gave you until today, and of course you chose today to complete the job.'),
   ],goto:'there'},
   there:{stage:'woken',lines:[
-    o('Ah! There you are.'),
+    o('Now then. There you are.'),
     d('A deep voice bellows from outside the van, but you can hear it so very well. The sound comes at you the way a room fades into earshot when the fridge cuts out- or maybe like it does in a concert hall or cathedral: big and boomy and coming from everywhere all at once.'),
-    o("I\'ve been waiting for you to arrive... been waiting for ages. What took you so long?"),
+    o("I've been waiting for you to arrive... been waiting for a fair while now. What kept you so long?"),
   ],choices:[say('Who is that?','who'),say('I\'ve been busy preoccupied with other stuff.','procrast'),say('I\'m driving.','driving'),mum('quiet')]},
   who:{stage:'inner',lines:[
     y('Who is that?! Who are you?'),
@@ -89,7 +89,7 @@ const nodes={
   ],goto:'look'},
   procrast:{stage:'inner',lines:[
     y('I\'ve been busy preoccupied with other stuff.'),
-    o('I bet you have been, haven\'t you? But you\'re here now, and now that you\'re here, we finally get to talk.'),
+    o('I bet you\'ve been, haven\'t you? But you\'re here now, and now that you\'re here, we finally get to talk.'),
     d('The wipers move so beautifully, with great effort, like the stride of a doe or an olympic athlete; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.'),
   ],goto:'look'},
   driving:{stage:'inner',lines:[
@@ -123,7 +123,7 @@ const nodes={
   ],goto:'kept'},
   'interval-eyes':{stage:'counted',lines:[
     y('What am I looking at?'),
-    o('I do\'nt think you\'d want the answer to that question.'),
+    o('I don\'t think you\'d want the answer to that question.'),
     d('You count twenty-four eyes. Twenty-three close. The last seems nearer than the wheel that carries it.'),
     y('Holy...'),
   ],choices:[say('You first.','interval-first'),mum('interval-meet','(hold its gaze)')]},
