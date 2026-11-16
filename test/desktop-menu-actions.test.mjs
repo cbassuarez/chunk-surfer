@@ -117,11 +117,16 @@ test('and the ones it must not swallow', () => {
   // decide the behaviour, and the two disagree about what to do.
   for (const e of [
     { key: 'q', metaKey: true }, { key: ',', metaKey: true }, { key: 'm', metaKey: true },
-    { key: 'f', metaKey: true }, { key: 'p', metaKey: true }, { key: 'n', metaKey: true },
+    { key: 'f', metaKey: true }, { key: 'p', metaKey: true },
     { key: 'g', metaKey: true, shiftKey: true }, { key: 'F11' },
   ]) {
     assert.equal(isBrowserChromeShortcut(e), false,
       `${e.key} is claimed by isReservedDesktopShortcut and must not also be refused here`);
     assert.equal(isReservedDesktopShortcut(e), true, `${e.key} should still be reserved`);
   }
+
+  // Cmd+N is not a New Game shortcut. It is swallowed, not actioned.
+  assert.equal(isReservedDesktopShortcut({ key: 'n', metaKey: true }), false);
+  assert.equal(isBrowserChromeShortcut({ key: 'n', metaKey: true }), true);
+  assert.equal(isBrowserChromeShortcut({ key: 'n' }), false);
 });

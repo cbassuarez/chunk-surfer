@@ -89,7 +89,7 @@ export function makeColdOpenScene({
     if(key!==captionPageKey){captionPageKey=key;captionPage=0;}
     const captionView={...view,captionPlacement:view.captionPlacement||transcriptPlacement};
     const history=Array.isArray(view.captionHistory)?view.captionHistory:view.history||[];
-    const canReview=cinematicReview&&history.length>0&&!view.captionHidden;
+    const canReview=cinematicReview&&history.length>0&&(!view.captionHidden||view.captionReviewAvailable);
     let prompt='';
     if(reviewActive)prompt=promptLine([{action:'tabPrev',label:'RETURN'},{action:'set',label:'READ PAGE'}]);
     else{
@@ -168,7 +168,7 @@ export function makeColdOpenScene({
         }
         if(cinematicReview&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&reviewEvent(e)){
           const v=choiceView(),history=Array.isArray(v.captionHistory)?v.captionHistory:v.history||[];
-          if(!e.repeat&&history.length&&!v.captionHidden)setReview(true);return true;
+          if(!e.repeat&&history.length&&(!v.captionHidden||v.captionReviewAvailable))setReview(true);return true;
         }
         const layout=measureCinematic();
         choiceScrollMax=layout.choices.selectedMaxOffset||0;

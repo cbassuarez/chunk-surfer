@@ -6,16 +6,16 @@ import {
   DISPLAY_NOTICE_SCENE_ID, displayNoticeLines, makeDisplayNoticeScene,
 } from '../src/game/display-notice.js';
 
-// The launch advice explains external windows and allows fullscreen until a cue
-// needs them. Browser copy describes the in-frame fallback accurately.
+// The launch advice explains the two managed modes and companion windows.
+// Browser copy describes the in-frame presentation accurately.
 {
   const desktop = displayNoticeLines({ desktop: true });
-  assert.match(desktop.body, /extra windows around the game/);
-  assert.match(desktop.warning, /switches to windowed mode/);
+  assert.match(desktop.body, /companion windows/);
+  assert.match(desktop.warning, /Staged window or Fill screen/);
   const browser = displayNoticeLines({ desktop: false });
   assert.match(browser.warning, /inside the game/);
   assert.doesNotMatch(browser.warning, /switches to windowed/);
-  assert.match(displayNoticeLines({ fullscreen: true }).warning, /Fullscreen is on/);
+  assert.match(displayNoticeLines({ fullscreen: true }).warning, /Fill screen/);
 }
 
 // The picture is the thing itself in miniature — windows moving around the one
@@ -243,8 +243,9 @@ import {
   assert.deepEqual(calls, ['profile-on']);
   scenes.key({ key: 'Enter', repeat: true });
   assert.deepEqual(calls, ['profile-on']);
+  scenes.keyup({ key: 'Enter' });
   scenes.key({ key: 'Enter' });
-  assert.deepEqual(calls, ['profile-on', 'mic-off', 'done'], 'the default is no microphone');
+  assert.deepEqual(calls, ['profile-on', 'mic-off', 'done'], 'a released, fresh press chooses no microphone');
   assert.equal(scenes.depth(), 0);
   warning.key({ key: 'y' });
   assert.deepEqual(calls, ['profile-on', 'mic-off', 'done'], 'late input cannot invoke a second choice');
@@ -255,9 +256,9 @@ import {
   const { makeWarningScene } = await import('../src/game/warning.js');
   const calls = [];
   scenes.push(makeWarningScene({ showWarning: false, askProfile: false, askMic: true,
-    onMicAllow: () => calls.push('allow'), onMicDeny: () => calls.push('deny'), onDone: () => calls.push('done'),
+    onMicAllow: () => { calls.push('allow'); return { state: 'on', active: true }; }, onMicDeny: () => calls.push('deny'), onDone: () => calls.push('done'),
   }));
-  scenes.key({ key: 'ArrowLeft' });
+  scenes.key({ key: 'ArrowUp' });
   scenes.key({ key: ' ' });
   assert.deepEqual(calls, ['allow', 'done']);
   const text = readFileSync('src/game/warning.js', 'utf8');

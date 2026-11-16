@@ -8,6 +8,7 @@
   "entries": [
     "roomListen.nodes.start",
     "roomListen.nodes.roll",
+    "roomListen",
     "ARRIVAL_THOUGHTS.gate",
     "ARRIVAL_THOUGHTS.crossing",
     "ARRIVAL_THOUGHTS.door",
@@ -74,6 +75,7 @@
     "foundLine",
     "endingChoice.lines",
     "endingChoice",
+    "endingChoice.start",
     "rigCheckNodes.hub",
     "rigCheckNodes.hub.revisitLines",
     "rigCheckNodes.van",
@@ -94,6 +96,10 @@
   ],
   "regions": [],
   "module": "src/data/conservatory-script.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/data/conservatory-script.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "roomListen.nodes.start": {
@@ -121,6 +127,13 @@
         }
       ],
       "source": "src/data/conservatory-script.js:559"
+    },
+    "roomListen": {
+      "id": "roomListen",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/conservatory-script.js:564",
+      "targetName": "start"
     },
     "ARRIVAL_THOUGHTS.gate": {
       "id": "ARRIVAL_THOUGHTS.gate",
@@ -1207,6 +1220,12 @@
         }
       ],
       "source": "src/data/conservatory-script.js:1616"
+    },
+    "endingChoice.start": {
+      "id": "endingChoice.start",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/conservatory-script.js:1639"
     },
     "rigCheckNodes.hub": {
       "id": "rigCheckNodes.hub",

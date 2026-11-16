@@ -1320,7 +1320,7 @@ function buildPhysicalSpans(){
       }
     }
   }
-  plan.physical={originX:minX,originY:minY,width,height,maxSpans,cells,overlaps,visualVoid,visualExteriorVoid,renderCache:new Map()};
+  plan.physical={originX:minX,originY:minY,width,height,maxSpans,cells,cellCoords:physicalCellCoords(cells),overlaps,visualVoid,visualExteriorVoid,renderCache:new Map()};
 }
 
 // HOW FAR THE WORLD IS TURNED UNDER YOU AT THIS POSITION.
@@ -1630,6 +1630,18 @@ export function bakeAmbientField({w,h,solid,flags,floor=null,ceil=null}){
 const HEIGHT_BAND=0.25;
 const SPAN_WINDOW=1.0;
 
+// The physical cell keys, parsed once: [x0, y0, x1, y1, ...] in the map's own
+// iteration order. Every slice walks every physical cell, and splitting the
+// "x,y" key again for each one was over a third of the cost of a slice
+// (measured across the 370 slices the building's wall faces ask for).
+// buildPhysicalSpans stores this beside the map it describes; the length check
+// at the one reader rebuilds it for any projection that arrives without it.
+function physicalCellCoords(cells){
+  const coords=new Float64Array(cells.size*2);let n=0;
+  for(const key of cells.keys()){const at=key.split(',');coords[n++]=Number(at[0]);coords[n++]=Number(at[1]);}
+  return coords;
+}
+
 export function physicalRenderPlanFor(x,y){
   const here=logicalToPhysical(x,y),group=here.renderGroup||here.layer||'ground';
   const observerZone=zoneAt(x,y);
@@ -1704,8 +1716,13 @@ export function physicalRenderPlanFor(x,y){
     // acquiring a visible floor before a ray reaches the authored town mesh.
     solid[i]=0;floor[i]=-8;ceil[i]=24;flags[i]=F.SKY;zone[i]=ZONE.street;material[i]=MATERIAL.wetTarmac;
   }
-  for(const [key,all] of plan.physical.cells){
-    const [px,py]=key.split(',').map(Number);
+  // Only a portal that touches the observer's group can ever answer
+  // landingVisible; the rest return false for every span of every cell.
+  const groupStairPortals=plan.stairPortals.filter((p)=>group===p.group0||group===p.group1);
+  if(plan.physical.cellCoords?.length!==plan.physical.cells.size*2)plan.physical.cellCoords=physicalCellCoords(plan.physical.cells);
+  const cellCoords=plan.physical.cellCoords;let cellCursor=0;
+  for(const all of plan.physical.cells.values()){
+    const px=cellCoords[cellCursor++],py=cellCoords[cellCursor++];
     // ZONE.church is kept from outside for its GROUND only, and that is worth
     // being precise about. The exterior slice has no solid geometry by design —
     // walls out here are meshes — so a church's wall cells are dropped either
@@ -1737,7 +1754,7 @@ export function physicalRenderPlanFor(x,y){
     // One coherent physical slice: nearby occupied floors plus every stair
     // run, regardless of its logical render group. Group-filtered slices cut
     // stairs in half and produced the horizontal slab / Platform 9¾ effect.
-    const landingVisible=(s)=>plan.stairPortals.some((p)=>{
+    const landingVisible=(s)=>groupStairPortals.some((p)=>{
       if(group===p.group0&&s.renderGroup===p.group1)return Math.hypot(px-p.p1[0],py-p.p1[1])<=p.radius;
       if(group===p.group1&&s.renderGroup===p.group0)return Math.hypot(px-p.p0[0],py-p.p0[1])<=p.radius;
       return false;

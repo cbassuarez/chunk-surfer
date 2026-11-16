@@ -13,7 +13,11 @@ const vector=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]
 const aim=(eye,yaw=0,pitch=-.035)=>[eye[0]+Math.sin(yaw)*Math.cos(pitch)*20,eye[1]+Math.sin(pitch)*20,eye[2]-Math.cos(yaw)*Math.cos(pitch)*20];
 const bezier=(a,b,c,d,t)=>a.map((n,k)=>n*(1-t)**3+3*b[k]*t*(1-t)**2+3*c[k]*t*t*(1-t)+d[k]*t**3);
 const cabModes=new Set(['road','windshield','body','reminder','return']);
-export const OPENING_JOURNEY=Object.freeze({departureSeconds:8.4,schoolSeconds:7.2,returnSeconds:7.8,bodySeconds:3.8,minimumEstablishment:.8,framingShift:0});
+export const OPENING_JOURNEY=Object.freeze({departureSeconds:6.4,schoolSeconds:6.4,returnSeconds:7.8,bodySeconds:3.8,minimumEstablishment:.55,framingShift:0,
+  // The complete elevation extends 79.665m behind its anchor. Keep that
+  // actual mesh, not just the 24m public front, outside the moving road.
+  schoolOffsetX:150});
+const schoolShots=new Set(['school','school-account','school-record','school-notice','school-tower']);
 
 function instanceMatrix(p){if(p.matrix?.length===16)return p.matrix;const m=rotation(0,p.yaw||0);m[12]=p.x||0;m[13]=p.y||0;m[14]=p.z||0;return m;}
 function placed(p,m){return{...p,matrix:m,x:m[12],y:m[13],z:m[14]};}
@@ -22,7 +26,7 @@ function transformLight(l,m){const p=point(m,[l.x,l.y,l.z]);return{...l,x:p[0],y
 // The exact public-front/forecourt/closed-door meshes, at their authored
 // relative positions. The memory is turned once as a complete construction.
 export function openingMemoryInstances(){
-  const map=rotation(0,Math.PI);map[12]=80;map[14]=-130;
+  const map=rotation(0,Math.PI);map[12]=80+OPENING_JOURNEY.schoolOffsetX;map[14]=-130;
   const source=[
     ...ELLERY_PUBLIC_FRONT_PROPS.filter(p=>['ellery-actual-public-front','ellery-public-forecourt'].includes(p.id)).map(p=>({...p,z:p.y+(p.renderOffsetZ||0),y:p.floorOverride||0})),
     {id:'bay-west-elevation',mesh:ELLERY_PUBLIC_FRONT.hero.mesh,x:ELLERY_PUBLIC_FRONT.hero.anchor.x,y:0,z:ELLERY_PUBLIC_FRONT.hero.anchor.z},
@@ -37,7 +41,7 @@ export function openingJourneyIntent({semanticPhase='road',stageId='dark',nodeId
   if(stageId==='woken')return'windshield';
   if(['grip','held','released'].includes(stageId))return'body';
   if(stageId==='margin')return'reminder';
-  if(semanticPhase==='ellery')return'school';
+  if(semanticPhase==='ellery')return stageId==='ellery'?'school':stageId==='boy'?'school-record':stageId==='notice'?'school-notice':stageId==='roll'?'school-tower':'school-account';
   if(semanticPhase==='personal')return'fates';
   if(stageId==='averted')return'avert';
   if(stageId==='near')return'near';
@@ -45,7 +49,7 @@ export function openingJourneyIntent({semanticPhase='road',stageId='dark',nodeId
 }
 
 export function createOpeningPrologueDirection({reducedMotion=false,memoryInstances=openingMemoryInstances()}={}){
-  let intent=null,from=null,to=null,pose=null,age=0,duration=0,clock=0,presented=0,last=null;
+  let intent=null,from=null,to=null,pose=null,age=0,duration=0,clock=0,presented=0,last=null,schoolRevealed=false;
   function desired(kind,stage,cabEye,wheel,roadPitch=0){
     // Cinematic captions share the whole picture. Aim at the actual subject
     // instead of biasing every shot left to make room for the former column.
@@ -54,7 +58,16 @@ export function createOpeningPrologueDirection({reducedMotion=false,memoryInstan
     if(kind==='windshield')return root;
     if(kind==='body')return{...root,target:wheel||[.2,1.08,-2],hole:pose?.hole||[0,44,-115],radius:1.15,departure:0};
     if(kind==='reminder'||kind==='return')return{...root,hole:pose?.hole||[0,60,-115],radius:kind==='return'?0:1.8};
-    if(kind==='school')return{eye:[16,2.65,-87],target:[0,7,-131],hole:[0,17,-115],shift:0,radius:1.1,departure:1};
+    if(schoolShots.has(kind)){
+      // Bounded movement settles even if a reader leaves a question open.
+      const creep=reducedMotion?0:smooth(Math.max(0,age-6)/24),x=OPENING_JOURNEY.schoolOffsetX;
+      const shots={school:{eye:[8,5.2,-87],target:[-6,5.8,-133]},
+        'school-account':{eye:[1,3.4,-103],target:[-7,6.2,-133]},
+        'school-record':{eye:[3,5.8,-100],target:[-6,9.2,-135]},
+        'school-notice':{eye:[-3,2.8,-109],target:[1,3.5,-133]},
+        'school-tower':{eye:[12,6.8,-101],target:[18,18,-143]}};
+      const shot=shots[kind];return{eye:[shot.eye[0]+x-creep*1.8,shot.eye[1]+creep*.25,shot.eye[2]-creep*1.5],target:[shot.target[0]+x,shot.target[1],shot.target[2]],hole:[x,22,-115],shift:0,radius:1.1,departure:1};
+    }
     if(kind==='avert')return{eye:[-12,42,-97],target:[-32,38,-73],hole:[0,44,-115],shift:0,radius:1.15,departure:1};
     if(kind==='near')return{eye:[-4.8,45,-105],target:[0,44,-115],hole:[0,44,-115],shift:0,radius:1.8,departure:1};
     if(kind==='fates')return{eye:[-14,54,-97],target:[0,58,-115],hole:[0,58,-115],shift:0,radius:2.1,departure:1};
@@ -71,10 +84,11 @@ export function createOpeningPrologueDirection({reducedMotion=false,memoryInstan
     const cabEye=point(norm,scene.eye),props=(scene.props||[]).map(p=>placed(p,multiply(norm,instanceMatrix(p))));
     const wheelProp=props.find(p=>p.mesh==='drive_wheel'),wheel=wheelProp?[wheelProp.x,wheelProp.y+.05,wheelProp.z]:null;
     const kind=openingJourneyIntent({semanticPhase,stageId,nodeId}),next=desired(kind,stage,cabEye,wheel,scene.roadPitch||0);
+    if(schoolShots.has(kind))schoolRevealed=true;
     if(!pose)pose=desired('road',stage,cabEye,wheel,scene.roadPitch||0);
     if(kind!==intent){
       from={...pose,eye:[...pose.eye],target:[...pose.target],hole:[...pose.hole]};to=next;age=0;presented=0;
-      duration=kind==='road'?0:kind==='body'?OPENING_JOURNEY.bodySeconds:kind==='school'?OPENING_JOURNEY.schoolSeconds
+      duration=kind==='road'?0:kind==='body'?OPENING_JOURNEY.bodySeconds:kind==='school'?OPENING_JOURNEY.schoolSeconds:schoolShots.has(kind)?2.8
         :kind==='return'||kind==='reminder'?OPENING_JOURNEY.returnSeconds:kind==='windshield'?2.6:OPENING_JOURNEY.departureSeconds;
       if(reducedMotion&&kind!=='road'&&kind!=='windshield')duration=1.4;
       intent=kind;
@@ -82,7 +96,7 @@ export function createOpeningPrologueDirection({reducedMotion=false,memoryInstan
     const step=Math.max(0,Math.min(.1,Number(dt)||0));age=snap?duration+OPENING_JOURNEY.minimumEstablishment:age+step;clock+=step;presented++;
     // A completed cab shot follows the real bodily heave; a travelling shot
     // has fixed end points and cannot be retargeted by individual sentences.
-    if(age>=duration&&cabModes.has(kind))to=next;
+    if((age>=duration&&cabModes.has(kind))||schoolShots.has(kind))to=next;
     const reducedCut=reducedMotion&&intent!=='road'&&intent!=='windshield'&&age<duration,
       opticalVeil=reducedCut?(age<.65?smooth(age/.65):1-smooth((age-.65)/.75)):0,
       u=reducedCut?(age<.65?0:1):smooth(duration?age/duration:1);let eye=vec(from.eye,to.eye,u);
@@ -103,12 +117,17 @@ export function createOpeningPrologueDirection({reducedMotion=false,memoryInstan
       color:[.72,.80,.68],intensity:.42,radius:1.05,penetration:0,castsShadow:false});
     const buildingAmount=smooth((pose.departure-.15)/.65);
     if(buildingAmount>.001)lamps.push(
-      {id:'opening-ellery-moon',x:4,y:28,z:-106,color:[.57,.69,.86],intensity:2.3*buildingAmount,radius:90,penetration:1,castsShadow:false},
-      {id:'opening-ellery-door-left',x:3.08,y:2.72,z:-132.28,color:[1,.78,.53],intensity:.65*buildingAmount,radius:4.5,penetration:0},
-      {id:'opening-ellery-door-right',x:-1.10,y:2.72,z:-132.28,color:[1,.78,.53],intensity:.65*buildingAmount,radius:4.5,penetration:0});
-    const transformedBody=multiply(norm,body),weather=frame.weather?{...frame.weather,worldToCabin:frame.weather.worldToCabin?multiply(frame.weather.worldToCabin,inverse):undefined,
+      {id:'opening-ellery-moon',x:4+OPENING_JOURNEY.schoolOffsetX,y:28,z:-106,color:[.57,.69,.86],intensity:2.3*buildingAmount,radius:90,penetration:1,castsShadow:false},
+      {id:'opening-ellery-door-left',x:3.08+OPENING_JOURNEY.schoolOffsetX,y:2.72,z:-132.28,color:[1,.78,.53],intensity:.65*buildingAmount,radius:4.5,penetration:0},
+      {id:'opening-ellery-door-right',x:-1.10+OPENING_JOURNEY.schoolOffsetX,y:2.72,z:-132.28,color:[1,.78,.53],intensity:.65*buildingAmount,radius:4.5,penetration:0});
+    const transformedBody=multiply(norm,body),weather=frame.weather?{...frame.weather,
+      // Leaving the glass changes the air path, not the underlying pane's
+      // accumulated water or the physical weather clock.
+      extinction:lerp(frame.weather.extinction,.008,pose.departure),
+      worldToCabin:frame.weather.worldToCabin?multiply(frame.weather.worldToCabin,inverse):undefined,
       headlamps:(frame.weather.headlamps||[]).map(l=>transformLight(l,norm)),groundY:0}:frame.weather;
-    const renderScene={...scene,eye:pose.eye,props:[...props,...memoryInstances],body:transformedBody,lamps,look:{yaw,pitch},driveLand:null,
+    const visibleMemory=schoolRevealed?memoryInstances:[];
+    const renderScene={...scene,eye:pose.eye,props:[...props,...visibleMemory],body:transformedBody,lamps,look:{yaw,pitch},driveLand:null,
       cut:{...scene.cut,lights:(scene.cut?.lights||[]).map(l=>transformLight(l,norm))},
       mirrors:pose.departure>.05?[]:(scene.mirrors||[]).map(m=>({...m,eye:point(norm,m.eye),yaw:m.yaw-heading})),
       cabLight:scene.cabLight?{...scene.cabLight,worldToCab:multiply(scene.cabLight.worldToCab,inverse)}:null,
@@ -116,7 +135,7 @@ export function createOpeningPrologueDirection({reducedMotion=false,memoryInstan
       retroreflectors:(scene.retroreflectors||[]).map(p=>{const q=point(norm,[p.x,p.y,p.z]);return{...p,x:q[0],y:q[1],z:q[2]};}),rainShelter:null};
     last={intent,age,duration,established:age>=duration+OPENING_JOURNEY.minimumEstablishment&&presented>=2,eye:[...pose.eye],target:[...pose.target],hole:[...pose.hole],
       radius:pose.radius*(kind==='fates'?Math.max(1,(Number(stage.radius)||1)/1.3):1),departure:pose.departure,yaw,pitch,
-      musicPhase:kind==='return'?'return':semanticPhase,opticalVeil,clock,normalization:Array.from(norm),renderOwner:'opening-drive',memoryInstanceCount:memoryInstances.length};
+      musicPhase:kind==='return'?'return':semanticPhase,opticalVeil,clock,normalization:Array.from(norm),renderOwner:'opening-drive',memoryInstanceCount:visibleMemory.length};
     const vehiclePose=frame.cinematic?.vehiclePose;
     return{...frame,scene:renderScene,weather,look:{yaw,pitch},driveState:{...frame.driveState,heading:0},cinematicLook:true,
       cinematic:frame.cinematic?{...frame.cinematic,vehiclePose:vehiclePose?{...vehiclePose,bodyMatrix:Array.from(transformedBody),heading:0,position:{x:transformedBody[12],y:transformedBody[13],z:transformedBody[14]}}:vehiclePose}:frame.cinematic,

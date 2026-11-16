@@ -538,6 +538,9 @@ export function createConversation({
         }
         if (e.key === 'ArrowUp' || e.key === 'w') { selectChoice((choiceIdx - 1 + cs.length) % cs.length);return true; }
         if (e.key === 'ArrowDown' || e.key === 's') { selectChoice((choiceIdx + 1) % cs.length);return true; }
+        // Holding the key that opened a bank cannot confirm its new answer.
+        // Repeat remains useful for navigation, never for committing speech.
+        if (e.repeat) return true;
         const num = Number(e.key);
         if (num >= 1 && num <= cs.length) { choose(cs[num - 1]); return true; }
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'z') { choose(cs[choiceIdx]); return true; }

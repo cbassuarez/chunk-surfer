@@ -26,6 +26,7 @@
     "buildPubTrayDialogue.start",
     "buildPubTrayDialogue.taken",
     "buildPubServiceDialogue.start",
+    "buildPubServiceDialogue.pub-service-thanks",
     "buildPubServiceDialogue.pub-service-thanks.when-serving",
     "buildPubServiceDialogue.pub-service-thanks.otherwise-serving",
     "buildPubFavorDialogue.start",
@@ -37,6 +38,10 @@
   ],
   "regions": [],
   "module": "src/data/pub-dialogue.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/data/pub-dialogue.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "leave": {
@@ -1120,6 +1125,12 @@
         }
       ],
       "source": "src/data/pub-dialogue.js:189"
+    },
+    "buildPubServiceDialogue.pub-service-thanks": {
+      "id": "buildPubServiceDialogue.pub-service-thanks",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/pub-dialogue.js:190"
     },
     "buildPubServiceDialogue.pub-service-thanks.when-serving": {
       "id": "buildPubServiceDialogue.pub-service-thanks.when-serving",

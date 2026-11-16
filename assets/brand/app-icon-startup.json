@@ -338,7 +338,7 @@
     "tools/app-icon/acquisition.mjs": "b932537dc02ccb464d78942eb4d999b4297f3917d6345ce11490c0c7b7905abb",
     "tools/app-icon/transit.glb": "9eb1a5e5b6d878cd049d738d9fee85072e29db18bea8b60e3b4c0f662e775887",
     "tools/app-icon/transit-source.json": "d89bc960e135fcde23f9ff2b2c506e79f9fe2273094abf2c6fbf81e79019b22b",
-    "src/render/pixel-mesh/transparent.js": "7ead4932402aa752a03aeaf7b4a30a3ec91c2fc34aec349c8bbe773ec150ca32",
+    "src/render/pixel-mesh/transparent.js": "833218b8f38238345697d2c1366c476cab5abba3433e55b5269190c1e53498fb",
     "src/render/pixel-mesh/shader.js": "b348bb1601aa25ba262d15ef3bb5516f9fed92a9347709dfbc75b240c9285538",
     "src/render/pixel-mesh/final-look.js": "bd2b1ec84c4b562eedec64778e46d9f3e5fcb3cedab8bf5f89fb40a7e5ec241a",
     "src/render/pixel-mesh/screens.js": "af986abca9e34414d306168e281a99ceeded7eb3c030ad132e5c73818508fc7e",

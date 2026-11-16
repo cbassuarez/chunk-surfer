@@ -435,6 +435,6 @@
     "fineRank": "runtime blueNoise / fineMarkFootprint in output pixels",
     "tonePolicy": "recording capture uses real broad source luma and densityGamma; VFD whitePoint shapes the supporting form/colour branch"
   },
-  "sourceManifestSha256": "806a793131a02a843a6f829742cb73d3771da7304ab2c273a734ee13e8bc0d25",
+  "sourceManifestSha256": "6647ca88d1515c1126f2ff14308dd35080bcd14730e8a364bb53138f281e5bc2",
   "notes": "128px transparent atlas through the game acquisition. Arrive and settle once; hold while loading. Readiness releases input immediately; a settled vehicle may continue forward as decoration."
 }

@@ -217,7 +217,7 @@ export function makePracticeFightScene({
       });
       y = compact ? panel.y + panel.h - 2.1 : actionY + 3.1;
       const windowStatus = pending ? 'OPENING CLUE WINDOWS...'
-        : !native && !state.result ? windowIssue === 'disabled' ? 'ENABLE WINDOW CHOREOGRAPHY IN SETTINGS TO READ THE CLUES.'
+        : !native && !state.result ? windowIssue === 'disabled' ? 'ENABLE SCENE WINDOWS IN DISPLAY SETTINGS TO READ THE CLUES.'
           : windowIssue === 'desktop-required' ? 'THE CLUE WINDOWS REQUIRE THE DESKTOP VERSION.'
             : 'CLUE WINDOWS UNAVAILABLE. R: RETRY / ESC: SETTINGS.'
           : `PRACTICE TAKE: ${state.loaded ? 'LOADED' : 'EMPTY'}`;

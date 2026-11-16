@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "design": {
     "width": 1280,
     "height": 800
@@ -41,7 +41,7 @@
     { "id": "100", "value": 1, "label": "Native · 100%" }
   ],
   "displayModes": [
-    { "id": "windowed", "label": "Windowed" },
-    { "id": "game-mode", "label": "Fullscreen" }
+    { "id": "windowed", "label": "Staged window" },
+    { "id": "game-mode", "label": "Fill screen" }
   ]
 }

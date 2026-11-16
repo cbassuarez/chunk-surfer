@@ -30,6 +30,7 @@ import {normalizeSourceRestFaculties,sourceRestFacultyUniforms} from './source-r
 import { OPENING_OVERTURE } from '../data/opening-overture.js';
 import {GLASS_COURT_RAIN_GLSL} from './glass-court-weather.js';
 import {RAIN_FIELD_GLSL} from './rain-field.js';
+import {DRIVE_PANE_RAIN_GLSL} from './drive-pane-rain.js';
 import {B3_STUDIO_PROPS_ASSET,B3_STUDIO_PROPS_MESHES} from '../data/b3-studio-props.js';
 import { B3_GLASS_GLSL, createB3GlassMoment, b3FigurePanePoint, b3ClearRay, b3PaneIllumination } from './studio-b3-glass.js';
 import {OUTSKIRTS_BUS_RAIN_GLSL,outskirtsBusRainUniforms,outskirtsBusInteriorLightMix} from './outskirts-bus-weather.js';
@@ -408,6 +409,11 @@ uniform float uRoofView;
 uniform float uGalleryTreatment;
 ${ACADEMIC_ATRIUM_LIGHT_GLSL}
 uniform int uLocalLightCount;
+// Never set, so always zero. The lamp loops start from it instead of a literal
+// so their trip count is not a compile-time constant: Mesa's GLSL linker
+// otherwise unrolls each one twelve times, wall walk and all, and this
+// program's link time grows faster than its size (22s -> 15s cold, measured).
+uniform int uLoopZero;
 uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
 uniform vec4 uLocalLightColor[${MAX_LOCAL_LIGHTS}];
@@ -1840,7 +1846,7 @@ vec3 waterSeenLight(vec3 pM, vec3 n, bool sky, float place){
   float reach=sky?400.0:mix(3.5,9.0,clamp(uAmbientIntensity*place*26.0,0.0,1.0));
   float fall=1.0/(1.0+length(pM-uCam*CELL_METERS)/max(.75,reach));
   vec3 light=uAmbientColor*(uAmbientIntensity*place*mix(uAmbientFloor,1.0,fall*fall));
-  for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
+  for(int li=uLoopZero;li<${MAX_LOCAL_LIGHTS};li++){
     if(li>=uLocalLightCount)break;
     vec3 delta=uLocalLightPos[li].xyz-pM;
     float d=length(delta),radius=max(.01,uLocalLightPos[li].w);
@@ -1930,7 +1936,7 @@ vec3 waterRefraction(vec3 wp, vec3 T, out float pathM){
 // the lamp's own reach, only with whether a wall stands between.
 vec3 waterGlints(vec3 wpM, vec3 R){
   vec3 g=vec3(0.0);
-  for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
+  for(int li=uLoopZero;li<${MAX_LOCAL_LIGHTS};li++){
     if(li>=uLocalLightCount)break;
     vec3 delta=uLocalLightPos[li].xyz-wpM;
     float s=pow(max(dot(R,normalize(delta)),0.0),220.0);
@@ -2421,7 +2427,7 @@ void main(){
     // The cool veil below is gated by this and by nothing else: no lamp
     // reaching a surface means no cast presence on that surface.
     vec3 emergencyReach=vec3(0.0);
-    for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
+    for(int li=uLoopZero;li<${MAX_LOCAL_LIGHTS};li++){
       if(li>=uLocalLightCount)break;
       vec3 delta=uLocalLightPos[li].xyz-posM;
       float localDistance=length(delta),radius=max(.01,uLocalLightPos[li].w);
@@ -2949,7 +2955,7 @@ void main(){
       airLight+=uTorchColor*torch*.38;
       // Light the strongest streak once, using the same lamp reach and
       // directional emitters as architecture. The drop loop stays bounded.
-      for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
+      for(int li=uLoopZero;li<${MAX_LOCAL_LIGHTS};li++){
         if(li>=uLocalLightCount)break;
         vec3 delta=dropM-uLocalLightPos[li].xyz;
         float radius=max(.01,uLocalLightPos[li].w);
@@ -3801,9 +3807,11 @@ float puddleMask(vec2 p){
 uniform mat4 uDriveCabinInverse,uDriveVolumeShadowMatrix,uDriveReturnBodyInverse;
 uniform vec4 uDriveReturnMin,uDriveReturnMax;
 uniform vec4 uDriveWeather,uDrivePane,uDrivePaneSlope,uDriveWeatherExtra,uDriveStorm,uDriveRainRoof,uDriveLoad,uDriveAirLayer,uDriveImpossibleWeather;
+uniform float uDrivePaneHaze;
 uniform vec4 uDriveFogLamp0,uDriveFogLamp1;
 uniform sampler2D uDriveWetness,uDriveVolumeShadow;
 uniform float uDriveVolumeShadowReady;
+${DRIVE_PANE_RAIN_GLSL}
 float driveDepth(vec2 q){float z=texture(uDepth,q).r*2.0-1.0;return 2.0*uNearFar.x*uNearFar.y/max(.0001,uNearFar.y+uNearFar.x-z*(uNearFar.y-uNearFar.x));}
 float driveCabinExit(vec3 p,vec3 d){
  vec3 safe=sign(d)*max(abs(d),vec3(.00001));safe=mix(vec3(.00001),safe,step(vec3(.00001),abs(d)));
@@ -4181,16 +4189,17 @@ void main(){
     if(throughPane&&surfaceT>paneT+.012){
       vec2 paneUv=vec2((paneHit.x-uDrivePane.x)/(uDrivePane.y-uDrivePane.x),(paneHit.y-uDrivePane.z)/(uDrivePane.w-uDrivePane.z));
       vec2 paneDeposit=texture(uDriveWetness,paneUv).rg;float wet=paneDeposit.r,snowDeposit=paneDeposit.g;
-      vec2 metres=vec2(paneHit.x,(paneHit.y-uDrivePane.z)*sqrt(1.0+slope*slope)),dropP=metres*vec2(28.0,34.0)+vec2(0.0,uDriveWeather.z*.11),cell=floor(dropP),local=dropP-cell;
-      float seed=hash01(cell.x+uDrivePaneSlope.z,cell.y),occupancy=hash01(cell.x+97.13,cell.y-21.97+uDrivePaneSlope.z),present=step(1.0-clamp(wet*.55,0.0,.85),occupancy);vec2 centre=vec2(.19+.62*hash01(cell.x+4.0,cell.y),.18+.64*hash01(cell.x,cell.y+8.0));
-      vec2 q=(local-centre)/vec2(.08+.16*seed,.12+.28*hash01(cell.x+9.0,cell.y+6.0));float radius=length(q),drop=(1.0-smoothstep(.72,1.0,radius))*present;
+      vec2 metres=vec2(paneHit.x,(paneHit.y-uDrivePane.z)*sqrt(1.0+slope*slope));
+      vec4 bead=paneRainBead(paneUv);vec2 q=bead.xy;float drop=bead.z;
+      float arriving=paneRainArrival(cabEye,cabRay,paneT,surfaceT);
+      colour=displayColour(acquisitionColour(colour)+vec3(.09,.115,.14)*(arriving*.65+bead.w*.30));
       if(drop>.001){
         vec2 bend=clamp(q,-1.0,1.0)*drop*vec2(4.2,6.4)/uRes,shiftedUv=clamp(uv+bend,vec2(.001),vec2(.999));vec4 shifted=texture(uProps,shiftedUv);float shiftedDepth=driveDepth(shiftedUv);
         if(shifted.a>.001&&shiftedDepth>paneT*viewDot+.015){vec3 refracted=shifted.rgb*air.a+air.rgb;colour=mix(colour,displayColour(refracted),drop*.65);}
         vec3 normalCab=normalize(vec3(q.x*.8,-slope+q.y*.85,1.0)),normalWorld=normalize(transpose(mat3(uDriveCabinInverse))*normalCab),reflected=reflect(wd,normalWorld);
         float fresnel=.020+.980*pow(1.0-clamp(abs(dot(normalWorld,-wd)),0.0,1.0),5.0),skyVisible=smoothstep(-.03,.35,reflected.y);
         vec3 sky=vec3(.014,.017,.021)*(.45+.55*exp(-pow(reflected.y*.65,2.0)));
-        colour=displayColour(acquisitionColour(colour)+sky*fresnel*skyVisible*drop);
+        colour=displayColour(acquisitionColour(colour)*(1.0-drop*.24)+sky*fresnel*skyVisible*drop+vec3(.020,.026,.033)*drop);
       }
       // Film trails bend the transmitted world and scatter a little sky. The
       // physical wiper reservoir clears this response along the actual arcs.
@@ -4201,6 +4210,11 @@ void main(){
       vec3 linearColour=acquisitionColour(colour);
       if(flowed.a>.001&&flowDepth>paneT*viewDot+.015)linearColour=mix(linearColour,flowed.rgb*air.a+air.rgb,run*.45);
       linearColour=linearColour*(1.0-wet*.10)+vec3(.006,.008,.010)*wet*.32;
+      // The prologue's water film loses contrast between actual blade passes.
+      // Zero elsewhere preserves the existing driving glass. This follows
+      // pane coordinates and the wetness reservoir, never the whole screen.
+      float film=1.0-exp(-wet*uDrivePaneHaze);
+      linearColour=mix(linearColour,vec3(.014,.018,.022),film*.82);
       // Frozen grains live on the physical pane and survive a held stop, a
       // reverse and a checkpoint. The real blades cut transparent arcs.
       float iceGrain=.58+.42*vnoise(metres*vec2(137.0,151.0)+uDrivePaneSlope.z);
@@ -4574,6 +4588,18 @@ let hushBodyReady=false,hushBodyLoadError=null,hushBodyPackLoad=null,hushBodyPac
 const pubStatus={characters:false,props:false,error:null};
 let pubHospitalityLoadGeneration=0,pubHospitalityError=null;
 let basePropPackLoad=null,authoredPropPackLoad=null;
+// The texture work r3dInit starts and does not wait for. Kept so the startup
+// van can stand over the decode and upload instead of the opening credits.
+let startupTextureLoads=[];
+// Everything the renderer begins fetching, parsing and uploading at init. It
+// settles rather than resolves: an optional pack that is missing must not hold
+// the game behind its loader, and each chain already reports its own failure.
+// Named so the boot can mark when each one landed (performance marks
+// `startup-load:<name>`), which is the only way to see what the van waited for.
+export function r3dStartupAssetLoads(){
+  return {baseProps:basePropPackLoad,authoredProps:authoredPropPackLoad,
+    textures:startupTextureLoads.length?Promise.allSettled(startupTextureLoads):null};
+}
 let busStudioAssetState={bus:false,studio:false,errors:[]};
 async function loadBusStudioPacks(status){
   for(const [key,path]of [['bus','assets/bus-refinement.glb'],['studio',B3_STUDIO_PROPS_ASSET]]){
@@ -5850,6 +5876,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform3f(sourceVoidPhysicalU('uDriveLandEye'),driveLand?.eye?.[0]??0,driveLand?.eye?.[1]??0,driveLand?.eye?.[2]??0);
   const weather=drive?.weather||null,wp=weather?.pane||{},wl=weather?.headlamps||[];gl.activeTexture(gl.TEXTURE5);const wt=P3.driveStudyWeatherTarget?.();
   gl.uniform4f(sourceVoidPhysicalU('uDriveWeather'),weather?.rain||0,weather?.extinction||0,weather?.timeSec||0,weather?.active&&wt?1:0);
+  gl.uniform1f(sourceVoidPhysicalU('uDrivePaneHaze'),weather?.paneHaze||0);
   gl.uniform4f(sourceVoidPhysicalU('uDriveImpossibleWeather'),weather?.fog||0,weather?.snow||0,weather?.whiteout||0,0);
   gl.uniformMatrix4fv(sourceVoidPhysicalU('uDriveCabinInverse'),false,weather?.worldToCabin||[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
   const returnBlack=weather?.returnBlack;
@@ -6911,18 +6938,19 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl(MAIN_STAIR_WALL_PACK))
       .catch(err=>console.warn('stair wall ornament unavailable; retaining existing masonry',err)))
     .catch((err)=>{if(!vehicleInteriorStatus.loaded)vehicleInteriorStatus.error=String(err?.message||err);console.warn('prop pack unavailable',err);});
-  P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
-    .catch((err)=>console.warn('portrait atlas unavailable',err));
-  P3.loadPaperAtlas(assetUrl(PAPER_PIGMENT_PATH),{columns:PAPER_ATLAS.columns,rows:PAPER_ATLAS.rows,pigmentCoverage:true,
+  startupTextureLoads=[];
+  startupTextureLoads.push(P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
+    .catch((err)=>console.warn('portrait atlas unavailable',err)));
+  startupTextureLoads.push(P3.loadPaperAtlas(assetUrl(PAPER_PIGMENT_PATH),{columns:PAPER_ATLAS.columns,rows:PAPER_ATLAS.rows,pigmentCoverage:true,
     materialUrl:assetUrl(PAPER_WORLD_MATERIAL.path),heightRangeM:PAPER_WORLD_MATERIAL.heightRangeM})
-    .catch((err)=>console.warn('paper atlas unavailable; sheets retain stock material',err));
-  Promise.all([
+    .catch((err)=>console.warn('paper atlas unavailable; sheets retain stock material',err)));
+  startupTextureLoads.push(Promise.all([
     loadTextureArray(assetUrl('assets/surfaces/surface-albedo.jpg'),{srgb:true}),
     loadTextureArray(assetUrl('assets/surfaces/surface-normal.png')),
     loadPackedMaterialArray(assetUrl('assets/surfaces/surface-rough.jpg'),
                             assetUrl('assets/surfaces/surface-height.png')),
   ]).then(([a,n,m])=>{surfAlbedoTex=a;surfNormalTex=n;surfMaterialTex=m;surfaceTexture=a;})
-    .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err));
+    .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err)));
   window.addEventListener('resize', resize);
   // The stage can change size a frame after the window (platform/viewport-guard.js).
   window.addEventListener('chunk-surfer:stage-resize', resize);

@@ -10,10 +10,11 @@ import {resetWheelHands,wheelHandDiagnostics} from './geometry/wheel-hands-pose.
 import {PROLOGUE_ROAD,prologueWorldAt,prologueRoadSurfaceAt,prologueRoadScene} from './prologue-road.js';
 
 export const PROLOGUE_DRIVE=Object.freeze({lane:-1.35,lookAhead:18,steerGain:9,entryMotionSeconds:.12,seamSeconds:5.4,gripSeconds:.8,releaseSeconds:1.2});
+export const PROLOGUE_WEATHER=Object.freeze({rain:.98,fog:.18,extinction:.032,initialWetness:.72,wiperCycleSeconds:.95,wettingScale:9,paneHaze:2.4});
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),smooth=v=>{const t=clamp(v);return t*t*(3-2*t);},clone=v=>structuredClone(v),TAU=Math.PI*2;
 const cues=new Set(['neutral','seam','grip','release']);
 export function createPrologueDrive(){
- const seed=prologueWorldAt(PROLOGUE_ROAD.spawn,PROLOGUE_DRIVE.lane),drive=createDrive({length:1e9}),weather=createDriveWeather({rain:.68,initialWetness:.38,seed:1947});
+ const seed=prologueWorldAt(PROLOGUE_ROAD.spawn,PROLOGUE_DRIVE.lane),drive=createDrive({length:1e9}),weather=createDriveWeather({...PROLOGUE_WEATHER,seed:1947});
  Object.assign(drive,{x:seed.x,z:seed.z,heading:seed.heading,roadHeight:seed.y,speed:13,throttle:.45,engineLoad:.35,furthest:PROLOGUE_ROAD.spawn,paused:true});
  let started=false,disposed=false,paused=false,timeSec=0,remainder=0,clippedSeconds=0,look={yaw:0,pitch:-.035},cue='neutral',cueAt=0,explicitProgress=null,holdWiper=false,heldWiperPhase=null,anchors=null;
  const live=()=>started&&!disposed&&!paused;
@@ -37,7 +38,7 @@ export function createPrologueDrive(){
   timeSec+=h;drive.programTime=timeSec;drive.furthest=Math.max(drive.furthest,prologueRoadSurfaceAt(drive.x,drive.z).distance);
   drive.journey={schema:1,stationarySeconds:0,returnMetres:0,edgeSeconds:drive.surface==='asphalt'?0:h,maxBacktrackMetres:0,mode:drive.surface==='asphalt'?'moving':'edge'};
   if(holdWiper){weather.wiperPhase=heldWiperPhase;weather.wiperMoving=false;weather.wiperRequested=false;}
-  stepDriveWeather(weather,{dt:h,timeSec,rain:.68,fog:.05,extinction:.0055,snow:0,whiteout:0,wipers:!holdWiper,speed:drive.speed});
+  stepDriveWeather(weather,{dt:h,timeSec,...PROLOGUE_WEATHER,snow:0,whiteout:0,wipers:!holdWiper,speed:drive.speed});
  }
  function update(dt){if(!live())return;const seconds=Number.isFinite(Number(dt))?Math.max(0,Number(dt)):0;clippedSeconds+=Math.max(0,seconds-.25);remainder+=Math.min(.25,seconds);while(remainder+1e-10>=PHYSICS_STEP){step(PHYSICS_STEP);remainder=Math.max(0,remainder-PHYSICS_STEP);}}
  function snapshot(){const r=prologueRoadSurfaceAt(drive.x,drive.z);return{phase:started?'free-drive':'idle',worldOwner:'drive',timeSec,started,paused,disposed,finished:false,controlsEnabled:false,clippedSeconds,driveState:clone(drive),look:{...look},settings:{wipers:true,headlights:true},weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase,wiperMoving:weather.wiperMoving,embodiment:embodiment(),commitment:null,vehiclePose:{phase:'free-drive',distance:r.distance,speed:drive.speed,heading:drive.heading,position:{x:drive.x,y:drive.roadHeight,z:drive.z},waterSeconds:0,fallSeconds:0,controlOwner:'opening-autopilot',controlsEnabled:false,worldOwner:'drive',coverAlpha:0}};}

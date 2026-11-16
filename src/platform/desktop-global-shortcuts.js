@@ -8,7 +8,6 @@ const SHORTCUTS = Object.freeze([
   ['CommandOrControl+F', 'gameMode'],
   ['F11', 'gameMode'],
   ['CommandOrControl+P', 'pause'],
-  ['CommandOrControl+N', 'newGame'],
   ['CommandOrControl+Shift+M', 'mute'],
 ]);
 
@@ -67,9 +66,6 @@ export async function installDesktopGlobalShortcuts(handlers = {}, options = {})
             break;
           case 'pause':
             await handlers.togglePauseMenu?.();
-            break;
-          case 'newGame':
-            await handlers.beginNewGameFlow?.();
             break;
           case 'mute':
             await handlers.toggleMute?.();

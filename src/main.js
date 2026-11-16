@@ -347,7 +347,7 @@ import { isBrowserChromeShortcut, isReservedDesktopShortcut } from './platform/d
 // Only a packaged build refuses the browser's own keys. On the dev server, and
 // under `tauri dev`, reload and devtools are the tools you are working with.
 const SUPPRESS_BROWSER_CHROME = IS_TAURI && !import.meta.env?.DEV;
-import { applyGameModeDom, nextGameModeState } from './platform/game-mode.js';
+import { applyGameModeDom } from './platform/game-mode.js';
 import { makePauseScene, shouldOpenPauseForEvent } from './game/pause.js';
 import { buildQuestJournal } from './game/quest-journal.js';
 import { isMapShortcut } from './game/map-shortcut.js';
@@ -365,6 +365,7 @@ import { createPlayerConditionFeedback } from './game/player-condition-feedback.
 import { drawPlayerConditionFeedback } from './render/player-condition-feedback.js';
 import { applyDisplayCssVars, normalizeDisplaySettings, resolveRenderScale } from './platform/display-policy.js';
 import { createAutoWorldPixelRatio } from './platform/auto-world-pixel-ratio.js';
+import { createTheatrePresentation } from './platform/theatre-presentation.js';
 import { minimizeNativeWindow, quitNativeApp, resetNativeWindow, restoreNativeWindow, setNativeGameMode, setNativeWindowPreset } from './platform/desktop-window.js';
 import { applyCurrentStageLayout, installViewportGuard, setSourceCommandViewport } from './platform/viewport-guard.js';
 import { resolveDesktopPaths } from './platform/paths/desktopPaths.js';
@@ -1123,6 +1124,11 @@ let actx=null;
 let audioRecovery=null;
 let backgroundAudioPolicy=null;
 let startupVanAudio=null;
+const theatrePresentation=createTheatrePresentation({
+  onFillRequest:()=>void toggleDesktopGameMode(true),
+  onError:error=>console.warn('[display] theatre backdrop unavailable',error),
+});
+window.addEventListener('pagehide',()=>theatrePresentation.dispose(),{once:true});
 let voices=new Map(); // chunkIdx -> {src,gain,dur,startedAt,target}
 let ambientDrone=null; // {src,lfo,filt,gain,target}
 let worldLayerVoice=null; // {srcA,srcB,gain,dur,startedAt,target,chunkIdx,worldId}
@@ -1197,15 +1203,9 @@ function tickClueWindows(){
 }
 
 windowChoreography=createWindowChoreographyDirector({
-  releaseFullscreen:(transition,{signal})=>new Promise((resolve)=>{
-    resetMotionInput('window-transition',{stopRenderMove:true});
-    scenes.push(makeDisplayNoticeScene({
-      transition,signal,
-      getReducedMotion:()=>(getSave().settings?.shake||'full')!=='full',
-      onDone:()=>{ ensureInteractionFocus(); resolve(true); },
-      onCancel:()=>resolve(false),
-    }));
-  }),
+  // A borderless Fill screen frame is ordinary geometry: no OS transition or
+  // modal handoff notice is needed to make room for the authored composition.
+  releaseFullscreen:(transition,{signal})=>signal?.aborted?Promise.resolve(false):transition(),
   effects:personalWindowEffects,
   getEnabled:()=>currentPsychProfileSettings().modules.windowChoreography,
   getDisplayMode:()=>currentDisplaySettings().displayMode,
@@ -1238,6 +1238,7 @@ windowChoreography=createWindowChoreographyDirector({
   },
   onGeometryMotion:(active)=>{worldOutputGeometryMotion=!!active;R3.r3dSetWindowGeometryMotion?.(active);},
   onState:(event)=>{
+    void theatrePresentation.composition(event);
     if(event.type==='source-desktop'){
       const metrics=uiCellMetrics();
       setSourceCommandViewport(event.mode==='native'
@@ -7819,7 +7820,7 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
     if(v.finished)return;
     if(v.phase==='film'){
       prologueAudio.update({dt:live?dt:0,stageMusic,spoken:v.spoken,paused:!live||v.paused,ready,protectedAudio,veil:v.stage?.veil||0,
-        speaking:openingPrologueSpeechActive(v),drive:v.drive?.driveState,weather:physical?.weather,wiperHeld:v.drive?.embodiment?.holdWiper});
+        speaking:openingPrologueSpeechActive(v),roadBreathing:!!v.roadBreath,drive:v.drive?.driveState,weather:physical?.weather,wiperHeld:v.drive?.embodiment?.holdWiper});
       score.requestPhase(v.journey?.musicPhase||v.semanticPhase);
     }
     score.update({dt:live?dt:0,paused:!live||v.paused,ready,protectedAudio});
@@ -13269,7 +13270,13 @@ async function loadBuildingRuntime({retryPose=null,retryTiming=null}={}){
   planName=which;
   const started=retryTiming?performance.now():0;
   let lastMark=started;
-  const mark=stage=>{if(retryTiming){const now=performance.now();retryTiming[stage]=now-lastMark;lastMark=now;}};
+  // Each stage also leaves a `building-load:<stage>` performance mark: this
+  // function is most of the wait behind the startup van, and its parts could
+  // not be told apart from outside it.
+  const mark=stage=>{
+    try{performance.mark(`building-load:${stage}`);}catch(_){}
+    if(retryTiming){const now=performance.now();retryTiming[stage]=now-lastMark;lastMark=now;}
+  };
   try{
     const mod=await BUILDING_LOADERS[which]();
     mark('buildingModuleMs');
@@ -33332,7 +33339,7 @@ function disablePersonalizedInterference(){
   if(!current.modules.windowChoreography)return;
   const profile={...current,modules:{...current.modules,windowChoreography:false}};
   saveCommit({settings:mirrorPsychProfileCompatibility(save.settings||{},profile)});
-  pushEvent('// WINDOW CHOREOGRAPHY DISABLED. Re-enable it in SETTINGS / PROFILE.');
+  pushEvent('// WINDOW CHOREOGRAPHY DISABLED. Re-enable SCENE WINDOWS in SETTINGS / DISPLAY.');
   void logWarn('window choreography self-disabled','emergency restore revoked the module consent');
 }
 
@@ -34899,6 +34906,9 @@ async function updateDisplaySettings(patch={}, nextMaybe=null){
     await windowChoreography.endSourceDesktop('display-settings');
   }
   saveCommit({settings:{...st,display:next}});
+  desktopGameMode={...desktopGameMode,enabled:next.displayMode==='game-mode'};
+  applyGameModeDom(desktopGameMode.enabled,document);
+  document.body.classList.add('desktop-theatre');
   applyDisplayCssVars(next);
   uiSetScale(next.uiScale);
   applyRenderScale(next.renderScale);
@@ -34908,9 +34918,11 @@ async function updateDisplaySettings(patch={}, nextMaybe=null){
   try{
     if(Object.prototype.hasOwnProperty.call(patch,'displayMode')){
       await setNativeGameMode(next.displayMode==='game-mode');
-      if(next.displayMode==='windowed') await setNativeWindowPreset(next.windowPreset);
-    }else if(Object.prototype.hasOwnProperty.call(patch,'windowPreset')){
-      await setNativeWindowPreset(next.windowPreset);
+    }
+    if(Object.prototype.hasOwnProperty.call(patch,'windowPreset')){
+      // Native ownership defers the staged size while Fill screen or a scene
+      // controls geometry, then applies it before restoring the chosen mode.
+      await setNativeWindowPreset(next.windowPreset,{center:false});
     }
   }catch(err){
     console.warn('[display] native display change failed',err);
@@ -36441,7 +36453,7 @@ function openPauseMenu(){
     onJournal: ()=>openBag({focus:{sectionId:'journal'}}),
     onMap: openFieldMap,
     onArchive: openArchive,
-    onRestartRun: ()=>{closePauseMenu();beginNewGameFlow();},
+    onRestartRun: restartRunFromGame,
     onReturnToTitle: returnToTitle,
     onQuitDesktop: requestQuitDesktop,
     status:()=>({
@@ -36919,7 +36931,7 @@ function returnToTitle(){
   if(stationFieldScene){commitStationField();releaseStationField();}
   if(sourceDriveSession){
     const owner=sourceDriveSession;
-    void owner.stop().then(()=>{if(sourceDriveSession!==owner)return;commitSourceDrive();releaseSourceDrive();returnToTitle();}).catch(error=>pushEvent(`// ${error?.message||error}`));
+    void owner.stop().then(()=>{if(sourceDriveSession!==owner)return;commitSourceDrive();releaseSourceDrive();returnToTitle();}).catch(error=>{titleReturnContinuation=null;pushEvent(`// ${error?.message||error}`);});
     return;
   }
   saveSourceView();
@@ -36966,8 +36978,27 @@ function returnToTitle(){
   godFxOverride.monitorHiss=null;
   godFxOverride.visualDread=null;
   scenes.replace(makeTitle());
-  void Promise.resolve(titleRestored).then(()=>windowChoreography.beginTitle?.());
+  const continuation=titleReturnContinuation;titleReturnContinuation=null;
+  // A restart leaves the title in the same call; its window composition must
+  // not begin underneath the run that replaces it.
+  if(!continuation)void Promise.resolve(titleRestored).then(()=>windowChoreography.beginTitle?.());
   void refreshHushAvailability();
+  continuation?.();
+}
+
+// RESTART RUN is RETURN TO TITLE followed by the title's own NEW RUN. Starting
+// a run on top of a live one skips every teardown returnToTitle owns (special
+// worlds, bell and hush runtimes, presence, fear, the scene stack, the
+// front-end session), so the pause menu takes the title's path instead of a
+// second one. The continuation waits for returnToTitle to actually finish:
+// it defers itself while the Source drive stops.
+let titleReturnContinuation=null;
+function restartRunFromGame(){
+  titleReturnContinuation=()=>{
+    void windowChoreography.finishTitle?.({windowPolicy:'none'});
+    requestFrontEndNewRun();
+  };
+  returnToTitle();
 }
 
 function showReturnReport(summary){
@@ -37119,12 +37150,10 @@ function setGameChrome(on){
 }
 
 function requestFullscreenSafe(){
-  // Must be called from a user gesture; iframed labs need allowfullscreen.
-  const el=document.documentElement;
-  if(document.fullscreenElement || !el.requestFullscreen) return;
-  el.requestFullscreen().then(ensureInteractionFocus).catch(()=>{});
+  // Compatibility for old title/settings hooks: request our own Fill screen
+  // presentation, never document.requestFullscreen or an OS fullscreen Space.
+  void toggleDesktopGameMode(true);
 }
-
 
 function exitFullscreenSafe(){
   try{
@@ -37156,23 +37185,19 @@ function openAboutPanel(){
   pushEvent(`// Chunk Surfer ${APP_VERSION}. AUDIOCORP field monitor ready.`);
 }
 
+let displayShortcutAt=-Infinity;
 async function toggleDesktopGameMode(force){
+  const at=performance.now();
+  // Menu accelerators, the focused webview and the native shortcut bridge can
+  // report one physical key. Consume that key once across all three routes.
+  if(typeof force!=='boolean'&&at-displayShortcutAt<180)return;
+  displayShortcutAt=at;
   const current=currentDisplaySettings();
-  desktopGameMode=nextGameModeState(desktopGameMode,{
-    enabled:typeof force==='boolean'?force:undefined,
-    previousWindowPreset:current.windowPreset,
-    now:performance.now?.()||Date.now(),
-  });
-  applyGameModeDom(desktopGameMode.enabled, document);
-  if(desktopGameMode.enabled){
-    ensureCtx();
-    if(!IS_TAURI) requestFullscreenSafe();
-    pushEvent('// game mode: focus profile engaged. [F11] to leave.');
-  } else {
-    if(!IS_TAURI) exitFullscreenSafe();
-    pushEvent('// game mode: window profile restored.');
-  }
-  await updateDisplaySettings({displayMode:desktopGameMode.enabled?'game-mode':'windowed'});
+  const enabled=typeof force==='boolean'?force:current.displayMode!=='game-mode';
+  if(current.displayMode===(enabled?'game-mode':'windowed'))return;
+  exitFullscreenSafe();
+  await updateDisplaySettings({displayMode:enabled?'game-mode':'windowed'});
+  pushEvent(enabled?'// display: fill screen. [F11] returns to the staged window.':'// display: staged window.');
   refreshStageLayoutSoon();
   ensureInteractionFocus();
 }
@@ -37322,10 +37347,6 @@ async function handleReservedDesktopShortcut(e){
   }
   if(key==='p'){
     openPauseMenu();
-    return true;
-  }
-  if(key==='n'){
-    beginNewGameFlow();
     return true;
   }
   if(key==='g' && e.shiftKey){
@@ -39825,25 +39846,16 @@ async function bootScenes(){
   applyDisplayCssVars(displaySettings);
   applyRenderScale(displaySettings.renderScale);
   applyPixelMeshSettings();
-  // THE SAVED DISPLAY MODE HAS TO REACH THE ACTUAL WINDOW ON BOOT.
-  //
-  // This applied the CSS and the render scale and then stopped, so a save that
-  // says 'game-mode' came back in an ordinary window — tauri.conf.json starts
-  // "fullscreen": false and nothing re-asserted it. The game then believed it
-  // was fullscreen when it was not, which is the mirror image of the bug this
-  // sits next to: the first authored cue would ask Rust to leave a fullscreen
-  // that was not there, and restore_transaction would helpfully put the player
-  // INTO fullscreen at the end of a cue they never started fullscreen for.
-  //
-  // The in-memory toggle has to agree as well, or the first F11 tries to ENTER
-  // a mode the player is already in and drops them out of it instead.
-  //
-  // Deliberately not awaited: it is a window hint, and boot must not stall on it.
-  if(displaySettings.displayMode==='game-mode'){
-    desktopGameMode={...desktopGameMode,enabled:true,previousWindowPreset:displaySettings.windowPreset||desktopGameMode.previousWindowPreset};
-    applyGameModeDom(true, document);
-    if(IS_TAURI) void setNativeGameMode(true).catch(()=>{});
-  }
+  // Persist the existing mode IDs so older saves retain their preference:
+  // windowed now means Staged window; game-mode now means borderless Fill screen.
+  desktopGameMode={...desktopGameMode,enabled:displaySettings.displayMode==='game-mode'};
+  applyGameModeDom(desktopGameMode.enabled,document);
+  document.body.classList.add('desktop-theatre');
+  void theatrePresentation.start();
+  if(IS_TAURI)void (async()=>{
+    await setNativeWindowPreset(displaySettings.windowPreset);
+    await setNativeGameMode(displaySettings.displayMode==='game-mode');
+  })().catch(()=>{});
   installViewportGuard({allowUpscale:true});
   refreshStageLayoutSoon();
   { const vs=getSave().settings?.vfd; if(vs) applyVfdSettings(vs); }
@@ -40371,6 +40383,11 @@ async function bootScenes(){
   // before calibration completes. Do not make the native game wait for a
   // threshold of retired 2D audio samples before it can render, pause, or
   // accept a complete generated bank.
+  // Everything from here to the title's first frame blocks the main thread in
+  // long pieces (shader link, building compile). Let the van finish arriving
+  // first: it then stands parked on a still frame, which a blocked thread
+  // cannot make stutter.
+  await startupVanArrived();
   window.__chunkStartup?.stage?.('Initializing graphics');
   if(RENDERER==='3d' && !inRogue) enterRogue();
   // The authored facility is part of the critical boot payload, not a lazy
@@ -41385,6 +41402,32 @@ function backHeld(){ return keysDown.has('ArrowDown') || keysDown.has('KeyS'); }
 // A/D and ←/→ strafe now; nothing on the keyboard turns the body.
 function turnHeldDir(){return 0;}
 function startupPresentationHeld(){return !!window.__chunkStartup&&window.__chunkStartup.status()!=='ready';}
+// Resolves once the startup van has stopped moving (parked, finished, or never
+// shown). Bounded: a late or missing atlas must not hold the boot for a
+// decoration.
+function startupVanArrived({capMs=3000}={}){
+  const van=window.__chunkStartupVan;
+  const moving=()=>{try{return ['loading','playing'].includes(van?.status?.().phase);}catch(_){return false;}};
+  if(!van||!startupPresentationHeld()||!moving())return Promise.resolve();
+  return new Promise(resolve=>{
+    let timer=0;
+    const done=()=>{window.removeEventListener('chunk-startup-van-complete',done);clearTimeout(timer);resolve();};
+    window.addEventListener('chunk-startup-van-complete',done);
+    timer=setTimeout(done,capMs);
+  });
+}
+// Waits for startup loads while the loader still covers the game. Bounded, and
+// it never rejects: these are the same best-effort loads as before, and a
+// stalled one must fall back to arriving late, not to a loader that never ends.
+function settledUnderStartupVan(loads,{capMs=8000}={}){
+  const pending=Object.entries(loads).filter(([,load])=>load).map(([name,load])=>
+    Promise.resolve(load).catch(()=>null).then(()=>{try{performance.mark(`startup-load:${name}`);}catch(_){}}));
+  if(!pending.length||!startupPresentationHeld())return Promise.resolve();
+  return new Promise(resolve=>{
+    const timer=setTimeout(()=>{try{performance.mark('startup-load:cap');}catch(_){}resolve();},capMs);
+    void Promise.all(pending).then(()=>{clearTimeout(timer);resolve();});
+  });
+}
 function gameplayInputLifecycleActive(){
   // A key OS window can still have an occluded WebView. Hidden always holds
   // gameplay; confirmed native focus only replaces delayed DOM focus truth.
@@ -42098,6 +42141,7 @@ async function boot(){
   }, {capture:true,passive:true});
   // Fullscreen and iframe transitions silently drop keyboard focus.
   document.addEventListener('fullscreenchange', ()=>{
+    if(document.fullscreenElement){exitFullscreenSafe();void toggleDesktopGameMode(true);}
     refreshStageLayoutSoon();
     ensureInteractionFocus();
     relearnPointerGeometry('fullscreen-change');
@@ -42188,7 +42232,7 @@ async function boot(){
     isInGame: isDesktopMenuInGame,
     openAbout: openAboutPanel,
     openSettings,
-    beginNewGameFlow,
+    beginNewGameFlow: ()=>isDesktopMenuInGame()?restartRunFromGame():beginNewGameFlow(),
     continueRun: continueRunFromDesktopMenu,
     openDifficulty: beginNewGameFlow,
     openAchievements: openArchive,
@@ -42320,6 +42364,34 @@ async function boot(){
   }
   updateOnboardingButton();
     await bootScenes();
+    // LOAD UNDER THE VAN, NOT UNDER THE CREDITS.
+    //
+    // The renderer's packs and textures were started and left to land whenever
+    // they landed, which was during the launch notices and the opening
+    // credits: seconds of parse and upload in pieces of up to a second each, on
+    // the first frames anybody sees. The van is the loading screen. It is
+    // parked on a still frame by now, so the same work costs nothing visible
+    // here. The frame loop is deliberately not running yet: nothing draws
+    // beneath the loader and no notice clock starts before the notice can be
+    // seen.
+    //
+    // Measured in the desktop webview: surface textures and the base prop pack
+    // land about three seconds after the building; the authored extension
+    // packs take four times that. The bound below is what the loader will
+    // spend on them, and whatever has not landed by then arrives as it always
+    // did. The 300 retired sample-field files are started here so their decode
+    // shares the wait, but nothing waits for them.
+    {
+      const qp=params();
+      const loads={...(RENDERER==='3d'?R3.r3dStartupAssetLoads?.():null)};
+      if(!qp.has('baglab')&&!qp.has('progresslab')&&!qp.has('maplab')&&!qp.has('hushaudiolab')){
+        // The retired second-world driver loads on entry. Warming it here
+        // constructs the entire audio graph on the startup handoff.
+        void loadAll();
+      }
+      window.__chunkStartup?.stage?.('Loading the building\'s materials');
+      await settledUnderStartupVan(loads);
+    }
     window.__chunkStartup?.stage?.('Drawing the first frame');
     raf=requestAnimationFrame(loop);
     const qp=params();
@@ -42835,11 +42907,6 @@ async function boot(){
           world:{position:{x:px,y:py},profile:R3.r3dLookStatus(),screen:R3.r3dScreen(),shader:R3.r3dPixelMeshStats?.()},
           uiRect:document.getElementById('wrap')?.getBoundingClientRect?.().toJSON?.()}),
       });
-    }
-    if(!qp.has('baglab')&&!qp.has('progresslab')&&!qp.has('maplab')&&!qp.has('hushaudiolab')){
-      loadAll();
-      // The retired second-world driver loads on entry. Warming it here
-      // constructs the entire audio graph on the startup handoff.
     }
     window.__chunkStartup?.booted?.(RENDERER==='3d');
 }

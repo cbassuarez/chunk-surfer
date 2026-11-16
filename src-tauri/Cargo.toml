@@ -7,7 +7,10 @@ edition = "2021"
 
 [lib]
 name = "chunk_surfer_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+# Desktop main.rs links this Rust library into the executable. The unused
+# foreign-host staticlib/cdylib outputs duplicate the embedded game and its
+# dependencies; the Windows static archive can exceed COFF's 4 GiB limit.
+crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -27,6 +30,10 @@ tauri-plugin-opener = "2"
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6.2"
 dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Same version wry links; used only to harden WebKitGTK media capture.
+webkit2gtk = "2.0"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Console", "Win32_System_Threading", "Win32_System_SystemInformation", "Win32_System_Diagnostics_ToolHelp"] }

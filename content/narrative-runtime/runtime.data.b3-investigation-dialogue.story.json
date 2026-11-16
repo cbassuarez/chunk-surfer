@@ -4,11 +4,11 @@
   "title": "Runtime · data/b3-investigation-dialogue.js",
   "status": "reference",
   "fromCode": true,
-  "entry": "buildB3FailureDialogue.start.when-repeated",
+  "entry": "buildB3FailureDialogue.start",
   "entries": [
+    "buildB3FailureDialogue.start",
     "buildB3FailureDialogue.start.when-repeated",
     "buildB3FailureDialogue.start.otherwise-repeated",
-    "buildB3FailureDialogue.start",
     "buildB3FailureDialogue.investigate",
     "buildB3FailureDialogue.retry",
     "buildB3ConsoleInvestigation.options",
@@ -21,8 +21,34 @@
   ],
   "regions": [],
   "module": "src/data/b3-investigation-dialogue.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/data/b3-investigation-dialogue.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
+    "buildB3FailureDialogue.start": {
+      "id": "buildB3FailureDialogue.start",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "buildB3FailureDialogue.start.c0",
+          "text": "check the studio feed",
+          "source": "src/data/b3-investigation-dialogue.js:24",
+          "choiceId": "investigate",
+          "goto": "buildB3FailureDialogue.investigate"
+        },
+        {
+          "id": "buildB3FailureDialogue.start.c1",
+          "text": "try another take first",
+          "source": "src/data/b3-investigation-dialogue.js:25",
+          "choiceId": "retry",
+          "goto": "buildB3FailureDialogue.retry"
+        }
+      ],
+      "source": "src/data/b3-investigation-dialogue.js:24"
+    },
     "buildB3FailureDialogue.start.when-repeated": {
       "id": "buildB3FailureDialogue.start.when-repeated",
       "type": "line",
@@ -60,28 +86,6 @@
         }
       ],
       "source": "src/data/b3-investigation-dialogue.js:21"
-    },
-    "buildB3FailureDialogue.start": {
-      "id": "buildB3FailureDialogue.start",
-      "type": "choice",
-      "lines": [],
-      "choices": [
-        {
-          "id": "buildB3FailureDialogue.start.c0",
-          "text": "check the studio feed",
-          "source": "src/data/b3-investigation-dialogue.js:24",
-          "choiceId": "investigate",
-          "goto": "buildB3FailureDialogue.investigate"
-        },
-        {
-          "id": "buildB3FailureDialogue.start.c1",
-          "text": "try another take first",
-          "source": "src/data/b3-investigation-dialogue.js:25",
-          "choiceId": "retry",
-          "goto": "buildB3FailureDialogue.retry"
-        }
-      ],
-      "source": "src/data/b3-investigation-dialogue.js:24"
     },
     "buildB3FailureDialogue.investigate": {
       "id": "buildB3FailureDialogue.investigate",

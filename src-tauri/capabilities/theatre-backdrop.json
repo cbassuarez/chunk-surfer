@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "theatre-backdrop",
+  "description": "Allows the one passive theatre house surface to receive its scene and frame, and to report that it is ready or was clicked. It has no access to saves, files, or other windows.",
+  "windows": ["theatre-backdrop"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten", "core:event:allow-emit"]
+}

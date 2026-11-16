@@ -297,14 +297,14 @@ const FIXTURES = {
   ],
 };
 
-export function wallFixtures(plan, cells = corridorCells(plan)) {
+export function wallFixtures(plan, cells = corridorCells(plan), runs = corridorWallRuns(plan, cells)) {
   const out = [];
   // A counter PER WING, not one global one. Shared, the count was carried across
   // wings by whatever order the runs came in, so the basement — whose kit is
   // mostly pipe runs and panels — drew notice boards nearly every time and the
   // services never appeared. Each wing now cycles its own kit.
   const n = new Map();
-  for (const run of corridorWallRuns(plan, cells)) {
+  for (const run of runs) {
     const kit = FIXTURES[run.group];
     if (!kit) continue;
     for (let at = run.from + END_MARGIN_CELLS; at <= run.to - END_MARGIN_CELLS; at += SPACING_CELLS) {
@@ -351,10 +351,10 @@ export function wallFixtures(plan, cells = corridorCells(plan)) {
 // because beside an opening is masonry and the arithmetic that says otherwise
 // lands the plate inside the wall.
 
-export function doorPlates(plan, doors = [], cells = corridorCells(plan)) {
+export function doorPlates(plan, doors = [], cells = corridorCells(plan), runs = corridorWallRuns(plan, cells)) {
   const byDoor = CORRIDOR_SPACE_BY_DOOR_ID;
   const faces = [];
-  for (const run of corridorWallRuns(plan, cells)) {
+  for (const run of runs) {
     for (let at = run.from; at < run.to; at += 1) {
       faces.push({
         x: run.axis === 'x' ? at : run.along,
@@ -578,9 +578,12 @@ export function flightDressing(plan, flights = []) {
 
 export function corridorDressing(plan, { doors = [], landings = [], flights = [] } = {}) {
   const cells = corridorCells(plan);
+  // One survey of the walls for both passes. Each used to take its own, and a
+  // survey reads every face in the building; neither pass alters the runs.
+  const runs = corridorWallRuns(plan, cells);
   return [
-    ...doorPlates(plan, doors, cells),
-    ...wallFixtures(plan, cells),
+    ...doorPlates(plan, doors, cells, runs),
+    ...wallFixtures(plan, cells, runs),
     ...landingFittings(plan, landings),
     ...flightDressing(plan, flights),
   ];

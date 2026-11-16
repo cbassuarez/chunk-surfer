@@ -3,10 +3,10 @@
   "default": "van",
   "alternate": "ear",
   "sourceMaster": "assets/brand/app-icon-van.png",
-  "masterSha256": "7fb219e591df52f0f1e6492db29304e64289b09690e0e46f4a3645fd34e2b690",
-  "vanIcnsSha256": "268c7a108e677b2b085e160a7422087ca61c3e388b5666028848012e619ab472",
+  "masterSha256": "e7309f03afa761bbd92ebe13a685a03ea40a81c818f38820ffaddbf1d8406801",
+  "vanIcnsSha256": "f01dce7545b0614a7a6c58b92bcf994e33c7f4bda75ab77ece87472d1ff0c5e8",
   "earIcnsSha256": "c32a1ed54937b7dd8de36926bf67e97e5cf3b8e3379c1fefb7e142429c5ada53",
-  "atlasSha256": "904dc1282d1a5f7541cade8fdc853c3aca49fbb357ecd681aace05cf112dab02",
+  "atlasSha256": "c5ee5ea1b6ad1ace269cdaac7f1983eea25bd4b2c2d97cbc5b309cdbc138be24",
   "launch": {
     "motionVersion": "albion-maneuver-1",
     "frameCount": 84,
@@ -97,10 +97,48 @@
     "fineRank": "runtime blueNoise / fineMarkFootprint in output pixels",
     "tonePolicy": "recording capture uses real broad source luma and densityGamma; VFD whitePoint shapes the supporting form/colour branch"
   },
+  "plates": {
+    "mac": "m62-squircle",
+    "desktop": "m62-chunk",
+    "store": "m62-bleed",
+    "options": {
+      "mac": {
+        "label": "Apple body · 824/1024 squircle",
+        "summary": "Road cut to the classic macOS body, drawn into the art.",
+        "road": true,
+        "ground": null,
+        "backdrop": null,
+        "zoom": 1.25,
+        "mask": "squircle",
+        "body": 0.8046875
+      },
+      "desktop": {
+        "label": "Road chunk",
+        "summary": "A lifted slab of the carriageway with a cut face. Free silhouette, transparent around it.",
+        "road": true,
+        "ground": null,
+        "backdrop": null,
+        "zoom": 1.12,
+        "mask": "none",
+        "body": 1,
+        "slab": {
+          "x0": -1.75,
+          "x1": 2.3,
+          "z0": -3,
+          "z1": 3.1,
+          "depth": 0.55
+        },
+        "shift": [
+          0.21,
+          -0.53
+        ]
+      }
+    }
+  },
   "rasters": {
     "16": {
       "path": "assets/brand/app-icon-van-rasters/16.png",
-      "sha256": "63050191725695986cd44bc8d84a7d5550d62802a9f173522e075e2c6a2a51d9",
+      "sha256": "597192a43aff9d2cf535c781b8d973507f4aca9ea67f793cd79c9031161ecf53",
       "width": 16,
       "height": 16,
       "renderedAtOutputResolution": true,
@@ -149,7 +187,7 @@
     },
     "24": {
       "path": "assets/brand/app-icon-van-rasters/24.png",
-      "sha256": "5dd98934143e08119a4f893679e62cdcb212aec00b444b277e2b3f2240ea6c35",
+      "sha256": "9b3c62b19a4d00ab14028e6153de1231a5dd4fccd8d7d2246acbf0ea91672577",
       "width": 24,
       "height": 24,
       "renderedAtOutputResolution": true,
@@ -198,7 +236,7 @@
     },
     "30": {
       "path": "assets/brand/app-icon-van-rasters/30.png",
-      "sha256": "9339fe5c9e66668145e50b6cb22d7683fc165efe1eb9dfc32939f0f9240093be",
+      "sha256": "f4d687feca1e35bbfdd6e66f685b7631c8067d00365bbcedad78cc71767ebf86",
       "width": 30,
       "height": 30,
       "renderedAtOutputResolution": true,
@@ -247,7 +285,7 @@
     },
     "32": {
       "path": "assets/brand/app-icon-van-rasters/32.png",
-      "sha256": "f522877f50ff10de1b92d94533bee9a90b2f23dac4ca1ce52e5784d3efe100db",
+      "sha256": "5c79add54b7e64f37d6a1d718a3431dcc7a10df001c1fd1d6612d919a2253346",
       "width": 32,
       "height": 32,
       "renderedAtOutputResolution": true,
@@ -296,7 +334,7 @@
     },
     "44": {
       "path": "assets/brand/app-icon-van-rasters/44.png",
-      "sha256": "d38a4cd13be429963b1e032563daf14bfc2fd2d748537d09243b5494041bb4fb",
+      "sha256": "c7366404a66f6b7839358c5025b48a5b29254a2d57c5e282e6d4ebc668ef9c3d",
       "width": 44,
       "height": 44,
       "renderedAtOutputResolution": true,
@@ -345,7 +383,7 @@
     },
     "48": {
       "path": "assets/brand/app-icon-van-rasters/48.png",
-      "sha256": "468dd48ebbd648b0ba855a09a05619b236be33299d1695b484c1a15f46d3dcd9",
+      "sha256": "6da5349694221423da891bd054d2fb39e31a88c2a574e9f64f62435866b04587",
       "width": 48,
       "height": 48,
       "renderedAtOutputResolution": true,
@@ -394,7 +432,7 @@
     },
     "50": {
       "path": "assets/brand/app-icon-van-rasters/50.png",
-      "sha256": "a459f66e8e1424069163aa1986002f9e6d8c58b0e7b2526124ff7220be78bfcd",
+      "sha256": "7a752d58b25860d003c8f0594078733a930bedc5c7d1e515e35ac2ab3d7cad3e",
       "width": 50,
       "height": 50,
       "renderedAtOutputResolution": true,
@@ -443,7 +481,7 @@
     },
     "64": {
       "path": "assets/brand/app-icon-van-rasters/64.png",
-      "sha256": "9a67929420c7b635d3fd4c30c64af7eed2a39c54212c59d67570380543daaff2",
+      "sha256": "9f10ced6edc7a7e8e6e7e2a7810ddc9113ec79170dc53a139a99f239dacf45eb",
       "width": 64,
       "height": 64,
       "renderedAtOutputResolution": true,
@@ -492,7 +530,7 @@
     },
     "71": {
       "path": "assets/brand/app-icon-van-rasters/71.png",
-      "sha256": "fc1844f3f95a880d86f55185e4264378dcf85cc9946b9545010fabff2537e665",
+      "sha256": "45832c5c266b72116d23fed93cd0900284f9173843e9100542f718231bafa05b",
       "width": 71,
       "height": 71,
       "renderedAtOutputResolution": true,
@@ -541,7 +579,7 @@
     },
     "89": {
       "path": "assets/brand/app-icon-van-rasters/89.png",
-      "sha256": "76d0aeb242f0f057a423ac0100f79766042ca742b703e893603beb32e669a598",
+      "sha256": "c68801f484fe92183997d5a8c86573bee494dc4f63fafc7731568b5491446e46",
       "width": 89,
       "height": 89,
       "renderedAtOutputResolution": true,
@@ -590,7 +628,7 @@
     },
     "107": {
       "path": "assets/brand/app-icon-van-rasters/107.png",
-      "sha256": "a502f37b8a196226f97998d6323a09f7f15d78deed32ef3993743d1c28cf90e6",
+      "sha256": "90e08e02be783d7657cbf23cf69f7fa17eea76f0d6ffba4c345ce1e9ca84cf09",
       "width": 107,
       "height": 107,
       "renderedAtOutputResolution": true,
@@ -639,7 +677,7 @@
     },
     "128": {
       "path": "assets/brand/app-icon-van-rasters/128.png",
-      "sha256": "86644bdf7c0cb8c347704ef280d274da74c79f9b35f201e8909bbe85a3007367",
+      "sha256": "e05b564ca18e542aac18378f3870c15b21650a224aead96c601c393758a3fac1",
       "width": 128,
       "height": 128,
       "renderedAtOutputResolution": true,
@@ -688,7 +726,7 @@
     },
     "142": {
       "path": "assets/brand/app-icon-van-rasters/142.png",
-      "sha256": "cbd0569a94581bf75b0af798e3479840726a54df6c9902fcbf642e1100befcd6",
+      "sha256": "3ce7545a5b363e59cac3ecbe6f46a2f67aae726fbcb29623ebd37c74d948c5de",
       "width": 142,
       "height": 142,
       "renderedAtOutputResolution": true,
@@ -737,7 +775,7 @@
     },
     "150": {
       "path": "assets/brand/app-icon-van-rasters/150.png",
-      "sha256": "48762d71c1224c8dd17836729f02718610c285dd211bbf86d4bc3a7a939ad465",
+      "sha256": "8752b005f4f25b186c2a6aa1a7024098396fa0e21b65c031e3222d334ae101b9",
       "width": 150,
       "height": 150,
       "renderedAtOutputResolution": true,
@@ -786,7 +824,7 @@
     },
     "256": {
       "path": "assets/brand/app-icon-van-rasters/256.png",
-      "sha256": "2724e93ebd547e19f78bd59b67d1c47c2556a0bc096c78646c8ebf573a583249",
+      "sha256": "08059da179f4160628d748493a940bd06d8f1e9ec4f717f9b1ea2138bfc40605",
       "width": 256,
       "height": 256,
       "renderedAtOutputResolution": true,
@@ -835,7 +873,7 @@
     },
     "284": {
       "path": "assets/brand/app-icon-van-rasters/284.png",
-      "sha256": "7bea46c182d5f793b7873719311124f5868de29ece004df8e3fa1eafb684bb35",
+      "sha256": "619f3240e39718444117ba9eaf814d0859864bc40e1e78549d76280b4e76e96e",
       "width": 284,
       "height": 284,
       "renderedAtOutputResolution": true,
@@ -884,7 +922,7 @@
     },
     "310": {
       "path": "assets/brand/app-icon-van-rasters/310.png",
-      "sha256": "f551e2de0b49d95daec9aacfd81108477a798d28cd5d451ea82b6469984c0fb3",
+      "sha256": "5cca02b0dd74f3cc1376e263451a57e1e75d5e446fcc7e2dce3e85e7a4dcceb5",
       "width": 310,
       "height": 310,
       "renderedAtOutputResolution": true,
@@ -933,7 +971,7 @@
     },
     "512": {
       "path": "assets/brand/app-icon-van-rasters/512.png",
-      "sha256": "e69bcd703247083206190803576d1f63ef806d67ff44bccb6093d8d9bcea4573",
+      "sha256": "44710f97b9a01e7ec73ccf8bd2aa109a2670b0d05bcee7b2cd9db9db0c0a3c51",
       "width": 512,
       "height": 512,
       "renderedAtOutputResolution": true,
@@ -982,7 +1020,7 @@
     },
     "1024": {
       "path": "assets/brand/app-icon-van.png",
-      "sha256": "7fb219e591df52f0f1e6492db29304e64289b09690e0e46f4a3645fd34e2b690",
+      "sha256": "e7309f03afa761bbd92ebe13a685a03ea40a81c818f38820ffaddbf1d8406801",
       "width": 1024,
       "height": 1024,
       "renderedAtOutputResolution": true,
@@ -1030,6 +1068,369 @@
       }
     }
   },
+  "desktopRasters": {
+    "16": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/16.png",
+      "sha256": "64231af9ffdb9e3a001efcde8ffd1240ac31867e5d9d654a7e40541969622cfa",
+      "width": 16,
+      "height": 16,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 16,
+        "height": 16,
+        "sourceWidth": 16,
+        "sourceHeight": 16,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "24": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/24.png",
+      "sha256": "a83bfd224516397e474ca22a0a5000fd70cca8c7330793ceb0a6fe4501f89a3e",
+      "width": 24,
+      "height": 24,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 24,
+        "height": 24,
+        "sourceWidth": 24,
+        "sourceHeight": 24,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "30": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/30.png",
+      "sha256": "b6ec6ec2888e82fbc590e3f3bdfa6cdac691376a75399e2d07a05009f5af258a",
+      "width": 30,
+      "height": 30,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 30,
+        "height": 30,
+        "sourceWidth": 30,
+        "sourceHeight": 30,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "32": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/32.png",
+      "sha256": "5ade55c6d70c362aa30d2bf66f6223331ac1cf9fac789509d006af1acd3d3f0e",
+      "width": 32,
+      "height": 32,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 32,
+        "height": 32,
+        "sourceWidth": 32,
+        "sourceHeight": 32,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "44": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/44.png",
+      "sha256": "94594de683778704b031607484a8d84d44c9660642df09436d339209e77bb440",
+      "width": 44,
+      "height": 44,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 44,
+        "height": 44,
+        "sourceWidth": 44,
+        "sourceHeight": 44,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "48": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/48.png",
+      "sha256": "2495fe2accfd90a05b570b55782a27809edce428488cb275d5a085f01404b927",
+      "width": 48,
+      "height": 48,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 48,
+        "height": 48,
+        "sourceWidth": 48,
+        "sourceHeight": 48,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "50": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/50.png",
+      "sha256": "86065b60833ff124117da0f37d21e073ede8c7a6ee64a83e9476f2ba26cbf281",
+      "width": 50,
+      "height": 50,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 50,
+        "height": 50,
+        "sourceWidth": 50,
+        "sourceHeight": 50,
+        "screenPeriodPx": 4.25,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.3,
+        "vfdToneAmount": 0.1,
+        "variant": "detail"
+      }
+    },
+    "64": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/64.png",
+      "sha256": "2b0af3aef04c35b8b5b37b0c431cc519cebd985e9ad102f459b0ca48041a59c4",
+      "width": 64,
+      "height": 64,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 64,
+        "height": 64,
+        "sourceWidth": 64,
+        "sourceHeight": 64,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "71": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/71.png",
+      "sha256": "72ab70a61ed193d7c0aa3a0ef03962500f90d1dff1dbb3d68e20d6b2312cda71",
+      "width": 71,
+      "height": 71,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 71,
+        "height": 71,
+        "sourceWidth": 71,
+        "sourceHeight": 71,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "89": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/89.png",
+      "sha256": "150ef6857b92cba24d6d3376ce43d5a5593c6624a5505011c43ee82c0c657dcd",
+      "width": 89,
+      "height": 89,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 89,
+        "height": 89,
+        "sourceWidth": 89,
+        "sourceHeight": 89,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "107": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/107.png",
+      "sha256": "9c80c32c330dd3297528991d4effb1b80373153ef1c10a35163fa11e9774f752",
+      "width": 107,
+      "height": 107,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 107,
+        "height": 107,
+        "sourceWidth": 107,
+        "sourceHeight": 107,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "128": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/128.png",
+      "sha256": "7000e0628e1a60de9392295a6a99c5e0356be895542d0bf1e8410d8c26ea8630",
+      "width": 128,
+      "height": 128,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 128,
+        "height": 128,
+        "sourceWidth": 128,
+        "sourceHeight": 128,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "142": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/142.png",
+      "sha256": "f7c25b8adb5b6f38d1e981da05bb2ed25589a4df666ea193e6221068098832cb",
+      "width": 142,
+      "height": 142,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 142,
+        "height": 142,
+        "sourceWidth": 142,
+        "sourceHeight": 142,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "150": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/150.png",
+      "sha256": "24d9b5c45fa5c83b41a75bdd9705043f9ff4523211e6d98fbf72ff715d243bd5",
+      "width": 150,
+      "height": 150,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 150,
+        "height": 150,
+        "sourceWidth": 150,
+        "sourceHeight": 150,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "256": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/256.png",
+      "sha256": "2e7a259c20f27815931ce97473ff8b41a1669935fea9141c3f70ef886ec32e6c",
+      "width": 256,
+      "height": 256,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 256,
+        "height": 256,
+        "sourceWidth": 256,
+        "sourceHeight": 256,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "284": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/284.png",
+      "sha256": "2f85e60aa94b5582987535451fe683ea11b3cd599752d2f6d8f615b0769b0070",
+      "width": 284,
+      "height": 284,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 284,
+        "height": 284,
+        "sourceWidth": 284,
+        "sourceHeight": 284,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "310": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/310.png",
+      "sha256": "3cc52b4451c37e239cb834c9ea29b9a25f0f6c965fe1b444a1b01c06da6ae1ff",
+      "width": 310,
+      "height": 310,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 310,
+        "height": 310,
+        "sourceWidth": 310,
+        "sourceHeight": 310,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "512": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/512.png",
+      "sha256": "69727296a585bfeae12748a12892858ac06d1542e624b6dc80e3ad21d63a95b7",
+      "width": 512,
+      "height": 512,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 512,
+        "height": 512,
+        "sourceWidth": 512,
+        "sourceHeight": 512,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    },
+    "1024": {
+      "path": "assets/brand/app-icon-van-desktop-rasters/1024.png",
+      "sha256": "6ab2379652751f4d349e5c1ee3bee19f6e19dd142293cf32dedc9159839572c5",
+      "width": 1024,
+      "height": 1024,
+      "renderedAtOutputResolution": true,
+      "render": {
+        "width": 1024,
+        "height": 1024,
+        "sourceWidth": 1024,
+        "sourceHeight": 1024,
+        "screenPeriodPx": 6.5,
+        "cellPx": 1,
+        "shaderFingerprint": "fnv1a32:2e0a7558",
+        "recordingCaptureMix": 0.45,
+        "vfdToneAmount": 0.12,
+        "variant": "detail"
+      }
+    }
+  },
   "startup": {
     "packaged": true,
     "source": "assets/brand/app-icon-startup.json",
@@ -1050,20 +1451,30 @@
     "method": "Clear sub3% alpha fringe; minimum tail-lamp coverage projected from canonical lamp faces, independent of red brand paint",
     "lampCentres": [
       {
-        "x": 0.27705677635895554,
-        "y": 0.5941665244871374
+        "x": 0.22090358952203015,
+        "y": 0.5312665074255939
       },
       {
-        "x": 0.48643509493579756,
-        "y": 0.618560961933156
+        "x": 0.45540730632809323,
+        "y": 0.5585882773651347
+      }
+    ],
+    "macLampCentres": [
+      {
+        "x": 0.22132097044869437,
+        "y": 0.6177081556089218
+      },
+      {
+        "x": 0.4830438686697469,
+        "y": 0.6482012024164451
       }
     ]
   },
   "desktopPngs": {
-    "32x32.png": "b9af1ac890bbcf1ac9f82834d7b45096b215db4aacf94e75c22de630e89504c0",
-    "64x64.png": "13bf0549289eee9a28065a41c4a1c57553a0969d13da51b3e0fb63f97e14b133",
-    "128x128.png": "adeba8d8a2671cc5909d5e94426c8b7e45968e5fa208dd58310544b53191dfb2",
-    "128x128@2x.png": "350d8ef5e30037e8e79818b6b15316daa2ae0345cf29ef65a6c993f8be772faf",
-    "icon.png": "87b1c2b20b982905294d96db8cd1ea354002285ad3131f9e58f8ca7540b6afd9"
+    "32x32.png": "197a771fde339933c3fd9d02b255bc41f7bc8966eb92d8796849bbc688acfb53",
+    "64x64.png": "5a82a62e08d99932104a3d500fb1013b7a344711a3942f5434c06180a1d58097",
+    "128x128.png": "3b8df3a09b27e23624a94db9bee0145199072c8d18d4b344663f81dbee2c54ff",
+    "128x128@2x.png": "ee4c4e6648f6290fcb617ad0dc084733ccbf7811054506ddff78390ecc900295",
+    "icon.png": "22447a5971e59b44f2ce2dfcf03d5a42f95d37922fbebd25c951d8eaa71d3806"
   }
 }

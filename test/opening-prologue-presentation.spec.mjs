@@ -93,7 +93,7 @@ test('every ending question stays wholly readable and selectable at enlarged tex
     const layout=cinematicConversationLayout({captionScale:1.35,captionWidth:74,history:[{who:'unknown',text:'What else?'}],pending:{kind:'branch',index:selected,options}},
       {cols:76,rows:24,prompt:'UP/DOWN SELECT · ENTER REPLY · Q REVIEW'});
     assert.equal(layout.selectedChoiceComplete,true);
-    assert.equal(layout.choices.rows.filter(row=>row.kind==='choice'&&row.selected).map(row=>row.bodyText).join(' ').replace(/\s+/g,' ').trim(),options[selected].text);
+    assert.equal(layout.choices.rows.filter(row=>row.kind==='choice'&&row.selected).map(row=>row.bodyText).join(' ').replace(/\s+/g,' ').trim(),options[selected].text.replace(/\s+/g,' ').trim());
     assert.ok((layout.y+layout.height)*layout.scale<=23);
   }
 });
@@ -107,7 +107,8 @@ test('Cinematic anchors preserve the cab hands and the upper sky/school picture'
 test('opening Review holds the exact live utterance, stage, drive and partial skip without completing the line',()=>{
   uiSetLayoutSize({cols:140,rows:40});const h=host();
   try{
-    advance(h.scene,4);h.scene.key({key:' '});advance(h.scene,.1);
+    for(let i=0;i<30&&!h.scene.view().captionHistory.length;i++){advance(h.scene,.4);h.scene.key({key:' '});}
+    advance(h.scene,.1);
     h.scene.key({key:'e'});advance(h.scene,.25);
     const before=h.scene.view();assert.ok(before.captionHistory.length>0);
     h.scene.key({key:'q'});const held=h.scene.view();assert.equal(held.reviewActive,true);assert.equal(held.paused,true);assert.equal(held.skip,0);assert.equal(h.scene.allowsLook,false);
@@ -124,7 +125,8 @@ test('opening Review holds the exact live utterance, stage, drive and partial sk
 test('closing Review cannot release an independently paused opening',()=>{
   uiSetLayoutSize({cols:140,rows:40});const h=host();
   try{
-    advance(h.scene,4);h.scene.key({key:' '});advance(h.scene,.1);h.scene.key({key:'q'});h.scene.pause();
+    for(let i=0;i<40&&!h.scene.view().captionHistory.length;i++){advance(h.scene,.4);h.scene.key({key:' '});}
+    advance(h.scene,.1);h.scene.key({key:'q'});h.scene.pause();
     const before=h.scene.view();h.scene.key({key:'q'});advance(h.scene,.5);const after=h.scene.view();
     assert.equal(after.reviewActive,false);assert.equal(after.paused,true);assert.equal(after.presentationPaused,true);
     assert.equal(after.drive.timeSec,before.drive.timeSec);assert.equal(after.typed,before.typed);

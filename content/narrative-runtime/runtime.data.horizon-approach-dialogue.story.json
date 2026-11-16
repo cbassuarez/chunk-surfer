@@ -16,8 +16,10 @@
     "horizonApproachProposition.history",
     "horizonApproachProposition.route",
     "horizonApproachProposition.consequence",
+    "horizonApproachProposition.decision",
     "horizonApproachProposition.decision.when-again",
-    "horizonApproachProposition.decision.otherwise-again"
+    "horizonApproachProposition.decision.otherwise-again",
+    "horizonApproachProposition.done"
   ],
   "tags": [
     "runtime",
@@ -25,6 +27,10 @@
   ],
   "regions": [],
   "module": "src/data/horizon-approach-dialogue.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/data/horizon-approach-dialogue.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "horizonApproachTruth": {
@@ -192,7 +198,7 @@
           "id": "horizonApproachProposition.questions.c4",
           "text": "That is enough.",
           "source": "src/data/horizon-approach-dialogue.js:66",
-          "targetName": "decision"
+          "goto": "horizonApproachProposition.decision"
         }
       ],
       "source": "src/data/horizon-approach-dialogue.js:62"
@@ -283,6 +289,13 @@
       "source": "src/data/horizon-approach-dialogue.js:72",
       "goto": "horizonApproachProposition.questions"
     },
+    "horizonApproachProposition.decision": {
+      "id": "horizonApproachProposition.decision",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/horizon-approach-dialogue.js:79",
+      "goto": "horizonApproachProposition.done"
+    },
     "horizonApproachProposition.decision.when-again": {
       "id": "horizonApproachProposition.decision.when-again",
       "type": "line",
@@ -314,6 +327,12 @@
         }
       ],
       "source": "src/data/horizon-approach-dialogue.js:82"
+    },
+    "horizonApproachProposition.done": {
+      "id": "horizonApproachProposition.done",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/horizon-approach-dialogue.js:85"
     }
   }
 }

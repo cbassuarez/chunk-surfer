@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{atomic::{AtomicUsize, Ordering}, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use tauri::{
     AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, PhysicalRect, PhysicalSize,
@@ -167,17 +167,9 @@ struct MainTransaction {
     was_focused: bool,
     scale_factor: f64,
     monitor_work_area: Option<PhysicalRect<i32, u32>>,
-    // Superseded by the two below, which say WHICH mode was left. Retained so a
-    // reader can see the request that produced them.
+    // Retained for diagnostics; the latest display preference owns restoration.
     #[allow(dead_code)]
     restore_game_mode: bool,
-    // WHICH fullscreen was left, not merely that one was. restore_transaction
-    // used to put every case back as SIMPLE fullscreen, so a native Space came
-    // back as the wrong mode and a merely screen-filling WINDOW came back
-    // fullscreen with no title bar at all — which is what happened the moment a
-    // run started, because starting one runs a transaction.
-    left_native_fullscreen: bool,
-    left_simple_fullscreen: bool,
     cancelled: bool,
     generation: u64,
     applying_until: Option<Instant>,
@@ -185,6 +177,22 @@ struct MainTransaction {
     expected_size: Option<PhysicalSize<u32>>,
 }
 
+static FRAME_TRANSITIONS: AtomicUsize = AtomicUsize::new(0);
+struct FrameTransitionGuard(AppHandle);
+impl FrameTransitionGuard {
+    fn new(app: &AppHandle) -> Self {
+        FRAME_TRANSITIONS.fetch_add(1, Ordering::SeqCst);
+        Self(app.clone())
+    }
+}
+impl Drop for FrameTransitionGuard {
+    fn drop(&mut self) {
+        if FRAME_TRANSITIONS.fetch_sub(1, Ordering::SeqCst) == 1
+            && !transaction().lock().map(|slot| slot.is_some()).unwrap_or(true) {
+            crate::display_policy::finish_deferred_display(&self.0);
+        }
+    }
+}
 static MAIN_TRANSACTION: OnceLock<Mutex<Option<MainTransaction>>> = OnceLock::new();
 fn transaction() -> &'static Mutex<Option<MainTransaction>> {
     MAIN_TRANSACTION.get_or_init(|| Mutex::new(None))
@@ -294,6 +302,8 @@ fn lerp_u32(a: u32, b: u32, t: f64) -> u32 {
 }
 
 fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Result<bool, String> {
+    let _frame_guard = FrameTransitionGuard::new(app);
+
     if crate::source_desktop::active() { return Ok(false); }
     if !valid_token(&request.token) || request.scene_id.is_empty() {
         return Ok(false);
@@ -322,9 +332,7 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
     let left_simple_fullscreen =
         request.restore_game_mode && crate::display_policy::simple_fullscreen_active();
     if request.restore_game_mode {
-        let _ = main.set_simple_fullscreen(false);
-        let _ = main.set_fullscreen(false);
-        crate::display_policy::note_simple_fullscreen(false);
+        crate::display_policy::set_game_mode(app, false)?;
     }
     let stable = if request.restore_game_mode {
         // A FAILED EXIT MUST NOT BE LEFT HALF-APPLIED.
@@ -342,10 +350,9 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
                 // restore_transaction does: this used to hand a windowed player
                 // a fullscreen window after a cue that never played.
                 if left_simple_fullscreen {
-                    let _ = main.set_simple_fullscreen(true);
-                    crate::display_policy::note_simple_fullscreen(true);
+                    let _ = crate::display_policy::set_game_mode(app, true);
                 } else if left_native_fullscreen {
-                    let _ = main.set_fullscreen(true);
+                    let _ = crate::display_policy::set_game_mode(app, true);
                 }
                 return Err(error);
             }
@@ -374,8 +381,6 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
         scale_factor,
         monitor_work_area,
         restore_game_mode: request.restore_game_mode,
-        left_native_fullscreen,
-        left_simple_fullscreen,
         cancelled: false,
         generation: 0,
         applying_until: None,
@@ -556,6 +561,7 @@ fn settle_cocoa_window_changes() {
 }
 
 fn restore_transaction(app: &AppHandle, required: Option<&str>) -> Result<bool, String> {
+    let _frame_guard = FrameTransitionGuard::new(app);
     let desktop_owned = crate::source_desktop::active();
     let active = {
         let mut slot = transaction()
@@ -620,18 +626,11 @@ fn restore_transaction(app: &AppHandle, required: Option<&str>) -> Result<bool, 
     if let Err(error) = main.set_size(restore_inner) { errors.push(error.to_string()); }
     #[cfg(target_os = "macos")]
     settle_cocoa_window_changes();
-    // Put back the mode that was actually left. A window that only happened to
-    // fill the monitor gets its geometry back and nothing else — imposing simple
-    // fullscreen on it is what stripped the title bar from ordinary windowed
-    // play, every time a scene transition ran a transaction.
-    if active.left_simple_fullscreen {
-        match main.set_simple_fullscreen(true) {
-            Ok(()) => crate::display_policy::note_simple_fullscreen(true),
-            Err(error) => errors.push(error.to_string()),
-        }
-    } else if active.left_native_fullscreen {
-        if let Err(error) = main.set_fullscreen(true) { errors.push(error.to_string()); }
-    }
+    // Apply the latest preference and any staged size selected during the scene.
+    // The transition guard also catches changes arriving during this restore.
+    if let Err(error) = crate::display_policy::restore_display_preference(app) { errors.push(error); }
+    crate::theatre::block_os_fullscreen(&main);
+    crate::theatre::sync(app);
     if active.was_focused {
         // Cleanup after Alt-Tab must not steal focus from another application.
         if !desktop_owned || had_input_focus { let _ = main.set_focus(); }
@@ -1775,4 +1774,9 @@ mod tests {
         }
         assert!(eased(0.5, "out-cubic") > 0.5);
     }
+}
+
+// Settings defer geometry while a composition is opening, active, or restoring.
+pub fn owns_main_frame() -> bool {
+    FRAME_TRANSITIONS.load(Ordering::SeqCst) > 0 || transaction().lock().map(|slot| slot.is_some()).unwrap_or(false)
 }

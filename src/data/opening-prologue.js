@@ -60,7 +60,11 @@ const line=(who,text,extra={})=>({who,text,voice:false,say:false,...extra});
 // The other is heard (Seb, 2026-11-05): its lines are spoken, in its own
 // voice (`other` in src/audio/sam-voice.js). Narration and his own replies stay
 // on the page.
-const d=text=>line('direction',text,{signalRole:'unattributed'}),o=text=>line('unknown',text,{signalRole:'unattributed',voice:true,voiceSpeaker:'other'}),y=text=>line('me',text,{signalRole:'human'});
+// Local delivery multiplier; the shared `other` voice keeps its timbre and rate.
+export const OPENING_SPEECH_RATE=1.25;
+const d=text=>line('direction',text,{signalRole:'unattributed'}),o=text=>line('unknown',text,{signalRole:'unattributed',voice:true,voiceSpeaker:'other',rate:OPENING_SPEECH_RATE}),y=text=>line('me',text,{signalRole:'human',say:true});
+// A response already chosen in a bank is an echo, not a second decision.
+const echo=text=>line('me',text,{signalRole:'human',openingEcho:true});
 const say=(text,go)=>({text:`"${text}"`,goto:go});
 const mum=(go,text='(say nothing)')=>({text,goto:go});
 const fate=(text,go)=>({...say(text,go),hideWhenAsked:true});
@@ -83,17 +87,17 @@ const nodes={
     o("I've been waiting for you to arrive... been waiting for a fair while now. What kept you so long?"),
   ],choices:[say('Who is that?','who'),say('I\'ve been busy preoccupied with other stuff.','procrast'),say('I\'m driving.','driving'),mum('quiet')]},
   who:{stage:'inner',lines:[
-    y('Who is that?! Who are you?'),
+    echo('Who is that?! Who are you?'),
     o("Nobody you\'d know, and everyone you've ever met. I keep late hours. I have been the cough in a slow movement, and the string that goes in the last eight bars. I am the sound that leaves your breath as you think of them."),
     o('I have been the chair that creaks on the only good take. I am very much thought about; rarely ever acknowledged.'),
   ],goto:'look'},
   procrast:{stage:'inner',lines:[
-    y('I\'ve been busy preoccupied with other stuff.'),
+    echo('I\'ve been busy preoccupied with other stuff.'),
     o('I bet you\'ve been, haven\'t you? But you\'re here now, and now that you\'re here, we finally get to talk.'),
     d('The wipers move so beautifully, with great effort, like the stride of a doe or an olympic athlete; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.'),
   ],goto:'look'},
   driving:{stage:'inner',lines:[
-    y('I\'m driving.'),
+    echo('I\'m driving.'),
     o('You are! Beautifully. Both hands, ten and two!'),
     d('The wipers move so beautifully, with great effort, like the stride of a doe or an olympic athlete; they glide across the windscreen, and you can feel the rhythm of the blades as they pass over the glass.'),
   ],goto:'look'},
@@ -117,18 +121,18 @@ const nodes={
     action('(refuse the game)','interval-refuse'),
   ]},
   'interval-refuse':{stage:'refused',openingAct:'refuse',lines:[
-    y('No. I am not playing a game for you.'),
+    echo('No. I am not playing a game for you.'),
     o('Of course not. Keep your hands where you want them. I will keep mine where I please.'),
     d('One eye shuts. The wheels go on turning.'),
   ],goto:'kept'},
   'interval-eyes':{stage:'counted',lines:[
-    y('What am I looking at?'),
+    echo('What am I looking at?'),
     o('I don\'t think you\'d want the answer to that question.'),
     d('You count twenty-four eyes. Twenty-three close. The last seems nearer than the wheel that carries it.'),
     y('Holy...'),
   ],choices:[say('You first.','interval-first'),mum('interval-meet','(hold its gaze)')]},
   'interval-first':{stage:'unseen',openingAct:'refuse',lines:[
-    y('You first.'),
+    echo('You first.'),
     o('Oh, I can.'),
     d('The last eye goes dark. You still feel watched from exactly there.'),
     o('Now what were you going to do about the job?'),
@@ -138,7 +142,7 @@ const nodes={
     o('You can hold a look. Good. A minute is longer than that.'),
   ],goto:'kept'},
   'interval-wheel':{stage:'grip',lines:[
-    y('I\'m keeping my hands on the wheel.'),
+    echo('I\'m keeping my hands on the wheel.'),
     d('You can still feel the seam under your thumb. As your vision blurs every now and then (maybe the tear in your eye, maybe something else) you use that seam to guide you back to the roadway.'),
     o('And somehow it simply won\'t make a difference, I\'m sorry to say.'),
     y('What? But I\'m doing so well!'),
@@ -176,16 +180,16 @@ const nodes={
     o('Tell me about the job. Go on, I love how people tell it.'),
   ],choices:[say('Five rooms. One clean minute of each.','job-rooms'),say('Well, it\'s four hundred quid.','job-money'),say('It\'s just a job, like any other.','job-just')]},
   'job-rooms':{stage:'whole',lines:[
-    y('Five rooms. One clean minute of each.'),
+    echo('Five rooms. One clean minute of each.'),
     o('With nothing in it.'),
     y('With nothing in it. A basement studio, the pool, the concert hall, one of the practice rooms in the practice wing and the chapel. Kinda creepy old school, I never liked the way the halls felt like they were whispering, but I\'ve been dying to hear the reverb in the pool again.'),
   ],goto:'job-sheet'},
   'job-money':{stage:'whole',lines:[
-    y('Well, it\'s four hundred quid.'),
+    echo('Well, it\'s four hundred quid.'),
     o('To stand very still in five rooms and not make a sound. I have seen many people do it for nothing, known people do it for years.'),
   ],goto:'job-sheet'},
   'job-just':{stage:'whole',lines:[
-    y('It\'s just a job, like any other.'),
+    echo('It\'s just a job, like any other.'),
     o('It is a lovely job. They ring up a person whose whole job is to listen and stand still. But you\'re known in the business, or so I see; your recordings are pristine, beautifully empty. Practically zero extra noise. That\'s why they\'ve your number.'),
   ],goto:'job-sheet'},
   'job-sheet':{stage:'whole',lines:[
@@ -196,28 +200,28 @@ const nodes={
     o('Who wants a minute of an empty room, d\'you suppose?'),
   ],goto:'last-one'},
   client:{stage:'whole',lines:[
-    y('Who signed for W. Ellery Holdings?'),
+    echo('Who signed for W. Ellery Holdings?'),
     o('A good question.'),
     d('The signature is illegible. The authorising officer\'s field is blank under every sheet.'),
     o('There. Now you have asked, and it cost you nothing. It is a very old firm.'),
   ],goto:'file'},
   'no-ask':{stage:'whole',lines:[
-    y('I don\'t ask.'),
+    echo('I don\'t ask.'),
     o('No you don\'t. Neither did the last one.'),
   ],goto:'file'},
   'last-one':{stage:'whole',lines:[
     d('The prior contractor delivered four accepted room tones; the verdict remains open on what happened to the fifth take, but it\'s the reason you\'re here, driving to this posh, derelict school for less than the cost of one of their prior students\' weekly allowance.'),
   ],goto:'ellery'},
   fifth:{stage:'whole',lines:[
-    y('What happened to the fifth?'),
+    echo('What happened to the fifth?'),
     o('Who knows? Or maybe I do know, and just won\'t tell you. If you see a cow in the road which happens to be cardboard, but there was a cow behind it, does it matter that the first cow was cardboard?'),
   ],goto:'file'},
   him:{stage:'whole',lines:[
-    y('What happened to him?'),
+    echo('What happened to him?'),
     o('Well, that would be quite the spoiler now, wouldn\'t it?'),
   ],goto:'file'},
   'not-mine':{stage:'whole',lines:[
-    y('Not my problem.'),
+    echo('Not my problem.'),
     o('No, but it soon might just be.'),
   ],goto:'file'},
   // ── the school ───────────────────────────────────────────────────────────────
@@ -239,16 +243,16 @@ const nodes={
     say('What does that leave me to hear?','hearing'),
   ]},
   hearing:{stage:'notice',lines:[
-    y('What does that leave me to hear?'),
+    echo('What does that leave me to hear?'),
     o('By midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of.'),
   ],goto:'margin'},
   'hearing-quiet':{stage:'notice',lines:[
     d('You say nothing. The notice has not been answered. Your work order has.'),
     o('Five clean minutes. You see the difficulty.'),
   ],goto:'margin'},
-  school:{stage:'school',lines:[y('What kind of school?')],goto:'school-told'},
+  school:{stage:'school',lines:[echo('What kind of school?')],goto:'school-told'},
   attended:{stage:'school',lines:[
-    y('Did you go there?'),
+    echo('Did you go there?'),
     o('I attended. Every lesson, every night, every year, the best seat in the house. You will not find me on a register. I have looked.'),
   ],goto:'school-told'},
   'school-quiet':{stage:'school',lines:[d('You keep quiet. It tells you anyway.')],goto:'school-told'},
@@ -264,10 +268,10 @@ const nodes={
     o('The others knew. They would not dare play over it with sounds of practice or performance. They, too, fell silent. It was the quietest period in the building since its construction. At first, some outlets thought the students were postmodernists trying to make a statement with a new performance art piece, and then some of them broke their vows and ran to the news.'),
   ],goto:'notice'},
   'boy-name':{stage:'school',lines:[
-    y('What was his name?'),
+    echo('What was his name?'),
     o('The other students decided to call him nothing, out of respect for his initial vow of silence.'),
   ],goto:'file'},
-  boy:{stage:'school',lines:[y('What happened to the boy?')],goto:'boy-told'},
+  boy:{stage:'school',lines:[echo('What happened to the boy?')],goto:'boy-told'},
   'boy-told':{stage:'boy',lines:[
     o('He\'s missing. See? official report says so.'),
     d('The public register says MISSING, its telex type likely rushed in a series of quick communiques to the public.'),
@@ -282,11 +286,11 @@ const nodes={
   ],choices:[say('Good for them for trying.','good'),say('What did the school say?','office'),
     say('What else is in the file?','file'),say('What does that leave me to hear?','hearing'),mum('hearing-quiet')]},
   good:{stage:'notice',lines:[
-    y('Good for them for trying.'),
+    echo('Good for them for trying.'),
     o('Is it not? Every room in the place silent, for the first time since it opened. You have no idea how lovely that was.'),
   ],goto:'file'},
   office:{stage:'notice',lines:[
-    y('What did the school say?'),
+    echo('What did the school say?'),
     o('They are still not answering. It is the longest piece anyone has ever performed there; the school administration had always wanted a performance they can rest their legacy on, and in the handling of this incident, it found one.'),
   ],goto:'file'},
   tower:{stage:'roll',lines:[
@@ -296,13 +300,13 @@ const nodes={
     o('"Refusal to rehearse is not a medical finding." Somebody seriously sat down and typed that. Regardless, ever since, the school has been plagued by scandal after scandal. No wonder they\'re broke.'),
   ],choices:[say('Did you do that?','did'),say('Why are you telling me?','why'),mum('tower-quiet')]},
   did:{stage:'roll',lines:[
-    y('Did you write that?'),
+    echo('Did you write that?'),
     o('Look at me. I am a hole. I have never so much as lifted a bow.'),
     y('That isn\'t a no.'),
     o('It is not. They told me you were cheap, but they didn\'t say you were quick.'),
   ],goto:'file'},
   why:{stage:'roll',lines:[
-    y('Why are you telling me?'),
+    echo('Why are you telling me?'),
     o('Because by midnight you will be standing in those rooms, being paid to hear nothing. Somebody ought to tell you what you will be hearing nothing of, whose legacy you will be standing on, and what it cost them to become atoms of air in your little recording. You deserve to know where you stand in all of this.'),
   ],goto:'file'},
   'tower-quiet':{stage:'roll',lines:[
@@ -315,11 +319,11 @@ const nodes={
     o('Do you want me to put the next bit back where it was?'),
   ],choices:[say('What next bit?','margin-next'),say('Leave the road alone.','margin-road'),mum('margin-quiet')]},
   'margin-next':{stage:'margin',lines:[
-    y('What next bit?'),
+    echo('What next bit?'),
     o('The next bit up the road. Or we can play another game.'),
   ],goto:'fate'},
   'margin-road':{stage:'margin',lines:[
-    y('Please leave the road alone.'),
+    echo('Please leave the road alone.'),
     o('Alright, me, the floating hole in the sky, will leave the road alone.'),
     d('Nothing straightens. You think you should keep your hands where the road might need them.'),
   ],goto:'fate'},
@@ -343,43 +347,43 @@ const nodes={
     say('That\'s enough.','f-enough'),
   ]},
   'f-home':{...back,lines:[
-    y('I\'ll finish the job and go home.'),
+    echo('I\'ll finish the job and go home.'),
     o('You might just! Anything could happen, surely. You\'ll finish up, go home, and check your recordings. You\'ll find them all clean, and you\'ll be able to go to bed with a clear conscience.'),
     o('Except you listen back, late in the morning, and perhaps there are hauntings on them you could never dream of hearing.'),
     o('Or maybe it\'s something else- something you took, saw, experienced. If anything, the only thing you learn today is that your senses may fail you.'),
   ]},
   'f-seal':{...back,lines:[
-    y('Then I stop whatever this is.'),
+    echo('Then I stop whatever this is.'),
     o('The most selfless thing you could ever do. Then your meandering little life might amount to something.'),
     o('...but if I\'m being honest, I\'m not sure you\'d be able to stop it. The building has to come down sometime, even if it\'s not today.'),
   ]},
   'f-help':{...back,lines:[
-    y('Somebody will help me.'),
+    echo('Somebody will help me.'),
     o('Sure enough you\'ll receive some help, but whether or not it is the kind of help you wanted is another matter entirely.'),
     o('Up to you whether to accept.'),
   ]},
   'f-door':{...back,lines:[
-    y('There\'s always another way out.'),
+    echo('There\'s always another way out.'),
     o('There is! But you won\'t find it on any of the plans; in fact, you find it by losing another door, funny asat sounds.'),
     o('The rooms in Ellery have a way of manifesting themselves. It\'s really quite a sight. Some of the earlier students were so good at it, they could make a whole room appear in the middle of the street. It\'s a remarkable way to find an extra room to practice in when they\'re all already taken up.'),
   ]},
   'f-carry':{...back,lines:[
-    y('I could get the last guy out.'),
+    echo('I could get the last guy out.'),
     o('It\'s not as easy as it sounds, and if you\'re not careful, you\'ll be the last one in.'),
   ]},
   'f-bench':{...back,lines:[
-    y('I could just stop, and listen.'),
+    echo('I could just stop, and listen.'),
     o('There are some benches where you sit down and we talk. It\'s rather quite enjoyable. You can hear the rain on the roof, and the wind in the trees, and the birds in the morning, their hands on your face, and the roar of a thousand daisies in the wind.'),
     o('We sit. It holds your weight. There is no getting up and yet you don\'t mind as much as you thought you would. There is no hurry to leave, it\'s... peaceful.'),
   ]},
   'f-none':{stage:'last',lines:[
-    y('Is there one where I\'m all right?'),
+    echo('Is there one where I\'m all right?'),
     d('All of the eyes that are left look at you.'),
     o('Who knows? Nothing is ever for certain.'),
     o('You could always just drive off. People have. They never write.'),
   ],goto:'off'},
   'f-enough':{stage:'last',lines:[
-    y('That\'s enough.'),
+    echo('That\'s enough.'),
     o('If you say so. You have a bend coming up, by the way.'),
   ],goto:'off'},
   off:{stage:'last',lines:[
@@ -401,7 +405,7 @@ const nodes={
 // available to independent tools and reduced-motion presentation.
 const semanticPhases={
   road:['start'],
-  recognition:['there','who','driving','quiet','look','interval-refuse','interval-eyes','interval-first','interval-meet',
+  recognition:['there','who','procrast','driving','quiet','look','interval-refuse','interval-eyes','interval-first','interval-meet',
     'interval-wheel','interval-hold','interval-release','interval-avert','interval-wait','interval-return','interval-silent',
     'kept','job','job-rooms','job-money','job-just','job-sheet','last-one'],
   ellery:['client','no-ask','fifth','him','not-mine','ellery','file','hearing','hearing-quiet','school','attended',

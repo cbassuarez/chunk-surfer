@@ -44,9 +44,7 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
         .quit_with_text("Quit Chunk Surfer")
         .build()?;
 
-    let new_game = MenuItemBuilder::with_id("new_game", "New Game…")
-        .accelerator("CmdOrCtrl+N")
-        .build(app)?;
+    let new_game = MenuItemBuilder::with_id("new_game", "New Game…").build(app)?;
     let continue_game = MenuItemBuilder::with_id("continue", "Continue").build(app)?;
     let restart_run = MenuItemBuilder::with_id("restart_run", "Restart Run…").build(app)?;
     let pause = MenuItemBuilder::with_id("pause", "Pause / Resume")
@@ -72,11 +70,8 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
         .item(&return_to_title)
         .build()?;
 
-    let game_mode = MenuItemBuilder::with_id("game_mode", "Enter Game Mode")
-        .accelerator("F11")
-        .build(app)?;
-    let fullscreen = MenuItemBuilder::with_id("fullscreen", "Toggle Fullscreen")
-        .accelerator("CmdOrCtrl+F")
+    let game_mode = MenuItemBuilder::with_id("game_mode", "Toggle Fill Screen")
+        .accelerator(if cfg!(target_os = "macos") { "Ctrl+Super+F" } else { "F11" })
         .build(app)?;
     let reset_window_item = MenuItemBuilder::with_id("reset_window", "Reset Window").build(app)?;
     let reduce_motion = MenuItemBuilder::with_id("reduce_motion", "Reduce Motion").build(app)?;
@@ -86,7 +81,6 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
 
     let view_menu = SubmenuBuilder::new(app, "View")
         .item(&game_mode)
-        .item(&fullscreen)
         .minimize_with_text("Minimize")
         .item(&reset_window_item)
         .separator()
@@ -136,8 +130,8 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
     app.on_menu_event(|app, event| {
         let id = event.id().as_ref();
         match id {
-            // Route fullscreen through the same frontend game-mode path so the
-            // DOM stage, focus profile, and native fullscreen state stay in sync.
+            // Retain the old event alias, but use the single Fill screen owner
+            // for both menu requests and the frontend stage.
             "fullscreen" | "game_mode" => emit_frontend(app, "game_mode"),
             "reset_window" => reset_window(app),
             "about" | "preferences" | "diagnostics" | "new_game" | "continue" | "restart_run"

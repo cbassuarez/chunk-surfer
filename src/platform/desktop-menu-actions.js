@@ -167,7 +167,7 @@ export function routeDesktopMenuAction(payload, handlers = {}) {
 // teleported. There is no bug at the destination; the reload IS the bug.
 //
 // Deliberately excludes anything isReservedDesktopShortcut already claims —
-// Cmd+P (print/pause), Cmd+F (find/fullscreen), Cmd+N, Cmd+M, Cmd+Q — those are
+// Cmd+P (print/pause), Cmd+F (find/fullscreen), Cmd+M, Cmd+Q — those are
 // handled and preventDefault'd there, and listing them twice would mean whichever
 // check ran first decided the behaviour.
 //
@@ -194,6 +194,11 @@ export function isBrowserChromeShortcut(event) {
   if (primary && (key === 'u' || code === 'KeyU')) return true;
   if (primary && (key === 's' || code === 'KeyS')) return true;
 
+  // New window. The app no longer binds this to New Game — one keystroke must
+  // not be able to replace a run — so it is refused rather than left to the
+  // webview, which would open a second window on it.
+  if (primary && (key === 'n' || code === 'KeyN')) return true;
+
   // Zoom. The renderer owns its own scale; browser zoom desynchronises the
   // canvas from the pointer and there is no way back from inside the game.
   if (primary && ['Equal', 'Minus', 'Digit0', 'NumpadAdd', 'NumpadSubtract', 'Numpad0'].includes(code)) return true;
@@ -216,7 +221,6 @@ export function isReservedDesktopShortcut(event) {
   if (key === 'm') return true;
   if (key === 'f') return true;
   if (key === 'p') return true;
-  if (key === 'n') return true;
   if (key === 'g' && event.shiftKey) return true;
 
   return false;

@@ -295,7 +295,12 @@ export function micMeterMeasurement(now = meterNow()) {
     meterSource: session.mode === 'worklet' ? 'worklet' : 'analyser', dualTrace };
 }
 
-const mediaDevices = () => globalThis.navigator?.mediaDevices || null;
+// WebKitGTK routes every capture request, audio-only included, through the
+// PipeWire Camera portal, which prompts for the camera and can abort the
+// process. The Linux desktop shell disables media streams; never touch them.
+const linuxDesktopShell = () => !!globalThis.__TAURI_INTERNALS__
+  && /Linux/.test(globalThis.navigator?.userAgent || '') && !/Android/.test(globalThis.navigator?.userAgent || '');
+const mediaDevices = () => (linuxDesktopShell() ? null : globalThis.navigator?.mediaDevices || null);
 
 export function normalizeMicInput(value = {}) {
   const source = value && typeof value === 'object' ? value : {};

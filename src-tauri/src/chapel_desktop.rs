@@ -937,6 +937,8 @@ mod platform {
         target: WebviewWindow,
         source_composited: bool,
     ) -> Result<(), String> {
+        let main = app.get_webview_window("main");
+        let theatre = crate::theatre::wanted();
         run_appkit(app, move || {
             if phase(&token) != Some(Phase::Opening) {
                 return false;
@@ -958,7 +960,7 @@ mod platform {
                     [top + 1, top + 2]
                 } else {
                     [
-                        CGWindowLevelForKey(DESKTOP_LEVEL_KEY) + 1,
+                        if theatre { CGWindowLevelForKey(NORMAL_LEVEL_KEY) } else { CGWindowLevelForKey(DESKTOP_LEVEL_KEY) + 1 },
                         CGWindowLevelForKey(NORMAL_LEVEL_KEY),
                     ]
                 };
@@ -971,6 +973,14 @@ mod platform {
                     set_window_bool(window, b"setHidesOnDeactivate:\0", true);
                     set_window_bool(window, b"setIgnoresMouseEvents:\0", true);
                     order_window(window, b"orderFront:\0");
+                }
+                if theatre && !source_composited {
+                    if let Some(Ok(stage)) = main.as_ref().map(|window| window.ns_window()) {
+                        let number: unsafe extern "C" fn(*mut c_void, *mut c_void) -> isize = std::mem::transmute(objc_msgSend as *const ());
+                        let below: unsafe extern "C" fn(*mut c_void, *mut c_void, isize, isize) = std::mem::transmute(objc_msgSend as *const ());
+                        below(backdrop, sel_registerName(b"orderWindow:relativeTo:\0".as_ptr().cast()), -1,
+                            number(stage, sel_registerName(b"windowNumber\0".as_ptr().cast())));
+                    }
                 }
             }
             true

@@ -204,19 +204,26 @@ export function architectureFittingsPlan(fp,{doors=fp.doorState?.()||[],schedule
         for(const run of roomRuns)for(const c of run.cells)for(const offset of offsets) {
           const centre=(run.axis==='x'?c.x:c.y)+.5+offset;
           if(!canFit(run,centre,width)||elevation+h>run.ceiling-run.floor-.08)continue;
+          // Score first. It is two distances; the tests below it walk the
+          // rendered wall, the room and every door, and a candidate that
+          // cannot beat the best one so far never needed them. The choice is
+          // unchanged: the tests have no effects, and only a strictly better
+          // score ever replaced the best. (119,000 wall-host checks per
+          // building load before this; it was most of the fittings pass.)
+          const dx=run.axis==='x'?offset:0,dy=run.axis==='y'?offset:0;
+          const d=Math.hypot(c.x+dx-anchor.x,c.y+dy-anchor.y);
+          const doorD=roomDoors.length?Math.min(...roomDoors.map(door=>Math.hypot(c.x+dx-door.cx,c.y+dy-door.cy))):d;
+          const score=nearDoor?doorD+d*.20:d;
+          if(!(score<cost))continue;
           if(!physicalWallFaceHasHost(fp,c,{bottom:run.floor+elevation+.001,
             height:h-.002,halfWidthCells:width/(2*CELL),
             alongOffsetCells:offset*(run.nx||-run.ny)}))continue;
           if(!available(run,centre,width,elevation,h)||!lineInRoom(fp,anchor,c))continue;
           if(!fixtureClearsHosts(run,c,{...spec,h},elevation,reservedHosts,centre))continue;
-          const dx=run.axis==='x'?offset:0,dy=run.axis==='y'?offset:0;
-          const d=Math.hypot(c.x+dx-anchor.x,c.y+dy-anchor.y);
-          const doorD=roomDoors.length?Math.min(...roomDoors.map(door=>Math.hypot(c.x+dx-door.cx,c.y+dy-door.cy))):d;
           // Avoid the aperture and complete moving-leaf sweep, not only its cell.
           if(doors.some(door=>Math.abs((door.floor??fp.floorAt(door.cx,door.cy))-run.floor)<.3
             &&Math.hypot(c.x+.5+dx-door.cx,c.y+.5+dy-door.cy)*CELL<(door.aperture?.width||1.1)/2+width/2+.65))continue;
-          const score=nearDoor?doorD+d*.20:d;
-          if(score<cost){best={run,c,centre};cost=score;}
+          best={run,c,centre};cost=score;
         }
       }
       if(!best){entry.unplaced.push(suffix);return null;}

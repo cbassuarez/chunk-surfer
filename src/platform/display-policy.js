@@ -1,5 +1,5 @@
 export const DISPLAY_CONTRACT = Object.freeze({
-  version: 3,
+  version: 4,
   design: Object.freeze({ width: 1280, height: 800 }),
   minimum: Object.freeze({ width: 960, height: 600 }),
   safeMinimum: Object.freeze({ width: 960, height: 600 }),
@@ -29,8 +29,8 @@ export const DISPLAY_CONTRACT = Object.freeze({
     Object.freeze({ id: '100', value: 1, label: 'Native · 100%' }),
   ]),
   displayModes: Object.freeze([
-    Object.freeze({ id: 'windowed', label: 'Windowed' }),
-    Object.freeze({ id: 'game-mode', label: 'Fullscreen' }),
+    Object.freeze({ id: 'windowed', label: 'Staged window' }),
+    Object.freeze({ id: 'game-mode', label: 'Fill screen' }),
   ]),
 });
 

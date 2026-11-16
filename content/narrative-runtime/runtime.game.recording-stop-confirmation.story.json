@@ -6,7 +6,8 @@
   "fromCode": true,
   "entry": "recordingStopPrompt.start",
   "entries": [
-    "recordingStopPrompt.start"
+    "recordingStopPrompt.start",
+    "recordingStopPrompt.done"
   ],
   "tags": [
     "runtime",
@@ -14,6 +15,10 @@
   ],
   "regions": [],
   "module": "src/game/recording-stop-confirmation.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/game/recording-stop-confirmation.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "recordingStopPrompt.start": {
@@ -32,16 +37,22 @@
           "id": "recordingStopPrompt.start.c0",
           "text": "Keep recording.",
           "source": "src/game/recording-stop-confirmation.js:14",
-          "targetName": "done"
+          "goto": "recordingStopPrompt.done"
         },
         {
           "id": "recordingStopPrompt.start.c1",
           "text": "Stop. Discard this take.",
           "source": "src/game/recording-stop-confirmation.js:15",
-          "targetName": "done"
+          "goto": "recordingStopPrompt.done"
         }
       ],
       "source": "src/game/recording-stop-confirmation.js:12"
+    },
+    "recordingStopPrompt.done": {
+      "id": "recordingStopPrompt.done",
+      "type": "line",
+      "lines": [],
+      "source": "src/game/recording-stop-confirmation.js:18"
     }
   }
 }

@@ -6,8 +6,9 @@ const source=readFileSync(new URL('../public/startup-van.js',import.meta.url),'u
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const settle=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
 const metadata={motionVersion:'albion-maneuver-1',durationSeconds:3.4,frameCount:84,columns:8,rows:11,cell:128,atlas:'van-startup.png',weather:{rain:true},motionFrames:Array.from({length:84},()=>({speed:1,slipping:false}))};
-function fixture({reduced=false,fetchNever=false,fetchFails=false,imageFails=false,width=1024,nativeElapsed=null,nativeLatency=0,nativeReadyAt=null,version=metadata.motionVersion}={}){
+function fixture({reduced=false,fetchNever=false,fetchDeferred=false,fetchFails=false,imageFails=false,width=1024,nativeElapsed=null,nativeLatency=0,nativeReadyAt=null,version=metadata.motionVersion}={}){
  let ms=0,serial=0;
+ let resolveFetch=null;
  const timers=new Map(),frames=new Map(),listeners=new Map(),events=[],requests=[],draws=[],calls=[];
  const canvas={hidden:true,getContext(kind){assert.equal(kind,'2d');return{clearRect(){},drawImage(...args){draws.push(args.slice(1));}};}};
  const poster={hidden:true},media={matches:reduced,addEventListener:(type,fn)=>listeners.set('media:'+type,fn),removeEventListener:type=>listeners.delete('media:'+type)};
@@ -15,7 +16,7 @@ function fixture({reduced=false,fetchNever=false,fetchFails=false,imageFails=fal
   Image:class{constructor(){this.naturalWidth=width;this.naturalHeight=1408;}set src(value){this.value=value;if(value)queueMicrotask(()=>imageFails?this.onerror?.():this.onload?.());}},
   matchMedia:()=>media,requestAnimationFrame(fn){frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id),
   setTimeout(fn,delay){timers.set(++serial,{fn,delay});return serial;},clearTimeout:id=>timers.delete(id),
-  fetch(url,{signal}){requests.push({url,signal});if(fetchNever)return new Promise(()=>{});return Promise.resolve({ok:!fetchFails,json:async()=>metadata});},
+  fetch(url,{signal}){requests.push({url,signal});if(fetchNever)return new Promise(()=>{});if(fetchDeferred)return new Promise(resolve=>{resolveFetch=()=>resolve({ok:true,json:async()=>metadata});});return Promise.resolve({ok:!fetchFails,json:async()=>metadata});},
   addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type),dispatchEvent:event=>events.push(event),
   CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail;}}};
  if(nativeElapsed!==null)window.__TAURI_INTERNALS__={invoke(name){calls.push(name);if(calls.length===1)ms+=nativeLatency;return Promise.resolve({motionVersion:version,elapsed:nativeElapsed+ms/1000,readyAt:nativeReadyAt});}};
@@ -23,7 +24,7 @@ function fixture({reduced=false,fetchNever=false,fetchFails=false,imageFails=fal
   getElementById:id=>id==='startupVanCanvas'?canvas:id==='startupVanPoster'?poster:null,
   addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
  runInNewContext(source,{window,document,URL,Promise,Number});
- return{api:window.__chunkStartupVan,canvas,poster,frames,timers,draws,events,requests,calls,listeners,
+ return{api:window.__chunkStartupVan,resolveFetch:()=>resolveFetch(),canvas,poster,frames,timers,draws,events,requests,calls,listeners,
   frame(at){ms=at*1000;for(const[id,fn]of [...frames]){frames.delete(id);fn(ms);}},
   tick(delay){for(const[id,item]of [...timers])if(item.delay===delay){timers.delete(id);item.fn();}},
   hide(value){document.hidden=value;listeners.get('visibilitychange')();},
@@ -82,10 +83,25 @@ test('a late replacement webview never replays a launch that was already ready',
 });
 test('decode failure, incorrect dimensions and timeout retain a stationary still until readiness',async()=>{
  for(const options of[{fetchFails:true},{imageFails:true},{width:4},{fetchNever:true}]){
-  const f=fixture(options);await settle();if(options.fetchNever)f.tick(1500);
+  const f=fixture(options);await settle();if(options.fetchNever){f.tick(1500);assert.equal(f.api.status().phase,'loading');assert.equal(f.poster.hidden,false);f.tick(8000);}
   assert.equal(f.api.status().phase,'finished');assert.equal(f.poster.hidden,false);assert.equal(f.draws.length,0);
   assert.equal(f.api.reveal(),false);assert.equal(f.poster.hidden,true);assert.equal(f.timers.size,0);
  }
+});
+test('a slow atlas shows the still, keeps loading, and plays its arrival from the first frame',async()=>{
+ const f=fixture({fetchDeferred:true});await settle();f.frame(1.5);f.tick(1500);
+ assert.equal(f.api.status().phase,'loading');assert.equal(f.poster.hidden,false);assert.equal(f.requests[0].signal.aborted,false);
+ f.frame(2.5);f.resolveFetch();await settle();f.frame(2.5);
+ assert.equal(f.api.status().phase,'playing');assert.equal(f.api.status().position,0);assert.equal(f.poster.hidden,true);assert.equal(f.api.status().error,null);
+ f.frame(3);assert.equal(f.api.status().position,.5);assert.equal(f.timers.size,0);
+ f.frame(4.5);assert.equal(f.api.status().phase,'holding');assert.equal(f.api.reveal(),true);
+});
+test('a delayed atlas joins the native clock without replaying an arrival already shown in the Dock',async()=>{
+ const f=fixture({fetchDeferred:true,nativeElapsed:.4});await settle();
+ f.frame(1.5);f.tick(1500);f.frame(2.5);f.resolveFetch();await settle();f.frame(2.5);
+ assert.equal(f.api.status().clock,'native');assert.equal(f.api.status().launchElapsed,2.9);
+ assert.equal(f.api.status().phase,'holding');assert.equal(f.api.status().position,1.94);
+ assert.equal(f.api.status().frame,47);assert.equal(f.frames.size,0);
 });
 test('Reduced Motion allocates no atlas and live settings cancel playback without restarting',async()=>{
  const still=fixture({reduced:true});assert.equal(still.requests.length,0);assert.equal(still.poster.hidden,false);

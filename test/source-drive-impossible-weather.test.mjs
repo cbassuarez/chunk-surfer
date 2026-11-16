@@ -51,12 +51,12 @@ test('snow checkpoint validation rejects a truncated or non-finite pane map',()=
 });
 
 test('the actual weather texture uploads liquid and snow in distinct channels, including checkpoint owner replacement',()=>{
- const source=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8'),begin=source.indexOf('export function driveStudyWeatherTarget('),end=source.indexOf('\nexport function setDriveStudyCanvas(',begin),fn=source.slice(begin,end).replace('export ','');
- const calls=[],gl={isContextLost:()=>false,getParameter:()=>105,ACTIVE_TEXTURE:1,TEXTURE0:100,TEXTURE_2D:2,UNPACK_ALIGNMENT:3,RG8:4,RG:5,UNSIGNED_BYTE:6,TEXTURE_MIN_FILTER:7,TEXTURE_MAG_FILTER:8,LINEAR:9,TEXTURE_WRAP_S:10,TEXTURE_WRAP_T:11,CLAMP_TO_EDGE:12,createTexture:()=>({texture:true}),bindTexture(){},pixelStorei(){},texParameteri(){},texImage2D(...args){calls.push(['image',args[2],args[6],Array.from(args.at(-1))]);},texSubImage2D(...args){calls.push(['sub',args[6],Array.from(args.at(-1))]);}};
+ const source=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8'),begin=source.indexOf('export function driveStudyWeatherTarget('),end=source.indexOf('\n}',begin)+2,fn=source.slice(begin,end).replace('export ','');
+ const calls=[],gl={isContextLost:()=>false,getParameter:()=>105,ACTIVE_TEXTURE:1,TEXTURE0:100,TEXTURE_2D:2,UNPACK_ALIGNMENT:3,RGBA8:4,RGBA:5,UNSIGNED_BYTE:6,TEXTURE_MIN_FILTER:7,TEXTURE_MAG_FILTER:8,LINEAR:9,TEXTURE_WRAP_S:10,TEXTURE_WRAP_T:11,CLAMP_TO_EDGE:12,createTexture:()=>({texture:true}),bindTexture(){},pixelStorei(){},texParameteri(){},texImage2D(...args){calls.push(['image',args[2],args[6],Array.from(args.at(-1))]);},texSubImage2D(...args){calls.push(['sub',args[6],Array.from(args.at(-1))]);}};
  const run=new Function('gl',`let driveStudyFrame,driveWetTexture=null,driveWetUploadUnit=null,driveWetRevision=-1,driveWetOwner=null,driveWetSize='';${fn};return wet=>{driveStudyFrame={weather:{wetness:wet}};return driveStudyWeatherTarget();};`)(gl);
- const data=new Uint8Array([10,20]),snowData=new Uint8Array([30,40]),wet={width:2,height:1,data,snowData,revision:1,owner:{}};
- assert.ok(run(wet));assert.deepEqual(calls,[['image',gl.RG8,gl.RG,[10,30,20,40]]]);run(wet);assert.equal(calls.length,1);
- run({...wet,snowData:new Uint8Array([50,60]),owner:{}});assert.deepEqual(calls[1],['sub',gl.RG,[10,50,20,60]]);
+ const data=new Uint8Array([10,20]),snowData=new Uint8Array([30,40]),impactData=new Uint8Array([50,60]),beadData=new Uint8Array([70,80]),wet={width:2,height:1,data,snowData,impactData,beadData,revision:1,owner:{}};
+ assert.ok(run(wet));assert.deepEqual(calls,[['image',gl.RGBA8,gl.RGBA,[10,30,50,70,20,40,60,80]]]);run(wet);assert.equal(calls.length,1);
+ run({...wet,snowData:new Uint8Array([90,100]),owner:{}});assert.deepEqual(calls[1],['sub',gl.RGBA,[10,90,50,70,20,100,60,80]]);
 });
 
 test('fog and snow are depth-clipped world volumes before final acquisition and physical pane accumulation',()=>{

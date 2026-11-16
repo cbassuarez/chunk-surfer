@@ -2857,18 +2857,18 @@ export function driveStudyWeatherTarget(){
     driveWetTexture=gl.createTexture();
   }
   if(driveWetOwner!==wet.owner||driveWetRevision!==wet.revision||driveWetSize!==size){
-    // One physical pane texture: liquid in R, packed snow in G. Both channels
-    // share the same fixed-step blade arcs and upload lifetime.
-    const data=new Uint8Array(wet.width*wet.height*2);
-    for(let i=0;i<wet.data.length;i++){data[i*2]=wet.data[i];data[i*2+1]=wet.snowData?.[i]||0;}
+    // One physical pane: liquid, snow, arriving/hit age, retained bead water.
+    // Ages use texelFetch in the shader; only the continuous film is filtered.
+    const data=new Uint8Array(wet.width*wet.height*4);
+    for(let i=0;i<wet.data.length;i++){data[i*4]=wet.data[i];data[i*4+1]=wet.snowData?.[i]||0;data[i*4+2]=wet.impactData?.[i]??255;data[i*4+3]=wet.beadData?.[i]||0;}
     gl.bindTexture(gl.TEXTURE_2D,driveWetTexture);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
     if(driveWetSize!==size){
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RG8,wet.width,wet.height,0,gl.RG,gl.UNSIGNED_BYTE,data);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,wet.width,wet.height,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    }else gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,wet.width,wet.height,gl.RG,gl.UNSIGNED_BYTE,data);
+    }else gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,wet.width,wet.height,gl.RGBA,gl.UNSIGNED_BYTE,data);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT,4);
     driveWetRevision=wet.revision;driveWetSize=size;driveWetOwner=wet.owner;
   }
@@ -2972,7 +2972,7 @@ export function driveStudyRendererStatus(){
     mirrors:[...driveTextures.keys()].filter(name=>name.startsWith('drive_mirror')),recordedCanvas:driveTextures.has('drive_recorder_readout'),
     mirrorTargets:[...driveMirrorTargets.values()].map(target=>({width:target.w,height:target.h})),mirrorHz:12.5,far:FAR,error:driveRendererError,
     weather:driveStudyFrame?.weather?{active:true,rain:driveStudyFrame.weather.rain,extinction:driveStudyFrame.weather.extinction,
-      fog:driveStudyFrame.weather.fog||0,snow:driveStudyFrame.weather.snow||0,whiteout:driveStudyFrame.weather.whiteout||0,wetnessChannels:'R liquid / G snow; shared physical wiper arcs',
+      fog:driveStudyFrame.weather.fog||0,snow:driveStudyFrame.weather.snow||0,whiteout:driveStudyFrame.weather.whiteout||0,wetnessChannels:'R liquid / G snow / B impact age / A bead water; shared physical wiper arcs',
       wetnessTexture:driveWetSize,wetnessInitialUploadUnit:driveWetUploadUnit,revision:driveWetRevision,paneSpace:'cabin metres',
       fogSpace:'world metres; starts beyond cabin/pane; geometry-depth clipped',finalAcquisition:'shared; no weather POST overlay'}:{active:false}};
 }

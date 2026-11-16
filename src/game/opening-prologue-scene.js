@@ -5,6 +5,7 @@ import {makeColdOpenScene} from './coldopen.js';
 import {OPENING_PROLOGUE,OPENING_PROLOGUE_SET,createOpeningPrologueStage} from '../data/opening-prologue.js';
 import {openingHorizonFrame,openingOmenProps} from '../render/opening-omen.js';
 import {createOpeningPrologueDirection} from './opening-prologue-direction.js';
+import {openingRoadBreathFor} from './opening-road-rhythm.js';
 
 const SKIP_HOLD=1.1,ECHO_DWELL=.55,BAR=.028;
 const DIM='#b6b7aa',LIT='#e8a24a',INK='#ece4d3';
@@ -26,6 +27,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
   let phase='loading',paused=false,exited=false,finished=false,skip=0,held=false,posed=null,cardAt=0,lastNode=null,fates=0,pictured=0,lastSerial=0,lastLine=null,beat=drive?'drive':'omen',openingAct=null;
   let lastFrame=null,reviewStage=null,reviewSnap=false,hasSpoken=false,bodyCue='neutral',bodyCueStarted=false,started=false,lastPresented=false,presentationHeld=false,reviewHolding=false;
   let echoSerial=0,echoPage=-1,echoPageAt=0;
+  let roadBreath=null;const breathed=new Set(),completedBreaths=[];
   const direction=drive?createOpeningPrologueDirection({reducedMotion}):null;
   const stage=createOpeningPrologueStage({reducedMotion}),nodes=OPENING_PROLOGUE.nodes,log=[];
   const metrics=()=>typeof driveMetrics==='function'?driveMetrics():driveMetrics;
@@ -43,14 +45,21 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     const history=new Map(log.map(row=>[row.serial,row]));
     for(const row of view.history||[])history.set(row.serial,row);
     return{...view,captionPlacement:openingPrologueCaptionPlacement(direction?.view()?.intent,stage.id()),
-      captionScale:1.35,captionWidth:74,captionReady:phase==='film'&&!paused&&!reviewHolding&&!presentationHeld&&established()&&bodyComplete(),
-      captionAutomatic:view.who==='me'&&!view.pending,captionHidden:phase!=='film'||!!nodes[view.nodeId]?.card,
+      captionScale:1.35,captionWidth:74,captionReady:phase==='film'&&!roadBreath&&!paused&&!reviewHolding&&!presentationHeld&&established()&&bodyComplete(),
+      captionReviewAvailable:!!roadBreath,
+      captionAutomatic:view.line?.openingEcho===true&&!view.pending,captionHidden:phase!=='film'||!!nodes[view.nodeId]?.card||!!roadBreath&&!reviewHolding,
       captionHistory:[...history.values()].sort((a,b)=>a.serial-b.serial)};
   }
   const scene=makeColdOpenScene({id:'opening-prologue',opening:nodes,startAt:OPENING_PROLOGUE.entry,ambient:false,blocksWorld:true,allowsLook:false,suppressesHud:true,
     worldUnderlay:true,presentation:'cinematic',cinematicPreset:'scene',cinematicReview:true,presentationView,
     onCinematicReviewChange:active=>{reviewHolding=active;held=false;skip=0;drive?.setPaused?.(paused||reviewHolding);},
-    voiceEnabled:true,audio,getAudio,replay,worldView:picture,onDone:finish});
+    voiceEnabled:true,audio,getAudio,replay,worldView:picture,onDone:finish,
+    onLine:line=>{
+      const b=drive&&openingRoadBreathFor(line);
+      if(!b||breathed.has(b.sourceId))return;
+      breathed.add(b.sourceId);roadBreath={...b,elapsed:0};
+      scene.presentationPause();
+    }});
   const baseEnter=scene.enter.bind(scene),baseExit=scene.exit.bind(scene),baseUpdate=scene.update.bind(scene),baseKey=scene.key.bind(scene),baseKeyup=scene.keyup.bind(scene),baseView=scene.view.bind(scene),baseRender=scene.render.bind(scene);
   Object.assign(scene,{worldPresentation:'visible',lookProfile:'calm'});
   // The main input router offers global pause before forwarding Escape. Review
@@ -84,7 +93,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     setOmen({rain:s.rain,props:active?openingOmenProps({eye:j.eye,centre:j.hole,radius:j.radius,moon:s.moon,time:s.time,stream:s.stream,reducedMotion,view}):[],horizon:horizon?{...horizon,finish:null}:null});
     const accepted=onDriveFrame(frame)!==false;lastPresented=accepted;
     if(!accepted&&!presentationHeld){presentationHeld=true;scene.presentationPause?.();}
-    else if(accepted&&presentationHeld){presentationHeld=false;scene.presentationResume?.();}
+    else if(accepted&&presentationHeld){presentationHeld=false;if(!roadBreath&&!paused&&!reviewHolding)scene.presentationResume?.();}
     if(accepted)lastFrame=frame;return accepted;
   }
   function established(){return!drive||direction.view()?.established===true;}
@@ -108,6 +117,15 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     skip=held?skip+step:0;if(skip>=SKIP_HOLD){finish();return;}
     if(!getPresentationReady()){lastPresented=false;if(!presentationHeld){presentationHeld=true;scene.presentationPause?.();}return;}
     if(drive&&!lastPresented&&!present(0))return;
+    if(roadBreath){
+      // The conversation's deferred utterance has neither begun sounding nor
+      // revealed text. Only successfully presented, unpaused road time counts.
+      drive.update(step);
+      if(present(step)&&established())roadBreath.elapsed+=step;
+      setMusic(.6);
+      if(roadBreath.elapsed>=roadBreath.seconds){completedBreaths.push(roadBreath.id);roadBreath=null;if(!presentationHeld)scene.presentationResume();}
+      return;
+    }
     stage.advance(step);baseUpdate(step);
     const v=baseView(),node=nodes[v.nodeId];
     if(v.lineSerial!==lastSerial){if(lastLine?.text)log.push(lastLine);lastSerial=v.lineSerial;}
@@ -115,7 +133,9 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     if(v.nodeId!==lastNode){
       lastNode=v.nodeId;reviewStage=null;if(node?.fate)fates++;
       if(node?.openingAct&&!openingAct)openingAct={id:node.openingAct,node:v.nodeId,at:stage.time()};
-      if(node?.stage)stage.to(node.stage==='fate'?`fate${Math.min(6,fates)}`:node.stage);
+      // The returning wipers are visible through the real pane. The final
+      // black/title transition starts with the card, rather than hiding them.
+      if(node?.stage)stage.to(v.nodeId==='wipers'?'dark':node.stage==='fate'?`fate${Math.min(6,fates)}`:node.stage);
       const cue=v.nodeId==='interval-wheel'?'seam':v.nodeId==='interval-hold'?'grip':v.nodeId==='interval-release'?'release':null;
       if(cue){bodyCue=cue;bodyCueStarted=false;}
     }
@@ -130,7 +150,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     // Already chosen local speech needs no second confirmation. If enlarged
     // text requires pages, every page stays available and the last receives
     // its own short dwell before the silent echo can leave the picture.
-    if(v.who==='me'&&!v.pending){
+    if(v.line?.openingEcho===true&&!v.pending){
       const size=uiSize(),layout=size.cols>0&&size.rows>0?scene.cinematicPresentationLayout?.():null,page=layout?.bodyPage||0;
       if(echoSerial!==v.lineSerial||echoPage!==page){echoSerial=v.lineSerial;echoPage=page;echoPageAt=v.lineAge;}
       const lastPage=!layout||page>=(layout.bodyPages||1)-1;
@@ -150,15 +170,16 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     }
     if(event.repeat||phase!=='film'||nodes[baseView().nodeId]?.card)return true;
     if(presentationHeld)return true;
+    if(roadBreath){if(code==='q'||event.controllerAction==='tabPrev')return baseKey(event);return true;}
     const v=baseView(),progressKey=[' ','enter','z'].includes(code)||/^[1-9]$/.test(code);
     if(progressKey&&!v.typing&&(!established()||!bodyComplete()))return true;
     return baseKey(event);
   };
   scene.keyup=(event={})=>{if(skipEvent(event)){held=false;skip=0;}baseKeyup(event);return true;};
-  scene.pause=()=>{if(paused)return;paused=true;held=false;skip=0;drive?.setPaused?.(true);scene.presentationPause?.();};scene.resume=()=>{if(!paused)return;paused=false;drive?.setPaused?.(reviewHolding);if(!presentationHeld)scene.presentationResume?.();};scene.blur=()=>scene.pause();scene.focus=()=>scene.resume();
+  scene.pause=()=>{if(paused)return;paused=true;held=false;skip=0;drive?.setPaused?.(true);scene.presentationPause?.();};scene.resume=()=>{if(!paused)return;paused=false;drive?.setPaused?.(reviewHolding);if(!presentationHeld&&!roadBreath)scene.presentationResume?.();};scene.blur=()=>scene.pause();scene.focus=()=>scene.resume();
   scene.exit=()=>{if(exited)return;exited=true;clear();baseExit();onExit({finished});};
   scene.view=()=>{const j=direction?.view(),s=observed();return{...baseView(),phase,paused:paused||reviewHolding,reviewActive:reviewHolding,finished,skip,fates,spoken:hasSpoken,presentationReady:!drive||lastPresented,openingAct:openingAct?{...openingAct}:null,stageId:stage.id(),semanticPhase:semantic(),stage:j?{...s,eye:j.eye,target:j.target,hole:j.hole,radius:j.radius,yaw:j.yaw,pitch:j.pitch}:s,log:[...log],beat,beatVeil:0,journey:j,drive:drive?.snapshot()||null,
-    presentationLayout:scene.cinematicPresentationLayout?.()||null};};
+    roadBreath:roadBreath?{...roadBreath,active:true}:null,roadBreathsCompleted:[...completedBreaths],presentationLayout:scene.cinematicPresentationLayout?.()||null};};
   scene.physicalFrame=()=>lastFrame;
   // For review stills: the picture at a named point with its move finished, or an exact stage.
   scene.seekStage=key=>{stage.to(key);stage.snap();reviewStage=key;reviewSnap=true;};

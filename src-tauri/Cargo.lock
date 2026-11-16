@@ -592,6 +592,7 @@ dependencies = [
  "tauri-plugin-global-shortcut",
  "tauri-plugin-log",
  "tauri-plugin-opener",
+ "webkit2gtk",
  "windows-sys 0.59.0",
 ]
 

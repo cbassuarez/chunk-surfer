@@ -240,3 +240,29 @@ test('headless mic test override remains authoritative', async () => {
   assert.deepEqual(micMeasurement(), { rms: 0.4, peak: 1, clipped: true });
   assert.equal(micLevel(), 0.4);
 });
+
+test('the Linux desktop shell never reaches WebKitGTK capture or its Camera portal', async () => {
+  let calls = 0;
+  const mediaDevices = {
+    enumerateDevices: async () => { calls++; return [{ kind: 'audioinput', deviceId: 'a', label: 'A' }]; },
+    getUserMedia: async () => { calls++; return fakeStream(); },
+    addEventListener() {},
+  };
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { mediaDevices, userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15' },
+  });
+  globalThis.__TAURI_INTERNALS__ = {};
+  try {
+    micStop();
+    await micRefreshDevices();
+    const snapshot = await micInit({ state: 'running' }, { force: true });
+    assert.equal(calls, 0);
+    assert.equal(snapshot.state, 'unavailable');
+    assert.equal(micActive(), false);
+  } finally {
+    delete globalThis.__TAURI_INTERNALS__;
+    micStop();
+    restoreNavigator();
+  }
+});

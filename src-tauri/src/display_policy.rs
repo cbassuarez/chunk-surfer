@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{atomic::{AtomicBool, Ordering}, Mutex};
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 const DESIGN_WIDTH: f64 = 1280.0;
@@ -11,22 +11,9 @@ const CONFIG_MIN_HEIGHT: f64 = 600.0;
 const MONITOR_MARGIN_X: f64 = 48.0;
 const MONITOR_MARGIN_Y: f64 = 112.0;
 
-// WHAT THE WINDOW IS ACTUALLY DOING.
-//
-// `fullscreen` used to be the only field, and it was a lie: it reports
-// `Window::is_fullscreen()`, which on macOS reflects NATIVE fullscreen only.
-// Simple fullscreen — the mode this game actually uses for game mode, see
-// set_game_mode below — lives in a separate tao field and does not show up
-// there at all. So the one API that could have told the frontend the truth
-// returned `false` during game mode, and nothing called it anyway.
-//
-// The three states are genuinely different and the caller needs to tell them
-// apart: a native Space cannot be composited over (window choreography is
-// impossible in it and must leave first), simple fullscreen can, and a windowed
-// frame needs nothing done to it.
-//
-// `fullscreen` is retained as native-or-simple so an older caller reading it
-// gets a more useful answer than it used to, not a different-shaped one.
+// Native fullscreen is reported for recovery only. The legacy simple_fullscreen
+// field now identifies our ordinary borderless Fill screen frame; callers using
+// the existing choreography protocol can still stage and restore it.
 #[derive(Debug, Clone, Serialize)]
 pub struct WindowLogicalRect {
     pub x: f64,
@@ -55,7 +42,7 @@ pub struct WindowMetrics {
     pub work_area: Option<WindowLogicalRect>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct WindowSizeRequest {
     pub width: f64,
     pub height: f64,
@@ -63,19 +50,35 @@ pub struct WindowSizeRequest {
     pub center: bool,
 }
 
-// SIMPLE FULLSCREEN IS NOT READABLE BACK OUT OF THE WINDOW, SO WE KEEP IT.
-//
-// tao stores it in `shared_state.is_simple_fullscreen` and exposes no getter;
-// `Window::fullscreen()` only ever reflects the native kind. set_game_mode is
-// the sole entry point, so tracking it here is exact for everything the app
-// does deliberately. Anything the OS does behind our back is caught by the
-// measured `fills_screen` instead — the two together cover both cases.
+// Kept under its existing protocol name for authored choreography clients.
 static SIMPLE_FULLSCREEN: AtomicBool = AtomicBool::new(false);
+static FILL_REQUESTED: AtomicBool = AtomicBool::new(false);
+pub fn fill_screen_requested() -> bool { FILL_REQUESTED.load(Ordering::SeqCst) }
+static DEFERRED_DISPLAY: AtomicBool = AtomicBool::new(false);
+static PENDING_STAGE_SIZE: Mutex<Option<WindowSizeRequest>> = Mutex::new(None);
+
+pub fn restore_display_preference(app: &AppHandle) -> Result<(), String> {
+    DEFERRED_DISPLAY.store(false, Ordering::SeqCst);
+    set_game_mode(app, fill_screen_requested())
+}
+pub fn finish_deferred_display(app: &AppHandle) {
+    if DEFERRED_DISPLAY.swap(false, Ordering::SeqCst) {
+        if let Err(error) = set_game_mode(app, fill_screen_requested()) {
+            tauri_plugin_log::log::warn!("deferred display change failed: {error}");
+        }
+    }
+}
+#[derive(Clone, Copy)]
+struct StagedFrame {
+    position: tauri::PhysicalPosition<i32>,
+    inner: tauri::PhysicalSize<u32>,
+    decorated: bool,
+}
+static STAGED_FRAME: Mutex<Option<StagedFrame>> = Mutex::new(None);
 
 pub fn simple_fullscreen_active() -> bool {
     SIMPLE_FULLSCREEN.load(Ordering::Relaxed)
 }
-
 pub fn note_simple_fullscreen(active: bool) {
     SIMPLE_FULLSCREEN.store(active, Ordering::Relaxed);
 }
@@ -227,11 +230,22 @@ pub fn enforce_window_floor(app: &AppHandle) {
 }
 
 pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
+    FILL_REQUESTED.store(false, Ordering::SeqCst);
+    if crate::window_choreography::owns_main_frame() {
+        *PENDING_STAGE_SIZE.lock().map_err(|_| "staged size poisoned")? = Some(WindowSizeRequest {
+            width: DESIGN_WIDTH, height: DESIGN_HEIGHT, center: true,
+        });
+        DEFERRED_DISPLAY.store(true, Ordering::SeqCst);
+        return Ok(());
+    }
+    *PENDING_STAGE_SIZE.lock().map_err(|_| "staged size poisoned")? = None;
     let window = main_window(app)?;
     let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
     let _ = window.set_decorations(true);
     note_simple_fullscreen(false);
+    *STAGED_FRAME.lock().map_err(|_| "staged frame poisoned")? = None;
+    FILL_REQUESTED.store(false, Ordering::SeqCst);
     let (width, height) = effective_default_size(&window);
     let (min_w, min_h) = effective_min_size(&window);
 
@@ -247,44 +261,108 @@ pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-// SIMPLE FULLSCREEN, NOT NATIVE FULLSCREEN.
-//
-// macOS native fullscreen moves the window into its own Space, and nothing can
-// be composited over a Space -- not an always-on-top window, not a click-through
-// one, nothing. Game mode was therefore the one display mode in which the
-// fireball surfaces could not exist, which is why choreography quietly demoted
-// itself to "in frame only" there and looked, from the outside, exactly like a
-// broken feature.
-//
-// Simple fullscreen is how fullscreen worked before Lion: the whole screen, the
-// current Space, overlays intact. Other platforms fall back to set_fullscreen,
-// where an always-on-top window is not excluded in the first place.
+// Fill screen is geometry in the current desktop, never an OS fullscreen
+// state. Keep the player's staged frame once, so repeated requests, temporary
+// authored compositions and toggling back do not replace it with monitor bounds.
 pub fn set_game_mode(app: &AppHandle, enabled: bool) -> Result<(), String> {
     let window = main_window(app)?;
     if enabled {
-        // set_simple_fullscreen refuses outright while native fullscreen is
-        // active, so leaving it is part of entering game mode -- including for
-        // anyone already parked in a Space from a previous build.
+        if simple_fullscreen_active() { return Ok(()); }
+        apply_pending_stage_size(app)?;
+        let monitor = window.current_monitor().map_err(|e| e.to_string())?
+            .or_else(|| window.primary_monitor().ok().flatten()).ok_or("monitor missing")?;
+        let frame = StagedFrame {
+            position: window.outer_position().unwrap_or(monitor.work_area().position),
+            inner: window.inner_size().map_err(|e| e.to_string())?,
+            decorated: window.is_decorated().unwrap_or(true),
+        };
+        *STAGED_FRAME.lock().map_err(|_| "staged frame poisoned")? = Some(frame);
+        // These are recovery exits for sessions restored by an older build.
         let _ = window.set_fullscreen(false);
-        let result = window
-            .set_simple_fullscreen(true)
-            .map_err(|err| err.to_string());
-        note_simple_fullscreen(result.is_ok());
+        let _ = window.set_simple_fullscreen(false);
+        let _ = window.unmaximize();
+        note_simple_fullscreen(true);
+        let result = (|| {
+            window.set_decorations(false).map_err(|e| e.to_string())?;
+            fit_fill_frame(&window)
+        })();
+        if result.is_err() {
+            note_simple_fullscreen(false);
+            let _ = window.set_decorations(frame.decorated);
+            let _ = window.set_position(frame.position);
+            let _ = window.set_size(frame.inner);
+            *STAGED_FRAME.lock().map_err(|_| "staged frame poisoned")? = None;
+        }
+        crate::theatre::block_os_fullscreen(&window);
+        crate::theatre::sync(app);
         result
     } else {
-        let _ = window.set_simple_fullscreen(false);
         note_simple_fullscreen(false);
-        // AND GIVE THE TITLE BAR BACK, EXPLICITLY.
-        //
-        // Simple fullscreen works by rewriting the window's style mask, and
-        // coming out of it does not reliably put the titled bit back on macOS —
-        // so once a player had used game mode even once, the window stayed
-        // undecorated for good and there was no way to get the bar back short
-        // of deleting the window state. Asking for it by name costs nothing
-        // when the window is already decorated.
-        let _ = window.set_decorations(true);
-        window.set_fullscreen(false).map_err(|err| err.to_string())
+        let _ = window.set_fullscreen(false);
+        let _ = window.set_simple_fullscreen(false);
+        let frame = STAGED_FRAME.lock().map_err(|_| "staged frame poisoned")?.take();
+        let _ = window.set_decorations(frame.map(|f| f.decorated).unwrap_or(true));
+        if let Some(frame) = frame {
+            let _ = window.unmaximize();
+            let _ = window.set_position(frame.position);
+            window.set_size(frame.inner).map_err(|e| e.to_string())?;
+            // A disconnected monitor must not strand the restored stage.
+            if let Ok(monitors) = window.available_monitors() {
+                let visible = monitors.iter().any(|m| {
+                    let r = m.work_area();
+                    frame.position.x >= r.position.x && frame.position.y >= r.position.y
+                    && frame.position.x as i64 + frame.inner.width as i64 <= r.position.x as i64 + r.size.width as i64
+                    && frame.position.y as i64 + frame.inner.height as i64 <= r.position.y as i64 + r.size.height as i64
+                });
+                if !visible {
+                    let (width, height) = effective_default_size(&window);
+                    let _ = window.set_size(tauri::LogicalSize::new(width, height));
+                    let _ = window.center();
+                }
+            }
+        } else if window_fills_monitor(&window) {
+            // A manually screen-sized frame has no saved Fill screen snapshot.
+            // It still needs exposed room for an authored composition.
+            let (width, height) = effective_default_size(&window);
+            let _ = window.set_size(tauri::LogicalSize::new(width, height));
+            let _ = window.center();
+        }
+        apply_pending_stage_size(app)?;
+        crate::theatre::block_os_fullscreen(&window);
+        crate::theatre::sync(app);
+        Ok(())
     }
+}
+
+fn fit_fill_frame(window: &WebviewWindow) -> Result<(), String> {
+    let monitor = window.current_monitor().map_err(|e| e.to_string())?
+        .or_else(|| window.primary_monitor().ok().flatten()).ok_or("monitor missing")?;
+    if cfg!(target_os = "linux") && std::env::var_os("WAYLAND_DISPLAY").is_some()
+        && std::env::var("GDK_BACKEND").as_deref() != Ok("x11") {
+        // Wayland reserves shell surfaces and controls placement. Remain an
+        // ordinary maximized window within the area the compositor allows.
+        if !window.is_maximized().unwrap_or(false) { window.maximize().map_err(|e| e.to_string())?; }
+    } else {
+        if window.outer_position().ok().as_ref() != Some(monitor.position()) {
+            window.set_position(*monitor.position()).map_err(|e| e.to_string())?;
+        }
+        if window.inner_size().ok().as_ref() != Some(monitor.size()) {
+            window.set_size(*monitor.size()).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+pub fn refresh_fill_frame(app: &AppHandle) {
+    if simple_fullscreen_active() {
+        if let Ok(window) = main_window(app) { let _ = fit_fill_frame(&window); }
+    }
+}
+
+fn apply_pending_stage_size(app: &AppHandle) -> Result<(), String> {
+    let request = PENDING_STAGE_SIZE.lock().map_err(|_| "staged size poisoned")?.take();
+    if let Some(request) = request { resize_stage(app, request)?; }
+    Ok(())
 }
 
 #[tauri::command]
@@ -317,15 +395,35 @@ pub fn chunk_window_metrics(app: AppHandle) -> Result<WindowMetrics, String> {
     })
 }
 
+// Keep the chosen corner unless the new frame would leave this work area.
+fn staged_position(x: i32, y: i32, width: u32, height: u32, mx: i32, my: i32, mw: u32, mh: u32) -> (i32, i32) {
+    let max_x = (mx as i64 + mw as i64 - width as i64).max(mx as i64).min(i32::MAX as i64) as i32;
+    let max_y = (my as i64 + mh as i64 - height as i64).max(my as i64).min(i32::MAX as i64) as i32;
+    (x.clamp(mx, max_x), y.clamp(my, max_y))
+}
+
 #[tauri::command]
 pub fn chunk_set_window_size(app: AppHandle, request: WindowSizeRequest) -> Result<(), String> {
-    let window = main_window(&app)?;
+    let owned = crate::window_choreography::owns_main_frame();
+    if simple_fullscreen_active() || owned {
+        *PENDING_STAGE_SIZE.lock().map_err(|_| "staged size poisoned")? = Some(request);
+        if owned { DEFERRED_DISPLAY.store(true, Ordering::SeqCst); }
+        return Ok(());
+    }
+    resize_stage(&app, request)
+}
+
+fn resize_stage(app: &AppHandle, request: WindowSizeRequest) -> Result<(), String> {
+    let window = main_window(app)?;
     let (width, height) = clamp_window_size(&window, request.width, request.height);
     let (min_w, min_h) = effective_min_size(&window);
 
     let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
     note_simple_fullscreen(false);
+    *STAGED_FRAME.lock().map_err(|_| "staged frame poisoned")? = None;
+    let _ = window.set_decorations(true);
+    crate::theatre::block_os_fullscreen(&window);
     let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
         width: min_w,
         height: min_h,
@@ -336,8 +434,13 @@ pub fn chunk_set_window_size(app: AppHandle, request: WindowSizeRequest) -> Resu
 
     if request.center {
         let _ = window.center();
+    } else if let (Ok(Some(monitor)), Ok(position), Ok(size)) = (window.current_monitor(), window.outer_position(), window.outer_size()) {
+        let work = monitor.work_area();
+        let (x, y) = staged_position(position.x, position.y, size.width, size.height,
+            work.position.x, work.position.y, work.size.width, work.size.height);
+        let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
     }
-
+    crate::theatre::sync(app);
     Ok(())
 }
 
@@ -348,6 +451,11 @@ pub fn chunk_reset_window(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn chunk_set_game_mode(app: AppHandle, enabled: bool) -> Result<(), String> {
+    FILL_REQUESTED.store(enabled, Ordering::SeqCst);
+    if crate::window_choreography::owns_main_frame() {
+        DEFERRED_DISPLAY.store(true, Ordering::SeqCst);
+        return Ok(());
+    }
     set_game_mode(&app, enabled)
 }
 
@@ -367,8 +475,7 @@ pub fn chunk_restore(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn chunk_window_is_focused(app: AppHandle) -> Result<bool, String> {
-    let window = main_window(&app)?;
-    Ok(window.is_focused().unwrap_or(false))
+    Ok(app.webview_windows().values().any(|window| window.label() != crate::theatre::LABEL && window.is_focused().unwrap_or(false)))
 }
 
 #[tauri::command]
@@ -379,7 +486,13 @@ pub fn chunk_quit(app: AppHandle) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::fit_size_preserving_aspect;
+    use super::{fit_size_preserving_aspect, staged_position};
+    #[test]
+    fn resized_stage_stays_on_its_monitor_without_recentering_a_safe_frame() {
+        assert_eq!(staged_position(-1600, 100, 1280, 800, -1920, 0, 1920, 1080), (-1600, 100));
+        assert_eq!(staged_position(-500, 900, 1280, 800, -1920, 0, 1920, 1080), (-1280, 280));
+        assert_eq!(staged_position(4000, 3000, 2560, 1600, 0, 0, 1920, 1080), (0, 0));
+    }
 
     #[test]
     fn clamps_with_one_uniform_scale() {

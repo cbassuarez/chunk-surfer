@@ -80,7 +80,7 @@ test('the unchanged apparition is framed above the five-reply exchange, with the
   const imageY=.5-dot(basis.up)/(2*.65*depth);
   assert.ok(imageY>.15&&imageY<.30,`the eye/void centre is in the upper picture: ${imageY}`);
   close(j.radius,1.15);close3(j.hole,[0,44,-115]);
-  assert.equal(f.journey.memoryInstanceCount,openingMemoryInstances().length);
+  assert.equal(f.journey.memoryInstanceCount,0,'the school is not revealed before Have a look');
  }finally{d.dispose();}
 });
 

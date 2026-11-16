@@ -60,6 +60,7 @@ export default defineConfig(({ command }) => ({
         windowMedia: resolve(import.meta.dirname, 'window-media.html'),
         sourceDesktop: resolve(import.meta.dirname, 'source-desktop-surface.html'),
         chapelDesktop: resolve(import.meta.dirname, 'chapel-desktop-surface.html'),
+        theatreBackdrop: resolve(import.meta.dirname, 'theatre-backdrop.html'),
         sourceRestRecorder: resolve(import.meta.dirname, 'source-rest-recorder.html'),
       },
     },

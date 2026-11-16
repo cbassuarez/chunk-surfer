@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Van icon plate study · render host</title>
+<!-- Render host for scripts/export-van-icon-plates.mjs. Hosts the approved renderer unchanged; review page is generated. -->
+<style>body{background:#181b22;color:#eee;font:14px system-ui}#stage{width:256px;height:256px}[hidden]{display:none}</style>
+<div id="stage"></div><p id="status"></p>
+<div hidden><button id="replay"></button><button id="still"></button><div id="sizes-light"></div><div id="sizes-dark"></div></div>
+<script type="module">
+import {attachPlateStudy} from './plates.mjs';
+attachPlateStudy().catch(error=>{window.__vanPlateStudyError=String(error.stack||error);document.getElementById('status').textContent=error;});
+</script></html>

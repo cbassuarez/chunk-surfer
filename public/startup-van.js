@@ -6,7 +6,8 @@
  var canvas=document.getElementById('startupVanCanvas'),poster=document.getElementById('startupVanPoster');
  var base=document.currentScript&&document.currentScript.src||document.baseURI;
  var VERSION='albion-maneuver-1',DURATION=3.4,SETTLED=1.94;
- var phase='loading',metadata=null,image=null,ctx=null,raf=0,initialTimer=0,departureTimer=0,audioTimer=0;
+ var phase='loading',metadata=null,image=null,ctx=null,raf=0,initialTimer=0,abandonTimer=0,departureTimer=0,audioTimer=0;
+ var late=false,start=0;
  var audio=null,announced=false,completeSent=false,disposed=false,focused=true,reduced=false,forcedReduced=false,media=null,error=null;
  var origin=window.performance.now(),lastLaunch=0,position=0,frameIndex=-1,readyAt=null,onDeparted=null;
  var clock='web',uncertainty=null,bestRoundTrip=Infinity,loadToken=0,controller=null;
@@ -43,7 +44,11 @@
  }
  function stopTicks(){if(audioTimer){window.clearTimeout(audioTimer);audioTimer=0;}}
  function stopPainting(){if(raf){window.cancelAnimationFrame(raf);raf=0;}}
- function clearInitial(){if(initialTimer){window.clearTimeout(initialTimer);initialTimer=0;}}
+ function clearInitial(){if(initialTimer){window.clearTimeout(initialTimer);initialTimer=0;}
+  if(abandonTimer){window.clearTimeout(abandonTimer);abandonTimer=0;}}
+ // Native presentations always join the launch clock, including a late atlas.
+ // Only a browser without that clock may begin after its delayed decode.
+ function motionTime(){return launchTime()-(clock==='native'?0:start);}
  function release(){stopPainting();loadToken++;controller&&controller.abort();controller=null;
   if(image){image.onload=image.onerror=null;image.src='';image=null;}if(canvas)canvas.hidden=true;}
  function completeEvent(reason){if(completeSent)return;completeSent=true;
@@ -70,9 +75,9 @@
  function schedule(){if(!raf&&!hidden()&&!reduced&&!disposed&&['playing','holding','departing'].includes(phase))raf=window.requestAnimationFrame(frame);}
  function frame(){
   raf=0;if(hidden()||reduced||disposed)return;
-  var elapsed=launchTime();
+  var elapsed=motionTime();
   if(phase==='departing'){
-   var time=SETTLED+elapsed-readyAt;if(time>=DURATION){retire();return;}paint(time);schedule();return;
+   var time=SETTLED+launchTime()-readyAt;if(time>=DURATION){retire();return;}paint(time);schedule();return;
   }
   if(phase!=='playing'&&phase!=='holding')return;
   paint(Math.min(elapsed,SETTLED));
@@ -88,7 +93,7 @@
  }
  function reveal(callback){
   if(phase==='revealed'||phase==='disposed')return false;if(phase==='departing')return true;
-  var elapsed=launchTime();readyAt=elapsed;nativeCall('chunk_launch_animation_ready').catch(function(){});
+  var elapsed=motionTime();readyAt=launchTime();nativeCall('chunk_launch_animation_ready').catch(function(){});
   clearInitial();stopTicks();send('stop','revealed');
   // Readiness always releases input now. Only a settled, decoded vehicle can
   // continue its forward take on the non-interactive decoration layer.
@@ -116,7 +121,10 @@
  }
  async function load(){
   var token=++loadToken;controller=new window.AbortController();
-  initialTimer=window.setTimeout(function(){error='Startup van atlas did not decode in time.';finish('first-frame-timeout');},1500);
+  // A busy module graph can starve the atlas request. Show the still while it
+  // finishes instead of aborting it; give up only if it never arrives.
+  initialTimer=window.setTimeout(function(){initialTimer=0;late=true;if(poster&&phase==='loading')poster.hidden=false;},1500);
+  abandonTimer=window.setTimeout(function(){abandonTimer=0;error='Startup van atlas did not decode in time.';finish('first-frame-timeout');},8000);
   try{
    var response=await window.fetch(asset('van-startup.json'),{signal:controller.signal});if(!response.ok)throw Error('Startup van metadata unavailable.');
    var data=validate(await response.json());if(token!==loadToken)return;metadata=data;
@@ -124,7 +132,7 @@
    await new Promise(function(resolve,reject){image.onload=resolve;image.onerror=function(){reject(Error('Startup van atlas unavailable.'));};image.src=asset(data.atlas);});
    if(token!==loadToken)return;
    if(image.naturalWidth!==1024||image.naturalHeight!==1408)throw Error('Startup van atlas dimensions are invalid.');
-   clearInitial();controller=null;phase='playing';schedule();
+   clearInitial();controller=null;if(late)start=launchTime();phase='playing';schedule();
   }catch(failure){if(token!==loadToken)return;error=String(failure&&failure.message||failure);finish('atlas-failed');}
  }
  function dispose(){if(disposed)return;finish('disposed');disposed=true;phase='disposed';audio=null;

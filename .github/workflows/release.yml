@@ -233,11 +233,44 @@ jobs:
         run: cargo test --manifest-path src-tauri/Cargo.toml --lib graphics_recovery
 
       - name: Build Tauri bundles
+        id: desktop_build
         if: matrix.platform != 'ubuntu-22.04'
         # Invoke the CLI directly: CI is sequential, so the build-lock wrapper
         # (which routes through cmd.exe on Windows) is unnecessary here, and
         # --verbose surfaces the full linker command if the link ever fails.
         run: npx tauri build ${{ matrix.args }} --verbose
+
+      - name: Collect Windows native build diagnostics
+        if: ${{ failure() && matrix.platform == 'windows-2022' && steps.desktop_build.outcome == 'failure' }}
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $output = 'artifacts/windows-native-build'
+          New-Item -ItemType Directory -Force $output | Out-Null
+          $root = Join-Path $env:GITHUB_WORKSPACE 'src-tauri/target/release'
+          $files = @(Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension -in '.lib', '.rlib', '.rmeta', '.obj', '.dll', '.exe' } |
+            Sort-Object Length -Descending |
+            Select-Object -First 30 |
+            ForEach-Object {
+              @{ path = [IO.Path]::GetRelativePath($env:GITHUB_WORKSPACE, $_.FullName); bytes = $_.Length }
+            })
+          @{
+            commit = $env:GITHUB_SHA
+            runId = $env:GITHUB_RUN_ID
+            attempt = $env:GITHUB_RUN_ATTEMPT
+            rustc = @(rustc -Vv)
+            disks = @(Get-PSDrive -PSProvider FileSystem | Select-Object Name, Free, Used)
+            largestNativeFiles = $files
+          } | ConvertTo-Json -Depth 5 | Tee-Object -FilePath "$output/report.json"
+
+      - name: Upload Windows native build diagnostics
+        if: ${{ failure() && matrix.platform == 'windows-2022' && steps.desktop_build.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-build-diagnostics
+          path: artifacts/windows-native-build
+          if-no-files-found: warn
 
       - name: Verify delivered macOS DMG contents
         if: matrix.platform == 'macos-15'

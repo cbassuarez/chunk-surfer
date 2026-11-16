@@ -56,7 +56,7 @@ export const OPENING_PROLOGUE_AUDIO=Object.freeze({
  * - `ending` is the scene's veil, 0..1, as the film lets go.
  * Returns {musicStarted, music, radio (1 = all radio, 0 = open), cab, wipers}.
  */
-export function openingPrologueMix({elapsed=0,stageMusic=0,openedAt=null,speaking=false,ending=0}={},A=OPENING_PROLOGUE_AUDIO){
+export function openingPrologueMix({elapsed=0,stageMusic=0,openedAt=null,speaking=false,ending=0,roadBreathing=false}={},A=OPENING_PROLOGUE_AUDIO){
   const t=Math.max(0,Number(elapsed)||0),musicStarted=t>=A.roadOnlySeconds;
   const rise=musicStarted?smooth((t-A.roadOnlySeconds)/A.radioRiseSeconds):0;
   // It can open only after the radio has had its moment, whenever it spoke:
@@ -66,7 +66,7 @@ export function openingPrologueMix({elapsed=0,stageMusic=0,openedAt=null,speakin
   const level=clamp(stageMusic)*(A.radioLevel+(1-A.radioLevel)*open)*rise*(speaking?A.speechDuck:1);
   const settle=smooth(t/A.cabFadeIn),letGo=smooth(clamp(ending));
   const cab=settle*(A.cabFull+(A.cabUnder-A.cabFull)*open)*(1-letGo)+settle*A.cabFull*letGo;
-  return{musicStarted,music:level,radio:1-open,cab,wipers:open<.5||letGo>.5};
+  return{musicStarted,music:level*(roadBreathing ? .42 : 1),radio:1-open,cab:roadBreathing?settle*A.cabFull:cab,wipers:open<.5||letGo>.5};
 }
 
 /** Thunder strikes due between two moments of the film. */
@@ -109,7 +109,7 @@ export function createOpeningPrologueAudio({getAudio=()=>null,createCab=createOp
     return graph;
   }
   const ramp=(param,value,seconds=.25)=>{try{param.cancelScheduledValues(ctx.currentTime);param.setTargetAtTime(value,ctx.currentTime,seconds);}catch{}};
-  function update({dt=0,stageMusic:level=stageMusic,spoken=false,speaking=false,veil=0,paused=false,ready=true,protectedAudio=false,
+  function update({dt=0,stageMusic:level=stageMusic,spoken=false,speaking=false,roadBreathing=false,veil=0,paused=false,ready=true,protectedAudio=false,
     drive:physicalDrive=null,weather:physicalWeather=null,wiperHeld=false}={}){
     if(disposed)return last;
     if(!build())return last;
@@ -123,7 +123,7 @@ export function createOpeningPrologueAudio({getAudio=()=>null,createCab=createOp
     if(held){held=false;prepareThunder();}ramp(graph.thunderBus.gain,1,.03);
     const step=Math.max(0,Math.min(.25,Number(dt)||0)),before=elapsed;elapsed+=step;stageMusic=clamp(level);ending=clamp(veil);
     if(spoken&&openedAt==null)openedAt=elapsed;
-    const mix=openingPrologueMix({elapsed,stageMusic,openedAt,speaking,ending},A);
+    const mix=openingPrologueMix({elapsed,stageMusic,openedAt,speaking,ending,roadBreathing},A);
     ramp(graph.master.gain,mix.music,.3);
     ramp(graph.radioGain.gain,mix.radio,.4);ramp(graph.openGain.gain,1-mix.radio,.4);
     ramp(graph.openLp.frequency,A.radioBand.lp+(A.openLp-A.radioBand.lp)*Math.pow(1-mix.radio,2),.5);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createPrologueDrive} from '../src/game/source-drive/prologue-drive.js';
+import {createPrologueDrive,PROLOGUE_WEATHER} from '../src/game/source-drive/prologue-drive.js';
 import {prologueRoadAt,prologueRoadSurfaceAt} from '../src/game/source-drive/prologue-road.js';
 import {wheelHandDiagnostics,resetWheelHands} from '../src/game/source-drive/geometry/wheel-hands-pose.js';
 import {makeDriveScene} from '../src/game/source-drive/scene.js';
@@ -32,7 +32,7 @@ test('the retained opening bends join the continued road without a position or t
 test('holding a real blade phase stops the blade matrices while rain and travel continue, then resumes that phase',()=>{
  const d=createPrologueDrive();d.start();advance(d,.6);const before=d.frame(metrics),phase=d.snapshot().wiperPhase,rotation=localRotation(before.scene.body,prop(before,'drive-wiper-left').matrix),wet=before.weather.wetness.data.reduce((a,b)=>a+b,0);
  d.setEmbodiment({holdWiper:true});advance(d,3);const held=d.frame(metrics),s=d.snapshot();close(s.wiperPhase,phase,1e-10);assert.equal(s.wiperMoving,false);assert.ok(s.weatherClock>3);assert.ok(s.driveState.odometer>before.driveState.odometer+30);matrixClose(localRotation(held.scene.body,prop(held,'drive-wiper-left').matrix),rotation,2e-6);assert.ok(held.weather.wetness.data.reduce((a,b)=>a+b,0)>wet);
- d.setEmbodiment({holdWiper:false});d.update(1/60);const resumed=d.snapshot();assert.equal(resumed.wiperMoving,true);close((resumed.wiperPhase-phase+Math.PI*2)%(Math.PI*2),Math.PI*2/2.62/60,1e-8);d.dispose();
+ d.setEmbodiment({holdWiper:false});d.update(1/60);const resumed=d.snapshot();assert.equal(resumed.wiperMoving,true);close((resumed.wiperPhase-phase+Math.PI*2)%(Math.PI*2),Math.PI*2/PROLOGUE_WEATHER.wiperCycleSeconds/60,1e-8);d.dispose();
 });
 
 test('the seam performs one actual full wheel turn while the submitted palm transforms stay planted',()=>{

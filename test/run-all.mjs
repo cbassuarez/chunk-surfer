@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const tests = [
+  'test/theatre-presentation.test.mjs',
   'test/haystack-main-integration.spec.mjs',
   'test/haystack-paper-opportunity.spec.mjs',
   'test/haystack-paper-surface.spec.mjs',
@@ -37,6 +38,8 @@ const tests = [
   'test/opening-prologue-score.spec.mjs',
   'test/opening-prologue-drive-body.spec.mjs',
   'test/opening-prologue-direction.spec.mjs',
+  'test/ophanim-opening-revision.spec.mjs',
+  'test/ophanim-road-rain.spec.mjs',
   'test/opening-prologue-audio-host.spec.mjs',
   'test/ending-drive-off.spec.mjs',
   'test/last-minutes.spec.mjs','test/film-leak.spec.mjs','test/field-sky-film.spec.mjs','test/road-cast.spec.mjs','test/cab-radio.spec.mjs','test/cab-light.spec.mjs','test/window-takeover.spec.mjs','test/ending-walk-off.spec.mjs','test/whose-life.spec.mjs',

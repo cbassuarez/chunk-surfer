@@ -357,13 +357,21 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'displayMode', label: 'DISPLAY MODE',
             value: () => displayLabel('displayMode', 'displayModes').toUpperCase(),
             adjust: (d) => cycleDisplay('displayMode', 'displayModes', d) },
-          { id: 'windowPreset', label: 'RESOLUTION',
-            value: () => displaySettings().displayMode === 'game-mode'
-              ? 'DESKTOP NATIVE'
-              : displayLabel('windowPreset', 'windowPresets'),
-            adjust: (d) => {
-              if (displaySettings().displayMode !== 'game-mode') cycleDisplay('windowPreset', 'windowPresets', d);
+          { id: 'windowPreset', label: 'STAGED WINDOW SIZE',
+            value: () => displayLabel('windowPreset', 'windowPresets'),
+            adjust: (d) => cycleDisplay('windowPreset', 'windowPresets', d) },
+          { id: 'profileWindow', label: 'SCENE WINDOWS',
+            value: () => (psychProfile().modules.windowChoreography ? 'ON' : 'OFF'),
+            adjust: () => setPsychModule('windowChoreography', !psychProfile().modules.windowChoreography) },
+          { id: 'desktopFightEffects', label: 'EXTERNAL FIGHT TARGETS',
+            value: () => setting('desktopFightEffects', false) === true ? 'ON' : 'OFF',
+            adjust: () => {
+              const enabled = setting('desktopFightEffects', false) !== true;
+              set('desktopFightEffects', enabled);
+              hooks.onDesktopFightEffectsChange?.(enabled);
             } },
+          { id: 'profilePreviewWindows', label: 'PREVIEW SCENE WINDOWS', value: () => inputPrompt('confirm'), activate: () => hooks.previewProfileWindows?.() },
+          { id: 'profileRestore', label: 'RESTORE GAME WINDOW', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
           { id: 'uiScale', label: 'INTERFACE SCALE',
             value: () => displayLabel('uiScale', 'uiScalePresets'),
             adjust: (d) => cycleDisplay('uiScale', 'uiScalePresets', d) },
@@ -499,29 +507,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'profileAdaptive', label: 'ADAPTIVE DIFFICULTY',
             value: () => psychProfile().modules.adaptiveDifficulty ? 'ON' : 'OFF',
             adjust: () => setPsychModule('adaptiveDifficulty', !psychProfile().modules.adaptiveDifficulty) },
-          // ON OR OFF. There is no third reading.
-          //
-          // This row used to answer three ways — OFF, ON · FIREBALL SURFACES,
-          // and ON · IN FRAME ONLY — and sat above a WINDOW INTENSITY row that
-          // read HOSTILE whatever this one said, because 'hostile' is the
-          // default value of that field on a save that has consented to
-          // nothing. Between them they could report a feature as on, at full
-          // strength, while it was doing nothing at all.
-          { id: 'profileWindow', label: 'WINDOW CHOREOGRAPHY',
-            value: () => (psychProfile().modules.windowChoreography ? 'ON' : 'OFF'),
-            adjust: () => setPsychModule('windowChoreography', !psychProfile().modules.windowChoreography) },
-          { id: 'profileWindowNote', label: '', selectable: false,
-            value: () => (psychProfile().modules.windowChoreography
-              ? 'AUTHORED FRAME MOTION · FOUR GAME-OWNED PANES'
-              : ''),
-          },
-          { id: 'desktopFightEffects', label: 'DESKTOP FIGHT EFFECTS',
-            value: () => setting('desktopFightEffects', false) === true ? 'ON' : 'OFF',
-            adjust: () => {
-              const enabled = setting('desktopFightEffects', false) !== true;
-              set('desktopFightEffects', enabled);
-              hooks.onDesktopFightEffectsChange?.(enabled);
-            } },
           { id: 'profileFiles', label: 'INTERFERENCE FILES',
             value: () => psychProfile().modules.fieldReturnFiles ? 'ON' : 'OFF',
             adjust: () => setPsychModule('fieldReturnFiles', !psychProfile().modules.fieldReturnFiles) },
@@ -531,8 +516,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'profileHandling', label: 'HANDLING', value: () => 'LOCAL ONLY · NO RAW LOG', selectable: false },
           section('Controls'),
           { id: 'profileRetryMic', label: 'RETRY MICROPHONE', value: () => inputPrompt('confirm'), activate: () => hooks.enableMic?.() },
-          { id: 'profilePreviewWindows', label: 'PREVIEW FIREBALL CAST', value: () => inputPrompt('confirm'), activate: () => hooks.previewProfileWindows?.() },
-          { id: 'profileRestore', label: 'RESTORE GAME WINDOW', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
           { id: 'profileOpenReturns', label: 'OPEN INTERFERENCE FOLDER', value: () => inputPrompt('confirm'), activate: () => hooks.openReturnFolder?.() },
           { id: 'profileResetInference', label: 'RESET INFERRED PROFILE',
             value: () => armedValue('profileResetInference'),

@@ -6,12 +6,14 @@ mod chapel_desktop;
 mod display_policy;
 mod dock_tile;
 mod identity;
+mod linux_webview;
 mod steam_achievements;
 mod lens_service;
 mod startup_cleanup;
 mod graphics_recovery;
 mod graphics_recovery_policy;
 mod source_desktop;
+mod theatre;
 mod window_choreography;
 #[cfg(target_os = "windows")]
 mod graphics_backend;
@@ -36,6 +38,9 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .on_page_load(|webview, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Started {
+                linux_webview::harden(webview);
+            }
             if webview.label() == "main"
                 && payload.event() == tauri::webview::PageLoadEvent::Started
             {
@@ -53,6 +58,12 @@ pub fn run() {
                 }
                 window_choreography::note_main_window_event(window.app_handle(), event);
                 chapel_desktop::note_main_event(window.app_handle(), event);
+                theatre::note_main_event(window.app_handle(), event);
+            }
+            if window.label() == theatre::LABEL {
+                theatre::note_surface_event(window.app_handle(), event);
+            } else if window.label() != "main" {
+                theatre::note_companion_event(window.app_handle(), event);
             }
             if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
                 window.state::<lens_service::LensServiceState>().stop();
@@ -74,6 +85,8 @@ pub fn run() {
             display_policy::chunk_restore,
             display_policy::chunk_window_is_focused,
             display_policy::chunk_quit,
+            theatre::chunk_theatre_set,
+            theatre::chunk_theatre_scene,
             identity::chunk_ephemeral_identity,
             steam_achievements::chunk_steam_initialize,
             steam_achievements::chunk_steam_unlock,
@@ -109,10 +122,21 @@ pub fn run() {
         .setup(|app| {
             // setup runs on the main thread, which AppKit's Dock tile requires.
             dock_tile::install();
+            // Settings live in AppConfig and saves in AppData. On Linux these
+            // are separate XDG roots that nothing else creates on first run.
+            for dir in [app.path().app_config_dir(), app.path().app_data_dir()].into_iter().flatten() {
+                if let Err(error) = std::fs::create_dir_all(&dir) {
+                    tauri_plugin_log::log::warn!("Could not create {}: {error}", dir.display());
+                }
+            }
+            for window in app.webview_windows().values() {
+                linux_webview::harden(window.as_ref());
+            }
             startup_cleanup::recover_orphaned_helpers(app.handle());
             window_choreography::recover_stale_snapshot(app.handle());
             desktop_menu::install(app)?;
             display_policy::enforce_window_floor(app.handle());
+            if let Some(main) = app.get_webview_window("main") { theatre::block_os_fullscreen(&main); }
             source_desktop::open_native_probe(app.handle());
             Ok(())
         })
@@ -127,6 +151,7 @@ pub fn run() {
             app.state::<lens_service::LensServiceState>().stop();
             app.state::<steam_achievements::SteamAchievementsState>().stop();
             chapel_desktop::cancel(app);
+            theatre::close(app);
             window_choreography::restore_on_exit(app);
         }
     });

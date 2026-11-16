@@ -14,6 +14,10 @@
   ],
   "regions": [],
   "module": "src/data/plaza-shopfronts.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/data/plaza-shopfronts.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "PLAZA_SHOP_CLOSURE": {

@@ -8,6 +8,7 @@ import {createServer} from 'vite';
 import {VAN_ICON_LAUNCH} from '../tools/app-icon/motion.mjs';
 import {STARTUP_VAN_LAYOUT,STARTUP_VAN_BUDGET} from '../tools/app-icon/startup-layout.mjs';
 import {VAN_ICON_ACQUISITION_PROVENANCE,VAN_ICON_ACQUISITION_PROFILE} from '../tools/app-icon/acquisition.mjs';
+import {VAN_ICON_PLATES} from '../tools/app-icon/shipping-plates.mjs';
 import sharp from 'sharp';
 
 const root=resolve(import.meta.dirname,'..');
@@ -17,6 +18,8 @@ const startupOnly=process.argv.includes('--startup');
 const {frameCount,cell,columns,rows,durationSeconds:duration}=startupOnly?STARTUP_VAN_LAYOUT:VAN_ICON_LAUNCH;
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const studyOnly=process.argv.includes('--study');
+// The shipping icon is plated (tools/app-icon/plates.mjs). The in-app startup van and the dither study stay the bare van.
+const plated=!startupOnly&&!studyOnly,studyPage=plated?'plate-study.html':'index.html';
 const sizes=new Set(startupOnly?[128]:[16,24,32,48,64,128,256,512,1024]);
 if(!startupOnly)for(const file of await readdir(join(root,'src-tauri/icons'))){if(!file.endsWith('.png'))continue;
   const info=await sharp(join(root,'src-tauri/icons',file)).metadata();if(info.width===info.height)sizes.add(info.width);}
@@ -25,6 +28,7 @@ async function renderInputs({startup=false}={}){
   const result={},files=['tools/app-icon/renderer.mjs','tools/app-icon/motion.mjs','tools/app-icon/vehicle-maneuver.mjs','tools/app-icon/weather.mjs','tools/app-icon/acquisition.mjs','tools/app-icon/transit.glb','tools/app-icon/transit-source.json',
     'src/render/pixel-mesh/transparent.js','src/render/pixel-mesh/shader.js','src/render/pixel-mesh/final-look.js','src/render/pixel-mesh/screens.js','src/render/look-profiles.js','src/render/world-light-treatment.js','public/assets/blue-noise-64.png'];
   if(startup)files.push('tools/app-icon/startup-layout.mjs');
+  else if(plated)files.push('tools/app-icon/plates.mjs','tools/app-icon/shipping-plates.mjs','tools/app-icon/plate-study.html');
   for(const file of files)result[file]=hash(await readFile(join(root,file)));return result;
 }
 let browser,server;
@@ -34,19 +38,21 @@ try{
   // module text after watcher exclusions. It serves only the isolated page we
   // request and is closed along with Chrome.
   let studyURL=process.env.VAN_ICON_STUDY_URL;
-  if(!studyURL){server=await createServer({root,configFile:false,cacheDir:join(profile,'vite-cache'),logLevel:'error',optimizeDeps:{entries:['tools/app-icon/index.html']},server:{host:'127.0.0.1',port:0}});await server.listen();studyURL=`http://127.0.0.1:${server.httpServer.address().port}/tools/app-icon/`;}
-  browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,userDataDir:profile,
-    args:['--mute-audio',...(process.platform==='darwin'?['--use-angle=metal']:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']),'--no-first-run','--no-default-browser-check'],protocolTimeout:120000});
+  if(!studyURL){server=await createServer({root,configFile:false,cacheDir:join(profile,'vite-cache'),logLevel:'error',optimizeDeps:{entries:['tools/app-icon/'+studyPage]},server:{host:'127.0.0.1',port:0}});await server.listen();studyURL=`http://127.0.0.1:${server.httpServer.address().port}/tools/app-icon/${plated?studyPage:''}`;}
+  browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||(process.platform==='darwin'?'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome':'/usr/bin/google-chrome'),headless:true,userDataDir:profile,
+    args:['--mute-audio',...(process.platform==='darwin'?['--use-angle=metal']:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']),'--no-first-run','--no-default-browser-check'],protocolTimeout:600000});
   const page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));page.on('console',message=>{if(message.type()==='error'&&!/favicon/.test(message.location().url||''))errors.push(message.text());});
   await page.goto(studyURL,{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(()=>window.__vanIconStudy?.ready,{timeout:60000});
-  const result=await page.evaluate(({frameCount,cell,columns,rows,duration,launch,rasterSizes,studyOnly,startupOnly,shaderFingerprint,profilePolicy})=>{
+  await page.waitForFunction(plated=>plated?window.__vanPlateStudy?.ready||window.__vanPlateStudyError:window.__vanIconStudy?.ready,{timeout:180000},plated);
+  if(plated){const failed=await page.evaluate(()=>window.__vanPlateStudyError);if(failed)throw Error(failed);}
+  const result=await page.evaluate(({frameCount,cell,columns,rows,duration,launch,rasterSizes,studyOnly,startupOnly,shaderFingerprint,profilePolicy,plates})=>{
     const study=window.__vanIconStudy,atlas=document.createElement('canvas');atlas.width=columns*cell;atlas.height=rows*cell;
     if(JSON.stringify(study.launch)!==JSON.stringify(launch))throw Error('Icon page and exporter disagree about the full launch clock. A stale renderer may be cached.');
     if(study.acquisition().provenance.shaderFingerprint!==shaderFingerprint)throw Error('The loaded runtime acquisition differs from the hashed game shader.');
     if(JSON.stringify(study.acquisition().profilePolicy)!==JSON.stringify(profilePolicy))throw Error('The loaded hero acquisition profile differs from its source.');
     const ctx=atlas.getContext('2d');ctx.imageSmoothingEnabled=false;
+    if(plates)window.__vanPlateStudy.select(plates.mac);
     if(!studyOnly)for(let index=0;index<frameCount;index++){
       study.renderAt(index/(frameCount-1)*duration,{size:cell,startupLoop:startupOnly,reduceFlash:startupOnly});
       ctx.drawImage(study.canvas,index%columns*cell,Math.floor(index/columns)*cell);
@@ -65,8 +71,21 @@ try{
     };
     const primary=captureCandidate('detail'),variants=studyOnly?{detail:primary,ink:captureCandidate('ink')}:null;
     study.renderAt(duration,{size:startupOnly?128:1024});
-    return{atlas:studyOnly?null:atlas.toDataURL('image/png'),master:primary.rasters[startupOnly?128:1024],...primary,variants,fit:study.fit,lampCentres:study.lampCentres()};
-  },{frameCount,cell,columns,rows,duration,launch:VAN_ICON_LAUNCH,rasterSizes,studyOnly,startupOnly,shaderFingerprint:VAN_ICON_ACQUISITION_PROVENANCE.shaderFingerprint,profilePolicy:VAN_ICON_ACQUISITION_PROFILE});
+    const lampCentres=study.lampCentres();let desktop=null;
+    if(plates){
+      // Windows and Linux: the same van and light on the free-standing road chunk.
+      const option=window.__vanPlateStudy.select(plates.desktop),rasters={},rasterReports={};
+      for(const size of rasterSizes){rasters[size]=study.still(size,'detail');const rendered=study.acquisition();rasterReports[size]={
+        width:study.canvas.width,height:study.canvas.height,sourceWidth:rendered.sourceWidth,sourceHeight:rendered.sourceHeight,
+        screenPeriodPx:rendered.screenPeriodPx,cellPx:rendered.cellPx,shaderFingerprint:rendered.provenance.shaderFingerprint,
+        recordingCaptureMix:rendered.profilePolicy.recording.captureMix,vfdToneAmount:rendered.profilePolicy.vfd.toneAmount,variant:'detail'};}
+      study.renderAt(duration,{size:1024});
+      desktop={rasters,rasterReports,lampCentres:study.lampCentres(),option};
+      window.__vanPlateStudy.select(plates.mac);
+    }
+    return{atlas:studyOnly?null:atlas.toDataURL('image/png'),master:primary.rasters[startupOnly?128:1024],...primary,variants,fit:study.fit,lampCentres,desktop,
+      plateOptions:plates?{mac:window.__vanPlateStudy.options[plates.mac],desktop:window.__vanPlateStudy.options[plates.desktop]}:null};
+  },{frameCount,cell,columns,rows,duration,launch:VAN_ICON_LAUNCH,rasterSizes,studyOnly,startupOnly,shaderFingerprint:VAN_ICON_ACQUISITION_PROVENANCE.shaderFingerprint,profilePolicy:VAN_ICON_ACQUISITION_PROFILE,plates:plated?VAN_ICON_PLATES:null});
   if(errors.length)throw Error(errors.join('\n'));
   const png=value=>Buffer.from(value.split(',')[1],'base64');
   if(startupOnly){
@@ -110,8 +129,13 @@ try{
     if(Number(size)!==1024)await writeFile(join(root,path),bytes);
     rasters[size]={path,sha256:hash(bytes),width:Number(size),height:Number(size),renderedAtOutputResolution:true,render:result.rasterReports[size]};
   }
+  await mkdir(join(out,'app-icon-van-desktop-rasters'),{recursive:true});
+  const desktopRasters={};for(const[size,data]of Object.entries(result.desktop.rasters)){
+    const bytes=png(data),path=`assets/brand/app-icon-van-desktop-rasters/${size}.png`;await writeFile(join(root,path),bytes);
+    desktopRasters[size]={path,sha256:hash(bytes),width:Number(size),height:Number(size),renderedAtOutputResolution:true,render:result.desktop.rasterReports[size]};
+  }
   const inputs=await renderInputs();
-  await writeFile(join(out,'app-icon-van-launch.json'),JSON.stringify({version:3,...VAN_ICON_LAUNCH,pngWidth:columns*cell,pngHeight:rows*cell,frameOrder:'row-major; PNG top-left origin',alpha:true,audioTracks:0,
+  await writeFile(join(out,'app-icon-van-launch.json'),JSON.stringify({version:4,plates:{...VAN_ICON_PLATES,options:result.plateOptions},desktopRasters,desktopLampCentres:result.desktop.lampCentres,...VAN_ICON_LAUNCH,pngWidth:columns*cell,pngHeight:rows*cell,frameOrder:'row-major; PNG top-left origin',alpha:true,audioTracks:0,
     master:{path:'assets/brand/app-icon-van.png',sha256:hash(master)},atlas:{path:'assets/brand/app-icon-van-launch.png',sha256:hash(atlas),renderedAtOutputResolution:true},rasters,inputs,fit:result.fit,lampCentres:result.lampCentres,
     acquisition:result.acquisition,weatherStudy:result.samples.map(({png,...sample})=>sample)},null,2)+'\n');
   console.log(JSON.stringify({exported:true,frameCount,cell,columns,rows,duration,masterSha256:hash(master),atlasSha256:hash(atlas),errors}));

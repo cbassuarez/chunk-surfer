@@ -90,7 +90,7 @@ async function host(){
   scenes.clear();const a=audio();let score,physical,scene,options;const calls={updates:0,pauses:0,resumes:0};
   const state={phase:'film',presentationReady:true,paused:false,finished:false,spoken:true,who:'unknown',voice:.5,stage:{veil:0},semanticPhase:'recognition',journey:{musicPhase:'recognition'},
     drive:{driveState:{speed:13,engineLoad:.3,throttle:.3,gear:4,engineOn:true},embodiment:{holdWiper:true}}},weather={rain:.7,roadWetness:.6,wiperAngles:[-.6,.6],wiperMoving:false};
-  const no=()=>{},root={console,Promise,paused:false,gameplayInputLifecycleActive:()=>true,RENDERER:'3d',resetMotionInput:no,
+  const no=()=>{},root={console,Promise,paused:false,gameplayInputLifecycleActive:()=>true,RENDERER:'3d',resetMotionInput:no,attachOpeningStorm:no,openingStormFrame:()=>null,
     R3:{r3dBasePropsReady:async()=>{},r3dAuthoredPropsReady:async()=>{},r3dPrepareOpeningOverture:no,r3dRainAmount:()=>1,r3dOpeningOvertureStatus:()=>({ready:true}),r3dPresentationReady:()=>true,
       r3dSetSourceScene:no,r3dSetNightWarningProps:no,r3dSetSourceRestHorizon:no,r3dSetRainAmount:no},
     P3:{installAuthoredPropMeshes:()=>true,setAuthoredPropRange:()=>no},prepareOpeningCinematicAssets:async()=>{},openingOmenGeometry:()=>({}),

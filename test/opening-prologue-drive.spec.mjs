@@ -30,7 +30,7 @@ test('late readiness and a rejected first frame cannot reveal a different camera
 });
 
 test('a rejected frame after the opening starts holds dialogue, driving and direction until the same owner recovers',()=>{
-  const h=host();advance(h.scene,.4);h.setPresented(false);h.scene.update(1/30);
+  const h=host();advance(h.scene,6);h.setPresented(false);h.scene.update(1/30);
   const before=h.scene.view();assert.equal(before.phase,'film');assert.equal(before.presentationReady,false);
   const pending={node:before.nodeId,line:before.lineSerial,typed:before.typed,lineAge:before.lineAge};
   h.scene.key({key:'Enter'});advance(h.scene,1.5);const held=h.scene.view();
@@ -50,7 +50,7 @@ test('the first wheels and the cinematic departure remain in one submitted coord
   const first=h.calls.omen.at(-1);assert.ok(first.horizon?.active);assert.deepEqual(first.horizon.centre,[0,14,-115]);assert.ok(first.horizon.radius>1.5);
   h.scene.seekStage('inner');h.scene.update(1/30);const frame=h.calls.frames.at(-1);
   assert.equal(frame.journey.intent,'wheels');assert.equal(frame.prologue.renderOwner,'opening-drive');assert.equal(h.scene.worldView(),null);
-  assert.ok(frame.scene.props.some(p=>p.id==='opening-memory:ellery-actual-public-front'));
+  assert.ok(!frame.scene.props.some(p=>p.id==='opening-memory:ellery-actual-public-front'),'the wheels do not reveal the school early');
   assert.deepEqual(h.calls.beats,['drive']);assert.equal(h.scene.view().beatVeil,0);h.scene.exit();
 });
 

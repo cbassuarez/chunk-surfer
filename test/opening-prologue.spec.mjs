@@ -192,7 +192,7 @@ test('the doctrine: nameless, unattributed, no cause confirmed, nothing the game
     assert.equal(row.signalRole,row.who==='me'?'human':'unattributed');
     // The other is heard, in its own voice; narration and his replies are not.
     if(row.who==='unknown'){assert.equal(row.voice,true);assert.equal(row.voiceSpeaker,'other');}else assert.equal(row.voice,false);
-    assert.equal(row.say,false);assert.match(row.sourceId,/^opening-prologue:/);
+    assert.equal(row.say,row.who==='me'&&!row.openingEcho);assert.match(row.sourceId,/^opening-prologue:/);
   }
   const all=words.map(row=>row.text).join('\n');
   assert.ok(!/\bHUSH\b/.test(all),'it never names itself');

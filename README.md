@@ -207,6 +207,15 @@ GL checks alone cannot prove that an OS compositor presents the window. Native
 Windows and Linux acceptance on the exact release artifacts remains required;
 see the graphics startup matrix in `STORE_PREP.md`.
 
+### Desktop display
+
+Settings → Display offers **Staged window** (default) and **Fill screen**. Both
+use the dark theatre backdrop; authored window scenes make room automatically
+and then restore the selected mode. F11 toggles the presentation without entering
+OS fullscreen. Window sizing and scene-window controls live on the same page.
+See [the theatre display contract](docs/theatre-mode.md) for ownership, platform
+limits, and native acceptance checks.
+
 ### Web Build
 
 ```sh
@@ -306,6 +315,10 @@ publication checks.
 
 Windows release CI currently ships a portable ZIP containing
 `chunk-surfer.exe`, the general `EULA.md`, and any staged Steamworks runtime.
+The desktop Rust library emits only `rlib`, which the executable links directly.
+Unused `staticlib` and `cdylib` outputs can duplicate the embedded game and push
+a Windows COFF archive beyond its 4 GiB offset limit. Failed Windows release
+builds upload native file sizes and compiler details as a diagnostic artifact.
 Players must extract the complete folder and keep its files together.
 The Windows payload validator rejects old `chunk-lens` binaries, model weights
 and lens resource directories. The GitHub release mirror still supports split

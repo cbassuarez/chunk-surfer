@@ -12,10 +12,10 @@ async function alpha(buffer){
  return{zero:zero/(info.width*info.height),opaque:opaque/(info.width*info.height),corner:[3,info.width*4-1,(info.height-1)*info.width*4+3,data.length-1].map(i=>data[i]),info};
 }
 
-test('every shipping desktop PNG is the transparent van identity with consistent native sizes',async()=>{
+test('every shipping Windows/Linux PNG is the van on its free-standing road chunk at consistent native sizes',async()=>{
  assert.equal(manifest.default,'van');assert.equal(manifest.alternate,'ear');
  const rendered=JSON.parse(readFileSync('assets/brand/app-icon-van-launch.json','utf8'));
- assert.equal(rendered.version,3);assert.equal(rendered.atlas.renderedAtOutputResolution,true);
+ assert.equal(rendered.version,4);assert.deepEqual([rendered.plates.mac,rendered.plates.desktop],['m62-squircle','m62-chunk']);assert.equal(rendered.atlas.renderedAtOutputResolution,true);
  assert.equal(rendered.acquisition.provenance.shaderExport,'PIXEL_MESH_FRAG');assert.equal(rendered.acquisition.provenance.externalRawOverlay,false);
  assert.equal(rendered.acquisition.provenance.pureOneBit,false);assert.ok(rendered.acquisition.profilePolicy.recording.captureMix>0&&rendered.acquisition.profilePolicy.recording.captureMix<1);
  assert.equal(rendered.acquisition.provenance.colourResolve,'src/render/pixel-mesh/final-look.js#finalMaterialLightInk (Living Materials)');
@@ -39,6 +39,12 @@ test('the packaged icon sizes come from independent final-resolution game-shader
   assert.equal(value.render.recordingCaptureMix,n<compact.belowPixels?compact.recordingMix:rendered.acquisition.profilePolicy.recording.captureMix);
   assert.equal(value.render.vfdToneAmount,n<compact.belowPixels?compact.toneAmount:rendered.acquisition.profilePolicy.vfd.toneAmount);
  }
+ for(const [size,value]of Object.entries(rendered.desktopRasters)){
+  const n=Number(size),info=await sharp(value.path).metadata();assert.equal(info.width,n);assert.equal(info.height,n);assert.equal(hash(value.path),value.sha256);
+  assert.equal(value.renderedAtOutputResolution,true);assert.deepEqual([value.render.width,value.render.sourceWidth],[n,n]);
+  assert.equal(value.render.shaderFingerprint,rendered.acquisition.provenance.shaderFingerprint);
+ }
+ assert.deepEqual(Object.keys(rendered.desktopRasters),Object.keys(rendered.rasters));
  const native64=await sharp(rendered.rasters['64'].path).ensureAlpha().raw().toBuffer();
  const resized=await sharp(rendered.rasters['1024'].path).resize(64,64).ensureAlpha().raw().toBuffer();
  assert.notDeepEqual(native64,resized,'64px receives fresh screen marks instead of blurred 1024px marks');
@@ -55,6 +61,21 @@ test('bundle and static Dock share the van ICNS while the original ear remains a
  assert.ok(config.bundle.icon.includes('icons/icon.icns'));
  assert.equal(config.bundle.macOS.files['PlugIns/ChunkSurferDockTile.docktileplugin'],'target/dock-tile/ChunkSurferDockTile.docktileplugin');
  const info=readFileSync('src-tauri/Info.plist','utf8');assert.match(info,/<key>NSDockTilePlugIn<\/key>\s*<string>ChunkSurferDockTile\.docktileplugin<\/string>/);
+});
+
+test('macOS gets the lit M62 inside the 824/1024 squircle; other desktops get a different, free silhouette',async()=>{
+ const rendered=JSON.parse(readFileSync('assets/brand/app-icon-van-launch.json','utf8'));
+ for(const size of[64,256,1024]){
+  const a=await alpha(readFileSync(rendered.rasters[size].path));
+  // A superellipse (n=5) of 824/1024 covers about 61% of the canvas; the road fills all of it.
+  assert.deepEqual(a.corner,[0,0,0,0]);assert.ok(a.opaque>.55&&a.opaque<.66,`${size}: plate coverage ${a.opaque}`);
+  const {data,info}=await pixels(readFileSync(rendered.rasters[size].path)),at=(u,v)=>data[(Math.floor(v*info.height)*info.width+Math.floor(u*info.width))*4+3];
+  for(const [u,v]of[[.5,.12],[.5,.88],[.12,.5],[.88,.5]])assert.equal(at(u,v),255,`${size}: body reaches ${u},${v}`);
+  for(const [u,v]of[[.5,.05],[.05,.5],[.95,.5],[.5,.95]])assert.equal(at(u,v),0,`${size}: margin clear at ${u},${v}`);
+  const d=await alpha(readFileSync(rendered.desktopRasters[size].path));assert.ok(d.opaque<.45,`${size}: chunk is a free silhouette`);
+ }
+ assert.deepEqual((await pixels('src-tauri/icons/128x128@2x.png')).data,(await pixels(rendered.desktopRasters['256'].path)).data,'the packaged Linux PNG is the chunk render');
+ assert.notEqual(rendered.rasters['256'].sha256,rendered.desktopRasters['256'].sha256);
 });
 
 test('the preserved ear alternate retains its opaque black cavity',async()=>{
@@ -95,7 +116,8 @@ test('native atlas preserves all 84 alpha frames and movement, with unused cells
 
 test('the last launch frame hands off to the packaged still without a pose or framing jump',async()=>{
  const frame=await sharp('src-tauri/macos/DockTile/VanLaunch.png').extract({left:3*256,top:10*256,width:256,height:256}).ensureAlpha().raw().toBuffer();
- const still=await sharp('src-tauri/icons/128x128@2x.png').ensureAlpha().raw().toBuffer();
+ // The Dock hands off to the ICNS, which is built from the macOS (squircle) rasters.
+ const still=await sharp('assets/brand/app-icon-van-rasters/256.png').ensureAlpha().raw().toBuffer();
  let delta=0;
  for(let p=0;p<frame.length;p+=4){
   for(let c=0;c<3;c++)delta+=Math.abs(frame[p+c]*frame[p+3]/255-still[p+c]*still[p+3]/255);

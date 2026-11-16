@@ -716,15 +716,9 @@ export function createWindowChoreographyDirector({
     try{api=await import('@tauri-apps/api/core');}catch(_){api=null;}
     return api;
   }
-  // Is the window covering the screen by ANY route — game mode, a macOS Space,
-  // or a frame someone dragged out to the edges? Any of the three has to be
-  // left before an authored cue can move the window or open a surface beside
-  // it, and only the first of them is anything the app knows it did.
-  // Whether a transaction has to LEAVE a fullscreen state before it can move
-  // the window — a cue cannot reposition a frame that has nowhere to move to.
-  // It is not "was the app in game mode": see restore_transaction in
-  // window_choreography.rs, which records which state it left and puts that one
-  // back rather than imposing simple fullscreen on all three.
+  // Measure the frame before staging it. The retained protocol covers managed
+  // Fill screen geometry, recovery from an unexpected OS fullscreen, and a
+  // manually screen-sized frame. Native restoration uses the current preference.
   async function measuredFullscreen(nativeApi){
     if(nativeApi?.invoke){
       const metrics=await safe(()=>nativeApi.invoke('chunk_window_metrics'));
@@ -750,22 +744,8 @@ export function createWindowChoreographyDirector({
     const {token,owner,controller}=opening;
     if(forceSimulate){transaction={token,sceneId,native:false,restoreGameMode:false,cancelled:false};onState({type:'begin',...transaction});return transaction;}
     const nativeApi=await loadApi();
-    // ASK THE WINDOW, DO NOT ASK THE SETTINGS FILE.
-    //
-    // This was `getDisplayMode()==='game-mode'` — a persisted settings string.
-    // It never asked the OS, so every fullscreen the app did not itself put the
-    // player into was invisible to it. The common one is macOS NATIVE
-    // fullscreen: the window is decorated and resizable, so the green
-    // traffic-light button and Cmd+Ctrl+F are live and produce a real Space.
-    // The setting still read 'windowed', restore_game_mode:false went to Rust,
-    // the exit was skipped — and then base_center refused to place any surface
-    // at all, because nothing can be composited over a Space. From the outside:
-    // authored window motion simply never happened, and windowing the app by
-    // hand fixed it.
-    //
-    // The metrics call is the truth now (display_policy.rs reports native,
-    // simple and measured fills-screen separately). The setting is only the
-    // fallback for when the probe itself fails.
+    // Ask native geometry first; saved mode is only a fallback if the probe
+    // cannot measure this compositor (for example, absolute Wayland position).
     const restoreGameMode=await measuredFullscreen(nativeApi);
     if(owner!==epoch)return null;
     let native=false;

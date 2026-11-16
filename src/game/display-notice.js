@@ -8,17 +8,17 @@ import { drawVfdText } from '../render/presentation.js';
 
 export const DISPLAY_NOTICE_SCENE_ID = 'display-notice';
 
-const HEADLINE = 'PLAY IN A WINDOW';
+const HEADLINE = 'WINDOW SCENES';
 const READ_BEFORE_TRANSITION = 2.4;
 const TRANSITION_SETTLE = 0.6;
 
 export function displayNoticeLines({ desktop = true, fullscreen = false } = {}) {
   return {
     body: desktop
-      ? 'Some sequences open extra windows around the game.'
+      ? 'The game sits on a dark theatre backdrop. Some sequences open companion windows.'
       : 'The desktop version opens extra windows during play.',
     warning: desktop
-      ? `${fullscreen ? 'Fullscreen is on. ' : ''}The game switches to windowed mode when those windows are needed.`
+      ? 'Choose Staged window or Fill screen in Display. The game makes room when a scene needs it.'
       : 'In your browser, they appear inside the game.',
   };
 }
@@ -211,10 +211,10 @@ export function makeDisplayNoticeScene({
       const complete = settledAt != null;
       const notice = transition ? {
         body: 'This sequence opens extra windows outside the game.',
-        warning: failed ? 'Exit fullscreen manually if the problem continues.'
-          : complete ? 'Windowed mode is ready.' : 'Switching out of fullscreen so you can see them.',
+        warning: failed ? 'Use Restore game window in Display if this continues.'
+          : complete ? 'The staged window is ready.' : 'Making room for the companion windows.',
       } : kind === 'headphones' ? headphoneNoticeLines() : displayNoticeLines({ desktop, fullscreen: !!isFullscreen() });
-      const headline = transition ? (failed ? 'COULD NOT LEAVE FULLSCREEN' : 'SWITCHING TO WINDOWED MODE')
+      const headline = transition ? (failed ? 'COULD NOT STAGE THE WINDOW' : 'MAKING ROOM FOR WINDOW SCENES')
         : kind === 'headphones' ? 'PLAY WITH HEADPHONES' : HEADLINE;
       const prompt = transition ? (failed ? 'PRESS ANY KEY OR CLICK TO RETRY' : complete ? 'CONTINUING...' : 'PLEASE WAIT')
         : 'PRESS ANY KEY OR CLICK';

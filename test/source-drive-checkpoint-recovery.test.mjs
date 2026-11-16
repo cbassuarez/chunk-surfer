@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {freshSourceDriveCheckpoint,normalizeSourceDriveCheckpoint,createSourceDriveSession} from '../src/game/source-drive-session.js';
 import {worldAt,roadSurfaceAt} from '../src/game/source-drive/road.js';
 import {containsDrivePose} from '../src/game/source-drive/route-boundaries.js';
-const metrics=JSON.parse(await readFile(new URL('../artifacts/source-drive-study/geometry/metrics.json',import.meta.url)));
+const metrics=JSON.parse(await readFile(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url)));
 
 function checkpoint(distance=850,lateral=-1.35,headingOffset=0){
  const cp=freshSourceDriveCheckpoint({returnPose:{x:1,y:-924,yaw:.3,pitch:-.1,facing:0},runId:'old-drive'}),a=worldAt(distance,lateral);

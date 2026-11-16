@@ -13,7 +13,7 @@ test('the settings screen offers one switch and no intensity dial', () => {
   assert.doesNotMatch(source, /profileWindowIntensity|cycleWindowIntensity/,
     'intensity is not a player-facing setting any more');
   // Two outcomes in the row's own value function, so there is no third reading.
-  assert.match(source, /label: 'WINDOW CHOREOGRAPHY',\s*\n\s*value: \(\) => \(psychProfile\(\)\.modules\.windowChoreography \? 'ON' : 'OFF'\)/);
+  assert.match(source, /label: 'SCENE WINDOWS',\s*\n\s*value: \(\) => \(psychProfile\(\)\.modules\.windowChoreography \? 'ON' : 'OFF'\)/);
 });
 
 test('nothing in the effects layer declines a cast for how the game is displayed', () => {
@@ -33,26 +33,23 @@ test('reduced motion lowers choreography without becoming a hidden off switch', 
     'reduced plans already compile out travel and retain their desktop presentation');
 });
 
-// Game mode uses simple fullscreen. Resetting or choosing a window size must
-// clear that mode so off-window placement can work again.
-test('game mode is simple fullscreen, and every exit from it clears that', () => {
-  const source = readFileSync('src-tauri/src/display_policy.rs', 'utf8');
-  const gameMode = source.slice(source.indexOf('pub fn set_game_mode'), source.indexOf('pub fn chunk_window_metrics'));
-  assert.match(gameMode, /set_simple_fullscreen\(true\)/);
-  assert.match(gameMode, /set_fullscreen\(false\)/,
-    'entering must leave any native fullscreen first — set_simple_fullscreen refuses over it');
-
-  for (const fn of ['pub fn reset_main_window', 'pub fn chunk_set_window_size']) {
-    const body = source.slice(source.indexOf(fn), source.indexOf('\n}', source.indexOf(fn)));
-    assert.match(body, /set_simple_fullscreen\(false\)/, `${fn} must also leave simple fullscreen`);
+test('Fill screen stays an ordinary compositable window and no restore enters OS fullscreen', () => {
+  for (const file of ['src-tauri/src/display_policy.rs', 'src-tauri/src/window_choreography.rs', 'src-tauri/src/theatre.rs']) {
+    const source = readFileSync(file, 'utf8');
+    assert.doesNotMatch(source, /set_(?:simple_)?fullscreen\(true\)/, file);
   }
+  const source = readFileSync('src-tauri/src/display_policy.rs', 'utf8');
+  const fill = source.slice(source.indexOf('pub fn set_game_mode'), source.indexOf('pub fn chunk_window_metrics'));
+  assert.match(fill, /set_decorations\(false\)/);
+  assert.match(fill, /set_size\(\*monitor.size\(\)\)/);
+  assert.match(fill, /STAGED_FRAME/);
 });
 
-test('fullscreen retains the in-game cast and the game reports prewarm outcomes', () => {
+test('unstaged screen-filling frames retain the in-game cast and report prewarm outcomes', () => {
   const rust = readFileSync('src-tauri/src/window_choreography.rs', 'utf8');
   const geometry = rust.slice(rust.indexOf('fn base_center('), rust.indexOf('fn apply_placement('));
   assert.match(geometry, /main\.is_fullscreen\(\)[\s\S]*simple_fullscreen_active\(\)\s*\{\s*return Ok\(None\);/,
-    'both fullscreen modes decline native carriers');
+    'managed Fill screen and native recovery decline carriers until staged');
   const main = readFileSync('src/main.js', 'utf8');
   assert.match(main, /onSurfaceReport:/, 'every prewarm outcome is reported');
   assert.match(main, /logWarn\('fireball surfaces unavailable'/);

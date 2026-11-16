@@ -7,7 +7,7 @@ import {driveDoorCrossingFrame} from '../src/game/source-drive/door-crossing.js'
 import {driveColliders} from '../src/game/source-drive/scene.js';
 import {ORDINARY_DESTINATION} from '../src/game/source-drive/route-layout.js';
 
-const metrics = JSON.parse(await readFile(new URL('../artifacts/source-drive-study/geometry/metrics.json', import.meta.url)));
+const metrics = JSON.parse(await readFile(new URL('../public/assets/source-drive/geometry/metrics.json', import.meta.url)));
 const returnPose = { x: 203.125, y: -1080.04, facing: 2, yaw: 1.821, pitch: -.087, floorH: 15.2 };
 function checkpointAt(distance, extra = {}) {
   const value = freshSourceDriveCheckpoint({ returnPose, runId: 'test-run' });

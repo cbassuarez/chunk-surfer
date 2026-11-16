@@ -22,6 +22,12 @@ const TIP_MS = 9000;
 
 const SETTING_HELP = Object.freeze({
   display: {
+    displayMode: 'STAGED WINDOW keeps your frame. FILL SCREEN expands between window scenes.',
+    windowPreset: 'The staged size is remembered while Fill screen is active.',
+    profileWindow: 'SCENE WINDOWS lets authored scenes move the game frame and open companion windows. OFF keeps those scenes inside the game.',
+    desktopFightEffects: 'EXTERNAL FIGHT TARGETS places clickable targets around the game in select fights.',
+    profilePreviewWindows: 'PREVIEW SCENE WINDOWS demonstrates the companion windows on the theatre backdrop.',
+    profileRestore: 'RESTORE GAME WINDOW closes companion windows and restores your selected Display mode and frame.',
     phosphor: 'PHOSPHOR changes the VFD glass, phosphor, or filter look.',
     brightness: 'BRIGHTNESS changes the simulated display panel, not your monitor.',
     flicker: 'LOW flicker adds panel life. FULL makes the display less stable.',
@@ -64,11 +70,8 @@ const SETTING_HELP = Object.freeze({
     profileMicLabel: 'MICROPHONE LABEL uses the selected device label only after ordinary microphone permission exists.',
     profileMeasure: 'MEASUREMENT stores four bounded fictional dimensions, confidence, and sample count—not an event history.',
     profileAdaptive: 'ADAPTIVE DIFFICULTY may move one bounded band at safe checkpoints. Authored assistance and accessibility remain authoritative.',
-    profileWindow: 'WINDOW CHOREOGRAPHY may temporarily leave Game Mode, move the main frame, and use up to four game-owned panes. Turning it off keeps every beat in a simulated desktop inside the game.',
-    desktopFightEffects: 'Click targets on a temporary desktop layer in select fights.',
     profileFiles: 'INTERFERENCE FILES are stored locally and contain limited session summaries and architectural history, not raw behavioral logs.',
     profileRetryMic: 'RETRY MICROPHONE launches the operating-system permission request again.',
-    profileRestore: 'RESTORE GAME WINDOW closes all game-owned panes and restores the last player-selected frame and Windowed/Game Mode choice.',
     profileOpenReturns: 'OPEN INTERFERENCE FOLDER reveals the local folder that contains Chunk Surfer’s interference files.',
     profileResetInference: 'RESET INFERRED PROFILE returns the four fictional response dimensions to neutral.',
     profileErase: 'ERASE ALL PROFILE DATA disables every module and deletes the profile, identity cache, masking key, and interference files.',

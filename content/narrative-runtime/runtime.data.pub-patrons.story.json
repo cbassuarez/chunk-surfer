@@ -13,6 +13,10 @@
     "people.nell",
     "people.arthur",
     "pubPatronConversation.choices",
+    "pubPatronConversation.tree.start",
+    "pubPatronConversation.tree.again",
+    "pubPatronConversation.tree.history",
+    "pubPatronConversation.tree.tonight",
     "PUB_OVERHEARDS"
   ],
   "tags": [
@@ -21,6 +25,10 @@
   ],
   "regions": [],
   "module": "src/data/pub-patrons.js",
+  "sourceGraph": {
+    "entryIds": [],
+    "scopePrefix": null
+  },
   "notes": "Generated from src/data/pub-patrons.js by scripts/export-runtime-narrative.mjs. The game reads the module, not this document: a Studio save writes changed lines, choices and speakers back into the module. Beats, their order, targets and conditions stay in code.",
   "nodes": {
     "people.mavis": {
@@ -149,6 +157,32 @@
         }
       ],
       "source": "src/data/pub-patrons.js:28"
+    },
+    "pubPatronConversation.tree.start": {
+      "id": "pubPatronConversation.tree.start",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/pub-patrons.js:30"
+    },
+    "pubPatronConversation.tree.again": {
+      "id": "pubPatronConversation.tree.again",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/pub-patrons.js:31"
+    },
+    "pubPatronConversation.tree.history": {
+      "id": "pubPatronConversation.tree.history",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/pub-patrons.js:32",
+      "targetName": "again / start"
+    },
+    "pubPatronConversation.tree.tonight": {
+      "id": "pubPatronConversation.tree.tonight",
+      "type": "line",
+      "lines": [],
+      "source": "src/data/pub-patrons.js:33",
+      "targetName": "again / start"
     },
     "PUB_OVERHEARDS": {
       "id": "PUB_OVERHEARDS",
