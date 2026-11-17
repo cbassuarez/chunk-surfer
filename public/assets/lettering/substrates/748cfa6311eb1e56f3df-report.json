@@ -1,6 +1,6 @@
 {
   "id": "acq-practice-chair-1",
-  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAsset": "/home/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
   "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
   "mesh": "green_chair_01",
   "width": 213,
@@ -33,8 +33,8 @@
   "maximumSeparationM": 0.0005909725083126538,
   "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
   "outputs": {
-    "albedo": "32c455068a8c211cea270ce8b8bca4b697426e99ef6aa5b687c983a43dbdca2a",
-    "normal": "a95b0715a7ef6d0e0890abc0787fdf73bf5c0695e8eb130268dbfe0303fd42c4",
-    "orm": "623dd55d75347d9601ed72946ec74b4910c5d2220dd3fdb5be536c47a53ab35f"
+    "albedo": "6c9c1b09902f3a94860669ddd6452f55377b0f0e360cbeda1ed41670ce4aac88",
+    "normal": "2fb2fd808bf037489b5e9e44aa72e44dffa696ee26f1ead621b71d4fe988ef7b",
+    "orm": "f2438c2f17a56f34a445d10c43e64858379293740fe18e8d915d3cafa96bfb19"
   }
 }

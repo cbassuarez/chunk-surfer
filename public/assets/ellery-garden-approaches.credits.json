@@ -4,12 +4,12 @@
   "license": "Project source; copied material rights retained from original packs.",
   "sourcePacks": {
     "public/assets/conservatory-props.glb": {
-      "sha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
-      "bytes": 64730312
+      "sha256": "f1ddce929830f4a2fad2145b6f74795795aeec52aa0c492993aa9d2cff2537bf",
+      "bytes": 65933176
     },
     "public/assets/ellery-public-front.glb": {
-      "sha256": "350a707335e5af660bcd6497d8390aa43d10e661abe7d13d97eabcb1bf709ec5",
-      "bytes": 5094504
+      "sha256": "803ec9dee70626607f4c8179b87fe1c00bb35f3e9deafebb0624a4fb8df5fdf4",
+      "bytes": 5080148
     }
   },
   "sourceSha256": {
@@ -25,7 +25,7 @@
   "scope": "Ordinary Ellery. Source and the opening overture retain their original shared geometry.",
   "pack": {
     "bytes": 3532292,
-    "sha256": "0f37bf6d43f920133a4aae73065fb6d8ebac83480fc6507f9368dfb6e8816487"
+    "sha256": "cce4b25d766dd1e7ef1033fefc72658fa72761a0601ba0bc7315d63b4f1b16d8"
   },
   "pending": [
     "Native reciprocal greenhouse sightlines and real roof gaps",

@@ -11,6 +11,7 @@ const MESH_SURFACE={...SHARED_SURFACES,...BOX_OFFICE_SURFACES},PROP_BOUNDS={...S
 import { WALL_CONTACT, wallContactAt, yawFromNormal } from '../world/wall-contact.js';
 import { propWallPose } from '../world/prop-wall-pose.js';
 import { propInscriptionAttachments } from '../world/prop-inscriptions.js';
+import { HALL_BALCONY_SEATING } from '../data/hall-seating-layout.js';
 import { WORLD_INSCRIPTIONS, corridorInscriptionsForHosts } from '../data/world-inscriptions.js';
 import { CONSERVATORY_FLIGHTS, CONSERVATORY_LANDINGS } from '../data/floorplan/conservatory.js';
 import { corridorDressing } from '../world/corridor-dressing.js';
@@ -333,6 +334,10 @@ export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
       const at=floorplan.logicalToPhysical(toX,toY),world=renderInstance(p);
       return pointInProp((at.x+.5)*CELL,(at.z+.5)*CELL,{...p,x:world.x,y:world.z,yaw:world.yaw},.20);
     }
+    // The balcony seats are drawn on the balcony drawings' own logical cells, so
+    // they block exactly the cells the layout says they cover and nothing else:
+    // the arm walkways, the band's aisles and the presence's seats stay open.
+    if(p.collisionMask==='hall-balcony-seating')return HALL_BALCONY_SEATING.blockedCells.has(`${Math.floor(mx)},${Math.floor(mz)}`);
     if(p.collisionMask==='hall-seating'){
       const inside=Math.abs(mx-p.x)<=12.75&&Math.abs(mz-p.y)<=9.25;if(!inside)return false;
       // THE AISLES ARE THE FLOORPLAN'S, NOT THIS FUNCTION'S.

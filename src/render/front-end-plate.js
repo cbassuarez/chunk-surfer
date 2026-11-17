@@ -13,7 +13,7 @@ const finite = (value, fallback) => (
 //   print 1 — in the POST pass, off the finished frame: luminance turns over,
 //             hue stays.
 //
-// The front end prints at 1. Screening the negative put a mostly-white frame
+// Credits print at 1. Screening the negative put a mostly-white frame
 // into a recording stage built to lift a dark night out of black — its exposure
 // gain, black floor and one-bit threshold — and that stage blew the whole field
 // out to the solid bit. Every contour went with it, and the dimming fields below
@@ -21,10 +21,12 @@ const finite = (value, fallback) => (
 // you stopped in nor the room behind the menu could be read. The finished frame
 // already holds the contours, so its negative is paper with the scene in ink.
 //
-// Detail and chroma are retained in full now: those two fields were written to
-// push a lit picture back behind text, and on a print they only smear the ink.
+// The selected title treatment instead feeds the finished positive world into
+// Feedback well. `signal` owns that separate world-only pass and crossfades
+// through the same session lift as the older print fields.
 export const FRONT_END_PLATE_PRESETS = Object.freeze({
   credits: Object.freeze({
+    signal: 0,
     negative: 1,
     print: 1,
     amount: 1,
@@ -35,16 +37,18 @@ export const FRONT_END_PLATE_PRESETS = Object.freeze({
     toe: 0,
   }),
   title: Object.freeze({
-    negative: 1,
-    print: 1,
-    amount: 1,
+    signal: 1,
+    negative: 0,
+    print: 0,
+    amount: 0,
     detailRetention: 1,
     chromaRetention: 1,
-    exposureStops: -0.25,
+    exposureStops: 0,
     shoulder: 0,
     toe: 0,
   }),
   gameplay: Object.freeze({
+    signal: 0,
     negative: 0,
     print: 0,
     amount: 0,
@@ -55,6 +59,7 @@ export const FRONT_END_PLATE_PRESETS = Object.freeze({
     toe: 0,
   }),
   fallback: Object.freeze({
+    signal: 0,
     negative: 0,
     print: 0,
     amount: 0,
@@ -72,6 +77,7 @@ export function normalizeFrontEndPlate(value = FRONT_END_PLATE_PRESETS.gameplay)
     : (value || {});
 
   return {
+    signal: clamp01(source.signal),
     negative: clamp01(finite(source.negative, 0)),
     print: clamp01(finite(source.print, 0)),
     amount: clamp01(source.amount),
@@ -90,6 +96,7 @@ export function interpolateFrontEndPlate(from, to, t) {
   const lerp = (x, y) => x + (y - x) * p;
 
   return {
+    signal: lerp(a.signal, b.signal),
     negative: lerp(a.negative, b.negative),
     print: lerp(a.print, b.print),
     amount: lerp(a.amount, b.amount),

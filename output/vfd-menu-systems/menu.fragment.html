@@ -1,0 +1,158 @@
+<div id="cs-vfd-menu">
+  <div class="viz-controls">
+    <label class="form-label">Profile
+      <select class="form-select" data-control="profile" aria-label="Profile state">
+        <option value="first">First visit</option><option value="saved">Saved night</option><option value="filed" selected>Saved night + filed returns</option><option value="completed">Filed returns, no active night</option><option value="documents">Documents filed, no endings</option>
+      </select>
+    </label>
+    <label class="form-label">View
+      <select class="form-select" data-control="view" aria-label="Preview size"><option value="actual">Menu at 1:1</option><option value="context">1280 × 760 context</option><option value="detail">Graphic at 2×</option></select>
+    </label>
+    <label class="form-label">Layer
+      <select class="form-select" data-control="mode" aria-label="Display layer"><option value="final">Emission + glass</option><option value="raw">No glow / no glass</option><option value="mask">Fixed anode mask</option><option value="unlit">Unlit + glass</option></select>
+    </label>
+    <label class="form-check"><input class="form-check-input" type="checkbox" data-control="reduced"><span class="form-check-label">Reduced Motion</span></label>
+  </div>
+  <div class="viz-carousel" aria-label="Complete VFD menu systems">
+    <section data-variant="Night ledger" data-direction="1" aria-label="Night ledger menu">
+      <div class="cs-stage viz-dotted-background"><div class="cs-case cursor-interaction"><canvas class="cs-display" aria-label="Interactive Night ledger menu"></canvas><div class="cs-hits"></div></div><canvas class="cs-zoom" aria-label="Night ledger graphic at double size"></canvas></div>
+      <div class="cs-mobile viz-controls"><label class="form-label">Selected action<select class="form-select" aria-label="Night ledger selected action"></select></label><button class="btn" type="button">Activate preview</button></div>
+    </section>
+    <section data-variant="Path register" data-direction="0" aria-label="Path register menu" hidden>
+      <div class="cs-stage viz-dotted-background"><div class="cs-case cursor-interaction"><canvas class="cs-display" aria-label="Interactive Path register menu"></canvas><div class="cs-hits"></div></div><canvas class="cs-zoom" aria-label="Path register graphic at double size"></canvas></div>
+      <div class="cs-mobile viz-controls"><label class="form-label">Selected action<select class="form-select" aria-label="Path register selected action"></select></label><button class="btn" type="button">Activate preview</button></div>
+    </section>
+    <section data-variant="Relay atlas" data-direction="2" aria-label="Relay atlas menu" hidden>
+      <div class="cs-stage viz-dotted-background"><div class="cs-case cursor-interaction"><canvas class="cs-display" aria-label="Interactive Relay atlas menu"></canvas><div class="cs-hits"></div></div><canvas class="cs-zoom" aria-label="Relay atlas graphic at double size"></canvas></div>
+      <div class="cs-mobile viz-controls"><label class="form-label">Selected action<select class="form-select" aria-label="Relay atlas selected action"></select></label><button class="btn" type="button">Activate preview</button></div>
+    </section>
+  </div>
+  <div class="viz-controls">
+    <button class="btn" type="button" data-control="replay">Replay selection</button>
+    <label class="form-label">Frame <output data-readout="time">Rest</output><input class="form-range" type="range" min="0" max="600" step="20" value="600" data-control="time" aria-label="Animation time in milliseconds"></label>
+  </div>
+  <div class="text-small" data-readout="scale">680 × 572 CSS px · UI 100% · display aperture 635 × 466 px</div>
+  <div class="text-small" aria-live="polite" data-readout="activation">Preview only · arrows select · Enter / Space activates immediately</div>
+  <details class="cs-test">
+    <summary>Interpretation test · unvalidated · 0 player sessions reported</summary>
+    <div class="viz-controls"><button class="btn" type="button" data-control="test-start">Start anonymous test</button><button class="btn" type="button" data-control="test-export" disabled>Export local responses</button><button class="btn" type="button" data-control="test-next" hidden>Save response / next</button></div>
+    <div data-test="body" hidden>
+      <div class="text-small" data-test="progress"></div>
+      <canvas data-test="image" aria-label="Unlabeled artwork for interpretation testing"></canvas>
+      <label class="form-label"><span data-test="question">What action does this picture suggest?</span><textarea class="form-control" rows="2" data-test="answer" aria-label="Your interpretation"></textarea></label>
+      <label class="form-label">Confidence<select class="form-select" data-test="confidence"><option value="unsure">Unsure</option><option value="somewhat">Somewhat sure</option><option value="sure">Sure</option></select></label>
+    </div>
+    <div class="text-small" aria-live="polite" data-test="status"></div>
+    <label class="form-label" data-test="export-label" hidden>Copyable response JSON<textarea class="form-control" readonly rows="6" data-test="export" aria-label="Exported response JSON"></textarea></label>
+  </details>
+</div>
+<style>
+#cs-vfd-menu .cs-stage{display:flex;justify-content:center;align-items:flex-start;min-height:572px;margin-top:16px;position:relative;isolation:isolate}
+#cs-vfd-menu .cs-case{position:relative;width:680px;max-width:100%;aspect-ratio:680/572;background:transparent;color:#ffcf74}
+#cs-vfd-menu .cs-display{display:block;width:100%;height:100%}
+#cs-vfd-menu .cs-hits{position:absolute;inset:0}
+#cs-vfd-menu .cs-hits button{position:absolute;margin:0;padding:0;border:0;background:transparent;color:transparent;font:inherit;touch-action:manipulation;border-radius:0}
+#cs-vfd-menu .cs-hits button:focus-visible{outline:2px solid #f3e7ad;outline-offset:3px}
+#cs-vfd-menu .cs-hits button span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#cs-vfd-menu .cs-stage.context{aspect-ratio:1280/760;min-height:0;background-color:#000;background-size:100% 100%;background-repeat:no-repeat}
+#cs-vfd-menu .cs-stage.context .cs-case{position:absolute;width:53.125%;max-width:none;left:22.96875%;top:12.368421%}
+#cs-vfd-menu .cs-stage.detail{min-height:572px}
+#cs-vfd-menu .cs-stage.detail .cs-case{display:none}
+#cs-vfd-menu .cs-zoom{display:none;width:640px;max-width:100%;height:auto}
+#cs-vfd-menu .cs-stage.detail .cs-zoom{display:block}
+#cs-vfd-menu .cs-mobile{display:none}
+#cs-vfd-menu [hidden]{display:none!important}
+#cs-vfd-menu .cs-test{margin-top:18px}
+#cs-vfd-menu [data-test="image"]{display:block;max-width:340px;width:100%;height:auto;margin:12px 0}
+#cs-vfd-menu [data-test="body"]{max-width:680px}
+#cs-vfd-menu[data-test-only] > :not(.cs-test){display:none}
+@media(max-width:700px){#cs-vfd-menu .cs-stage{min-height:0}#cs-vfd-menu .cs-stage.detail{min-height:0}#cs-vfd-menu .cs-hits{display:none}#cs-vfd-menu .cs-mobile{display:flex}}
+@media(pointer:coarse){#cs-vfd-menu .cs-stage:not(.context):not(.detail) .cs-case{min-width:0}#cs-vfd-menu .cs-hits button{min-height:28px}}
+</style>
+<script>
+(() => {
+const ASSETS=__ASSETS__;
+__RENDERER__
+const root=document.getElementById('cs-vfd-menu'),$=s=>root.querySelector(s),sections=[...root.querySelectorAll('[data-variant]')];
+const prefers=matchMedia('(prefers-reduced-motion: reduce)');
+const stored=window.openai?.widgetState?.privateContent||{};
+const config={profile:stored.profile||'filed',view:stored.view||'actual',mode:stored.mode||'final',reduced:stored.reduced??prefers.matches,desktop:true};
+const states=sections.map((section,index)=>({direction:Number(section.dataset.direction),selected:stored.selected?.[index]||'continue',confirm:false,time:Infinity,start:0,lastNav:0}));
+let raf=0;
+const active=()=>Math.max(0,sections.findIndex(s=>!s.hidden));
+function persist(){window.openai?.setWidgetState?.({modelContent:{vfdProfile:config.profile,selected:states.map(s=>s.selected),reducedMotion:config.reduced},privateContent:{...config,selected:states.map(s=>s.selected)}})?.catch(()=>{});}
+function currentOptions(s){return {...config,...s,time:config.reduced?Infinity:s.time};}
+function paint(i){
+ const s=states[i],section=sections[i],canvas=section.querySelector('canvas');
+ const list=VFDStudy.menu(config.profile,config.desktop);if(!list.includes(s.selected))s.selected=list[0];
+ const drawn=VFDStudy.draw(canvas,currentOptions(s));
+ const zoom=section.querySelector('.cs-zoom');zoom.width=640;zoom.height=512;const zg=zoom.getContext('2d');zg.imageSmoothingEnabled=false;zg.drawImage(canvas,drawn.pictureBounds.x,drawn.pictureBounds.y,320,256,0,0,640,512);
+ const stage=section.querySelector('.cs-stage');stage.classList.toggle('context',config.view==='context');stage.classList.toggle('detail',config.view==='detail');
+ stage.style.backgroundImage=config.view==='context'&&config.profile!=='first'?`url('${ASSETS.background}')`:'';
+ const hits=section.querySelector('.cs-hits'),existing=[...hits.querySelectorAll('button')].map(b=>b.dataset.id).join('|');
+ if(existing!==list.join('|')){
+  hits.replaceChildren();const p=VFDStudy.placement(s.direction);
+  list.forEach((id,n)=>{const b=document.createElement('button');b.type='button';b.dataset.id=id;b.className='cursor-interaction';
+    b.setAttribute('aria-label',VFDStudy.label(id));const sp=document.createElement('span');sp.textContent=VFDStudy.label(id);b.append(sp);
+    Object.assign(b.style,{left:51/680*100+'%',top:(p.menuY+n*p.row-8)/572*100+'%',width:211/680*100+'%',height:p.row/572*100+'%'});
+    b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')select(i,id);});b.addEventListener('focus',()=>select(i,id));
+    b.addEventListener('click',()=>{select(i,id);activate(i);});
+    b.addEventListener('keydown',e=>{
+      if(['ArrowUp','ArrowDown','Home','End'].includes(e.key)){e.preventDefault();const order=VFDStudy.menu(config.profile,config.desktop),at=order.indexOf(s.selected),n=e.key==='Home'?0:e.key==='End'?order.length-1:(at+(e.key==='ArrowUp'?-1:1)+order.length)%order.length;select(i,order[n]);hits.querySelector(`[data-id="${order[n]}"]`).focus();}
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!e.repeat)activate(i);}
+    });hits.append(b);
+  });
+ }
+ hits.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===s.selected)));
+ const picker=section.querySelector('.cs-mobile select');if([...picker.options].map(o=>o.value).join('|')!==list.join('|')){picker.replaceChildren(...list.map(id=>{const o=document.createElement('option');o.value=id;o.textContent=VFDStudy.label(id);return o;}));}picker.value=s.selected;
+}
+function readout(){const i=active(),s=states[i],duration=VFDStudy.durations[s.direction];$('[data-readout="time"]').textContent=config.reduced?'Reduced Motion':s.time===Infinity||s.time>=duration?'Rest':s.time+' ms';$('[data-control="time"]').value=s.time===Infinity?600:s.time;
+ const shown=sections[i].querySelector('canvas').getBoundingClientRect().width;
+ const zoom=sections[i].querySelector('.cs-zoom').getBoundingClientRect().width/320;
+ $('[data-readout="scale"]').textContent=config.view==='detail'?`${zoom.toFixed(2)}× graphic crop · 2× when space permits`:`${Math.round(shown)} × ${Math.round(shown*572/680)} CSS px${Math.abs(shown-680)<1?' · 1:1':''} · aperture 635 × 466 px at UI 100%${config.view==='context'?' · frozen existing background':''}`;
+}
+function paintAll(){states.forEach((_,i)=>paint(i));readout();}
+function animate(){cancelAnimationFrame(raf);const tick=now=>{let running=false;states.forEach((s,i)=>{if(s.time!==Infinity){if(config.reduced||sections[i].hidden){s.time=Infinity;}else{const duration=VFDStudy.durations[s.direction];s.time=Math.min(duration,Math.floor((now-s.start)/20)*20);running|=s.time<duration;if(s.time>=duration)s.time=Infinity;}paint(i);}});readout();if(running)raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);}
+function select(i,id){const s=states[i];if(id===s.selected)return;
+ const now=performance.now(),rapid=now-s.lastNav<100;s.selected=id;s.confirm=false;s.lastNav=now;s.start=now;s.time=config.reduced||rapid?Infinity:0;
+ paint(i);readout();persist();if(s.time!==Infinity)animate();}
+const routes={continue:'onContinue → requestFrontEndContinue','new-run':'onNewGame → requestFrontEndNewRun',archive:'openArchive','return-index':'openReturnIndex','transfer-room':'openTransferRoom',settings:'openSettings({inGame:false})',about:'openAboutPanel',quit:'requestQuitDesktop'};
+function activate(i){const s=states[i];
+ if(s.selected==='new-run'&&VFDStudy.profiles[config.profile].active&&!s.confirm){s.confirm=true;paint(i);$('[data-readout="activation"]').textContent='New game armed · press again to replace the active night';return;}
+ s.confirm=false;paint(i);$('[data-readout="activation"]').textContent=`Activation: ${routes[s.selected]} · no animation gate · preview event only`;persist();
+}
+sections.forEach((section,i)=>{section.querySelector('.cs-mobile select').addEventListener('change',e=>select(i,e.target.value));section.querySelector('.cs-mobile button').addEventListener('click',()=>activate(i));});
+for(const key of ['profile','view','mode']){const e=$(`[data-control="${key}"]`);e.value=config[key];e.addEventListener('change',()=>{config[key]=e.value;states.forEach(s=>{s.confirm=false;s.time=Infinity;if(key==='profile')s.selected=VFDStudy.menu(config.profile,config.desktop)[0];});paintAll();persist();});}
+const reduced=$('[data-control="reduced"]');reduced.checked=config.reduced;reduced.addEventListener('change',()=>{config.reduced=reduced.checked;states.forEach(s=>s.time=Infinity);paintAll();persist();});
+$('[data-control="replay"]').addEventListener('click',()=>{const s=states[active()];s.time=config.reduced?Infinity:0;s.start=performance.now();paint(active());readout();if(!config.reduced)animate();});
+$('[data-control="time"]').addEventListener('input',e=>{cancelAnimationFrame(raf);states.forEach(s=>s.time=config.reduced?Infinity:Number(e.target.value));paintAll();});
+new MutationObserver(()=>{readout();}).observe(root.querySelector('.viz-carousel'),{subtree:true,attributes:true,attributeFilter:['hidden']});
+new ResizeObserver(readout).observe(root);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);states.forEach(s=>s.time=Infinity);paintAll();}});
+prefers.addEventListener('change',e=>{if(e.matches){config.reduced=true;reduced.checked=true;states.forEach(s=>s.time=Infinity);paintAll();}});
+window.addEventListener('openai:set_globals',e=>{const state=e.detail?.globals?.widgetState?.privateContent;if(state){Object.assign(config,state);states.forEach((s,i)=>{s.selected=state.selected?.[i]||s.selected;s.time=Infinity;});for(const k of ['profile','view','mode'])$(`[data-control="${k}"]`).value=config[k];reduced.checked=config.reduced;paintAll();}});
+// No requests leave this frame. Responses are local and never count as an
+// unfamiliar-player study unless a facilitator actually recruits such players.
+let trials=[],responses=[],trial=0,trialStart=0;
+function testTrial(){const t=trials[trial];if(!t){$('[data-test="body"]').hidden=true;$('[data-control="test-next"]').hidden=true;$('[data-test="status"]').textContent='Test complete. Free-text responses require human coding; no accuracy score has been invented.';$('[data-control="test-export"]').disabled=false;return;}
+ $('[data-test="progress"]').textContent=`Trial ${trial+1} of ${trials.length} · ${t.kind==='task'?'labeled menu':'menu labels hidden'}`;$('[data-test="answer"]').value='';$('[data-test="confidence"]').value='unsure';
+ const image=$('[data-test="image"]');image.style.maxWidth=t.kind==='task'?'680px':'340px';
+ if(t.kind==='task'){VFDStudy.draw(image,{direction:t.direction,profile:'filed',selected:'about',time:Infinity,mode:'final'});$('[data-test="question"]').textContent=t.question+' Which option would you choose, and what do you expect it to do?';}
+ else{VFDStudy.proof(image,t.direction,t.id);const g=image.getContext('2d');g.fillStyle='#0b160f';g.fillRect(0,270,340,38);$('[data-test="question"]').textContent='What action does this picture suggest?';}
+ trialStart=performance.now();
+}
+$('[data-control="test-start"]').addEventListener('click',()=>{
+ trials=states.flatMap(s=>['new-run','continue','settings','archive','return-index','transfer-room'].map(id=>({kind:'picture',direction:s.direction,id})));
+ for(let i=trials.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[trials[i],trials[j]]=[trials[j],trials[i]];}
+ const tasks=[['continue','You left an unfinished night and want to resume it.'],['new-run','You want to begin again, keeping your profile achievements.'],['archive','You want to check achievements and filed recordings.'],['return-index','You want a hint toward an ending you have not reached.'],['transfer-room','You want to walk an unlocked field again without changing the active night.'],['settings','You want to change accessibility controls.']];
+ tasks.forEach(([id,question],i)=>trials.push({kind:'task',direction:i%3,id,question}));
+ responses=[];trial=0;$('[data-test="body"]').hidden=false;$('[data-control="test-next"]').hidden=false;$('[data-test="status"]').textContent='Anonymous, local responses. Avoid reading the design notes before this test.';testTrial();
+});
+$('[data-control="test-next"]').addEventListener('click',()=>{const answer=$('[data-test="answer"]').value.trim();if(!answer){$('[data-test="status"]').textContent='Enter an interpretation, including “unclear” if needed.';return;}
+ responses.push({...trials[trial],directionName:VFDStudy.names[trials[trial].direction],answer,confidence:$('[data-test="confidence"]').value,responseMs:Math.round(performance.now()-trialStart)});trial++;$('[data-test="status"]').textContent='Response saved locally.';testTrial();});
+$('[data-control="test-export"]').addEventListener('click',()=>{$('[data-test="export"]').value=JSON.stringify({kind:'anonymous self-run interpretation responses; recruitment unverified',date:new Date().toISOString(),responses},null,2);$('[data-test="export-label"]').hidden=false;});
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>{paintAll();persist();}});tweak.addToggle(config,'desktop',{label:'Desktop Quit available'});}
+if(root.dataset.testOnly!==undefined)$('.cs-test').open=true;
+VFDStudy.ready.then(paintAll);
+})();
+</script>

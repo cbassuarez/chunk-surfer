@@ -10,6 +10,7 @@ import {
 } from './exterior-district.js';
 import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js';
 import { VIGIL_MESHES, VIGIL_PART_MESHES, vigilFigures, vigilParts } from './exterior-vigil.js';
+import { HALL_SEATING, HALL_BALCONY_SEATING } from './hall-seating-layout.js';
 import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { ELLERY_FLORA_PROPS } from './ellery-flora.js';
 import {ELLERY_GARDEN_MESHES,ELLERY_GARDEN_PROPS} from './ellery-garden-approaches.js';
@@ -57,6 +58,12 @@ import {YARD_PUBLIC_ROOM_COLLIDERS,YARD_PUBLIC_ROOM_MESHES,YARD_PUBLIC_ROOM_PROP
 import {BOX_OFFICE_HATCH,BOX_OFFICE_DESK,BOX_OFFICE_MESHES} from './box-office.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
+// A prop is raised by the floor under its anchor. The hall's two structural
+// meshes are authored in absolute heights (house floor -2.5, stage -1.5), but
+// their anchor stands on a raked terrace, so each placement cancels that floor.
+// Derived from the same layout as the seating rows, so a retuned rake moves it.
+const HALL_ANCHOR_FLOOR = HALL_SEATING.house
+  + HALL_SEATING.terraces.find((t) => t.front <= 0 && 0 < t.front + t.depth).top;
 
 // The swimmable centre of the natatorium, and the five lane centres on it.
 // Every lane fixture — markings, ropes, backstroke flags, starting blocks —
@@ -210,6 +217,7 @@ export const PROP_MESH = Object.freeze({
   violin:{w:.24,d:.64,blocks:false},
   portrait_frame:{w:.76,d:.12,blocks:false},
   hall_seating:{w:25.6,d:18.6,blocks:false},
+  hall_balcony_seating:{w:24.6,d:29.6,blocks:false},
   hall_structure:{w:29,d:37,blocks:false},
   hall_entrance_portal:{w:3.8,d:4.2,h:4.8,blocks:false},
   hall_entrance_sign:{w:2.75,d:.12,h:.48,blocks:false},
@@ -1755,11 +1763,15 @@ export const CONSERVATORY_PROPS = [
   P('store-stencil','door_stencil',2.0,21.0,Math.PI/2,{interactive:false}),
 
   // Concert hall and its overflow. The grand is not an upright substitute.
-  P('hall-structure','hall_structure',113.0,23.0,0,{interactive:false,structural:true}),
+  P('hall-structure','hall_structure',113.0,23.0,0,{interactive:false,structural:true,elevation:-HALL_ANCHOR_FLOOR}),
   // The mesh is authored front-low at -Z and back-high at +Z. The stage is
   // north (-Z), so yaw zero is the only transform that puts the low stalls at
   // the apron and lets the bowl rise toward the rear cross aisle.
-  P('hall-seating','hall_seating',113.0,23.0,0,{interactive:false,structural:true,elevation:-2.5,collisionMask:'hall-seating'}),
+  P('hall-seating','hall_seating',113.0,23.0,0,{interactive:false,structural:true,elevation:HALL_SEATING.house-HALL_ANCHOR_FLOOR,collisionMask:'hall-seating'}),
+  // Both balconies' seats, anchored on the upper band behind its last row. The
+  // mesh carries world heights, so the pose cancels the band's floor.
+  P('hall-balcony-seating','hall_balcony_seating',HALL_BALCONY_SEATING.anchor.logical.x,HALL_BALCONY_SEATING.anchor.logical.y,0,
+    {interactive:false,structural:true,elevation:-HALL_BALCONY_SEATING.anchor.floor,collisionMask:'hall-balcony-seating'}),
   P('hall-grand-1','grand_piano',113.0,10.0,Math.PI,{...play(PIANO,'A grand piano under a black cover, except the keyboard is exposed.','The keys are colder than the room.')}),
   P('hall-marimba-1','marimba',103.0,9.0,Math.PI/2,{...play(MARIMBA,'The concert marimba, brakes on, one resonator tube dented flat.','The dent has a pitch of its own.')}),
   P('hall-marimba-overflow','marimba',125.0,12.0,0,{...play(MARIMBA,'A second marimba parked where the hall narrows. It did not fit wherever it was meant to go.','It is still in everybody’s way.')}),

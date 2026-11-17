@@ -18,6 +18,7 @@ export const FRONT_END_STATE = Object.freeze({
   PREPARING: 'preparing',
   CREDITS: 'credits',
   TITLE: 'title',
+  CAPTURING: 'capturing',
   PREFLIGHT: 'preflight',
   IRIS_CLOSING: 'iris-closing',
   BLACK: 'black',
@@ -27,6 +28,18 @@ export const FRONT_END_STATE = Object.freeze({
   FAILED_SAFE: 'failed-safe',
   DISPOSED: 'disposed',
 });
+
+// Shared with the in-conversation transition study. There is no camera travel:
+// two exposures find register while the real case leaves, or separate as it
+// arrives. Reduced motion keeps a simple, concurrent dissolve.
+export function frontEndMenuEnvelope(progress,{direction='leave',reducedMotion=false}={}){
+  const clamp=x=>Math.max(0,Math.min(1,Number(x)||0));
+  const ease=x=>{const p=clamp(x);return p*p*(3-2*p);};
+  const between=(start,end)=>ease((clamp(progress)-start)/(end-start));
+  if(reducedMotion){const p=ease(progress),signal=direction==='enter'?p:1-p;return{signal,menuAlpha:signal,hudAlpha:1-signal};}
+  if(direction==='enter')return{signal:between(0,.78),menuAlpha:between(.18,.90),hudAlpha:1-between(0,.30)};
+  return{signal:1-between(.08,.92),menuAlpha:1-between(0,.42),hudAlpha:between(.48,.98)};
+}
 
 export class FrontEndSession {
   constructor({ plan = null, reducedMotion = false } = {}) {
@@ -75,13 +88,16 @@ export class FrontEndSession {
     return true;
   }
 
-  enterTitle() {
+  enterTitle({fromGameplay=false}={}) {
     if (this.state === FRONT_END_STATE.DISPOSED) return false;
-    this.state = FRONT_END_STATE.TITLE;
+    const capture=fromGameplay&&this.cameraReady&&this.cameraExact;
+    this.state = capture?FRONT_END_STATE.CAPTURING:FRONT_END_STATE.TITLE;
+    this.transitionElapsed=0;
     this.plate = normalizeFrontEndPlate(
-      this.cameraReady ? FRONT_END_PLATE_PRESETS.title : FRONT_END_PLATE_PRESETS.fallback,
+      capture?FRONT_END_PLATE_PRESETS.gameplay:this.cameraReady ? FRONT_END_PLATE_PRESETS.title : FRONT_END_PLATE_PRESETS.fallback,
     );
-    this.menuAlpha = 1;
+    this.menuAlpha = capture?0:1;
+    this.panelAlpha=this.menuAlpha;
     this.hudAlpha = 0;
     return true;
   }
@@ -106,6 +122,8 @@ export class FrontEndSession {
       return false;
     }
     this.state = FRONT_END_STATE.LIFTING;
+    this.liftFromPlate={...this.plate};
+    this.liftFromAlpha=this.menuAlpha;
     this.transitionElapsed = 0;
     this.commitLatch = true;
     this.inputReady = false;
@@ -145,19 +163,27 @@ export class FrontEndSession {
 
   update(dt = 0) {
     const step = Math.max(0, Number(dt) || 0);
-    if (this.state !== FRONT_END_STATE.LIFTING) return this.snapshot();
+    if (this.state !== FRONT_END_STATE.LIFTING&&this.state!==FRONT_END_STATE.CAPTURING) return this.snapshot();
 
     this.transitionElapsed += step;
     const t = clamp01(this.transitionElapsed / Math.max(0.001, this.transitionDuration));
-    this.menuAlpha = 1 - smooth(remap(t, 0, 0.30));
-    this.panelAlpha = 1 - smooth(remap(t, 0.04, 0.38));
-    const plateT = smooth(remap(t, 0.10, 0.88));
+    if(this.state===FRONT_END_STATE.CAPTURING){
+      const envelope=frontEndMenuEnvelope(t,{direction:'enter',reducedMotion:this.reducedMotion});
+      this.plate=interpolateFrontEndPlate(FRONT_END_PLATE_PRESETS.gameplay,FRONT_END_PLATE_PRESETS.title,envelope.signal);
+      this.menuAlpha=this.panelAlpha=envelope.menuAlpha;
+      this.hudAlpha=0;this.inputReady=false;
+      if(t>=1)this.state=FRONT_END_STATE.TITLE;
+      return this.snapshot();
+    }
+    const envelope=frontEndMenuEnvelope(t,{reducedMotion:this.reducedMotion});
+    this.menuAlpha = this.liftFromAlpha*envelope.menuAlpha;
+    this.panelAlpha = this.menuAlpha;
     this.plate = interpolateFrontEndPlate(
-      FRONT_END_PLATE_PRESETS.title,
+      this.liftFromPlate,
       FRONT_END_PLATE_PRESETS.gameplay,
-      plateT,
+      1-envelope.signal,
     );
-    this.hudAlpha = smooth(remap(t, 0.34, 0.96));
+    this.hudAlpha = envelope.hudAlpha;
     this.inputReady = t >= 0.90;
 
     if (t >= 1) this.markLive();

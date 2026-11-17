@@ -1,0 +1,26 @@
+{
+  "kind": "Agent UI verification of the review tool; not human comprehension evidence",
+  "reviewDateInUserTimezone": "2026-11-16",
+  "unfamiliarPlayerParticipants": 0,
+  "observed": [
+    "First visit exposes New game, Settings, About and desktop Quit; Continue is absent.",
+    "Saved night with filed returns exposes all eight actions.",
+    "New game first activation arms the confirmation; the second dispatches the new-run preview event.",
+    "Continue dispatches its resume preview event directly.",
+    "Repeated arrow navigation updates the selected action without an animation queue.",
+    "Reduced Motion and Replay selection retain the stationary final image.",
+    "Frame slider Home and ArrowRight expose the 0 and 20 ms inspection states.",
+    "Fixed-mask view and variant switching reveal independent physical constructions.",
+    "At 320 px viewport width the case fits, and readable external select/activate controls remain available.",
+    "The 2x crop reports its actual displayed scale when space is limited.",
+    "Recorded context background and original bezel/glass appear in the context view.",
+    "All 24 interpretation-test trials advance and expose copyable JSON using explicitly synthetic QA text. That test tab was closed and its responses were not saved as research results."
+  ],
+  "notValidated": [
+    "Unfamiliar-player comprehension or preference",
+    "Live game handoff or input-to-world latency",
+    "Live gamepad navigation in the proposed layout",
+    "All production UI-scale presets",
+    "Live rendering performance or physical display fabrication"
+  ]
+}

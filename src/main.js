@@ -515,6 +515,7 @@ import { SHEET_MUSIC, sheetMotifHz, sheetMusicById } from './data/sheet-music.js
 import { createSheetVoice } from './audio/sheet-voice.js';
 import * as TUT from './game/tutorial.js';
 import { controlHudMode, flashMode, objectiveHintsMode, shakeMode, tutorialPromptsEnabled, visualEffectsEnabled } from './game/access.js';
+import { createPowerFault, electricalLightingFor } from './game/electrical-lighting.js';
 import { doorWinsWorldInteraction } from './game/interaction-focus.js';
 import { createInteractionLatch } from './game/interaction-latch.js';
 import { makeBagScene } from './game/bag.js';
@@ -10154,10 +10155,13 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
     ...viewContext,ambientIntensity:towerTableauLighting?.ambientIntensity??Math.max(context.ambientIntensity||0,unlitSeal?.025:.16),
     ...(towerEndingShot?{captureExposure:2}:{}),
   }:viewContext);
+  let ordinaryPracticalLights=[];
   const ordinaryLights=resolveLocalLights(context,{
     pubHospitalityReady:pubHospitalityReady(R3.r3dPubStatus?.()),
     glassCourtReady:R3.r3dGlassCourtReady?.()===true,
     timeSec,
+    electricalSeed:String(getSave().run?.id||'ellery-grid'),
+    onPracticalLights:lights=>{ordinaryPracticalLights=lights;},
     reducedFlash:effectsMode!=='full',
     effectsMode,
     towerActive,
@@ -10191,6 +10195,7 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
   const borrowedCourtLights=borrowedWindow&&R3.r3dGlassCourtReady?.()===true
     ?selectFoyerWindowLights({window:borrowedWindow,
       foyer:resolveLocalLights({...context,zone:ZONE.foyer},{timeSec,effectsMode,towerActive,towerCleared,
+        electricalSeed:String(getSave().run?.id||'ellery-grid'),
         liveCircuits:liveLightCircuits(),anchorPosition:lightAnchorPosition,slots:Infinity}),
       court:GLASS_COURT_LIGHTS.filter(light=>light.zone===ZONE.glasshouse),
     }):[];
@@ -10291,6 +10296,9 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
   R3.r3dSetLocalLights?.(endingLight
     ?towerTableauLighting?[endingLight,...roomPresentation]:[...roomPresentation,endingLight]
     :roomPresentation);
+  // Bulbs outside the architectural slot budget still receive their actual
+  // power. Presentation overrides win for any shared physical fixture.
+  P3.setPracticalLightFrame([...ordinaryPracticalLights,...roomPresentation]);
 }
 
 function liveLightCircuits(){
@@ -36906,7 +36914,8 @@ function makeTitle({wantFullscreen=false}={}){
     onSettings:()=>openSettings({inGame:false}),
     onArchive:openArchive,
     onReturnIndex:openReturnIndex,
-    onBetaNotice:openBetaNotice,
+    onAbout:openAboutPanel,
+    onQuit:IS_TAURI?requestQuitDesktop:null,
   });
 }
 
@@ -36971,8 +36980,8 @@ function returnToTitle(){
     const plan=makeResumeLaunchPlan(getSave(),getMeta());
     frontEndSession=new FrontEndSession({plan,reducedMotion:shakeMode()!=='full'});
     if(plan)frontEndSession.markCameraReady({exact:!!plan.exact});
-    frontEndSession.enterTitle();
-    R3.r3dSetFrontEndPlate?.('title');
+    frontEndSession.enterTitle({fromGameplay:true});
+    R3.r3dSetFrontEndPlate?.(frontEndSession.snapshot().plate);
   }
   godFxOverride.heartbeat=null;
   godFxOverride.monitorHiss=null;
@@ -38460,6 +38469,12 @@ function installProbe(){
     // rather than by squinting at a dark frame.
     // What r3d is actually holding at draw time.
     r3dLighting:()=>R3.r3dLightingDebug?.()??null,
+    electricalLightingReview:(faults=[])=>{
+      const now=performance.now()/1000,seed=String(getSave().run?.id||'ellery-grid');
+      const events=faults.map(fault=>createPowerFault({...fault,start:now+(Number(fault.delay)||0)}));
+      electricalLightingFor(seed).setFaults(events);
+      return{seed,startedAt:now,faults:events};
+    },
     hallChandelier:()=>({ready:R3.r3dHallChandelierReady?.()===true,frame:hallChandelierRuntime.view(),
       instances:hallChandelierRendered.map(({id,mesh,x,y,z,scale,yaw,practicalEmissiveScale})=>({id,mesh,x,y,z,scale,yaw,practicalEmissiveScale})),
       lights:hallChandelierLights(hallChandelierRendered,hallChandelierRuntime.view()),context:hallChandelierContext()}),
@@ -39207,11 +39222,13 @@ function installProbe(){
           pubHospitalityReady:pubHospitalityReady(R3.r3dPubStatus?.()),
           glassCourtReady:R3.r3dGlassCourtReady?.()===true,
           timeSec:performance.now()/1000,towerActive:false,towerCleared:false,liveCircuits:liveLightCircuits(),
+          electricalSeed:String(getSave().run?.id||'ellery-grid'),
           reducedFlash:effectsMode!=='full',effectsMode,
           origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
         }).map((l)=>({id:l.id,kind:l.kind,color:[...l.color],intensity:+l.intensity.toFixed(3),radius:l.radius,
           penetration:l.penetration||0,shadowReveal:l.shadowReveal||0,emergencyPulse:l.emergencyPulse,
-          circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained}))};
+          circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained,
+          emissiveScale:l.emissiveScale,supplyVoltage:l.supplyVoltage,supplyPhase:l.supplyPhase,electricalFault:l.electricalFault}))};
     },
     apparitionGate:()=>{
       const physical=FP.logicalToPhysical(px,py);
@@ -39220,6 +39237,7 @@ function installProbe(){
       const effectsMode=settings.flash||'full';
       const rig=resolveLocalLights(context,{
         timeSec:performance.now()/1000,
+        electricalSeed:String(getSave().run?.id||'ellery-grid'),
         towerActive:[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
         towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
         liveCircuits:liveLightCircuits(),reducedFlash:effectsMode!=='full',effectsMode,
@@ -41419,7 +41437,7 @@ function startupVanArrived({capMs=3000}={}){
 // Waits for startup loads while the loader still covers the game. Bounded, and
 // it never rejects: these are the same best-effort loads as before, and a
 // stalled one must fall back to arriving late, not to a loader that never ends.
-function settledUnderStartupVan(loads,{capMs=8000}={}){
+function settledUnderStartupVan(loads,{capMs=12000}={}){
   const pending=Object.entries(loads).filter(([,load])=>load).map(([name,load])=>
     Promise.resolve(load).catch(()=>null).then(()=>{try{performance.mark(`startup-load:${name}`);}catch(_){}}));
   if(!pending.length||!startupPresentationHeld())return Promise.resolve();
@@ -42376,10 +42394,10 @@ async function boot(){
     // seen.
     //
     // Measured in the desktop webview: surface textures and the base prop pack
-    // land about three seconds after the building; the authored extension
-    // packs take four times that. The bound below is what the loader will
-    // spend on them, and whatever has not landed by then arrives as it always
-    // did. The 300 retired sample-field files are started here so their decode
+    // land about five seconds after the building and the authored extension
+    // packs about nine, now that their parses start together (see
+    // prefetchPropPacks). The bound below sits a little above that; whatever
+    // has not landed by then arrives as it always did. The 300 retired sample-field files are started here so their decode
     // shares the wait, but nothing waits for them.
     {
       const qp=params();

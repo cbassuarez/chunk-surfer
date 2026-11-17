@@ -3,12 +3,12 @@
   "asset": "/assets/ellery-garden-approaches.glb",
   "sourcePacks": {
     "public/assets/conservatory-props.glb": {
-      "sha256": "eb886084db17123a77b4eb6972cd8001e90768743f6f8a81547207071379d878",
-      "bytes": 64730312
+      "sha256": "f1ddce929830f4a2fad2145b6f74795795aeec52aa0c492993aa9d2cff2537bf",
+      "bytes": 65933176
     },
     "public/assets/ellery-public-front.glb": {
-      "sha256": "350a707335e5af660bcd6497d8390aa43d10e661abe7d13d97eabcb1bf709ec5",
-      "bytes": 5094504
+      "sha256": "803ec9dee70626607f4c8179b87fe1c00bb35f3e9deafebb0624a4fb8df5fdf4",
+      "bytes": 5080148
     }
   },
   "meshes": {
@@ -7929,7 +7929,7 @@
     "maximumAddedTriangles": 6500
   },
   "bytes": 3532292,
-  "sha256": "0f37bf6d43f920133a4aae73065fb6d8ebac83480fc6507f9368dfb6e8816487",
+  "sha256": "cce4b25d766dd1e7ef1033fefc72658fa72761a0601ba0bc7315d63b4f1b16d8",
   "protectedSourcePacksUnchangedDuringBuild": true,
   "sourceSha256": {
     "tools/chunk_surfer/build-ellery-garden-approaches.mjs": "41ac2752e11b1ccd06367af025b4830a89f4c049d1770c0aa40b4ebae0ec9e46",
@@ -7945,7 +7945,7 @@
     "source": {
       "version": 1,
       "asset": "public/assets/ellery-garden-approaches.glb",
-      "sha256": "0f37bf6d43f920133a4aae73065fb6d8ebac83480fc6507f9368dfb6e8816487",
+      "sha256": "cce4b25d766dd1e7ef1033fefc72658fa72761a0601ba0bc7315d63b4f1b16d8",
       "generator": "tools/chunk_surfer/build-ellery-garden-approaches.mjs",
       "coordinateSpace": "exact clipped private mesh local metres; apply actual instance matrix",
       "derivation": "Existing extractExteriorCollision on actual final packed triangles, retaining aperture holes.",

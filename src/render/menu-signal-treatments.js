@@ -18,12 +18,13 @@ in vec2 uv;out vec4 result;
 uniform sampler2D sourceImage,historyImage;
 uniform vec2 sourceSize;
 uniform int mode;
-uniform float time,damage,registration,feedback;
+uniform int sourceIsFramebuffer;
+uniform float time,damage,registration,feedback,presence;
 uniform vec3 colorA,colorB;
 float lum(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
 float hash(float n){return fract(sin(n*127.1+311.7)*43758.5453);}
 vec2 fold(vec2 p){return 1.-abs(mod(p,2.)-1.);}
-vec3 source(vec2 p){return texture(sourceImage,fold(p)).rgb;}
+vec3 source(vec2 p){vec2 q=fold(p);if(sourceIsFramebuffer==1)q.y=1.-q.y;return texture(sourceImage,q).rgb;}
 float yAt(vec2 p){return lum(source(p));}
 float softY(vec2 p,float r){vec2 q=vec2(r)/sourceSize;return yAt(p)*.4+(yAt(p+vec2(q.x,0.))+yAt(p-vec2(q.x,0.))+yAt(p+vec2(0.,q.y))+yAt(p-vec2(0.,q.y)))*.15;}
 float edgeAt(vec2 p){return clamp(abs(softY(p,1.8)-softY(p,7.))*3.,0.,1.);}
@@ -90,25 +91,32 @@ void main(){
   result=vec4(clamp(c,0.,1.),1.);
 }`;
 
+export const MENU_SIGNAL_FINISH_GLSL=`
+vec3 finishMenuSignal(vec3 c,vec2 uv,float exposure,float vignette){
+  c*=exp2(exposure);
+  c=c/(vec3(1.)+c*.48);
+  float edge=smoothstep(.16,.79,length((uv-.5)*vec2(1.27,1.)));
+  c*=1.-vignette*edge;
+  c*=1.-.12*(1.-smoothstep(.18,.52,length((uv-.5)*vec2(1.,1.1))));
+  return c;
+}`;
+
 export const MENU_SIGNAL_COMPOSITE_GLSL=`#version 300 es
 precision highp float;
 in vec2 uv;out vec4 result;
 uniform sampler2D backgroundImage,foregroundImage,sourceImage;
-uniform float exposure,vignette;
+uniform float exposure,vignette,presence,foregroundAlpha;
 uniform int reference,showMenu;
 uniform vec2 sourceSize;
 __CARBON_GLSL__
+${MENU_SIGNAL_FINISH_GLSL}
 void main(){
   vec3 c=texture(backgroundImage,vec2(uv.x,1.-uv.y)).rgb;
   if(reference==1){c=menuBackgroundTreatment(sourceImage,uv,sourceSize,3,.28,1.12,.40,.44,.10,vec3(.6863,.7294,.6902),.82);}
   else{
-    c*=exp2(exposure);
-    c=c/(vec3(1.)+c*.48);
-    float edge=smoothstep(.16,.79,length((uv-.5)*vec2(1.27,1.)));
-    c*=1.-vignette*edge;
-    c*=1.-.12*(1.-smoothstep(.18,.52,length((uv-.5)*vec2(1.,1.1))));
+    c=mix(texture(sourceImage,uv).rgb,finishMenuSignal(c,uv,exposure,vignette),presence);
   }
-  vec4 ui=texture(foregroundImage,uv);if(showMenu==0)ui=vec4(0.);
+  vec4 ui=texture(foregroundImage,uv);ui.a*=foregroundAlpha;if(showMenu==0)ui=vec4(0.);
   result=vec4(mix(c,ui.rgb,ui.a),1.);
 }`;
 
@@ -130,7 +138,7 @@ export function createMenuSignalRenderer({canvas,source,foreground,shaders}){
   }
   const signal=program(shaders.signal),composite=program(shaders.composite);
   const vao=gl.createVertexArray();gl.bindVertexArray(vao);gl.viewport(0,0,width,height);
-  const locations=p=>Object.fromEntries(['sourceImage','historyImage','backgroundImage','foregroundImage','sourceSize','mode','time','damage','registration','feedback','colorA','colorB','exposure','vignette','reference','showMenu'].map(k=>[k,gl.getUniformLocation(p,k)]));
+  const locations=p=>Object.fromEntries(['sourceImage','historyImage','backgroundImage','foregroundImage','sourceSize','mode','time','damage','registration','feedback','colorA','colorB','exposure','vignette','reference','showMenu','presence','foregroundAlpha'].map(k=>[k,gl.getUniformLocation(p,k)]));
   const a=locations(signal),b=locations(composite);
   function texture(image=null){
     const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
@@ -146,23 +154,25 @@ export function createMenuSignalRenderer({canvas,source,foreground,shaders}){
   let front=0;
   const bind=(t,unit,loc)=>{gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.uniform1i(loc,unit);};
   const color=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
-  function step(config,time){
+  function step(config,time,presence=1){
     const next=1-front;gl.useProgram(signal);gl.bindFramebuffer(gl.FRAMEBUFFER,buffers[next].framebuffer);
     bind(input,0,a.sourceImage);bind(buffers[front].texture,1,a.historyImage);
     gl.uniform2f(a.sourceSize,width,height);gl.uniform1i(a.mode,config.mode);
     gl.uniform1f(a.time,time);for(const key of ['damage','registration','feedback'])gl.uniform1f(a[key],config[key]);
+    gl.uniform1f(a.presence,presence);
     gl.uniform3fv(a.colorA,color(config.colorA));gl.uniform3fv(a.colorB,color(config.colorB));
     gl.drawArrays(gl.TRIANGLES,0,3);front=next;
   }
-  function reset(config,time=3.2){
+  function reset(config,time=3.2,presence=1){
     for(const buffer of buffers){gl.bindFramebuffer(gl.FRAMEBUFFER,buffer.framebuffer);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);}
-    front=0;const count=config.mode===3?42:1;
-    for(let i=0;i<count;i++)step(config,time-(count-1-i)/30);
+    front=0;const count=config.historySteps??(config.mode===3?42:1);
+    for(let i=0;i<count;i++)step(config,time-(count-1-i)/30,presence);
   }
-  function render(config,{reference=false,showMenu=true}={}){
+  function render(config,{reference=false,showMenu=true,presence=1,foregroundAlpha=1}={}){
     gl.useProgram(composite);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
     bind(buffers[front].texture,0,b.backgroundImage);bind(ui,1,b.foregroundImage);bind(input,2,b.sourceImage);
     gl.uniform2f(b.sourceSize,width,height);gl.uniform1f(b.exposure,config.exposure);gl.uniform1f(b.vignette,config.vignette);
+    gl.uniform1f(b.presence,presence);gl.uniform1f(b.foregroundAlpha,foregroundAlpha);
     gl.uniform1i(b.reference,reference?1:0);gl.uniform1i(b.showMenu,showMenu?1:0);gl.drawArrays(gl.TRIANGLES,0,3);
     return canvas;
   }

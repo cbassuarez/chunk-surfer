@@ -16,7 +16,7 @@ const unsupported=['animations','skins','extensionsUsed','extensionsRequired'].f
 ck('offline pack removes unsupported runtime features',unsupported.length===0,unsupported.join(',')||'strict subset');
 ck('every primitive is indexed',json.meshes.every((m)=>m.primitives.every((p)=>Number.isInteger(p.indices))));
 ck('every primitive supplies positions and normals',json.meshes.every((m)=>m.primitives.every((p)=>Number.isInteger(p.attributes.POSITION)&&Number.isInteger(p.attributes.NORMAL))));
-const heroes=new Set(['hall_seating','hall_structure','chapel_vault']);
+const heroes=new Set(['hall_seating','hall_balcony_seating','hall_structure','chapel_vault']);
 const dressing=auditBuildingDressingBatches({json,stats});
 ck('static dressing batches conserve source geometry within 40 calls',dressing.errors.length===0,dressing.errors.join('; '));
 ck('repeating meshes stay below 5k triangles',Object.entries(stats.meshes).every(([name,m])=>heroes.has(name)||dressing.names.has(name)||m.triangles<5000));

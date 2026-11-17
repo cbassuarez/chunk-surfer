@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-15T17:37:32.214Z",
-  "bytes": 64624552,
-  "totalTriangles": 896431,
+  "generatedAt": "2026-11-17T04:39:50.496Z",
+  "bytes": 65933176,
+  "totalTriangles": 912019,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -424,8 +424,12 @@
       "vertices": 124
     },
     "hall_seating": {
-      "triangles": 9144,
-      "vertices": 18288
+      "triangles": 12504,
+      "vertices": 25008
+    },
+    "hall_balcony_seating": {
+      "triangles": 12228,
+      "vertices": 24456
     },
     "hall_structure": {
       "triangles": 3948,
@@ -3801,14 +3805,26 @@
     },
     "hall_seating": {
       "min": [
-        -12,
-        -0.1,
-        -8.75
+        -11,
+        0,
+        -9
       ],
       "max": [
         12,
-        5.522,
-        8.225
+        4.982,
+        13
+      ]
+    },
+    "hall_balcony_seating": {
+      "min": [
+        -16.676,
+        2.24,
+        -26.027
+      ],
+      "max": [
+        6.676,
+        8.522,
+        2.376
       ]
     },
     "hall_structure": {
@@ -10871,7 +10887,8 @@
     "altar_table": 0.9,
     "lectern": 0.16,
     "portrait_frame": 1.01,
-    "hall_seating": 3.15,
+    "hall_seating": 4.83,
+    "hall_balcony_seating": 8.52,
     "hall_structure": -1.5,
     "chapel_vault": 12.96,
     "academic_atrium_structure": 0,
@@ -11178,7 +11195,7 @@
     "surfaces": 119,
     "pages": 15,
     "textureBaseLevelBytes": 42494112,
-    "atlasInputSha256": "f376b33cbfee5a1d84c585bfb921246be8e8406b9ac1f3d1e894623d6b597b2e",
+    "atlasInputSha256": "cb3c6529b16a4d25a0857340767dcdbe1b022734ddc921d9adce4addc7f93265",
     "carrierAssemblies": {
       "meshes": 24,
       "members": 128,

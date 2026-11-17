@@ -2,6 +2,9 @@ import {CAB_LIGHT_GLSL} from './cab-light.js';
 import { graphicsStartupError } from './graphics-startup.js';
 import { assetUrl } from '../platform/paths.js';
 import { SOURCE_DEMOLITION_GEOMETRY } from '../data/generated/source-demolition-geometry.js';
+import { LIGHT_GAIN, gainedRgb, gainedLightColors } from './light-gain.js';
+// Upload-side copies for the light gain, so the caller's arrays stay authored.
+const lightGainScratch={torch:new Float32Array(3),textTorch:new Float32Array(3),lamps:null,textLamps:null};
 /* THRESHOLD_GAG_APPARITION_IMPORT_BEGIN */
 import {THRESHOLD_GAG_APPARITION_VERTEX_GLSL,THRESHOLD_GAG_APPARITION_FUNCTIONS_GLSL,THRESHOLD_GAG_APPARITION_FRAGMENT_GLSL} from './threshold-gag-apparition.js';
 /* THRESHOLD_GAG_APPARITION_IMPORT_END */
@@ -1218,10 +1221,36 @@ export function propPackResident(url){
   const record=propPackEntries.get(String(url));
   return !!(record&&record.context===gl&&pack)&&[...record.entries].every(([name,entry])=>pack.catalog.get(name)===entry);
 }
+// FETCH AND DECODE AHEAD, INSTALL IN ORDER.
+//
+// The authored packs are installed one after another because a later pack may
+// replace an earlier pack's meshes by name, and that order is the contract. But
+// only the install has to be ordered. Run that way, each pack's download and
+// image decode also waited for the pack before it, and the chain took four
+// times as long as the rest of the renderer's startup. This starts the parses
+// early, a few at a time and in the given order; addPropPack then takes the
+// finished parse instead of beginning one, and merges it exactly when it always
+// did. A parse nobody collects is only wasted work, and a failed one rejects
+// for whoever does collect it, as before.
+const prefetchedPropPacks=new Map();
+export function prefetchPropPacks(urls,{concurrency=4}={}){
+  if(!gl)throw new Error('props3dInit first');
+  const context=gl,queue=[];
+  for(const url of urls){
+    const key=String(url);if(prefetchedPropPacks.get(key)?.context===context)continue;
+    let start;const gate=new Promise(resolve=>{start=resolve;});
+    const promise=gate.then(()=>{if(gl!==context)throw new Error('prop pack load interrupted by renderer re-init');return parsePropPack(url);});
+    promise.catch(()=>{});
+    prefetchedPropPacks.set(key,{context,promise});queue.push({start,promise});
+  }
+  let next=0;const pump=()=>{const job=queue[next++];if(!job)return;job.start();job.promise.then(pump,pump);};
+  for(let i=0;i<Math.max(1,concurrency);i++)pump();
+}
 export async function addPropPack(url,{sliceMs=0}={}){
   const key=String(url);let load=propPackLoads.get(key);
   if(!load||load.context!==gl){
-    load={context:gl,promise:parsePropPack(url,{sliceMs})};propPackLoads.set(key,load);
+    const ahead=prefetchedPropPacks.get(key);if(ahead)prefetchedPropPacks.delete(key);
+    load={context:gl,promise:ahead?.context===gl?ahead.promise:parsePropPack(url,{sliceMs})};propPackLoads.set(key,load);
     const settled=()=>{if(propPackLoads.get(key)===load)propPackLoads.delete(key);};load.promise.then(settled,settled);
   }
   const extra=await load.promise;
@@ -1549,7 +1578,7 @@ function uploadInstances(mesh,list,matrices=null,{sourceCode=false}={}){
   const data=new Float32Array(list.length*PROP_INSTANCE_FLOATS);
   for(let k=0;k<list.length;k++){
     const at=k*PROP_INSTANCE_FLOATS,authored=Array.isArray(list[k].emissive)?list[k].emissive:[0,0,0,0],practical=practicalLightFrameByPropId.get(list[k].id),emissive=practical?.color?[practical.color[0],practical.color[1],practical.color[2],authored[3]]:authored,lightScale=practical?.scale??list[k].practicalEmissiveScale??1;
-    data.set(matrices?.get(list[k])||modelMatrix(list[k],mesh.nodeMatrix),at);writePropInstanceFlags(data,at,{zone:list[k].zone||0,portrait:list[k].apparitionVariant??list[k].portraitIndex??0,structural:list[k].structural,fixturePower:propPoweredMaterialScale(list[k],lightScale)});data[at+20]=Number(emissive[0])||0;data[at+21]=Number(emissive[1])||0;data[at+22]=Number(emissive[2])||0;data[at+23]=Math.max(0,(Number(emissive[3])||0)*lightScale);
+    data.set(matrices?.get(list[k])||modelMatrix(list[k],mesh.nodeMatrix),at);writePropInstanceFlags(data,at,{zone:list[k].zone||0,portrait:list[k].apparitionVariant??list[k].portraitIndex??0,structural:list[k].structural,fixturePower:propPoweredMaterialScale(list[k],lightScale,!!practical)});data[at+20]=Number(emissive[0])||0;data[at+21]=Number(emissive[1])||0;data[at+22]=Number(emissive[2])||0;data[at+23]=Math.max(0,(Number(emissive[3])||0)*lightScale);
     // The isolated glyph program owns these otherwise unused instance floats.
     // Main, shadow and reflection uploads retain their real material emission.
     if(sourceCode)data.set(sourceExecutionParameters(list[k].sourceExecution),at+20);
@@ -1920,11 +1949,11 @@ function renderSourceText(viewMatrix,projection,eye,forward,maxDistance,lighting
     const torch={...lighting.torch,...normalizeTorchOptics(lighting.torch)};
     const lamp=lighting.torchFrame||resolveTorchFrame({eye,yaw:Math.atan2(forward[0],-forward[2]),pitch:Math.asin(forward[1])});
     gl.uniform3fv(TU('uEye'),eye);gl.uniform3fv(TU('uForward'),lamp.forward);gl.uniform3fv(TU('uTorchOrigin'),lamp.origin);gl.uniform3fv(TU('uTorchRight'),lamp.right);gl.uniform3fv(TU('uTorchUp'),lamp.up);
-    gl.uniform1f(TU('uLight'),Number(lighting.light)||0);gl.uniform3fv(TU('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(TU('uTorchReach'),torch.reach);gl.uniform2f(TU('uTorchCone'),torch.coneInner,torch.coneOuter);gl.uniform1f(TU('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(TU('uTorchShoulder'),torch.shoulder);
-    gl.uniform3fv(TU('uAmbientColor'),lighting.ambientColor||[.64,.65,.62]);gl.uniform1f(TU('uAmbientIntensity'),Number(lighting.ambientIntensity)||0);
+    gl.uniform1f(TU('uLight'),Number(lighting.light)||0);gl.uniform3fv(TU('uTorchColor'),gainedRgb(torch.color||[1,.94,.82],lightGainScratch.textTorch));gl.uniform1f(TU('uTorchReach'),torch.reach);gl.uniform2f(TU('uTorchCone'),torch.coneInner,torch.coneOuter);gl.uniform1f(TU('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(TU('uTorchShoulder'),torch.shoulder);
+    gl.uniform3fv(TU('uAmbientColor'),lighting.ambientColor||[.64,.65,.62]);gl.uniform1f(TU('uAmbientIntensity'),(Number(lighting.ambientIntensity)||0)*LIGHT_GAIN);
     gl.uniform1i(TU('uLocalLightCount'),lighting.localLightCount||0);
     if(lighting.localLightPositions)gl.uniform4fv(TU('uLocalLightPos[0]'),lighting.localLightPositions);
-    if(lighting.localLightColors)gl.uniform4fv(TU('uLocalLightColor[0]'),lighting.localLightColors);
+    if(lighting.localLightColors)gl.uniform4fv(TU('uLocalLightColor[0]'),lightGainScratch.textLamps=gainedLightColors(lighting.localLightColors,lightGainScratch.textLamps));
     gl.uniform1fv(TU('uLocalLightEmergency[0]'),lighting.localLightEmergency||new Float32Array(12));
     gl.uniform1f(TU('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(TU('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(TU('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(TU('uShadowTex'),6);
   }
@@ -2098,7 +2127,7 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
   if(!reflection)prepareRoofWatcherFrame(eye,timeSec,reducedMotion);
   if(characterFrameDirty)prepareCharacterFrame(timeSec);
   if(!reflection&&!shadowPrepared)renderShadowPass(eye,yaw,pitch,light,shadowLight,{timeSec,reducedMotion,lodEye:eye,torchFrame,torch,patternOriginOffsetMetres});
-  gl.bindFramebuffer(gl.FRAMEBUFFER,reflection?reflFbo:fbo);gl.viewport(0,0,reflection?reflW:width,reflection?reflH:height);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.drawBuffers(!reflection?[gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]:[gl.COLOR_ATTACHMENT0]);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform1f(U('uSourceCodeLift'),0);gl.uniform4fv(U('uNatatoriumMetric'),natatoriumMetricUniform(natatoriumMetric));bindStillnessPresentation(gl,U);bindSourceSurroundingsPressure(U);bindRestHorizonTide(U);gl.uniform3fv(U('uWorldPatternOffset'),patternOriginOffsetMetres);gl.uniform1f(U('uGlassCourtRainActive'),glassCourtRainFrame.active);gl.uniform4fv(U('uGlassCourtRainFaces[0]'),glassCourtRainFrame.faces);gl.uniform4fv(U('uGlassCourtRainMotion'),glassCourtRainFrame.motion);gl.uniform1f(U('uSourceRoomLighting'),sourceRoomLighting?1:0);gl.uniform1f(U('uAcademicAtriumLight'),academicAtriumLight&&!sourceRoomLighting?1:0);gl.uniform4f(U('uDriveHeadlight'),driveStudyFrame?.heading||0,driveStudyFrame?.lampDip??.02,driveStudyFrame?.physicalHeadlampCones?1:0,driveStudyFrame?1:0);{const cab=driveStudyFrame?.cabLight||parkedCabLight;gl.uniform4f(U('uCabLight'),cab?cab.gain:0,cab?.radio||0,cab?.road||0,cab?.sky||0);if(cab)gl.uniformMatrix4fv(U('uCabWorldToLocal'),false,cab.worldToCab);}gl.uniform1f(U('uDriveWetRoad'),driveStudyFrame?.weather?.roadWetness||0);for(let i=0;i<2;i++){const dir=driveStudyFrame?.inspectionLights?.[i]?.direction||[0,0,0];gl.uniform4f(U('uDriveInspection['+i+']'),dir[0],dir[1],dir[2],driveStudyFrame?.inspectionLights?.[i]?1:0);}gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),torchForward);gl.uniform3fv(U('uTorchOrigin'),torchFrame.origin);gl.uniform3fv(U('uTorchRight'),torchFrame.right);gl.uniform3fv(U('uTorchUp'),torchFrame.up);gl.uniform1f(U('uLight'),light);gl.uniform1f(U('uTimeSec'),Number(timeSec)||0);gl.uniform1f(U('uReducedMotion'),reducedMotion?1:0);gl.uniform3fv(U('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(U('uTorchReach'),torch.reach);gl.uniform2f(U('uTorchCone'),torch.coneInner,torch.coneOuter);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(U('uTorchShoulder'),torch.shoulder);gl.uniform4fv(U('uStormLight'),stormLightFrame);gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),Number(ambientIntensity)||.022);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.uniform4fv(U('uLocalLightDirection[0]'),localLightDirections||EMPTY_LIGHT_DIRECTIONS);gl.uniform1fv(U('uLocalLightConeInner[0]'),localLightConeInner||EMPTY_LIGHT_CONE_INNER);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,reflection?reflFbo:fbo);gl.viewport(0,0,reflection?reflW:width,reflection?reflH:height);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.drawBuffers(!reflection?[gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]:[gl.COLOR_ATTACHMENT0]);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform1f(U('uSourceCodeLift'),0);gl.uniform4fv(U('uNatatoriumMetric'),natatoriumMetricUniform(natatoriumMetric));bindStillnessPresentation(gl,U);bindSourceSurroundingsPressure(U);bindRestHorizonTide(U);gl.uniform3fv(U('uWorldPatternOffset'),patternOriginOffsetMetres);gl.uniform1f(U('uGlassCourtRainActive'),glassCourtRainFrame.active);gl.uniform4fv(U('uGlassCourtRainFaces[0]'),glassCourtRainFrame.faces);gl.uniform4fv(U('uGlassCourtRainMotion'),glassCourtRainFrame.motion);gl.uniform1f(U('uSourceRoomLighting'),sourceRoomLighting?1:0);gl.uniform1f(U('uAcademicAtriumLight'),academicAtriumLight&&!sourceRoomLighting?1:0);gl.uniform4f(U('uDriveHeadlight'),driveStudyFrame?.heading||0,driveStudyFrame?.lampDip??.02,driveStudyFrame?.physicalHeadlampCones?1:0,driveStudyFrame?1:0);{const cab=driveStudyFrame?.cabLight||parkedCabLight;gl.uniform4f(U('uCabLight'),cab?cab.gain:0,cab?.radio||0,cab?.road||0,cab?.sky||0);if(cab)gl.uniformMatrix4fv(U('uCabWorldToLocal'),false,cab.worldToCab);}gl.uniform1f(U('uDriveWetRoad'),driveStudyFrame?.weather?.roadWetness||0);for(let i=0;i<2;i++){const dir=driveStudyFrame?.inspectionLights?.[i]?.direction||[0,0,0];gl.uniform4f(U('uDriveInspection['+i+']'),dir[0],dir[1],dir[2],driveStudyFrame?.inspectionLights?.[i]?1:0);}gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),torchForward);gl.uniform3fv(U('uTorchOrigin'),torchFrame.origin);gl.uniform3fv(U('uTorchRight'),torchFrame.right);gl.uniform3fv(U('uTorchUp'),torchFrame.up);gl.uniform1f(U('uLight'),light);gl.uniform1f(U('uTimeSec'),Number(timeSec)||0);gl.uniform1f(U('uReducedMotion'),reducedMotion?1:0);gl.uniform3fv(U('uTorchColor'),gainedRgb(torch.color||[1,.94,.82],lightGainScratch.torch));gl.uniform1f(U('uTorchReach'),torch.reach);gl.uniform2f(U('uTorchCone'),torch.coneInner,torch.coneOuter);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(U('uTorchShoulder'),torch.shoulder);gl.uniform4fv(U('uStormLight'),stormLightFrame);gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),(Number(ambientIntensity)||.022)*LIGHT_GAIN);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),lightGainScratch.lamps=gainedLightColors(localLightColors,lightGainScratch.lamps));if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.uniform4fv(U('uLocalLightDirection[0]'),localLightDirections||EMPTY_LIGHT_DIRECTIONS);gl.uniform1fv(U('uLocalLightConeInner[0]'),localLightConeInner||EMPTY_LIGHT_CONE_INNER);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
   {const c=curvedSpaceUniforms(curvedSpace);gl.uniform4fv(U('uCurvedSpace'),c.space);gl.uniformMatrix4fv(U('uCurvedEye'),false,c.eye);}
   // Bind the current owner's physical aperture for both main and reflected draws.
   gl.uniform1i(U('uSourceSurroundingsSide'),0);

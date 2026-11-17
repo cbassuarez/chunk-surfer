@@ -22,6 +22,7 @@ import { addBourgeoisPubFrontage, buildForegroundShelters } from './exterior-fro
 import { buildArrivalCourt } from './arrival-court-geometry.mjs';
 import { addSouthShopDeed } from './exterior-shop-massing.mjs';
 import { SOUTH_ROW_SHOPS } from '../../src/data/plaza-shopfronts.js';
+import { HALL_SEATING, HALL_BALCONY_SEATING } from '../../src/data/hall-seating-layout.js';
 import { buildYardRangeBody, addYardRangeWestFrontage } from './yard-range-frontage-geometry.mjs';
 import { buildPubInterior } from './pub-interior-geometry.mjs';
 import {buildYardPublicRangeBody,addYardPublicRangeFrontage,buildPubAnnexFrontage,buildYardCaretakerInterior} from './yard-public-rooms-geometry.mjs';
@@ -1521,19 +1522,12 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
   // Offline fallback only. The accepted source replaces this mesh when the
   // ignored intake cache is present.
   const m=mesh('hall_seating');
-  // THE GANGWAYS ARE THE FLOORPLAN'S. hallGroundProfile flags three aisles with
-  // F.STAIR, and game/props.js now derives the seating collision from exactly
-  // those flags rather than from a second guess authored in metres. The seats
-  // have to stop where the aisles start or the player walks through a row.
-  // Measured off the compiled plan at authored y=24: west ends at 102, centre
-  // runs 110.5-114, east begins at 122.5. The anchor is authored x=113, so in
-  // local metres that is seats from -11.0 to +9.5 with a hole at -2.5..+1.0.
-  // The transverse cross-over is at local z 0.15..1.85 (props.js keeps it, since
-  // hallGroundProfile's aisle test is x-only and cannot flag a gangway that runs
-  // across the bowl). The terrace platform still steps through it — it is a rake,
-  // not a hole — but no row of seats may stand in it.
-  const AISLE_MIN=-2.5,AISLE_MAX=1.0,SEAT_MIN=-11.0,SEAT_MAX=9.5,CROSS_MIN=.15,CROSS_MAX=1.85;
-  const PITCH=.72;
+  // THE ROWS ARE THE FLOORPLAN'S. This used to carry its own rake (1.55m rows
+  // rising .45) against hallGroundProfile's two-metre treads rising .44, so the
+  // front rows sank up to .74m into the floor and the back rows hung .68m above
+  // it. HALL_SEATING restates the plan's terraces, aisles and the seating
+  // collision's gangways; test/hall-mesh-alignment.spec.mjs holds it to the plan.
+  const PITCH=HALL_SEATING.pitch;
   // A SEAT, NOT A CUBE.
   //
   // Each seat was one 0.54 x 0.72 x 0.55 box, so nine hundred of them read as a
@@ -1558,13 +1552,35 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
       addBox(m,[x,y+.40,z+.07],[.54,.44,.07],MAT.cloth,0,.09);
     }
   };
-  for(let row=0;row<11;row++){
-    const z=-8+row*1.55,y=row*.45;
-    addBox(m,[0,y/2-.05,z],[24,y+.1,1.45],MAT.dark);            // the terrace
-    addBox(m,[0,y-.02,z-.70],[24,.09,.10],MAT.wood);            // and its nosing
-    if(z+.28>CROSS_MIN&&z-.28<CROSS_MAX)continue;
-    seatRun(SEAT_MIN,AISLE_MIN-PITCH/2,y,z);
-    seatRun(AISLE_MAX+PITCH/2,SEAT_MAX,y,z);
+  const [W0,W1]=HALL_SEATING.width,W=W1-W0,WX=(W0+W1)/2;
+  for(const {front,depth,top,seatZs} of HALL_SEATING.terraces){
+    if(top<=0)continue;
+    // The terrace mass stops a centimetre under the walked surface, which the
+    // plan renderer already draws, so the two never fight for the same plane.
+    addBox(m,[WX,(top-.01)/2,front+depth/2],[W,top-.01,depth],MAT.dark);
+    addBox(m,[WX,top-.035,front+.05],[W,.09,.10],MAT.wood);      // its nosing
+    for(const seatZ of seatZs)for(const [a,b] of HALL_SEATING.blocks)seatRun(a+PITCH/2,b-PITCH/2,top,seatZ);
+  }
+}
+{
+  // THE BALCONIES, SEATED. The same tipped-up house seat as the stalls, turned
+  // to face the hall from the arms and the stage from the upper band. Standards
+  // are shared between neighbours in a run, as they are in the stalls.
+  const m=mesh('hall_balcony_seating');
+  const {seats,pitch:PITCH,anchor}=HALL_BALCONY_SEATING;
+  const standards=new Set();
+  const local=(x,z)=>[x-anchor.physical.x,z-anchor.physical.z];
+  for(const {x,y,z,yaw} of seats){
+    const c=Math.cos(yaw),s=Math.sin(yaw);
+    // Seat-frame offset (u across the seat, v toward its back) to mesh metres.
+    const at=(u,h,v)=>{const [lx,lz]=local(x+u*c-v*s,z+u*s+v*c);return [lx,y+h,lz];};
+    for(const u of [-PITCH/2,PITCH/2]){
+      const p=at(u,.32,0),key=p.map(n=>n.toFixed(3)).join(',');
+      if(standards.has(key))continue;standards.add(key);
+      addBox(m,p,[.055,.64,.54],MAT.dark,yaw);
+    }
+    addBox(m,at(0,.72,.20),[.56,.60,.075],MAT.cloth,yaw,-.13);
+    addBox(m,at(0,.40,.07),[.54,.44,.07],MAT.cloth,yaw,.09);
   }
 }
 {
@@ -1603,12 +1619,16 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
   const BAY=-10.8, PORT=-12.2, HOUSE=-2.5, STAGE=-1.5, HEAD=4.0, TOP=9.5;
   const PIER=10.3, IN=8.6;
 
-  // The platform. Authored to hallStageProfile: top at -1.5, two step bays at
-  // local -6 and +5 rising -2.5 -> -2.16 -> -1.83 -> -1.5.
+  // The platform. Authored to hallStageProfile: top at -1.5, two step bays
+  // rising -2.5 -> -2.16 -> -1.83 -> -1.5. The bays are authored x106-108 and
+  // x117-119 at y11 and y10; an authored cell k spans metres [k,k+1), so their
+  // centres are local x -5.5/+5.5 and z -11.5/-12.5. (They were drawn at -6/+5
+  // and -12/-13, half a metre off the treads the player climbs.) This mesh is
+  // authored with y = 0 at world 0; its placement must not add the anchor floor.
   addBox(m,[0,(HOUSE+STAGE)/2,-15],[26,STAGE-HOUSE,8],MAT.wood);
-  for(const bx of [-6,5]){
-    addBox(m,[bx,-2.33,-12],[3.0,.34,1.0],MAT.wood);
-    addBox(m,[bx,-2.00,-13],[3.0,.34,1.0],MAT.wood);
+  for(const bx of [-5.5,5.5]){
+    addBox(m,[bx,-2.33,-11.5],[3.0,.34,1.0],MAT.wood);
+    addBox(m,[bx,-2.00,-12.5],[3.0,.34,1.0],MAT.wood);
   }
 
   // LAYER 1 — the Victorian bay. Plain, heavy, and DEEP: its reveal is the one

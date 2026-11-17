@@ -1,0 +1,136 @@
+{
+  "kind": "renderer and geometry checks only; zero unfamiliar-player participants",
+  "errors": [],
+  "profileFixturesChecked": [
+    "first",
+    "saved",
+    "filed",
+    "completed",
+    "documents"
+  ],
+  "geometry": [
+    {
+      "direction": 0,
+      "name": "Path register",
+      "anodes": 595,
+      "minW": 3,
+      "minH": 3,
+      "maxX": 313,
+      "maxY": 251,
+      "boundsValid": true
+    },
+    {
+      "direction": 1,
+      "name": "Night ledger",
+      "anodes": 12480,
+      "minW": 1.6,
+      "minH": 1.6,
+      "maxX": 318.93333333333334,
+      "maxY": 255.13846153846154,
+      "boundsValid": true
+    },
+    {
+      "direction": 2,
+      "name": "Relay atlas",
+      "anodes": 1280,
+      "minW": 6.4,
+      "minH": 3.68,
+      "maxX": 318.4,
+      "maxY": 251.68,
+      "boundsValid": true
+    }
+  ],
+  "fixedMaskChecks": [
+    {
+      "direction": 0,
+      "actions": 8,
+      "uniqueMasks": 1,
+      "sha256": "d4a79a5f79b71df0d2df7e859cf282f0bd0fac0cfb4e735121aac5148e9f7491"
+    },
+    {
+      "direction": 1,
+      "actions": 8,
+      "uniqueMasks": 1,
+      "sha256": "2635002dae0c5eefb11070d385081b3eb2e476adfd5d6f41cfb54140a75dfd58"
+    },
+    {
+      "direction": 2,
+      "actions": 8,
+      "uniqueMasks": 1,
+      "sha256": "a1c576a2e259572239aa3f7d1908a182ae0b19efa787c14f05672cd2e0e334a4"
+    }
+  ],
+  "frameChecks": [
+    {
+      "direction": 0,
+      "id": "new-run",
+      "uniqueFrames": 4,
+      "restByMs": 480,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 0,
+      "id": "continue",
+      "uniqueFrames": 4,
+      "restByMs": 480,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 0,
+      "id": "settings",
+      "uniqueFrames": 5,
+      "restByMs": 480,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 1,
+      "id": "new-run",
+      "uniqueFrames": 5,
+      "restByMs": 600,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 1,
+      "id": "continue",
+      "uniqueFrames": 4,
+      "restByMs": 600,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 1,
+      "id": "settings",
+      "uniqueFrames": 5,
+      "restByMs": 600,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 2,
+      "id": "new-run",
+      "uniqueFrames": 4,
+      "restByMs": 420,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 2,
+      "id": "continue",
+      "uniqueFrames": 4,
+      "restByMs": 420,
+      "frame600EqualsInfiniteRest": true
+    },
+    {
+      "direction": 2,
+      "id": "settings",
+      "uniqueFrames": 4,
+      "restByMs": 420,
+      "frame600EqualsInfiniteRest": true
+    }
+  ],
+  "changedChannelsOutsideAperture": 0,
+  "productionSourcesUnchanged": [
+    "src/game/title.js",
+    "src/game/title-menu.js",
+    "src/render/instrument-material.js",
+    "src/render/presentation.js",
+    "src/game/save.js"
+  ]
+}

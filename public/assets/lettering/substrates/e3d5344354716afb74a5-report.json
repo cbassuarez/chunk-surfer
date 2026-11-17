@@ -1,6 +1,6 @@
 {
   "id": "acq-foyer-console-01",
-  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAsset": "/home/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
   "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
   "mesh": "classic_console_01",
   "width": 512,
@@ -33,8 +33,8 @@
   "maximumSeparationM": 0.0006014538505720685,
   "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
   "outputs": {
-    "albedo": "28e273560845f6bbaedd0d7638378a4817cbaf778866fda938be5a7a8c0e2af8",
-    "normal": "0c4dcf5ab9a181079abfce69aa98d4f47d61f792e18b8cae6a76d9345c16fd26",
-    "orm": "ca4d9d327d15749b6e7d9d746df7dfaf9d4cce388f3e2bd78f99703355663b14"
+    "albedo": "3c9e8df4d99857fcfcec60146427652d54f5f7aa0ab2b7ffad47ea2615caef7b",
+    "normal": "404f0c0327b7f6d4ae8a3208b9a6bd9b412c08230f69455827a94b07dd865385",
+    "orm": "ae733429d3e9e5ad8d7b8a4552930363b1055c803e8e0b0286a9aaedeafbd900"
   }
 }

@@ -20,10 +20,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "bb7976f33ef93c7ce94355521243a3d6226043173bd50116691a085f31dfed4f",
+    "sha256": "f1ddce929830f4a2fad2145b6f74795795aeec52aa0c492993aa9d2cff2537bf",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 896431,
-    "bytes": 64624552
+    "triangles": 912019,
+    "bytes": 65933176
   },
   "meshes": [
     {
@@ -2237,17 +2237,38 @@
       "name": "hall_seating",
       "bounds": {
         "min": [
-          -12,
-          -0.1,
-          -8.75
+          -11,
+          0,
+          -9
         ],
         "max": [
           12,
-          5.522,
-          8.225
+          4.982,
+          13
         ]
       },
-      "triangles": 9144,
+      "triangles": 12504,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "hall_balcony_seating",
+      "bounds": {
+        "min": [
+          -16.676,
+          2.24,
+          -26.027
+        ],
+        "max": [
+          6.676,
+          8.522,
+          2.376
+        ]
+      },
+      "triangles": 12228,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

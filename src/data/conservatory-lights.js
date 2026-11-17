@@ -12,6 +12,8 @@ import { PUB_LIGHT_ANCHORS } from './exterior-pub-furnishings.js';
 import {PUB_HOSPITALITY_LIGHTS} from './pub-hospitality.js';
 import { STATIONERS_LIGHTS } from './exterior-stationers.js';
 import { GLASS_COURT_LIGHTS } from './glass-court.js';
+import { ELECTRICAL_FIXTURES } from './electrical-fixtures.js';
+import { electricalLightingFor } from '../game/electrical-lighting.js';
 
 export const LIGHT_KIND = Object.freeze({
   SKY: 'sky',
@@ -237,6 +239,7 @@ const freezeLight = (id, kind, x, z, y, color, intensity, radius, extra = {}) =>
     circuit: extra.circuit ?? null,
     powerMode,
     maintained: powerMode === LIGHT_POWER_MODE.MAINTAINED,
+    electrical: extra.electrical || ELECTRICAL_FIXTURES[id] || null,
   });
 };
 const L = freezeLight;
@@ -809,15 +812,19 @@ export function resolveLocalLights(context, {
   includeDormantEmergency = false,
   pubHospitalityReady = false,
   glassCourtReady = false,
+  electricalSeed = 'ellery-grid',
+  electricalSystem = null,
+  onPracticalLights = null,
 } = {}) {
   const group = typeof context === 'string' ? context : String(context?.group || '');
   const zone = typeof context === 'string' ? null : context?.zone;
   const rig = lightRigFor(group);
   if (!rig) return [];
   const live = liveCircuits instanceof Set ? liveCircuits : new Set(liveCircuits || []);
-  const flutter = .5 + .5 * Math.sin(timeSec * 7.1) * Math.sin(timeSec * 2.37);
+  const electrical = electricalSystem || electricalLightingFor(electricalSeed);
   const resolvedEffectsMode = effectsMode || (reducedFlash ? 'reduced' : 'full');
   const out = [];
+  const practical = [];
   for (const authored of rig) {
     if(authored.glassCourtOnly&&!glassCourtReady)continue;
     if(authored.pubHospitalityOnly&&!pubHospitalityReady)continue;
@@ -827,7 +834,7 @@ export function resolveLocalLights(context, {
     if (light.phase === 'cleared' && !towerCleared) continue;
     const emergency = light.kind === LIGHT_KIND.EMERGENCY;
     const powered = lightHasRuntimePower(light, live);
-    if (!powered && !(includeDormantEmergency && emergency)) continue;
+    if (!powered && !(includeDormantEmergency && emergency) && !(onPracticalLights && light.kind === LIGHT_KIND.FITTING)) continue;
     let intensity = emergency
       ? Math.max(EMERGENCY_PRESENTATION_FLOOR.intensity, light.intensity)
       : light.intensity;
@@ -840,9 +847,8 @@ export function resolveLocalLights(context, {
     const blink = emergency
       ? emergencyBlinkState(light.id, timeSec, { effectsMode: resolvedEffectsMode })
       : null;
-    if (light.flutter && light.kind !== LIGHT_KIND.EMERGENCY) intensity = resolvedEffectsMode !== 'full'
-      ? light.flutter.steady
-      : Math.min(LIGHT_BANDS[light.kind][1], light.intensity + flutter * light.flutter.amount);
+    const supply = !emergency ? electrical.sample(light, timeSec, { effectsMode: resolvedEffectsMode, powered }) : null;
+    if (supply) intensity = Math.min(LIGHT_BANDS[light.kind][1], intensity * supply.power);
     if (blink) intensity *= powered ? blink.scale : 0;
     const anchored = light.anchorPropId && typeof anchorPosition === 'function'
       ? anchorPosition(light.anchorPropId)
@@ -852,12 +858,12 @@ export function resolveLocalLights(context, {
     const sourceZone = Number.isFinite(light.home)
       ? light.home
       : (light.zones.length === 1 ? light.zones[0] : zone);
-    out.push({
+    const frame = {
       id: light.id,
       x: anchored ? anchored.x + offset[0] : light.x,
       y: anchored ? anchored.y + offset[1] : light.y,
       z: anchored ? anchored.z + offset[2] : light.z,
-      color: light.color,
+      color: supply?.color || light.color,
       intensity: spilling ? intensity * SPILL_INTENSITY : intensity,
       radius: spilling ? radius * SPILL_REACH : radius,
       penetration: spilling ? Math.min(penetration, SPILL_PENETRATION) : penetration,
@@ -871,15 +877,21 @@ export function resolveLocalLights(context, {
       floorY: Number.isFinite(anchored?.floorY) ? anchored.floorY : (light.y - 1.8),
       anchorYaw: Number.isFinite(anchored?.yaw) ? anchored.yaw : null,
       nominalIntensity: light.intensity,
-      emissiveScale: powered ? (blink?.scale ?? 1) : 0,
+      emissiveScale: powered ? (blink?.scale ?? supply?.power ?? 1) : 0,
+      supplyVoltage: supply?.voltage ?? (powered ? 1 : 0),
+      supplyPhase: supply?.phase ?? null,
+      electricalFault: supply?.fault ?? null,
       emergencyPulse: powered ? (blink?.scale ?? null) : 0,
       shadowReveal: powered ? (blink?.shadowReveal ?? 0) : 0,
       pulseIndex: blink?.pulseIndex ?? null,
       powered,
       castsShadow: !!light.castsShadow,
       zone: Number.isFinite(zone) ? zone : 0,
-    });
+    };
+    practical.push(frame);
+    if (powered || includeDormantEmergency && emergency) out.push(frame);
   }
+  if (typeof onPracticalLights === 'function') onPracticalLights(practical);
   if (out.length <= slots) return out;
   // An active emergency beat is part of the room's authored state, not an
   // optional nearby practical. Dense rigs (the natatorium is the important

@@ -37,15 +37,16 @@ function run(session) {
   return { context, events };
 }
 
-test('actual review entry finishes front-end session so its per-frame snapshot cannot restore title inversion', () => {
+test('actual review entry finishes front-end session so its per-frame snapshot cannot restore title feedback', () => {
   const session = new FrontEndSession();
   session.markCameraReady({exact:true});
   session.enterTitle();
-  assert.equal(session.snapshot().plate.negative, 1);
+  assert.equal(session.snapshot().plate.signal, 1);
   const { context, events } = run(session);
   session.update(.1);
   assert.equal(session.state, FRONT_END_STATE.LIVE);
   assert.equal(session.snapshot().plate.negative, 0);
+  assert.equal(session.snapshot().plate.signal, 0);
   assert.equal(session.snapshot().plate.amount, 0);
   assert.equal(context.frontEndPlateOverride, null);
   assert.equal(context.frontEndPromotionPending, false);
@@ -75,7 +76,7 @@ function nativeContinue({ exact = true, inGame = false, hasRun = true,micConsent
   const events = [];
   const context = {
     frontEndSession: session, frontEndPromotionPending: false, frontEndMismatchPending: false,
-    frontEndPlateOverride: null, FRONT_END_STATE, dt: 0, storyMode: inGame, inRogue: true, paused: inGame,
+    frontEndPlateOverride: null, transferReplayScene: null, FRONT_END_STATE, dt: 0, storyMode: inGame, inRogue: true, paused: inGame,
     getSave: () => save, scenes, affinityMatches, destinationAffinityForContinue,
     roomMicRunConsent:micConsent,params:()=>new URLSearchParams(),
     makeWarningScene:options=>({id:'warning',...options}),
@@ -96,14 +97,14 @@ function nativeContinue({ exact = true, inGame = false, hasRun = true,micConsent
     mainBlock('function startMatchedFrontEndPromotion(){', '\nfunction requestFrontEndNewRun(){'),
     mainBlock('function closePauseMenu(){', '\nfunction openPauseMenu(){'),
   ].join('\n'), context);
-  const frame = mainBlock('    if(frontEndSession){\n      frontEndSession.update(dt);', '\n    uiClear();');
+  const frame = mainBlock('    if(frontEndSession){\n      frontEndSession.update(dt);', '\n    // Audio-thread pulse timing continues');
   return { save, session, context, events,
     continue: () => vm.runInContext('continueRunFromDesktopMenu();', context),
     frame: seconds => { context.dt = seconds; vm.runInContext(frame, context); },
   };
 }
 
-test('native Continue restores through the actual title lift and retires its persistent negative plate', () => {
+test('native Continue restores through the actual title lift and retires its feedback plate', () => {
   scenes.clear(); scenes.push({ id: 'title' });
   try {
     const h = nativeContinue();
@@ -115,6 +116,7 @@ test('native Continue restores through the actual title lift and retires its per
     h.frame(1);
     assert.equal(h.session.state, FRONT_END_STATE.LIVE);
     assert.equal(h.session.snapshot().plate.negative, 0);
+    assert.equal(h.session.snapshot().plate.signal, 0);
     assert.equal(h.session.snapshot().plate.amount, 0);
     assert.equal(scenes.has('title'), false);
     assert.equal(h.context.frontEndPromotionPending, false);

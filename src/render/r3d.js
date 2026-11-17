@@ -48,6 +48,7 @@ import { EXTERIOR_STATIONERS_PACK } from '../data/exterior-stationers.js';
 import { ACADEMIC_CHARACTER_PACK_MESHES } from '../data/academic-society-character-design.js';
 import { createStreetCrowdPackLoader } from './street-crowd-packs.js';
 import { FRONT_END_PLATE_PRESETS, normalizeFrontEndPlate } from './front-end-plate.js';
+import { createMenuFeedbackPass } from './menu-feedback-pass.js';
 import { ZONE, AMBIENT_PLACE_SCALE, BORROWED_INTERIOR_ZONE_BIT, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
 import {STILLNESS_FACES_GLSL} from './stillness-faces.js';
@@ -86,6 +87,9 @@ import { hushPoseAt, isHushBodyCue } from './hush-pose.js';
 import { pressureInstances, pressureSurfaceInstances, pressureRoomAbsorptionStrength } from './pressure-volume.js';
 import { createOutcomeExposureController, sampleOutcomeExposure } from './outcome-exposure.js';
 import { PRESSURE_FINISH_FRAG, PRESSURE_SCENE_GLSL, PRESSURE_IDENTITY_GLSL, PRESSURE_INK_GLSL } from './pressure-composite.js';
+import { LIGHT_GAIN, gainedRgb, gainedLightColors } from './light-gain.js';
+// Upload-side copies for the light gain, so the authored arrays stay authored.
+const lightGainScratch={torch:new Float32Array(3),voidTorch:new Float32Array(3),lamps:null};
 
 const MAX_CHUNKS = 48;
 const b3GlassMoment = createB3GlassMoment();
@@ -4532,6 +4536,8 @@ let waterTexA, waterTexB, waterFboA, waterFboB, waterFlip = false, waterWasActiv
 let driveLandField=null,driveLandTex=null,driveLandLast=null;
 let sceneTex, sceneFbo, sceneDepthRb, fogTexture, surfaceTexture=null;
 let cinematicLensPass=null,activeCameraTanHalfFov=.95;
+let menuFeedbackPass=null,menuFeedbackSuspended=false;
+export function r3dMenuFeedbackStatus(){return menuFeedbackPass?.status()||{active:false,bufferBytes:0,error:null};}
 export function r3dCinematicLensStatus(){return cinematicLensPass?.status()||{active:false,frames:0,error:null};}
 // Screen-space engraving, written beside the scene by the march (see oMark).
 let markTex=null;
@@ -4984,6 +4990,7 @@ function pixelMeshNow() {
 
 export function r3dResetVfdMemory() {
   if (!gl || !meshFboA || !meshFboB) return false;
+  menuFeedbackPass?.reset();
   const previous = gl.getParameter(gl.FRAMEBUFFER_BINDING);
   gl.clearColor(0, 0, 0, 0);
   for (const fbo of [meshFboA, meshFboB]) {
@@ -5521,8 +5528,8 @@ export function r3dSetFrontEndPlate(value='gameplay'){
   // unchanged id keeps the last normalized plate without re-clamping it.
   if(typeof value==='string'&&value===frontEndPlatePresetId)return frontEndPlate;
   const next=normalizeFrontEndPlate(value);
-  if(typeof value==='string')frontEndPlatePresetId=value;
-  if(next.negative===frontEndPlate.negative&&next.print===frontEndPlate.print&&next.amount===frontEndPlate.amount
+  frontEndPlatePresetId=typeof value==='string'?value:null;
+  if(next.signal===frontEndPlate.signal&&next.negative===frontEndPlate.negative&&next.print===frontEndPlate.print&&next.amount===frontEndPlate.amount
     &&next.detailRetention===frontEndPlate.detailRetention&&next.chromaRetention===frontEndPlate.chromaRetention
     &&next.exposureStops===frontEndPlate.exposureStops&&next.shoulder===frontEndPlate.shoulder&&next.toe===frontEndPlate.toe)return frontEndPlate;
   frontEndPlate=next;
@@ -5908,7 +5915,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform1f(sourceVoidPhysicalU('uEntryMetres'),entryMetres);
   gl.uniform1f(sourceVoidPhysicalU('uYaw'),worldYaw);
   gl.uniform4f(sourceVoidPhysicalU('uTorch'),voidTorch,torchConeInner,torchConeOuter,torchReach);
-  gl.uniform3fv(sourceVoidPhysicalU('uTorchColor'),torchColor);
+  gl.uniform3fv(sourceVoidPhysicalU('uTorchColor'),gainedRgb(torchColor,lightGainScratch.voidTorch));
   gl.uniform1f(sourceVoidPhysicalU('uRain'),towerInside?0:sourceVoidRain);
   // Rain uses the historical world-cell lattice. The bus's rendered origin
   // and the recording rebase enter that lattice once, without drying the view
@@ -6658,6 +6665,7 @@ export function r3dInit(mapEl) {
   sourceSurfaceBaker?.dispose();sourceSurfaceBaker=null;sourceSurfaceDiagnostics=null;
   if(gl&&sourceSurfaceTexture)gl.deleteTexture(sourceSurfaceTexture);sourceSurfaceTexture=null;
   cinematicLensPass?.dispose();cinematicLensPass=null;activeCameraTanHalfFov=.95;
+  menuFeedbackPass?.dispose();menuFeedbackPass=null;
   canvas = document.createElement('canvas');
   canvas.className = 'r3d';
   canvas.style.cssText = 'display:block;width:100%;height:100%;';
@@ -6669,6 +6677,7 @@ export function r3dInit(mapEl) {
   gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
   verifyGraphicsStartup(gl);
   cinematicLensPass=createCinematicLensPass(gl);
+  menuFeedbackPass=createMenuFeedbackPass(gl);
 
   progRD = program(RD_FRAG);
   progWater = program(WATER_FRAG);
@@ -6773,6 +6782,19 @@ export function r3dInit(mapEl) {
       await loadBusStudioPacks(busStudioState);
       return pack;
     });
+  // The packs the chain below installs one after another, in that order. Their
+  // parses start now; the chain still merges them in sequence, so a later pack
+  // overrides an earlier one exactly as before. glass-court is left out: the
+  // base chain above installs it first and would take the early parse. A pack
+  // missing from this list merely loads in turn as it used to.
+  P3.prefetchPropPacks(['assets/hall-chandelier-proof.glb','assets/conservatory-textiles.glb','assets/conservatory-adversary-scenery.glb',
+    EXTERIOR_FRONTAGE_PACK,'assets/exterior-graffiti.glb','assets/bus-graffiti.glb',EXTERIOR_STREET_FABRIC.pack,
+    'assets/exterior-infrastructure.glb',ELLERY_PUBLIC_FRONT_PACK,EXTERIOR_ROOFLINE_PACK,EXTERIOR_STATIONERS_PACK,
+    'assets/opening-street.glb','assets/yard-jardins-boundary.glb','assets/street-pilot.glb','assets/vegetation.glb',
+    'assets/academic-gallery.glb','assets/student-strike-records.glb','assets/stop-listening.glb','assets/chapel-dressing.glb',
+    'assets/st-brendans-treatment.glb','assets/st-brendans-presences.glb','assets/source-demolition.glb','assets/source-structures.glb',
+    'assets/conservatory-doors.glb','assets/tuning-fork.glb','assets/conservatory-main-stair.glb',
+    'assets/conservatory-landing-fittings.glb',MAIN_STAIR_WALL_PACK].map(path=>assetUrl(path)));
   authoredPropPackLoad=basePropPackLoad
     .then((pack)=>{
       SHORE.sourceShoreSetHardwarePack(pack);
@@ -7708,6 +7730,7 @@ function updateWaterField(water, dt) {
 //          chunks:[{x,y,r,act,col}], key:{x,y}|null, door:{x,y}|null,
 //          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
+  menuFeedbackSuspended=!!(state.paused||state.boothTelevisionSuspended);
   if(state.textSpace||state.sourceVoidPhysical||state.driveStudy?.active||state.boothTelevisionSuspended||state.paused)boothTelevision?.suspend();
   P3.setGlassCourtRainFrame?.(state.glassCourtRain?.shader||null);
   natatoriumMetric=normalizeNatatoriumMetric(!pixelMeshSettings.reduceMotion&&!state.authoredCamera&&!state.textSpace&&!state.sourceVoidPhysical&&!state.driveStudy?.active&&!towerCaptureInProgress&&!sourceTowerView&&!sourceCrossing
@@ -8026,19 +8049,19 @@ export function r3dFrame(state) {
   gl.uniform2f(U('uFogOrigin'), fogOrigin[0], fogOrigin[1]);
   gl.uniform1f(U('uAudio'), state.audio);
   gl.uniform1f(U('uLight'), torchPower);
-  gl.uniform3fv(U('uTorchColor'),torchColor);
+  gl.uniform3fv(U('uTorchColor'),gainedRgb(torchColor,lightGainScratch.torch));
   gl.uniform3fv(U('uTorchOrigin'),torchFrame.origin);gl.uniform3fv(U('uTorchForward'),torchFrame.forward);gl.uniform3fv(U('uTorchRight'),torchFrame.right);gl.uniform3fv(U('uTorchUp'),torchFrame.up);
   gl.uniform1f(U('uTorchReach'),torchReach);
   gl.uniform2f(U('uTorchCone'),torchConeInner,torchConeOuter);
   gl.uniform1f(U('uTorchSpill'),torchSpill);
   gl.uniform1f(U('uTorchShoulder'),torchShoulder);
   gl.uniform3fv(U('uAmbientColor'),frameAmbientColor);
-  gl.uniform1f(U('uAmbientIntensity'),frameAmbientIntensity);
+  gl.uniform1f(U('uAmbientIntensity'),frameAmbientIntensity*LIGHT_GAIN);
   gl.uniform1f(U('uWorldLightTreatment'),worldLightTreatment.level);
   gl.uniform1f(U('uAmbientFloor'),ambientFloor);
   gl.uniform1f(U('uAmbientPlace'),ambientPlace);
   gl.uniform3fv(U('uBounceColor'),lightingBounceColor);
-  gl.uniform1f(U('uBounceIntensity'),lightingBounceIntensity*bounceAmount);
+  gl.uniform1f(U('uBounceIntensity'),lightingBounceIntensity*bounceAmount*LIGHT_GAIN);
   gl.uniform1f(U('uBounceLampGain'),bounceLampGain);
   gl.uniform1f(U('uRainAmount'),Number.isFinite(state.rainAmount)?state.rainAmount:rainAmount);
   gl.uniform1f(U('uGlassCourtRainShelter'),state.glassCourtRainShelter?1:0);
@@ -8061,7 +8084,7 @@ export function r3dFrame(state) {
   gl.uniform1i(U('uLocalLightCount'),localLightCount);
   gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);
   gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);
-  gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);
+  gl.uniform4fv(U('uLocalLightColor[0]'),lightGainScratch.lamps=gainedLightColors(localLightColors,lightGainScratch.lamps));
   gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);
   gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);
   gl.uniform4fv(U('uLocalLightDirection[0]'),localLightDirections);gl.uniform1fv(U('uLocalLightConeInner[0]'),localLightConeInner);
@@ -8279,7 +8302,11 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.uniform4fv(postU('uDriveMemoryBreak'),driveMemoryBreak);
   gl.uniform1f(postU('uDriveMemoryRaw'),driveMemoryAcquired?0:1);
   const presentW=presentTarget?.width||canvas.width,presentH=presentTarget?.height||canvas.height;
-  gl.bindFramebuffer(gl.FRAMEBUFFER, presentTarget?.fbo||null);
+  // Capture only the finished positive WORLD. The case and all other UI remain
+  // on their existing canvas above this renderer and never enter the history.
+  const feedbackTarget=!presentTarget&&frontEndPlate.signal>.0001?menuFeedbackPass?.prepare(presentW,presentH):null;
+  if(!presentTarget&&!feedbackTarget)menuFeedbackPass?.inactive();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, presentTarget?.fbo||feedbackTarget?.framebuffer||null);
   gl.viewport(0, 0, presentW, presentH);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, sourceTex);
@@ -8344,6 +8371,8 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.uniform4f(postU('uLeakPlateGrid'),FILM_LEAK_ATLAS.cols,FILM_LEAK_ATLAS.rows,film?.mirrored?1:0,film?.grain||0);
   gl.uniform1f(postU('uLeakFilmOnly'),film?.filmOnly?1:0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+  if(feedbackTarget)menuFeedbackPass.present({now:performance.now()*.001,amount:frontEndPlate.signal,
+    paused:menuFeedbackSuspended||document.hidden,reducedMotion:!!pixelMeshSettings.reduceMotion});
   // CPU submit receipt, not a claim of OS compositor/GPU presentation timing.
   if(presentationReceiptListener&&!presentTarget)presentationReceiptListener(performance.now());
 }
@@ -8362,6 +8391,7 @@ export function r3dPresentationReady() { return !!(gl&&!gl.isContextLost()&&canv
 // The front end with no camera to print behind it asks for black instead.
 export function r3dClearScreen() {
   if (!gl) return;
+  menuFeedbackPass?.inactive();
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clearColor(0, 0, 0, 1);

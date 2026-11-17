@@ -123,7 +123,10 @@ test('the media is sampled once per shared cell, not once per fragment', () => {
   // at device resolution and there are no pixels to see.
   assert.match(surface, /vec2 cellId=floor\(globalPt\/CELL_PT\)/, 'the cell is derived first');
   assert.match(surface, /vec2 q=crop\.xy\+cuv\*crop\.zw/, 'and the media is read through it');
-  assert.equal(/vec2 q=crop\.xy\+uv\*crop\.zw/.test(surface), false, 'nothing samples raw fragment uv any more');
+  // The newer terminal pane has its own authored glyph grid; this rule is for
+  // photographic media, not a second quantization of terminal glyph cells.
+  const photographic=surface.replace(/vec3 terminalFault\(vec2 uv\)\{[\s\S]*?\n\}/,'');
+  assert.equal(/vec2 q=crop\.xy\+uv\*crop\.zw/.test(photographic), false, 'photographic media never samples raw fragment uv');
   // Including the transitions, or a dissolve would un-pixelate mid-cut.
   assert.equal(/texture\(outgoingImage,uv\)/.test(surface), false, 'the transitions are on the lattice too');
 
@@ -184,7 +187,7 @@ test('the plate that grades the background is the one the windows are told about
   // One value, not two. The surfaces read the same `negative` r3d grades the
   // composite with, so they turn with the desktop and crossfade with it instead
   // of snapping at the boundary -- and there is no second switch to keep in step.
-  assert.equal(normalizeFrontEndPlate('title').negative, 1, 'the menu is printed');
+  assert.equal(normalizeFrontEndPlate('title').negative, 0, 'menu video remains positive beneath its separate feedback treatment');
   assert.equal(normalizeFrontEndPlate('credits').negative, 1, 'so is the opening');
   assert.equal(normalizeFrontEndPlate('gameplay').negative, 0, 'play is not');
 

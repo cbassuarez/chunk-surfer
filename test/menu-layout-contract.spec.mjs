@@ -2,17 +2,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const title = fs.readFileSync('src/game/title.js', 'utf8');
-for (const id of ['continue', 'new-run', 'archive', 'return-index', 'transfer-room', 'settings']) {
-assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
+const titleModel = fs.readFileSync('src/game/title-menu.js', 'utf8');
+for (const id of ['continue', 'new-run', 'archive', 'return-index', 'transfer-room', 'settings', 'about', 'quit']) {
+  assert.match(titleModel, new RegExp(`id: '${id}'`), `title retains the ${id} action`);
 }
 assert.doesNotMatch(title,/just-surf|onJustSurf/,'production title removes the sample-field route');
-assert.match(title, /let sel = activeRun \? 0 : 1/, 'title defaults to NEW RUN when CONTINUE is unavailable');
-assert.match(title, /withMachinePanel/, 'title renders its readout behind the AUDIOCORP case-select glass');
-assert.match(title, /drawVfdText/, 'title uses the established VFD wordmark');
-assert.match(title, /drawLocationIndicator/, 'title keeps the case-select signal instrument');
-assert.doesNotMatch(title, /renderCinematicConservatory/, 'title does not share credit-sequence geometry');
-assert.match(title, /THE CASE FILE IS EMPTY/, 'title has empty-profile copy instead of disappearing menu sections');
-assert.match(title, /rowsPerColumn = \(\) => Math\.ceil\(items\.length \/ columns\(\)\)/, 'title computes menu rows from stable menu item count');
+assert.match(title, /let sel = 0/, 'title selects its first available action');
+assert.match(title, /withMachinePanel/, 'title keeps the existing instrument material stack');
+assert.match(title, /createPathRegisterDisplay/, 'title uses the chosen Path register composition');
+assert.match(title, /meterSnapshot:.*monitorSnapshotForRms/, 'the bezel keeps the actual program signal');
+assert.match(title, /pathRegisterLayout/, 'the list and hit regions share the options layout');
 
 const archive = fs.readFileSync('src/game/archive.js', 'utf8');
 assert.match(archive, /NO ENTRIES IN THIS CATEGORY/, 'archive has an empty category state');

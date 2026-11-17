@@ -109,7 +109,8 @@ test('the grade rides the plate the front end already switches', () => {
   // keep in step, so the negative is a field ON that plate instead -- which is
   // also why it needs no call sites of its own.
   assert.equal(normalizeFrontEndPlate('credits').negative, 1, 'the opening is printed');
-  assert.equal(normalizeFrontEndPlate('title').negative, 1, 'and so is the menu');
+  assert.equal(normalizeFrontEndPlate('title').signal, 1, 'the menu uses Feedback well');
+  assert.equal(normalizeFrontEndPlate('title').negative, 0, 'feedback receives the positive world');
   assert.equal(normalizeFrontEndPlate('gameplay').negative, 0, 'play is lit, not printed');
   assert.equal(normalizeFrontEndPlate('fallback').negative, 0);
   // An unknown plate must not grade the world by accident.
@@ -118,7 +119,7 @@ test('the grade rides the plate the front end already switches', () => {
 
   // It crossfades with the rest of the plate, so a scene transition grades
   // partway rather than snapping to a negative mid-dissolve.
-  assert.equal(interpolateFrontEndPlate('title', 'gameplay', 0.5).negative, 0.5);
+  assert.equal(interpolateFrontEndPlate('title', 'gameplay', 0.5).signal, 0.5);
   assert.equal(interpolateFrontEndPlate('title', 'gameplay', 1).negative, 0);
 
   // Every preset declares it, so a new one cannot silently inherit a negative.
@@ -132,7 +133,7 @@ test('the front end prints the negative of the finished frame, and keeps its ink
   // the recording stage blew it out to the solid bit: no contours survived, and
   // the dimming fields turned the blank field a murky grey. The print is taken
   // off the finished frame instead, and the plate no longer smears it.
-  for (const id of ['credits', 'title']) {
+  for (const id of ['credits']) {
     const plate = normalizeFrontEndPlate(id);
     assert.equal(plate.negative, 1, `${id} is printed`);
     assert.equal(plate.print, 1, `${id} is printed off the finished frame`);
@@ -142,7 +143,7 @@ test('the front end prints the negative of the finished frame, and keeps its ink
   }
   assert.equal(normalizeFrontEndPlate('gameplay').print, 0, 'play is never printed');
   // Either way the negative crossfades out with the plate, never snapping mid-lift.
-  assert.equal(interpolateFrontEndPlate('title', 'gameplay', 0.5).print, 0.5);
+  assert.equal(interpolateFrontEndPlate('credits', 'gameplay', 0.5).print, 0.5);
   const post = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   assert.match(post, /uniform1f\(postU\('uFrontEndPrint'\),frontEndPlate\.negative\*frontEndPlate\.print\)/);
   assert.match(post, /const n = frontEndPlate\.negative \* \(1 - frontEndPlate\.print\);/, 'the screened negative steps aside when printing');

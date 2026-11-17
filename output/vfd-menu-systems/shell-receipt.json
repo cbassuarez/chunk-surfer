@@ -1,0 +1,39 @@
+{
+  "kind": "production shell and cover-glass passes; review-only content composited between them",
+  "frame": {
+    "x": 36,
+    "y": 5,
+    "w": 78,
+    "h": 28
+  },
+  "aperture": {
+    "x": 37.4,
+    "y": 7.35,
+    "w": 75.2,
+    "h": 23.3
+  },
+  "metrics": {
+    "cellW": 8.45,
+    "cellH": 20
+  },
+  "crop": {
+    "left": 294,
+    "top": 94,
+    "width": 680,
+    "height": 572
+  },
+  "program": {
+    "active": true,
+    "rms": 0.0014049424671828262,
+    "peak": 0.004882956854999065,
+    "clipped": false
+  },
+  "background": "Existing feedback-offscreen.png; recorded world, frozen optical sample; not a live game capture",
+  "sourceHashes": {
+    "src/game/title.js": "3759b28c821448f09cc028712b8e28130ca3d77a05f55193e98519b407daff02",
+    "src/game/title-menu.js": "51d68d1b13089f60ac627376898a45a9b5eec2f29046243bb40f057eb869b069",
+    "src/render/instrument-material.js": "0d4160aacd7623e6340e032ff9b3039d1184bd03ecd8522f2cb6047707b1f2f4",
+    "src/render/presentation.js": "4a9ca2ac8f0295e3e53130a8ccb945754506f0d87aba36a1c398eb716d919b60",
+    "src/game/save.js": "1ac55a2b0e69de07a0a0630070ec8f676cdd0dbc26e65551208b86e8a2140d32"
+  }
+}

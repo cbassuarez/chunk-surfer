@@ -1,0 +1,44 @@
+<div id="cs-vfd-proof">
+  <div class="viz-carousel" aria-label="VFD grammar proofs">
+    <section data-variant="Path register" aria-label="Path register grammar proof">
+      <div class="proof-label text-small">Crisp emission · resting frame · no glow or glass</div>
+      <div class="proof-grid">
+        <figure><figcaption>New game</figcaption><canvas aria-label="New game: fresh origin and empty path"></canvas></figure>
+        <figure><figcaption>Continue</figcaption><canvas aria-label="Continue: existing path and saved position"></canvas></figure>
+        <figure><figcaption>Settings</figcaption><canvas aria-label="Settings: four independent control tracks"></canvas></figure>
+      </div>
+    </section>
+    <section data-variant="Night ledger" aria-label="Night ledger grammar proof" hidden>
+      <div class="proof-label text-small">Crisp emission · resting frame · no glow or glass</div>
+      <div class="proof-grid">
+        <figure><figcaption>New game</figcaption><canvas aria-label="New game: blank night sheet"></canvas></figure>
+        <figure><figcaption>Continue</figcaption><canvas aria-label="Continue: existing entries and a marked place"></canvas></figure>
+        <figure><figcaption>Settings</figcaption><canvas aria-label="Settings: four fixed control tracks"></canvas></figure>
+      </div>
+    </section>
+    <section data-variant="Relay atlas" aria-label="Relay atlas grammar proof" hidden>
+      <div class="proof-label text-small">Crisp emission · resting frame · no glow or glass</div>
+      <div class="proof-grid">
+        <figure><figcaption>New game</figcaption><canvas aria-label="New game: empty run circuit with a fresh contact"></canvas></figure>
+        <figure><figcaption>Continue</figcaption><canvas aria-label="Continue: populated run circuit rejoined at its contact"></canvas></figure>
+        <figure><figcaption>Settings</figcaption><canvas aria-label="Settings: four parallel control channels"></canvas></figure>
+      </div>
+    </section>
+  </div>
+</div>
+<style>
+#cs-vfd-proof .proof-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}
+#cs-vfd-proof figure{margin:0;min-width:0}
+#cs-vfd-proof figcaption{margin-bottom:8px}
+#cs-vfd-proof canvas{display:block;width:100%;height:auto}
+#cs-vfd-proof .proof-label{color:var(--muted-foreground)}
+@media(max-width:650px){#cs-vfd-proof .proof-grid{grid-template-columns:1fr}#cs-vfd-proof canvas{max-width:340px;margin:auto}}
+</style>
+<script>
+(() => {
+const ASSETS=__ASSETS__;
+__RENDERER__
+const root=document.getElementById('cs-vfd-proof');
+root.querySelectorAll('[data-variant]').forEach((section,d)=>section.querySelectorAll('canvas').forEach((c,i)=>VFDStudy.proof(c,d,['new-run','continue','settings'][i])));
+})();
+</script>

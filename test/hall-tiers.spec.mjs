@@ -64,7 +64,10 @@ assert.equal(placeAt(15, 12), null, 'studio B3 has no place');
   for (const [name, lx, base] of [['lower west', 2, 40], ['lower east', 27, 40],
                                   ['upper west', 2, 82], ['upper east', 27, 82]]) {
     let worst = 0;
-    for (let ly = 8; ly < 36; ly += 1) {
+    // balconyRows gives the first three metres of the west shoulder (x < 3,
+    // y < 11) to the public garden, and the garden hall mesh is clipped to the
+    // same box, so the west arms begin at local y11.
+    for (let ly = lx < 3 ? 11 : 8; ly < 36; ly += 1) {
       const a = rt(lx, base + ly), b = rt(lx, base + ly + 1);
       const ca = FP.cellAt(a.x, a.y), cb = FP.cellAt(b.x, b.y);
       if (ca && cb) worst = Math.max(worst, Math.abs(cb.floor - ca.floor));
@@ -72,7 +75,8 @@ assert.equal(placeAt(15, 12), null, 'studio B3 has no place');
     }
     assert.ok(worst <= 0.45 + 1e-6, `${name} steps by no more than a riser (${worst.toFixed(2)}m)`);
     const rear = FP.cellAt(...Object.values(rt(lx, base + 36))).floor;
-    const front = FP.cellAt(...Object.values(rt(lx, base + 10))).floor;
+    // Local y11 on the west arms (garden notch); the same cascade tier as y10.
+    const front = FP.cellAt(...Object.values(rt(lx, base + (lx < 3 ? 11 : 10)))).floor;
     assert.ok(rear - front > 1.5, `${name} actually cascades (${rear} -> ${front})`);
   }
 }
@@ -139,8 +143,10 @@ assert.equal(placeAt(15, 12), null, 'studio B3 has no place');
     return !FP.isSolid(r.x, r.y) && !!FP.cellAt(r.x, r.y) && PROPS.propCanOccupy(r.x, r.y);
   };
 
-  for (const [name, ax] of [['west', 100.5], ['centre', 112.5], ['east', 124.5]]) {
-    for (let ay = 14; ay <= 32; ay += .5) {
+  // The west gangway starts at y15: the public garden's wall holds the west
+  // shoulder in front of that (the same notch the west balcony arms lose).
+  for (const [name, ax, from] of [['west', 100.5, 15], ['centre', 112.5, 14], ['east', 124.5, 14]]) {
+    for (let ay = from; ay <= 32; ay += .5) {
       assert.ok(walkable(ax, ay), `the ${name} gangway is clear at y=${ay}`);
     }
   }

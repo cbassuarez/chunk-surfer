@@ -1,6 +1,6 @@
 {
   "id": "acq-services-panel-pool",
-  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAsset": "/home/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
   "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
   "mesh": "power_box_01",
   "width": 170,
@@ -33,8 +33,8 @@
   "maximumSeparationM": 0.0006948824132555738,
   "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
   "outputs": {
-    "albedo": "798aeba35e8b56fce7deeb7605cc49bff1498dd1d6c14dd67b591e1fdb80db8e",
-    "normal": "845f26cce6a6b009e576f3ccf4b3c98c8123fd89d0bfd514e712d04b096472c8",
-    "orm": "077b17478b84d016a37ccfb38c3547d866b1322848295812b727a8755bc9c4cb"
+    "albedo": "1317fb300a474befed83a30e2ab2dc092c0cfc827165f2f88a89f3d424082fd3",
+    "normal": "5675e8918d024f9895b1b551f7dfa78b8727f6277ade9c82a7160296417bbada",
+    "orm": "c09bd4e962a90846915e970599a38e7f2c4c4d9e89cc41949fdc1f6c4ef7705f"
   }
 }
